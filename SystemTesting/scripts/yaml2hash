@@ -1,0 +1,14 @@
+#!/bin/bash
+ROOT=$(dirname $(readlink -f $(which "$0")))/..
+. $ROOT/main/environment
+if [ "$(id -u)" == "0" ]; then
+   echo "VDNet must NOT be run as root" 1>&2
+   exit 1
+fi
+OPTION="$@"
+if [ "$OPTION" != "${OPTION/-debug/}" ]; then
+  export VDNET_DEBUG=1
+  $PERL -d $ROOT/scripts/yaml2hash.pl `echo $OPTION | sed -e "s/-\+debug//"`
+else
+  $PERL $ROOT/scripts/yaml2hash.pl $OPTION
+fi

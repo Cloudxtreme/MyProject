@@ -1,0 +1,61 @@
+#!/bin/bash
+ROOT=$(dirname $(readlink -f $(which "$0")))/..
+# sync script is implemented to relative to NIMBUS_BASE, so cd to it
+SYNC_DATE="2015-07-25"
+if [ -z "$NIMBUS_BASE" ]; then
+   NIMBUS_BASE="/tmp/nimbus-master-$SYNC_DATE"
+fi
+
+export NIMBUS_BASE=$NIMBUS_BASE
+export SYNC_DATE=$SYNC_DATE
+
+lockfile=/tmp/nimbus-sync.lck
+end=$((SECONDS+2700))
+sync_complete=1
+while [ $SECONDS -lt $end -a $sync_complete -eq 1 ]; do
+   if ( set -o noclobber; echo "$$" > "$lockfile") 2> /dev/null; then
+      trap 'rm -f "$lockfile"; exit $?' INT TERM EXIT
+
+      if [ ! -d "$NIMBUS_BASE" ]; then
+         mkdir -p $NIMBUS_BASE;
+         git clone ssh://git@git.eng.vmware.com/mts-git/mts-git.git $NIMBUS_BASE
+      fi
+      if [ -f $NIMBUS_BASE/vdnetSync ]; then
+         actualDate=`cat $NIMBUS_BASE/vdnetSync`
+      else
+         actualDate="";
+      fi
+      if [ "$actualDate" != "$SYNC_DATE" ]; then
+         echo "Nimbus code is out of sync, updating to commits on $SYNC_DATE"
+         tempFile=$(mktemp)
+         echo "Check logs under $tempFile"
+         (cd $NIMBUS_BASE && git stash 2>&1 > $tempFile)
+         (cd $NIMBUS_BASE && git pull -q origin master 2>&1 > $tempFile)
+         (cd $NIMBUS_BASE && git checkout `git rev-list -n 1 --before="$SYNC_DATE" master` 2>&1 > $tempFile)
+         cp $ROOT/scripts/nimbus/sync $NIMBUS_BASE/sbin/sync;
+         $NIMBUS_BASE/sbin/sync 2>&1 > $tempFile
+         echo $SYNC_DATE > $NIMBUS_BASE/vdnetSync
+      fi
+
+      #
+      # copy log4r etc to $NIMBUS_BASE
+      # see PR 1138190 for details
+      #
+      for DIR in chronic log4r net-scp ruby_gnuplot
+      do
+         if [ ! -d "$NIMBUS_BASE/$DIR" ]; then
+            echo "Copying /mts/git/$DIR to $NIMBUS_BASE"
+            cp -r /mts/git/$DIR $NIMBUS_BASE
+         fi
+      done
+
+      rm -f "$lockfile"
+      trap - INT TERM EXIT
+      echo "Nimbus code is synced to commits on $SYNC_DATE"
+      sync_complete=0
+   else
+      echo "Lock Exists: $lockfile owned by $(cat $lockfile)"
+      echo "Waiting for nimbus sync to acquire lock..."
+      sleep 10
+   fi
+done

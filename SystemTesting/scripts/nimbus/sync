@@ -1,0 +1,66 @@
+#!/bin/bash
+# This is a copy of /mts/git/sbin/sync
+# look for "vdnet change"
+ROOT=$(dirname $(readlink -f $(which "$0")))/..
+
+cd $ROOT
+
+if [[ ! -f .env ]]
+then
+   echo ".env file not found, assuming master"
+   ENV=master
+else
+   ENV=`cat .env`
+fi
+
+git=/build/toolchain/lin32/git-1.7.6/bin/git
+
+echo "$(date) - updating $PWD ..."
+chmod 600 .ssh/*
+while read repo host path branch; do
+   if [[ $branch == ENV ]]
+   then
+      branch=$ENV
+   fi
+   # vdnet change
+   # replace nimbus git server
+   if [ "X$host" == "Xgitorious.eng.vmware.com" ]; then
+      host="git.eng.vmware.com"
+   fi
+   if [ -d $ROOT/$repo ]; then
+      (
+         cd $ROOT/$repo
+         current_branch=$(git symbolic-ref -q HEAD)
+         current_branch=${current_branch##refs/heads/}
+         current_branch=${current_branch:-HEAD}
+         if [[ $branch = $current_branch ]]
+         then
+            echo "$(date) - updating $PWD ..."
+            if [ "X$host" == "Xgit.eng.vmware.com" ]; then
+               env SSH_KEYFILE="${ROOT}/.ssh/id_rsa" \
+                  GIT_SSH="${ROOT}/sbin/ssh-as.sh" \
+                  $git pull -q origin $branch
+            else
+               $git pull -q origin $branch
+            fi
+         else
+            echo "Not updating $repo because branch $current_branch != $branch"
+         fi
+      )
+   elif [ "X$host" == "Xgit.eng.vmware.com" ]; then
+      echo "$(date) - cloning $repo ..."
+      env SSH_KEYFILE="${ROOT}/.ssh/id_rsa" \
+         GIT_SSH="${ROOT}/sbin/ssh-as.sh" \
+         $git clone -b $branch ssh://git@$host/$path $ROOT/$repo
+      (cd $ROOT/$repo && $git remote add ssh git@$host:$path)
+   else
+      echo "$(date) - cloning $repo ..."
+      $git clone -b $branch git://$host/$path $ROOT/$repo
+      (cd $ROOT/$repo && $git remote add ssh git@$host:$path)
+   fi
+# vdnet change
+(cd $ROOT/$repo && git checkout `git rev-list -n 1 --before="$SYNC_DATE" master`)
+done < $ROOT/repos
+
+
+echo "$(date) - done"

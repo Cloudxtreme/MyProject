@@ -1,0 +1,467 @@
+# Copyright (C) 2013 VMware, Inc. All Rights Reserved.s
+
+
+
+
+- !Type
+  id: FlatObjectMetaSchema
+  description: Meta-schema for schemas defining objects containing
+               only simple or array types.
+
+  type: object
+  extends: {$ref: "http://json-schema.org/draft-03/schema#"}
+  properties:
+    properties:
+      type: [string, number, integer, boolean, array]
+      items:
+        type: [string, number, integer, boolean]
+    additionalProperties:
+      type: [string, number, integer, boolean, array]
+      items:
+        type: [string, number, integer, boolean]
+
+
+- !Type
+  id: StringMetaSchema
+  description: Meta-schema for schemas defining objects containing
+               only string or string array types.
+
+  type: object
+  extends: {$ref: "http://json-schema.org/draft-03/schema#"}
+  properties:
+    properties:
+      type: [string, array]
+      items:
+        type: [string]
+    additionalProperties:
+      type: [string, array]
+      items:
+        type: string
+
+- !Type
+  id: NoRestRequestParameters
+  description: Parameter definition for requests that do not allow parameters.
+
+  type: object
+  properties: {}
+  additionalProperties: false
+
+
+- !Type
+  id: DefaultRequestParameters
+  description:
+    Parameter definition allowing all parameters.
+  type: object
+  properties: {}
+  additionalProperties: {}
+
+
+- !Type
+  id: DefaultHeaders
+  description:
+    Header definition allowing all headers.
+  type: object
+  additionalProperties: {}
+
+
+# TODO(dtsai): Use of SessionAuthenticationHeaders is deprecated.
+- !Type
+  id: SessionAuthenticationHeaders
+  description:
+    Header definition for authenticated request that allows other headers.
+  type: object
+  properties:
+    Cookie:
+      type: string
+      required: true
+  additionalProperties: {}
+
+
+- !Type
+  id: Privilege
+  title: Privileges supported by API
+  type: string
+  enum:
+    - authenticated
+    - auth-user=<user-name>
+    - read-node-api
+    - create-read-update-delete-node-api
+    - read-control-api
+    - create-read-update-delete-control-api
+    - manage-users
+    - register-clusters
+    - manage-updates
+
+
+- !Type
+  id: PathArgs
+  title: Path arguments
+  type: array
+  items:
+    type: object
+    properties:
+      name:
+        # Note: a path_argument name must be a valid Python identifier
+        # with the following exceptions:
+        # 1. dashes are allowed.
+        # 2. underscores are not allowed (use dashes instead).
+        # For example "lswitch-guid" is a valid path_argument, but
+        # "lswitch_guid" is not valid.
+        title: Path argument name
+        type: string
+        pattern: "^[A-Za-z-][A-Za-z0-9-]*$"
+        required: true
+
+      pattern:
+        title: Regex pattern of path argument value
+        type: string
+        pattern: '^\^.*\$$'  # yaml parser requires using single quotes here
+        default: "^[^/]+$"
+        required: false
+
+      help_summary:
+        title: Short help string describing argument
+        type: string
+        pattern: "^[A-Z].*[A-Za-z0-9]$"  # start with capital, no end punc
+        required: true
+    additionalProperties: false
+  default: []
+
+
+- !Type
+  id: MockProviderProperties
+  title: Mock provider
+  type: object
+  properties:
+    type:
+      type: string
+      pattern: "^mock$"
+      required: true
+    status:
+      type: integer
+      required: true
+    headers:
+      # Array of 'header-name: value' strings
+      type: array
+      items:
+        type: string
+        pattern: "^[^:]+:[^:]+$"
+      required: true
+    body:
+      type: string
+      required: true
+  additionalProperties: false
+
+
+- !Type
+  id: LocalPythonProviderProperties
+  title: Local Python provider
+  type: object
+  properties:
+    type:
+      type: string
+      pattern: "^local_python$"
+      required: true
+    module:
+      type: string
+      required: true
+    class_name:
+      type: string
+      required: true
+  additionalProperties: false
+
+
+- !Type
+  id: ProtoBufRpcProviderProperties
+  title: Protocol buffer RPC provider
+  type: object
+  properties:
+    type:
+      type: string
+      pattern: "^protobuf_rpc$"
+      required: true
+    service:
+      type: string
+      required: true
+    class_name:
+      type: string
+      required: true
+  additionalProperties: false
+
+
+- !Type
+  id: RestRoutine
+  description: A REST API routine definition.
+
+  type: object
+  properties:
+    # -------------------------------------------------
+    # Resource metadata (required for GET /meta/method)
+    # -------------------------------------------------
+    _href:
+      type: string
+      title: Location of this resource
+      readonly: true
+      display:
+        hidden: true
+
+    _schema:
+      type: string
+      title: Location of schema for this resource
+      readonly: true
+      display:
+        hidden: true
+
+    _query:
+      type: string
+      title: Query parameters provided in resource request
+      readonly: true
+      display:
+        hidden: true
+
+    # -----------------
+    # Routine metadata:
+    # -----------------
+    id:
+      title: Unique routine identifier
+      type: string
+      required: true
+
+    method:
+      title: HTTP method of request
+      type: string
+      enum: [POST, GET, PUT, DELETE]
+      required: true
+
+    path:
+      title: Path portion of request URI
+      type: string
+      required: true
+
+    help_summary:
+      title: Short help string describing routine functionality
+      type: string
+      maxLength: 80
+      pattern: "^[A-Z].*[A-Za-z0-9]$"  # start with capital, no end punctuation
+      required: true
+
+    description:
+      title: Extended description of routine
+      type: string
+
+    doc_category:
+      title: Documentation category that best describes routine
+      type: string
+      enum:
+        # Note: when updating this list, also update any associated
+        #       documentation routines (e.g. api_reference.py)
+        - aaa
+        - aaa.authentication
+        - aaa.authorization
+        - aaa.user_management
+        - api_metadata
+        - candidate_configs
+        - commit_log
+        - configuration
+        - control_api
+        - debug
+        - file_store
+        - features
+        - health
+        - health.status
+        - logical_entities
+        - logical_entities.switches
+        - logical_entities.ports
+        - logical_entities.services_routers
+        - logical_entities.pipeline_stages
+        - logical_statistics
+        - network_properties
+        - network_properties.system_dns
+        - network_properties.system_interfaces
+        - network_properties.system_routes
+        - pools
+        - pools.ip_pools
+        - pools.segmentid_pools
+        - pools.multicast_pools
+        - proxy.transport_node
+        - groupings
+        - groupings.ip_pools
+        - groupings.ipsets
+        - groupings.services
+        - groupings.service_groups
+        - snapshots
+        - services
+        - services.dhcp
+        - services.routing
+        - services.loadbalancer
+        - services.ipsec
+        - services.firewall
+        - services.nat
+        - services.dns
+        - switch_properties
+        - system_properties
+        - system_properties.system_logs
+        - system_properties.system_processes
+        - system_properties.system_services
+        - system_properties.system_statistics
+        - transport_entities
+        - transport_entities.transport-zones
+        - transport_entities.transport-nodes
+        - tasks
+        - update
+        - vcns.config
+        - nvp.config
+      required: true
+
+    available_from:
+      title: Server version where this feature was introduced
+      description: Defaults to first server version if not set
+      type: string
+      required: false
+      default: false
+
+    required_privileges:
+      title: Privileges that are required to invoke rest routine
+      description:
+          Permissions can be combined as follows.  Elements
+          in the outer array are ORed together. Elements
+          in inner lists are ANDed together.  For example,
+          [perm1, [perm2, perm3]] means that perm1 OR perm2
+          and perm3 are required in order to invoke the
+          routine.
+      type: array
+      items:
+        type:
+          - {$ref: Privilege}
+          - type: array
+            items:
+              $ref: Privilege
+      default: []
+
+    request:
+      title: Request properties
+      type: object
+      required: true
+      properties:
+        parameters_schema:
+          title: Schema describing allowable request parameters
+          type: [{$ref: FlatObjectMetaSchema}, "null"]
+          default: {$ref: NoRestRequestParameters}
+
+        headers_schema:
+          title: Schema describing allowable request headers
+          type: [{$ref: FlatObjectMetaSchema}, "null"]
+          default: {$ref: DefaultHeaders}
+
+        content_type_schema:
+          title: Allowable content type(s) of request body (for PUT/POST)
+          type: [{$ref: StringMetaSchema}, "null"]
+          default: {type: string, enum: [application/json]}
+
+        body_type_id:
+          title: Allowable content of request body
+          description:
+            Must refer to a valid Type ID of a previously declared Type,
+            or 'null' if the body is untyped (not JSON).
+          type: [string, "null"]
+          default: "null"
+
+      additionalProperties: false
+
+    response:
+      title: Response properties by RFC 2616 status code
+      type: array
+      required: true
+      items:
+        type: object
+        properties:
+          status:
+            title: Valid status code(s) of response
+            type: [integer, array]
+            minimum: 100
+            maximum: 600
+            exclusiveMaximum: true
+            items:
+              type: integer
+              minimum: 100
+              maximum: 600
+              exclusiveMaximum: true
+
+          headers_schema:
+            title: Schema describing allowable response headers
+            type: [{$ref: FlatObjectMetaSchema}, "null"]
+            default: {$ref: DefaultHeaders}
+
+          content_type_schema:
+            title: Allowable content type(s) of response body
+            type: [{$ref: StringMetaSchema}, "null"]
+            default: {type: string, enum: [text/plain]}
+
+          body_type_id:
+            title: Allowable content of response body
+            description:
+            description:
+              Must refer to a valid Type ID of a previously declared Type,
+              or 'null' if the body is untyped (not JSON).
+            type: [string, "null"]
+            default: "null"
+
+        additionalProperties: false
+
+    provider:
+      type:
+        - {$ref: MockProviderProperties}
+        - {$ref: ProtoBufRpcProviderProperties}
+        - {$ref: LocalPythonProviderProperties}
+      required: true
+
+    path_arguments:
+      $ref: PathArgs
+      required: false
+
+    cancelable:
+      title: Indicates whether provider supports cancel requests
+      type: boolean
+      required: false
+      default: false
+
+    persisted_task:
+      title: Indicates whether runtime task is persisted
+      type: boolean
+      required: false
+      default: false
+
+    resumable_task:
+      title: Indicates whether incomplete task is resumed after server restart
+      type: boolean
+      required: false
+      default: false
+
+    snmp_oid:
+      title: SNMP object ID
+      type: integer
+      required: false
+
+    experimental:
+      title: Indicates that routine has not been finalized
+      description:
+        This routine has not been finalized and may be modified or removed
+        in a future release.
+      type: boolean
+      required: false
+      default: false
+
+    deprecated:
+      title: Indicates that routine has been deprecated
+      type: boolean
+      required: false
+      default: false
+
+    hidden:
+      title: Indicates that routine is hidden
+      type: boolean
+      required: false
+      default: false
+
+  additionalProperties: false
+
