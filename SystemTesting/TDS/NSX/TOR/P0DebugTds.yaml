@@ -1,0 +1,3385 @@
+TorInstancesCreateDeleteBeforeConnected:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "TorInstancesCreateDeleteBeforeConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Perform the create TOR instance operation, then delete the TOR instance
+        directly, after that verify TOR instance has been deleted successfully
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+
+            # step 2: before TOR gateway connect, first create TOR, then delete
+            # it , then add it back; after that connect TOR gateway
+            - ['CreateTOROnVSM']
+            - ["VerifyTORsNotConnected"]
+            - ['DeleteTOR']
+            - ["VerifyNoTOR"]
+            - ['CreateTOROnVSM']
+            - ["VerifyTORsNotConnected"]
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            # verify currect TOR instance not affected
+            - ["VerifyTORsConnected"]
+            - ['DeleteTOR']
+            - ["VerifyNoTOR"]
+
+        ExitSequence:
+            - ['CleanupTORSimulator']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        VerifyTORsNotConnected: *VERIFY_2_TOR_INSTANCES_NOT_CONNECTED
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        VerifyNoTOR: *VERIFY_NO_TOR_INSTANCE
+
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+
+TorInstancesCreateDeleteAfterConnected:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "TorInstancesCreateAfterBeforeConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Perform the create TOR instance operation, then connect TOR gateway,
+        after that  delete the TOR instance, verify TOR instance has been
+        deleted successfully
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+
+            # step 2: frst try to connect TOR gateway, then create TOR,
+            # then delete it , then add it back
+            - ['TORGatewaySetController']
+            - ['CreateTOROnVSM']
+            - ["VerifyTORsConnected"]
+            - ['DeleteTOR']
+            - ["VerifyNoTOR"]
+            - ['CreateTOROnVSM']
+            - ["VerifyTORsConnected"]
+            - ['DeleteTOR']
+            - ["VerifyNoTOR"]
+
+        ExitSequence:
+            - ['CleanupTORSimulator']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        VerifyTORsNotConnected: *VERIFY_2_TOR_INSTANCES_NOT_CONNECTED
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        VerifyNoTOR: *VERIFY_NO_TOR_INSTANCE
+
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+
+CreateDeleteBindingBeforeConnected:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "CreateDeleteBindingBeforeConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Before TOR gateway connected, create a TOR binding,
+        verify after TOR gateway connected, TOR binding works correctly
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+
+            # step 2: first do create/delete ops, then connect TOR gateway
+            - ['CreateTOROnVSM']
+            - ['CreateTORBinding']
+            - ["VerifyTORBinding"]
+            - ['DeleteTORBinding']
+            - ["VerifyNoTORBinding"]
+            - ['CreateTORBinding']
+            - ["VerifyTORBinding"]
+            - ['TORGatewaySetController']
+            - ["VerifyTORBinding"]
+            - ['DeleteTORBinding']
+            - ["VerifyNoTORBinding"]
+            - ["DeleteTOR"]
+
+        ExitSequence:
+            - ['CleanupTORSimulator']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+
+        VerifyTORBinding: *VERIFY_4_TOR_BINDINGS
+        DeleteTORBinding: *DELETE_TOR_BINDINGS
+        VerifyNoTORBinding: *VERIFY_NO_TOR_BINDING
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+
+CreateDeleteBindingAfterConnected:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "CreateDeleteBindingAfterConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        After TOR gateway connected, create a TOR binding,
+        verify TOR binding works correctly
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+
+            # step 2: first connect TOR gateway, then do create/delete ops
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ['CreateTORBinding']
+            - ["VerifyTORBinding"]
+            - ['DeleteTORBinding']
+            - ["VerifyNoTORBinding"]
+            - ["DeleteTOR"]
+
+        ExitSequence:
+            - ['CleanupTORSimulator']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+
+        VerifyTORBinding: *VERIFY_4_TOR_BINDINGS
+        DeleteTORBinding: *DELETE_TOR_BINDINGS
+        VerifyNoTORBinding: *VERIFY_NO_TOR_BINDING
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+
+UpdateTorInstancesBeforeConnected:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "UpdateTorInstancesBeforeConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        After create a TOR instance, verify user will be able to update the
+        name and certificate before TOR connected.
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+
+            # step 2: update TOR with wrong name and cert before TOR connected
+            - ['CreateTOROnVSM']
+            - ["VerifyTORsNotConnected"]
+            - ["UpdateTORsName"]
+            - ["VerifyTORsNameUpdated"]
+            - ["UpdateTORsCertWithWrongValue"]
+            - ["UpdateTORsCertWithCorrectValue"]
+            - ['TORGatewaySetController']
+            # verify currect TOR instance not affected
+            - ["VerifyTORsConnected"]
+            - ['DeleteTOR']
+            - ["VerifyNoTOR"]
+
+        ExitSequence:
+            - ['CleanupTORSimulator']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        VerifyTORsNotConnected: *VERIFY_2_TOR_INSTANCES_NOT_CONNECTED
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        VerifyTORsNameUpdated: *VERIFY_2_TOR_NAME_UPDATED
+        VerifyNoTOR: *VERIFY_NO_TOR_INSTANCE
+        UpdateTORsName: *UPDATE_2_TOR_NAME
+        UpdateTORsCertWithWrongValue: *UPDATE_2_TOR_CERT_WITH_WRONG_VALUE
+        UpdateTORsCertWithCorrectValue: *UPDATE_2_TOR_CERT_WITH_CORRECT_VALUE
+
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+
+UpdateTorInstancesAfterConnected:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "UpdateTorInstancesAfterConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        After create a TOR instance, verify user will be able to update the
+        name and certificate after TOR connected.
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+
+            # step 2: update TOR with wrong name and cert after TOR connected
+            - ['CreateTOROnVSM']
+            - ["VerifyTORsNotConnected"]
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+            - ["UpdateTORsName"]
+            - ["VerifyTORsNameUpdated"]
+            - ["UpdateTORsCertWithWrongValue"]
+            - ["VerifyTORsNotConnected"]
+            - ["UpdateTORsCertWithCorrectValue"]
+            - ["VerifyTORsConnected"]
+            - ['DeleteTOR']
+            - ["VerifyNoTOR"]
+
+        ExitSequence:
+            - ['CleanupTORSimulator']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        VerifyTORsNotConnected: *VERIFY_2_TOR_INSTANCES_NOT_CONNECTED
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        VerifyTORsNameUpdated: *VERIFY_2_TOR_NAME_UPDATED
+        VerifyNoTOR: *VERIFY_NO_TOR_INSTANCE
+        UpdateTORsName: *UPDATE_2_TOR_NAME
+        UpdateTORsCertWithWrongValue: *UPDATE_2_TOR_CERT_WITH_WRONG_VALUE
+        UpdateTORsCertWithCorrectValue: *UPDATE_2_TOR_CERT_WITH_CORRECT_VALUE
+
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+
+BfdEnableBeforeConnected:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Component: "BFD functionality"
+    TestName:  "BfdEnableBeforeConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        First enable/disable global BFD, after TOR connected,
+        verify its functions
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ["VerifyTORsNotConnected"]
+
+            # step 2: configure PTEPs and configure global bfd enable/disable
+            # before TOR gateway connected
+            - ['AddToPTEPCluster']
+            - ['DisableGlobalBfd']
+            - ['VerifyGlobalBfdDisabled']
+            - ['EnableGlobalBfd']
+            - ['VerifyGlobalBfdEnabled']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ['VerifyGlobalBfdEnabled']
+
+        ExitSequence:
+            - ['RemoveFromPTEPCluster']
+            - ['CleanupTORSimulator']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        VerifyTORsNotConnected: *VERIFY_2_TOR_INSTANCES_NOT_CONNECTED
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        EnableGlobalBfd: *ENABLE_GLOBAL_BFD
+        DisableGlobalBfd: *DISABLE_GLOBAL_BFD
+        VerifyGlobalBfdEnabled: *VERIFY_GLOBAL_BFD_ENABLED
+        VerifyGlobalBfdDisabled: *VERIFY_GLOBAL_BFD_DISABLED
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+
+BfdEnableAfterConnected:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Component: "BFD functionality"
+    TestName:  "BfdEnableAfterConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        After TOR connected, enable/disable global BFD,
+        verify its functions
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ["VerifyTORsNotConnected"]
+
+            # step 2: first connect TOR gateway, then configure PTEPs and
+            # configure global bfd enable/disable
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ['AddToPTEPCluster']
+            - ['DisableGlobalBfd']
+            - ['VerifyGlobalBfdDisabled']
+            - ['EnableGlobalBfd']
+            - ['VerifyGlobalBfdEnabled']
+
+        ExitSequence:
+            - ['RemoveFromPTEPCluster']
+            - ['CleanupTORSimulator']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        VerifyTORsNotConnected: *VERIFY_2_TOR_INSTANCES_NOT_CONNECTED
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        EnableGlobalBfd: *ENABLE_GLOBAL_BFD
+        DisableGlobalBfd: *DISABLE_GLOBAL_BFD
+        VerifyGlobalBfdEnabled: *VERIFY_GLOBAL_BFD_ENABLED
+        VerifyGlobalBfdDisabled: *VERIFY_GLOBAL_BFD_DISABLED
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+
+FetchInventory:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "FetchInventory"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Verify GET operation for TOR instances, TOR switches, Port names
+        for a give TOR switch
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+
+            # step 2: verify TOR gateway inventory
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ['VerifyTORsConnected']
+            - ['VerifyTORSwitches']
+            - ['VerifyTORSwitchPortNames']
+            - ['DeleteTOR']
+
+        ExitSequence:
+            - ['CleanupTORSimulator']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        VerifyTORSwitches: *VERIFY_2_TOR_SWITCHNAMES
+        VerifyTORSwitchPortNames: *VERIFY_2_TOR_4_SWITCH_PORTNAMES
+
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+
+ConfigPTEPBeforeTorConnected:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "ConfigPTEPBeforeTorConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Add PTEP node before TOR connected, query PTEP cluster status;
+        add another PTEP node, query PTEP cluster;
+        delete the just added PTEP node,query PTEP cluster
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ["VerifyTORsNotConnected"]
+
+            # step 2: power on all vms
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+
+            # step 3: configure PTEPs before TOR gateway connected
+            - ['AddToPTEPCluster']
+            - ['VerifyPTEPCluster']
+            - ['Remove2PTEPFromPTEPCluster']
+            - ['Verify1PTEPInCluster']
+            - ['VerifyRemovedPTEPNotInCluster']
+            - ['AddToPTEPCluster']
+            - ['VerifyPTEPCluster']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ['VerifyPTEPCluster']
+
+        ExitSequence:
+            - ['RemoveFromPTEPCluster']
+            - ['VerifyNoPTEPInCluster']
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        VerifyTORsNotConnected: *VERIFY_2_TOR_INSTANCES_NOT_CONNECTED
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        VerifyPTEPCluster: *VERIFY_3_PTEPS_IN_CLUSTER
+        Verify1PTEPInCluster: *VERIFY_1_PTEP_IN_CLUSTER
+        VerifyRemovedPTEPNotInCluster: *VERIFY_REMOVED_PTEP_NOT_IN_CLUSTER
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        Remove2PTEPFromPTEPCluster: *REMOVE_2_PTEP_FROM_PTEP_CLUSTER
+        VerifyNoPTEPInCluster: *VERIFY_NO_PTEP_IN_CLUSTER
+
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+
+ConfigPTEPAfterTorConnected:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "ConfigPTEPAfterTorConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Add PTEP node after TOR connected, query PTEP cluster status;
+        add another PTEP node, query PTEP cluster;
+        delete the just added PTEP node,query PTEP cluster;
+        meanwhile also verify its functions
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['NetperfTestVirtualWire1']
+            - ['NetperfTestVirtualWire2']
+            - ['NetperfTestVirtualWire3']
+
+            # step 3: configure PTEPs before TOR gateway connected
+            - ['AddToPTEPCluster']
+            - ['VerifyPTEPCluster']
+            - ['Remove2PTEPFromPTEPCluster']
+            - ['Verify1PTEPInCluster']
+            - ['VerifyRemovedPTEPNotInCluster']
+            - ['AddToPTEPCluster']
+            - ['VerifyPTEPCluster']
+
+            # step 4: verify after form the PTEP cluster,
+            # vms in ptep not affected
+            - ['NetperfTestVirtualWire1']
+            - ['NetperfTestVirtualWire2']
+            - ['NetperfTestVirtualWire3']
+
+        ExitSequence:
+            - ['RemoveFromPTEPCluster']
+            - ['VerifyNoPTEPInCluster']
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        VerifyPTEPCluster: *VERIFY_3_PTEPS_IN_CLUSTER
+        Verify1PTEPInCluster: *VERIFY_1_PTEP_IN_CLUSTER
+        VerifyRemovedPTEPNotInCluster: *VERIFY_REMOVED_PTEP_NOT_IN_CLUSTER
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        Remove2PTEPFromPTEPCluster: *REMOVE_2_PTEP_FROM_PTEP_CLUSTER
+        VerifyNoPTEPInCluster: *VERIFY_NO_PTEP_IN_CLUSTER
+        NetperfTestVirtualWire1: *NETPERF_TEST_VIRTUAL_WIRE_1
+        NetperfTestVirtualWire2: *NETPERF_TEST_VIRTUAL_WIRE_2
+        NetperfTestVirtualWire3: *NETPERF_TEST_VIRTUAL_WIRE_3
+
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+AttachTorBindingToMulticastVWire:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "AttachTorBindingToMulticastVWire"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Attach/detach tor binding to multicast virtual wire.
+        Make sure this fails.
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateMulticastVirtualWire']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['NetperfTestVirtualWire3']
+
+            # step 3: configure TOR gateway related, and Attach binding to
+            # multicast vWire fails
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToMulticastVirtualWireFail']
+
+        ExitSequence:
+            - ["DeleteTORBinding"]
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateMulticastVirtualWire: *CREATE_MULTICAST_VIRTUALWIRE
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToMulticastVirtualWireFail: *CREATE_TOR_ATTACHMENT_TO_MULTICAST_VWIRE_FAIL
+
+        DeleteTORBinding: *DELETE_TOR_BINDINGS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        NetperfTestVirtualWire3:
+          Type:            "Traffic"
+          toolName:        "iperf"
+          L4Protocol:      "tcp"
+          TestAdapter:     "vm.[3].vnic.[1],vm.[6].vnic.[1]"
+          SupportAdapter:  "vm.[9].vnic.[1],vm.[12].vnic.[1]"
+          TestDuration:    "30"
+
+AttachTorBindingToEdgeVWire:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "AttachTorBindingToEdgeVWire"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Verify TOR gateway cannot attach to a virtual wire which
+        already attached to an edge
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9']
+            - ['SetVXLANIPVM1','SetVXLANIPVM2','SetVXLANIPVM3']
+            - ['SetVXLANIPVM4','SetVXLANIPVM5','SetVXLANIPVM6']
+            - ['SetVXLANIPVM7','SetVXLANIPVM8','SetVXLANIPVM9']
+            - ['NetperfTestVirtualWire1']
+            - ['NetperfTestVirtualWire2']
+            - ['NetperfTestVirtualWire3']
+
+            # step 3 , deploy a VSE and verify the traffics between vWires
+            - ['CreateDVPG']
+            - ['DeployEdge']
+            - ['CreateVXLANLIF1']
+            - ['CreateVXLANLIF2']
+            - ['CreateVXLANLIF3']
+            - ['AddVirtualWire2RouteVM147', 'AddVirtualWire1RouteVM258', 'AddVirtualWire1RouteVM369']
+            - ['AddVirtualWire3RouteVM147', 'AddVirtualWire3RouteVM258', 'AddVirtualWire2RouteVM369']
+            - ['NetperfTestVirtualWire12']
+            - ['NetperfTestVirtualWire13']
+            - ['NetperfTestVirtualWire23']
+
+            # step 4: configure TOR gateway related, verify tor gateway cannot
+            # binding to vWires that have LIF interface
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1Fail']
+            - ['CreateTORAttachmentToVirtualWire2Fail']
+
+        ExitSequence:
+            - ["DeleteTORBinding"]
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1']
+            - ['DeleteEdge']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        CreateDVPG: *CREATE_DVPG
+        DeployEdge: *DEPLOY_EDGE
+        CreateVXLANLIF1: *CREATE_VXLAN_LIF1
+        CreateVXLANLIF2: *CREATE_VXLAN_LIF2
+        CreateVXLANLIF3: *CREATE_VXLAN_LIF3
+        AddVirtualWire2RouteVM147: *ADD_VIRTUAL_WIRE_2_ROUTE_VM_147
+        AddVirtualWire3RouteVM147: *ADD_VIRTUAL_WIRE_3_ROUTE_VM_147
+        AddVirtualWire1RouteVM258: *ADD_VIRTUAL_WIRE_1_ROUTE_VM_258
+        AddVirtualWire3RouteVM258: *ADD_VIRTUAL_WIRE_3_ROUTE_VM_258
+        AddVirtualWire1RouteVM369: *ADD_VIRTUAL_WIRE_1_ROUTE_VM_369
+        AddVirtualWire2RouteVM369: *ADD_VIRTUAL_WIRE_2_ROUTE_VM_369
+        SetVXLANIPVM1: *SET_VXLAN_IP_VM1
+        SetVXLANIPVM2: *SET_VXLAN_IP_VM2
+        SetVXLANIPVM3: *SET_VXLAN_IP_VM3
+        SetVXLANIPVM4: *SET_VXLAN_IP_VM4
+        SetVXLANIPVM5: *SET_VXLAN_IP_VM5
+        SetVXLANIPVM6: *SET_VXLAN_IP_VM6
+        SetVXLANIPVM7: *SET_VXLAN_IP_VM7
+        SetVXLANIPVM8: *SET_VXLAN_IP_VM8
+        SetVXLANIPVM9: *SET_VXLAN_IP_VM9
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1Fail: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1_FAIL
+        CreateTORAttachmentToVirtualWire2Fail: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2_FAIL
+        NetperfTestVirtualWire1: *NETPERF_TEST_VIRTUAL_WIRE_1
+        NetperfTestVirtualWire2: *NETPERF_TEST_VIRTUAL_WIRE_2
+        NetperfTestVirtualWire3: *NETPERF_TEST_VIRTUAL_WIRE_3
+
+        DeleteTORBinding: *DELETE_TOR_BINDINGS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteEdge: *DELETE_DEGE
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        NetperfTestVirtualWire12:
+          Type:           "Traffic"
+          toolName:       "iperf"
+          L4Protocol:     "tcp"
+          TestAdapter:    "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          SupportAdapter: "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          TestDuration:   "30"
+
+        NetperfTestVirtualWire13:
+          Type:           "Traffic"
+          toolName:       "iperf"
+          L4Protocol:     "udp"
+          udpbandwidth:   "100M"
+          TestAdapter:    "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          SupportAdapter: "vm.[3].vnic.[1],vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:   "30"
+
+        NetperfTestVirtualWire23:
+          Type:           "Traffic"
+          toolName:       "iperf"
+          L4Protocol:     "tcp"
+          TestAdapter:    "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          SupportAdapter: "vm.[3].vnic.[1],vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:   "30"
+
+DetachTorBinding:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "DetachTorBinding"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Verify detach a binding from a hardware gateway will
+        also delete the binding.
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires
+            - ['CreateVirtualWires']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ["VerifyTORBinding"]
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["VerifyNoTORBinding"]
+
+        ExitSequence:
+            - ["DeleteTOR"]
+            - ['CleanupTORSimulator']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        VerifyNoTORBinding: *VERIFY_NO_TOR_BINDING
+        VerifyTORBinding: *VERIFY_4_TOR_BINDINGS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+VmTorHostConnectivity:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VTEP emulator"
+    TestName:  "VmTorHostConnectivity"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Ping between a VM and a ToR host
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['TrafficTestVirtualWire1FromTorToHosts']
+            - ['TrafficTestVirtualWire2FromTorToHosts']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1FromTorToHosts:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2FromTorToHosts:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "30"
+
+TorHostsConnectivity:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VTEP emulator"
+    TestName:  "TorHostsConnectivity"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Ping between two TOR hosts
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['TrafficTestVirtualWire1BetweenTors']
+            - ['TrafficTestVirtualWire2BetweenTors']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1BetweenTors:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2BetweenTors:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          TestDuration:    "30"
+
+TorTcpUdpTraffic:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "Traffic"
+    TestName:  "TorTcpUdpTraffic"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Test to validate VXLAN encapsulation and decapsulation for TCP/UDP
+        traffic by vtep
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['NetperfTestVirtualWire1']
+            - ['NetperfTestVirtualWire2']
+            - ['NetperfTestVirtualWire3']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['NetperfTestVirtualWire1WithTORAttachment']
+            - ['NetperfTestVirtualWire2WithTORAttachment']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        NetperfTestVirtualWire1: *NETPERF_TEST_VIRTUAL_WIRE_1
+        NetperfTestVirtualWire2: *NETPERF_TEST_VIRTUAL_WIRE_2
+        NetperfTestVirtualWire3: *NETPERF_TEST_VIRTUAL_WIRE_3
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        NetperfTestVirtualWire1WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "iperf"
+          L4Protocol:      "tcp"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "30"
+
+        NetperfTestVirtualWire2WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "iperf"
+          L4Protocol:      "udp"
+          udpbandwidth:    *UDP_TRAFFIC_BANDWIDTH
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "30"
+
+SinglePtepBUMTrafficTorHostToVms:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VTEP emulator"
+    TestName:  "SinglePtepBUMTrafficTorHostToVms"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        BUM traffic from a ToR host to others. This should be done after
+        a host is added to the PTEP cluster
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['VirtualWire1BroadcastTrafficWithTORAttachment']
+            - ['VirtualWire2MulticastTrafficWithTORAttachment']
+            - ['VirtualWire2UnknownUnicastTrafficWithTORAttachment']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        AddToPTEPCluster: *ADD_1_PTEP_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_1_PTEP_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        VirtualWire1BroadcastTrafficWithTORAttachment:
+           Type:           "Traffic"
+           toolname:       "ping"
+           Routingscheme:  "broadcast"
+           TestAdapter:    "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+           SupportAdapter: "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+           TestDuration:   "30"
+
+        VirtualWire2MulticastTrafficWithTORAttachment:
+           Type:           "Traffic"
+           RoutingScheme:  "Multicast"
+           L3Protocol:     "ipv4"
+           udpbandwidth:   *UDP_TRAFFIC_BANDWIDTH
+           TestAdapter:    "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+           SupportAdapter: "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+           TestDuration:   "60"
+
+        VirtualWire2UnknownUnicastTrafficWithTORAttachment:
+           Type: 'Traffic'
+           toolName: 'scapy'
+           TestAdapter:     "torgateway.[1].pif.[4],
+                             torgateway.[2].pif.[4]"
+           SupportAdapter:  "vm.[2].vnic.[1]"
+           protocol: 'arp'
+           DestinationAddress: '192.168.1.255'
+           interval: *SCAPY_INTERVAL
+           pktcount: 1
+           connectivitytest: '0'
+
+VerifyPtepWillReceiveBUMTraffic:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VTEP emulator"
+    TestName:  "VerifyPtepWillReceiveBUMTraffic"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        BUM traffic from a Tor host to VMs. Capture on PTEP and verify PTEP
+        will receiving all the BUM traffics.
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['TrafficTestVirtualWire1FromTorToHosts']
+            - ['TrafficTestVirtualWire2FromTorToHosts']
+            - ['ArpPingVirtualWire1']
+            - ['ArpPingVirtualWire2']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        AddToPTEPCluster: *ADD_1_PTEP_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_1_PTEP_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1FromTorToHosts:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2FromTorToHosts:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "30"
+
+        ArpPingVirtualWire1:
+            Type:           'Traffic'
+            toolName:       'ArpPing'
+            TestAdapter:    "torgateway.[1].pif.[3]"
+            SupportAdapter: "vm.[7].vnic.[1]"
+            # vm.[7] is in esx.[6], which is not in ptep esx.[4], verify esx.[4]
+            # should still receiver the BUM traffic
+            TestDuration: "5"
+            connectivitytest: '0'
+            verification: "Verification_1"
+
+        Verification_1:
+            PktCapVerification:
+                target:           'esx.[4].vmnic.[1]'
+                pktcapfilter:     "count 10,flowdirection rx,capturestage pre"
+                verificationtype: 'pktcapuserworld'
+                vxlanid:          "vsm.[1].networkscope.[1].virtualwire.[1]"
+                pktcount:         '5'
+                l3protocolheader: '0x08'
+                pkttype:          'multicast'
+                innerpkttype:     'broadcast'
+
+        ArpPingVirtualWire2:
+            Type:           'Traffic'
+            toolName:       'ArpPing'
+            TestAdapter:    "torgateway.[1].pif.[4]"
+            SupportAdapter: "vm.[8].vnic.[1]"
+            # vm.[8] is in esx.[6], which is not in ptep esx.[4], verify esx.[4]
+            # should still receiver the BUM traffic
+            TestDuration: "5"
+            connectivitytest: '0'
+            verification: "Verification_2"
+
+        Verification_2:
+            PktCapVerification:
+                target:           'esx.[4].vmnic.[1]'
+                pktcapfilter:     "count 10,flowdirection rx,capturestage pre"
+                verificationtype: 'pktcapuserworld'
+                vxlanid:          "vsm.[1].networkscope.[1].virtualwire.[2]"
+                pktcount:         '5'
+                l3protocolheader: '0x08'
+                pkttype:          'multicast'
+                innerpkttype:     'broadcast'
+
+MultiplePtepBUMTrafficTorHostToVms:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VTEP emulator"
+    TestName:  "MultiplePtepBUMTrafficTorHostToVms"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        BUM traffic from a ToR host to others. This should be done after
+        2 hosts are added to the PTEP cluster
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['VirtualWire1BroadcastTrafficWithTORAttachment']
+            - ['VirtualWire2MulticastTrafficWithTORAttachment']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        VirtualWire1BroadcastTrafficWithTORAttachment:
+           Type:           "Traffic"
+           toolname:       "ping"
+           Routingscheme:  "broadcast"
+           TestAdapter:    "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+           SupportAdapter: "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+           TestDuration:   "30"
+
+        VirtualWire2MulticastTrafficWithTORAttachment:
+           Type:           "Traffic"
+           RoutingScheme:  "Multicast"
+           L3Protocol:     "ipv4"
+           udpbandwidth:   *UDP_TRAFFIC_BANDWIDTH
+           TestAdapter:    "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+           SupportAdapter: "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+           TestDuration:   "60"
+
+MultiplePtepBUMTrafficVmToTorHosts:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VTEP emulator"
+    TestName:  "MultiplePtepBUMTrafficVmToTorHosts"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        BUM traffic from a VM to other TOR hosts.. This should be done after
+        2 hosts are added to the PTEP cluster
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['VirtualWire1BroadcastTrafficWithTORAttachment']
+            - ['VirtualWire2MulticastTrafficWithTORAttachment']
+            - ['VirtualWire2UnknownUnicastTrafficWithTORAttachment']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        VirtualWire1BroadcastTrafficWithTORAttachment:
+           Type:           "Traffic"
+           toolname:       "ping"
+           Routingscheme:  "broadcast"
+           TestAdapter:    "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+           SupportAdapter: "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+           TestDuration:   "30"
+
+        VirtualWire2MulticastTrafficWithTORAttachment:
+           Type:           "Traffic"
+           RoutingScheme:  "Multicast"
+           L3Protocol:     "ipv4"
+           udpbandwidth:   *UDP_TRAFFIC_BANDWIDTH
+           TestAdapter:    "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+           SupportAdapter: "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+           TestDuration:   "60"
+
+        VirtualWire2UnknownUnicastTrafficWithTORAttachment:
+           Type:            'Traffic'
+           toolName:        'scapy'
+           TestAdapter:     "vm.[2].vnic.[1]"
+           SupportAdapter:  "torgateway.[1].pif.[4],
+                             torgateway.[2].pif.[4]"
+           protocol:        'arp'
+           DestinationAddress: '192.168.1.255'
+           interval: *SCAPY_INTERVAL
+           pktcount: 1
+           connectivitytest: '0'
+
+MultiplePtepBUMTrafficBetweenTorHosts:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VTEP emulator"
+    TestName:  "MultiplePtepBUMTrafficBetweenTorHosts"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        BUM traffic from a TOR host to other TOR hosts.. This should be done after
+        2 hosts are added to the PTEP cluster
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['VirtualWire1BroadcastTrafficWithTORAttachment']
+            - ['VirtualWire2MulticastTrafficWithTORAttachment']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        VirtualWire1BroadcastTrafficWithTORAttachment:
+           Type:           "Traffic"
+           toolname:       "ping"
+           Routingscheme:  "broadcast"
+           TestAdapter:    "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+           SupportAdapter: "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+           TestDuration:   "30"
+
+        VirtualWire2MulticastTrafficWithTORAttachment:
+           Type:           "Traffic"
+           RoutingScheme:  "Multicast"
+           L3Protocol:     "ipv4"
+           udpbandwidth:   *UDP_TRAFFIC_BANDWIDTH
+           TestAdapter:    "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+           SupportAdapter: "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+           TestDuration:   "60"
+
+ArpTableOnController:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "Table Entry"
+    TestName:  "ArpTableOnController"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        after connectivity test, verify arp tables on vxlan controller not
+        include TOR hosts arp info, since TOR gateway not upload arp info
+        to controller
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['TrafficTestVirtualWire1']
+            - ['TrafficTestVirtualWire2']
+            - ['TrafficTestVirtualWire3']
+            - ['VerifyVirtualWire1ArpEntryOnController',
+               'VerifyVirtualWire2ArpEntryOnController',
+               'VerifyVirtualWire3ArpEntryOnController']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['ArpingVirtualWire1WithTORAttachment']
+            - ['ArpingVirtualWire2WithTORAttachment']
+            - ['VerifyVirtualWire1TorPortsArpEntryNotOnController']
+            - ['VerifyVirtualWire2TorPortsArpEntryNotOnController']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        VerifyVirtualWire1ArpEntryOnController: *VERIFY_VWIRE1_ARP_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire2ArpEntryOnController: *VERIFY_VWIRE2_ARP_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire3ArpEntryOnController: *VERIFY_VWIRE3_ARP_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire1TorPortsArpEntryNotOnController: *VERIFY_VWIRE1_TOR_PORTS_ARP_ENTRY_NOT_ON_CONTROLLER
+        VerifyVirtualWire2TorPortsArpEntryNotOnController: *VERIFY_VWIRE2_TOR_PORTS_ARP_ENTRY_NOT_ON_CONTROLLER
+
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[1].vnic.[1]"
+          SupportAdapter:  "vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[2].vnic.[1]"
+          SupportAdapter:  "vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire3:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[3].vnic.[1]"
+          SupportAdapter:  "vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:    "30"
+
+        ArpingVirtualWire1WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "10"
+
+        ArpingVirtualWire2WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "10"
+
+VtepTableOnController:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "Table Entry"
+    TestName:  "VtepTableOnController"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Verify vtep tables on vxlan controller include TOR vtep info
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['TrafficTestVirtualWire1']
+            - ['TrafficTestVirtualWire2']
+            - ['TrafficTestVirtualWire3']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['VerifyVirtualWire1VtepTableOnControllers']
+            - ['VerifyVirtualWire2VtepTableOnControllers']
+            - ['VerifyVirtualWire3VtepTableOnControllers']
+            - ['VerifyVirtualWire1Tor4VtepsOnControllers']
+            - ['VerifyVirtualWire2Tor4VtepsOnControllers']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        VerifyVirtualWire1Tor4VtepsOnControllers: *VERIFY_VWIRE1_4_TOR_VTEPS_TABLE_ON_CONTROLLER
+        VerifyVirtualWire2Tor4VtepsOnControllers: *VERIFY_VWIRE2_4_TOR_VTEPS_TABLE_ON_CONTROLLER
+        VerifyVirtualWire1VtepTableOnControllers: *VERIFY_VWIRE1_VTEP_TABLE_ON_CONTROLLER
+        VerifyVirtualWire2VtepTableOnControllers: *VERIFY_VWIRE2_VTEP_TABLE_ON_CONTROLLER
+        VerifyVirtualWire3VtepTableOnControllers: *VERIFY_VWIRE3_VTEP_TABLE_ON_CONTROLLER
+
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[1].vnic.[1]"
+          SupportAdapter:  "vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[2].vnic.[1]"
+          SupportAdapter:  "vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire3:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[3].vnic.[1]"
+          SupportAdapter:  "vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:    "30"
+
+ConnectionTableOnController:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "Table Entry"
+    TestName:  "ConnectionTableOnController"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Verify connection tables on vxlan controller include TOR vtep
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['TrafficTestVirtualWire1']
+            - ['TrafficTestVirtualWire2']
+            - ['TrafficTestVirtualWire3']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['VerifyVirtualWire1ConnectionTableOnControllers']
+            - ['VerifyVirtualWire2ConnectionTableOnControllers']
+            - ['VerifyVirtualWire1TorConnectionTableOnControllers']
+            - ['VerifyVirtualWire2TorConnectionTableOnControllers']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        VerifyVirtualWire1ConnectionTableOnControllers: *VERIFY_VWIRE1_CONNECTION_TABLE_ON_CONTROLLER
+        VerifyVirtualWire2ConnectionTableOnControllers: *VERIFY_VWIRE2_CONNECTION_TABLE_ON_CONTROLLER
+        VerifyVirtualWire1TorConnectionTableOnControllers: *VERIFY_VWIRE1_2_TOR_CONNECTION_TABLE_ON_CONTROLLER
+        VerifyVirtualWire2TorConnectionTableOnControllers: *VERIFY_VWIRE2_2_TOR_CONNECTION_TABLE_ON_CONTROLLER
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[1].vnic.[1]"
+          SupportAdapter:  "vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[2].vnic.[1]"
+          SupportAdapter:  "vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire3:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[3].vnic.[1]"
+          SupportAdapter:  "vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:    "30"
+
+ArpTableOnHost:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "Table Entry"
+    TestName:  "ArpTableOnHost"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        after connectivity test, verify arp tables on hosts not  include
+        TOR hosts arp info, since controller not has corresponding arp info
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['TrafficTestVirtualWire1']
+            - ['TrafficTestVirtualWire2']
+            - ['TrafficTestVirtualWire3']
+            - ['CheckVirtualWire1ArpEntryOnHost4']
+            - ['CheckVirtualWire2ArpEntryOnHost5']
+            - ['CheckVirtualWire3ArpEntryOnHost6']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['ArpingVirtualWire1WithTORAttachment']
+            - ['ArpingVirtualWire2WithTORAttachment']
+            - ['CheckVirtualWire1TorPortsArpEntryNotOnHost4']
+            - ['CheckVirtualWire2TorPortsArpEntryNotOnHost5']
+            - ['CheckVirtualWire2TorPortsArpEntryNotOnHost6']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        CheckVirtualWire1ArpEntryOnHost4: *VERIFY_VWIRE1_ARP_ENTRY_ON_HOST_4
+        CheckVirtualWire2ArpEntryOnHost5: *VERIFY_VWIRE2_ARP_ENTRY_ON_HOST_5
+        CheckVirtualWire3ArpEntryOnHost6: *VERIFY_VWIRE2_ARP_ENTRY_ON_HOST_6
+        CheckVirtualWire1TorPortsArpEntryNotOnHost4: *VERIFY_VWIRE1_TOR_PORTS_ARP_ENTRY_NOT_ON_HOST_4
+        CheckVirtualWire2TorPortsArpEntryNotOnHost5: *VERIFY_VWIRE2_TOR_PORTS_ARP_ENTRY_NOT_ON_HOST_5
+        CheckVirtualWire2TorPortsArpEntryNotOnHost6: *VERIFY_VWIRE2_TOR_PORTS_ARP_ENTRY_NOT_ON_HOST_6
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[1].vnic.[1]"
+          SupportAdapter:  "vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[2].vnic.[1]"
+          SupportAdapter:  "vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire3:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[3].vnic.[1]"
+          SupportAdapter:  "vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:    "30"
+
+        ArpingVirtualWire1WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "10"
+
+        ArpingVirtualWire2WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "10"
+
+VtepTableOnHost:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "Table Entry"
+    TestName:  "VtepTableOnHost"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        verify vtep tables on hosts include TOR vtep info
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            # connect TOR gateway
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['TrafficTestVirtualWire1']
+            - ['TrafficTestVirtualWire2']
+            - ['TrafficTestVirtualWire3']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['VerifyVirtualWire1VtepTableOnHost4']
+            - ['VerifyVirtualWire2VtepTableOnHost5']
+            - ['VerifyVirtualWire3VtepTableOnHost6']
+            - ['VerifyVirtualWire1TorVtepTableOnHost']
+            - ['VerifyVirtualWire2TorVtepTableOnHost']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        VerifyVirtualWire1VtepTableOnHost4: *VERIFY_VWIRE1_VTEP_TABLE_ON_HOST_4
+        VerifyVirtualWire2VtepTableOnHost5: *VERIFY_VWIRE2_VTEP_TABLE_ON_HOST_5
+        VerifyVirtualWire3VtepTableOnHost6: *VERIFY_VWIRE3_VTEP_TABLE_ON_HOST_6
+        VerifyVirtualWire1TorVtepTableOnHost: *VERIFY_VWIRE1_4_TOR_VTEPS_TABLE_ON_HOST_4
+        VerifyVirtualWire2TorVtepTableOnHost: *VERIFY_VWIRE2_4_TOR_VTEPS_TABLE_ON_HOST_5
+
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[1].vnic.[1]"
+          SupportAdapter:  "vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[2].vnic.[1]"
+          SupportAdapter:  "vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire3:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[3].vnic.[1]"
+          SupportAdapter:  "vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:    "30"
+
+ControllerMacEntryAddingAfterTorBinding:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VXLAN controller"
+    TestName:  "ControllerMacEntryAddingAfterTorBinding"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Look for ToR host mac in controller table after ToR binding is
+        attached to virtual wire
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['TrafficTestVirtualWire1']
+            - ['TrafficTestVirtualWire2']
+            - ['TrafficTestVirtualWire3']
+            - ['VerifyVirtualWire1MacEntryOnController',
+               'VerifyVirtualWire2MacEntryOnController',
+               'VerifyVirtualWire3MacEntryOnController']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['ArpingVirtualWire1WithTORAttachment']
+            - ['ArpingVirtualWire2WithTORAttachment']
+            - ['VerifyVirtualWire1TorPortsMacEntryOnController']
+            - ['VerifyVirtualWire2TorPortsMacEntryOnController']
+            - ['VerifyVirtualWire1TorPortsMacEntryOnHost']
+            - ['VerifyVirtualWire2TorPortsMacEntryOnHost']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        VerifyVirtualWire1MacEntryOnController: *VERIFY_VWIRE1_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire2MacEntryOnController: *VERIFY_VWIRE2_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire3MacEntryOnController: *VERIFY_VWIRE3_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire1TorPortsMacEntryOnController: *VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire2TorPortsMacEntryOnController: *VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire1TorPortsMacEntryOnHost: *VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_ON_HOST_4
+        VerifyVirtualWire2TorPortsMacEntryOnHost: *VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_ON_HOST_5
+
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[1].vnic.[1]"
+          SupportAdapter:  "vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[2].vnic.[1]"
+          SupportAdapter:  "vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire3:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[3].vnic.[1]"
+          SupportAdapter:  "vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:    "30"
+
+        ArpingVirtualWire1WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "10"
+
+        ArpingVirtualWire2WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "10"
+
+ControllerMacEntryRemovingAfterDetachment:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VXLAN controller"
+    TestName:  "ControllerMacEntryRemovingAfterDetachment"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Look to see if ToR host mac is removed from controller table after
+        ToR binding is detached from virtual wire
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['TrafficTestVirtualWire1']
+            - ['TrafficTestVirtualWire2']
+            - ['TrafficTestVirtualWire3']
+            - ['VerifyVirtualWire1MacEntryOnController',
+               'VerifyVirtualWire2MacEntryOnController',
+               'VerifyVirtualWire3MacEntryOnController']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: send traffic to make sure mac address leared
+            - ['ArpingVirtualWire1WithTORAttachment']
+            - ['ArpingVirtualWire2WithTORAttachment']
+
+            # step 5: remove the detachment and check mac entry
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ['VerifyVirtualWire1TorPortsMacEntryNotOnController']
+            - ['VerifyVirtualWire2TorPortsMacEntryNotOnController']
+            - ['VerifyVirtualWire1TorPortsMacEntryNotOnHost']
+            - ['VerifyVirtualWire2TorPortsMacEntryNotOnHost']
+
+        ExitSequence:
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        VerifyVirtualWire1MacEntryOnController: *VERIFY_VWIRE1_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire2MacEntryOnController: *VERIFY_VWIRE2_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire3MacEntryOnController: *VERIFY_VWIRE3_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire1TorPortsMacEntryNotOnController: *VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_NOT_ON_CONTROLLER
+        VerifyVirtualWire2TorPortsMacEntryNotOnController: *VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_NOT_ON_CONTROLLER
+        VerifyVirtualWire1TorPortsMacEntryNotOnHost: *VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_NOT_ON_HOST_4
+        VerifyVirtualWire2TorPortsMacEntryNotOnHost: *VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_NOT_ON_HOST_5
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[1].vnic.[1]"
+          SupportAdapter:  "vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[2].vnic.[1]"
+          SupportAdapter:  "vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire3:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[3].vnic.[1]"
+          SupportAdapter:  "vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:    "30"
+
+        ArpingVirtualWire1WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "10"
+
+        ArpingVirtualWire2WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "10"
+
+ControllerMacEntryAddingAfterTorHostConnected:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VXLAN controller"
+    TestName:  "ControllerMacEntryAddingAfterTorHostConnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        add TOR host to a bridged vlan, after connectivity test, look for ToR
+        host mac in controller table when it is added to a bridged VLAN
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+            # first disconnect TOR hosts to TOR ports
+            - ['DeleteTORPortsOnSwitches']
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['TrafficTestVirtualWire1']
+            - ['TrafficTestVirtualWire2']
+            - ['TrafficTestVirtualWire3']
+            - ['VerifyVirtualWire1MacEntryOnController',
+               'VerifyVirtualWire2MacEntryOnController',
+               'VerifyVirtualWire3MacEntryOnController']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: connect TOR hosts to TOR ports, verify mac address
+            # can be learned
+            - ['Add2PhysicalPcPortsToTORSwitch1']
+            - ['ArpingVirtualWire1WithTORAttachment']
+            - ['ArpingVirtualWire2WithTORAttachment']
+            - ['VerifyVirtualWire1TorPortsMacEntryOnController']
+            - ['VerifyVirtualWire2TorPortsMacEntryOnController']
+            - ['VerifyVirtualWire1TorPortsMacEntryOnHost']
+            - ['VerifyVirtualWire2TorPortsMacEntryOnHost']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        DeleteTORPortsOnSwitches: *DELETE_TOR_PORTS_ON_2_SWITCHES
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        VerifyVirtualWire1MacEntryOnController: *VERIFY_VWIRE1_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire2MacEntryOnController: *VERIFY_VWIRE2_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire3MacEntryOnController: *VERIFY_VWIRE3_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire1TorPortsMacEntryOnController: *VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire2TorPortsMacEntryOnController: *VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire1TorPortsMacEntryOnHost: *VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_ON_HOST_4
+        VerifyVirtualWire2TorPortsMacEntryOnHost: *VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_ON_HOST_5
+        Add2PhysicalPcPortsToTORSwitch1: *ADD_2_PHYSICAL_PC_PORTS_TO_TOR_SWITCH_1
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[1].vnic.[1]"
+          SupportAdapter:  "vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[2].vnic.[1]"
+          SupportAdapter:  "vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire3:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[3].vnic.[1]"
+          SupportAdapter:  "vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:    "30"
+
+        ArpingVirtualWire1WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "10"
+
+        ArpingVirtualWire2WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "10"
+
+ControllerMacEntryRemovingAfterTorHostDisconnected:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VXLAN controller"
+    TestName:  "ControllerMacEntryRemovingAfterTorHostDisconnected"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        remove a TOR host to a bridged vlan, after timeout(may 10s),
+        look to see if ToR host mac is removed from controller
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['TrafficTestVirtualWire1']
+            - ['TrafficTestVirtualWire2']
+            - ['TrafficTestVirtualWire3']
+            - ['VerifyVirtualWire1MacEntryOnController',
+               'VerifyVirtualWire2MacEntryOnController',
+               'VerifyVirtualWire3MacEntryOnController']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: send traffic to make sure mac address leared
+            - ['ArpingVirtualWire1WithTORAttachment']
+            - ['ArpingVirtualWire2WithTORAttachment']
+
+            # step 5: disconnect TOR hosts to TOR ports and check mac entry
+            - ['DeleteTORPortsOnSwitches']
+            - ['VerifyVirtualWire1TorPortsMacEntryNotOnController']
+            - ['VerifyVirtualWire2TorPortsMacEntryNotOnController']
+            - ['VerifyVirtualWire1TorPortsMacEntryNotOnHost']
+            - ['VerifyVirtualWire2TorPortsMacEntryNotOnHost']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        VerifyVirtualWire1MacEntryOnController: *VERIFY_VWIRE1_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire2MacEntryOnController: *VERIFY_VWIRE2_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire3MacEntryOnController: *VERIFY_VWIRE3_MAC_ENTRY_ON_CONTROLLER
+        VerifyVirtualWire1TorPortsMacEntryNotOnController: *VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_NOT_ON_CONTROLLER
+        VerifyVirtualWire2TorPortsMacEntryNotOnController: *VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_NOT_ON_CONTROLLER
+        VerifyVirtualWire1TorPortsMacEntryNotOnHost: *VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_NOT_ON_HOST_4
+        VerifyVirtualWire2TorPortsMacEntryNotOnHost: *VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_NOT_ON_HOST_5
+
+        DeleteTORPortsOnSwitches: *DELETE_TOR_PORTS_ON_2_SWITCHES
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS_WITHOUT_DELETE_TOR_PORTS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        TrafficTestVirtualWire1:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[1].vnic.[1]"
+          SupportAdapter:  "vm.[4].vnic.[1],vm.[7].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire2:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[2].vnic.[1]"
+          SupportAdapter:  "vm.[5].vnic.[1],vm.[8].vnic.[1]"
+          TestDuration:    "30"
+
+        TrafficTestVirtualWire3:
+          Type:            "Traffic"
+          toolName:        "ping"
+          TestAdapter:     "vm.[3].vnic.[1]"
+          SupportAdapter:  "vm.[6].vnic.[1],vm.[9].vnic.[1]"
+          TestDuration:    "30"
+
+        ArpingVirtualWire1WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "10"
+
+        ArpingVirtualWire2WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "ArpPing"
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "10"
+
+ControllerRestart:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "VXLAN controller"
+    TestName:  "ControllerRestart"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        There is only one controller and restart it
+    WORKLOADS:
+        Sequence:
+            # step 1: shrink to only 1 controller
+            - ['DeleteController2']
+            - ['DeleteController3']
+
+            # step 2: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 3: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PlaceVMsOnVirtualWire3']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+            - ['PoweronVM3','PoweronVM6','PoweronVM9','PoweronVM12']
+            - ['NetperfTestVirtualWire1']
+            - ['NetperfTestVirtualWire2']
+            - ['NetperfTestVirtualWire3']
+
+            # step 4: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 5: TOR functions verification
+            - ['NetperfTestVirtualWire1WithTORAttachment']
+            - ['NetperfTestVirtualWire2WithTORAttachment']
+
+            # step 6: reboot CCP and check current traffic not affected
+            - ['RebootController']
+            - ['NetperfTestVirtualWire1WithTORAttachment']
+            - ['NetperfTestVirtualWire2WithTORAttachment']
+
+        ExitSequence:
+            # first add back controller 2 and controller 3
+            - ['DeployController2']
+            - ['DeployController3']
+
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteVM3Vnic1', 'DeleteVM6Vnic1', 'DeleteVM9Vnic1', 'DeleteVM12Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        DeleteController2: *DELETE_CONTROLLER_2
+        DeleteController3: *DELETE_CONTROLLER_3
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM3: *POWER_ON_VM3
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM6: *POWER_ON_VM6
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM9: *POWER_ON_VM9
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        PoweronVM12: *POWER_ON_VM12
+        AddToPTEPCluster: *ADD_3_PTEPS_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        RebootController: *REBOOT_CONTROLLER_1
+        DeployController2: *CONTROLLER_2
+        DeployController3: *CONTROLLER_3
+        NetperfTestVirtualWire1: *NETPERF_TEST_VIRTUAL_WIRE_1
+        NetperfTestVirtualWire2: *NETPERF_TEST_VIRTUAL_WIRE_2
+        NetperfTestVirtualWire3: *NETPERF_TEST_VIRTUAL_WIRE_3
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM3Vnic1: *DELETE_VM3_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM6Vnic1: *DELETE_VM6_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM9Vnic1: *DELETE_VM9_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteVM12Vnic1: *DELETE_VM12_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        NetperfTestVirtualWire1WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "iperf"
+          L4Protocol:      "tcp"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "30"
+
+        NetperfTestVirtualWire2WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "iperf"
+          L4Protocol:      "udp"
+          udpbandwidth:    *UDP_TRAFFIC_BANDWIDTH
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "30"
+
+SinglePtepDown:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "PTEP"
+    TestName:  "SinglePtepDown"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Verify PTEP cluster only has one PTEP, after PTEP down,
+        verify the existing traffic not affected. But BUM traffic will not works.
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['NetperfTestVirtualWire1WithTORAttachment']
+            - ['NetperfTestVirtualWire2WithTORAttachment']
+
+            # step 5: we cannot shutdown PTEP since it is a host, but we can do it
+            # by restarting it and send traffic in parallel, we can send traffic
+            # during PTEP recover to simulate the shutdown behaviour
+            # check current traffic not affected
+            - ['RebootPTEP', 'NetperfTestVirtualWire1WithTORAttachment']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        AddToPTEPCluster: *ADD_1_PTEP_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        RebootPTEP: *REBOOT_PTEP_4
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_1_PTEP_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        NetperfTestVirtualWire1WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "iperf"
+          L4Protocol:      "tcp"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "30"
+
+        NetperfTestVirtualWire2WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "iperf"
+          L4Protocol:      "udp"
+          udpbandwidth:    *UDP_TRAFFIC_BANDWIDTH
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "30"
+
+        NetperfTestVirtualWire1DuringPtepReboot:
+          Type:            "Traffic"
+          toolName:        "iperf"
+          L4Protocol:      "tcp"
+          TestAdapter:     "torgateway.[1].pif.[3],torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1]"
+          TestDuration:    "120"
+
+SinglePtepRestart:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Component: "PTEP"
+    TestName:  "SinglePtepRestart"
+    Developer: "mqing"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2
+    Summary: |
+        Verify PTEP cluster only has one PTEP, after PTEP restart,
+        all functionality still works.
+    WORKLOADS:
+        Sequence:
+            # step 1: setup TOR simulators
+            - ['SetupTORSimulator']
+            - ['CreateTOROnVSM']
+            - ['TORGatewaySetController']
+            - ["VerifyTORsConnected"]
+
+            # step 2: legacy virtualwires setup
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PoweronVM1','PoweronVM4','PoweronVM7','PoweronVM10']
+            - ['PoweronVM2','PoweronVM5','PoweronVM8','PoweronVM11']
+
+            # step 3: configure TOR gateway related
+            - ['AddToPTEPCluster']
+            - ['CreateTORBinding']
+            - ['CreateTORAttachmentToVirtualWire1']
+            - ['CreateTORAttachmentToVirtualWire2']
+
+            # step 4: TOR functions verification
+            - ['NetperfTestVirtualWire1WithTORAttachment']
+            - ['NetperfTestVirtualWire2WithTORAttachment']
+
+            # step 5: reboot PTEP and check current traffic not affected
+            - ['RebootPTEP']
+            - ['NetperfTestVirtualWire1WithTORAttachment']
+            - ['NetperfTestVirtualWire2WithTORAttachment']
+
+            # step 6: verify BUM traffic still works for PTEP
+            - ['VirtualWire1BroadcastTrafficWithTORAttachment']
+            - ['VirtualWire2MulticastTrafficWithTORAttachment']
+            - ['VirtualWire2UnknownUnicastTrafficWithTORAttachment']
+
+        ExitSequence:
+            - ['DeleteVirtualWire1TORAttachment']
+            - ['DeleteVirtualWire2TORAttachment']
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+
+            - ['CleanupTORSimulator']
+            - ['PoweroffVMs']
+            - ['DeleteVM1Vnic1', 'DeleteVM4Vnic1', 'DeleteVM7Vnic1', 'DeleteVM10Vnic1']
+            - ['DeleteVM2Vnic1', 'DeleteVM5Vnic1', 'DeleteVM8Vnic1', 'DeleteVM11Vnic1']
+            - ['DeleteAllVirtualWires']
+
+        SetupTORSimulator: *SETUP_TOR_SIMUATOR_2_GATEWAYS
+        TORGatewaySetController: *TOR_GATEWAY_SET_CONTROLLER
+        VerifyTORsConnected: *VERIFY_2_TOR_INSTANCES_CONNECTED
+        CreateVirtualWires: *CREATE_VIRTUALWIRES
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PlaceVMsOnVirtualWire3: *PLACE_VMS_ON_VIRTUAL_WIRE_3
+        PoweronVM1: *POWER_ON_VM1
+        PoweronVM2: *POWER_ON_VM2
+        PoweronVM4: *POWER_ON_VM4
+        PoweronVM5: *POWER_ON_VM5
+        PoweronVM7: *POWER_ON_VM7
+        PoweronVM8: *POWER_ON_VM8
+        PoweronVM10: *POWER_ON_VM10
+        PoweronVM11: *POWER_ON_VM11
+        AddToPTEPCluster: *ADD_1_PTEP_TO_CLUSTER
+        CreateTOROnVSM: *CREATE_2_TOR_ON_VSM
+        CreateTORBinding: *CREATE_4_TOR_BINDINGS
+        CreateTORAttachmentToVirtualWire1: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+        CreateTORAttachmentToVirtualWire2: *CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+        RebootPTEP: *REBOOT_PTEP_4
+        DeleteVirtualWire1TORAttachment: *DELETE_VWIRE1_2_TOR_ATTACHMENTS
+        DeleteVirtualWire2TORAttachment: *DELETE_VWIRE2_2_TOR_ATTACHMENTS
+        DeleteTOR: *DELETE_TOR_ON_VSM
+        RemoveFromPTEPCluster: *REMOVE_1_PTEP_FROM_PTEP_CLUSTER
+        CleanupTORSimulator: *CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+        PoweroffVMs: *POWER_OFF_VMS
+        DeleteVM1Vnic1: *DELETE_VM1_VNIC1
+        DeleteVM2Vnic1: *DELETE_VM2_VNIC1
+        DeleteVM4Vnic1: *DELETE_VM4_VNIC1
+        DeleteVM5Vnic1: *DELETE_VM5_VNIC1
+        DeleteVM7Vnic1: *DELETE_VM7_VNIC1
+        DeleteVM8Vnic1: *DELETE_VM8_VNIC1
+        DeleteVM10Vnic1: *DELETE_VM10_VNIC1
+        DeleteVM11Vnic1: *DELETE_VM11_VNIC1
+        DeleteAllVirtualWires: *DELETE_ALL_VIRTUALWIRES
+
+        NetperfTestVirtualWire1WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "iperf"
+          L4Protocol:      "tcp"
+          TestAdapter:     "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+          SupportAdapter:  "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+          TestDuration:    "30"
+
+        NetperfTestVirtualWire2WithTORAttachment:
+          Type:            "Traffic"
+          toolName:        "iperf"
+          L4Protocol:      "udp"
+          udpbandwidth:    *UDP_TRAFFIC_BANDWIDTH
+          TestAdapter:     "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+          SupportAdapter:  "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+          TestDuration:    "30"
+
+        VirtualWire1BroadcastTrafficWithTORAttachment:
+           Type:           "Traffic"
+           toolname:       "ping"
+           Routingscheme:  "broadcast"
+           TestAdapter:    "torgateway.[1].pif.[3],
+                            torgateway.[2].pif.[3]"
+           SupportAdapter: "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1],vm.[10].vnic.[1]"
+           TestDuration:   "30"
+
+        VirtualWire2MulticastTrafficWithTORAttachment:
+           Type:           "Traffic"
+           RoutingScheme:  "Multicast"
+           L3Protocol:     "ipv4"
+           udpbandwidth:   *UDP_TRAFFIC_BANDWIDTH
+           TestAdapter:    "torgateway.[1].pif.[4],
+                            torgateway.[2].pif.[4]"
+           SupportAdapter: "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1],vm.[11].vnic.[1]"
+           TestDuration:   "60"
+
+        VirtualWire2UnknownUnicastTrafficWithTORAttachment:
+           Type: 'Traffic'
+           toolName: 'scapy'
+           TestAdapter:     "torgateway.[1].pif.[4],
+                             torgateway.[2].pif.[4]"
+           SupportAdapter:  "vm.[2].vnic.[1]"
+           protocol: 'arp'
+           DestinationAddress: '192.168.1.255'
+           interval: *SCAPY_INTERVAL
+           pktcount: 1
+           connectivitytest: '0'

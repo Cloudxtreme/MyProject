@@ -1,0 +1,47 @@
+
+template_esx_1vmnic: &template_esx_1vmnic
+            vmnic:
+                '[1]':
+                    driver: any
+            configure_package:
+               execution_type: cli
+               operation: install
+               maintenance: 1
+               signaturecheck: 0
+
+template_esx_2vmnic: &template_esx_2vmnic
+            vmnic:
+                '[1-2]':
+                    driver: any
+            configure_package:
+               execution_type: cli
+               operation: install
+               maintenance: 1
+               signaturecheck: 0
+
+template_kvm_1pif_1bridge: &template_kvm_1pif_1bridge
+            pif:
+                '[1]':
+                    persist_configuration:
+                        bootproto: 'none'
+                        onboot: 'yes'
+            framework_setup:
+                - disablefirewall
+                - createanchor
+                - copysshkey
+            configure_package:
+               execution_type: cmd
+               operation: install
+            bridge:
+                '[1]':
+                    name: nsxvswitch
+                    switch_fail_mode: secure
+                    external_id:
+                        bridge-id: nsx-managed
+
+template_vm_kvm_deploy: &template_vm_kvm_deploy
+            template: template_kvm_debian
+            installtype: fullclone
+
+template_vm_esx_deploy: &template_vm_esx_deploy
+            template: rhel53-srv-32

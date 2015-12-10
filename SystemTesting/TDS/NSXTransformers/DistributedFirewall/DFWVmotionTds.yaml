@@ -1,0 +1,198 @@
+!include ../L2/esx/CommonWorkloads.yaml
+!include ../L2/esx/TestbedSpec.yaml
+!include ../L2/Vmotion/esx/TopoSetup.yaml
+
+tds_template: &tds_template
+    AutomationLevel: Automated
+    Category: DistributedFirewall
+    SubRelease: Bumblebee
+    Component: KernelModules
+    Developer: mbindal
+    Duration: 3600
+    ExpectedResult: PASS
+    FullyAutomatable: Y
+    PartnerFacing: N
+    PMT: null
+    Procedure: null
+    Product: NSXTransformers
+    QCPath: ESX
+    Status: Execution Ready
+    TCMSId: null
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Version: 2
+
+p0_template: &p0_template
+    <<: *tds_template
+    Priority: P0
+
+p1_template: &p1_template
+    <<: *tds_template
+    Priority: P1
+
+DFWVmotion:
+    <<: *p0_template
+    TestbedSpec: *VMOTION_TOPOLOGY_1--ESX
+    TestName: "Vmotion"
+    Summary: "Vmotion a VM from one host to another and test DFW rules"
+    WORKLOADS:
+        <<: *TOPO_SETUP_COMMON
+        Sequence:
+            - - TopoSetup_3MP_3CCP
+            - - TopoSetup_LS--ESX
+            - - TopoSetup_Vmotion--ESX
+            - - TrafficVm5ToVm1
+              - TrafficVm6ToVm1
+            - - CreateStateful_L3DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockTCPTraffic_LS1_LS2_Insert_Top
+            - - Vm1VmotionToHost2AndBack
+              - TrafficVm5ToVm1Fail
+            - - CreateDFWRuleAllowTCPTraffic_LS1_LS2_Insert_Top
+            - - Vm2VmotionToHost2AndBack
+              - TrafficVm6ToVm2
+            - - Vm1VmotionToHost4AndBack
+              - TrafficVm5ToVm1
+            - - DeleteDFWRule2
+            - - Vm2VmotionToHost4AndBack
+              - TrafficVm6ToVm2Fail
+            - - Vm1VmotionToHost2LS2
+            - - TrafficVm6ToVm1Fail
+            - - CreateDFWRuleAllowTCPTraffic_LS1_LS2_Insert_Top
+            - - Vm1VmotionToHost1LS1
+            - - TrafficVm5ToVm1
+            - - Vm2VmotionToHost2LS1
+            - - TrafficVm5ToVm2
+            - - DeleteDFWRule2
+            - - Vm2VmotionToHost1LS2
+            - - TrafficVm6ToVm2Fail
+            - - DeleteDFWSection1withRules
+
+        ExitSequence:
+            - - TopoCleanup_Vmotion--ESX
+            - - TopoCleanup_LS--ESX
+        CreateStateful_L3DFWSection_Empty_Position_Bottom:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            dfwsection:
+                '[1]':
+                    sectionname: autogenerate
+                    layer: 'LAYER3'
+                    stateful: 'true'
+        CreateDFWRuleBlockTCPTraffic_LS1_LS2_Insert_Top:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            firewallrule:
+                '[1]':
+                        name: autogenerate
+                        section_id: "nsxmanager.[1].dfwsection.[1]->id"
+                        action: 'REJECT'
+                        direction: 'IN_OUT'
+                        operation: 'insert_top'
+                        service_affected:
+                          - service:
+                               resource_type: "L4PortSetNSService"
+                               l4_protocol: "TCP"
+                               source_ports: ["4000", "4000-5000", "6000"]
+                               destination_ports: ["7000", "7000-8000", "4444"]
+                        applied_tos:
+                           - logical_entity: 'LogicalSwitch'
+                             node_id: 'nsxmanager.[1].logicalswitch.[1]->id'
+                           - logical_entity: 'LogicalSwitch'
+                             node_id: 'nsxmanager.[1].logicalswitch.[2]->id'
+        CreateDFWRuleAllowTCPTraffic_LS1_LS2_Insert_Top:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            firewallrule:
+                '[1]':
+                        name: autogenerate
+                        section_id: "nsxmanager.[1].dfwsection.[1]->id"
+                        action: 'Allow'
+                        direction: 'IN_OUT'
+                        operation: 'insert_top'
+                        service_affected:
+                          - service:
+                               resource_type: "L4PortSetNSService"
+                               l4_protocol: "TCP"
+                               source_ports: ["4000", "4000-5000", "6000"]
+                               destination_ports: ["7000", "7000-8000", "4444"]
+                        applied_tos:
+                           - logical_entity: 'LogicalSwitch'
+                             node_id: 'nsxmanager.[1].logicalswitch.[1]->id'
+                           - logical_entity: 'LogicalSwitch'
+                             node_id: 'nsxmanager.[1].logicalswitch.[2]->id'
+        TrafficVm6ToVm2: &TrafficVm6ToVm2
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            sendmessagesize : "1000"
+            TestAdapter   : "vm.[6].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+            NoofOutbound  : "1"
+            NoofInbound   : "1"
+            TestDuration  : "10"
+            PortNumber    : "7001"
+            ClientPort    : "4002"
+        TrafficVm6ToVm2Fail:
+            <<: *TrafficVm6ToVm2
+            Expectedresult: "FAIL"
+        TrafficVm6ToVm1Fail:
+            <<: *TrafficVm6ToVm2
+            TestAdapter   : "vm.[6].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            Expectedresult: "FAIL"
+        TrafficVm6ToVm1:
+            <<: *TrafficVm6ToVm2
+            TestAdapter   : "vm.[6].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+        TrafficVm5ToVm1Fail:
+            <<: *TrafficVm6ToVm2
+            TestAdapter   : "vm.[5].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            Expectedresult: "FAIL"
+        TrafficVm5ToVm1:
+            <<: *TrafficVm6ToVm2
+            TestAdapter   : "vm.[5].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+        TrafficVm5ToVm2Fail:
+            <<: *TrafficVm6ToVm2
+            TestAdapter   : "vm.[5].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+            Expectedresult: "FAIL"
+        TrafficVm5ToVm2:
+            <<: *TrafficVm6ToVm2
+            TestAdapter   : "vm.[5].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+        DeleteDFWRule2:
+            Type: "Service"
+            TestService: "nsxmanager.[1].firewallrule.[2]"
+            delete_rule:
+               section_id: "nsxmanager.[1].dfwsection.[1]->id"
+        DeleteDFWSection1withRules:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletedfwsection: "nsxmanager.[1].dfwsection.[1]"
+        Vm2VmotionToHost2LS1:
+            Type: VM
+            TestVM: vm.[2]
+            dsthost: esx.[2]
+            staytime: '10'
+            vmotion: 'xvmotion'
+            portgroup: 'nsxmanager.[1].logicalswitch.[1]'
+            priority:   'high'
+        Vm2VmotionToHost4AndBack:
+            Type: VM
+            TestVM: vm.[2]
+            Iterations: '3'
+            vmotion: 'roundtrip'
+            dsthost: esx.[4]
+            staytime: '10'
+            priority:   'high'
+        Vm2VmotionToHost2AndBack:
+            Type: VM
+            TestVM: vm.[2]
+            Iterations: '3'
+            vmotion: 'roundtrip'
+            dsthost: esx.[2]
+            staytime: '10'
+            priority:   'high'

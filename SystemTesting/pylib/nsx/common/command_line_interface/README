@@ -1,0 +1,43 @@
+CLI Verfication design
+
+For this command
+nvp-controller #  show control-cluster logical-switches arp-table 5388
+VNI      IP                     MAC                         Connection-ID
+5388    172.31.1.25     00:50:56:9f:36:e6     9
+5388    172.31.1.15     00:50:56:9f:6b:e4     10
+
+We will have two components:
+1) command_line_interface_client.py = client for cli implementing all methods to get, put etc based on connection class (which will have ssh in it)
+2) command_schema.py
+
+
+
+Directly jumping on to example based on this design:
+
+file name - logical_switches_arp_table_schema.py
+file location - NOT SURE, Let me know. (My guess is pylib/nsx/vsm/vxlan_controller/logical_switches_arp_table.py)
+endpoint is -  "show control-cluster logical-switches arp-table" . VNI
+schema class will have these attributes
+1) vni = None
+2) ip = None
+3) mac = None
+4) connection-id = None
+5) schema_element_order(class variable unlike vni,mac,ip which are object variables) = [vni ip mac connection-id]
+6) schema_parse(class variable) = select the parse which will parse this stdout and fill the class attributes with values
+
+How is this design easy to maintain when CLIs change
+- If order of stdout changes from
+VNI      IP                     MAC                         Connection-ID
+VNI      MAC                     IP                         Connection-ID
+Just change the order in array "schema_element_order"
+- If an element is added or removed, then same solution as above.
+- If stdout changes to
+VNI                     5388
+IP                      172.31.1.25
+MAC                     00:50:56:9f:36:e6
+Connection-ID           9
+Select a different parser with "schema_parse = " and everything should work after that.
+- If the cli is deprecated and data is made available through REST, then we still keep the schema intact
+and just change the client
+
+

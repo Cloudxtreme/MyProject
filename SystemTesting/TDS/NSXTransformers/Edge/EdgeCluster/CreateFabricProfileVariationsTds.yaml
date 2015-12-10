@@ -1,0 +1,185 @@
+TestFabricProfileOperations:
+    Product: "NSXTransformers"
+    Category: "Edge"
+    Component: "Cluster"
+    TestName: "Test CRUD operation for Fabric Profile"
+    Version: "2"
+    Summary: "Verify CRUD operations for Fabric Profile"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: TBD
+    Priority: "P0"
+    Developer: "sarkars"
+    QCPath: "/NSXTransformers/EDGE/Clustering"
+    Procedure: '
+                1. Create Fabric Profile1 with valid resource_type, hello_interval and declare_dead_timer
+                2. Create Fabric Profile2 with hello_interval (10000) < declare_dead_timer (15000) (not a multiple)
+ 		     "error_message" : "Declare_dead_timer should be a multiple of hello_interval"
+                3. Create Fabric Profile3 with hello_interval (20000) = declare_dead_timer (20000)
+                4. Create Fabric Profile4 with hello_interval (75000) >= declare_dead_timer (70000)
+                   "error_message: "Field level validation errors: {value [75,000] of property hello_interval has exceeded its maximum valid value}"
+                5. Create Fabric Profile5 with declare_dead_timer (5000) less than 6 seconds
+                   "error_message" : "Field level validation errors: {value [5,000] of property declare_dead_timer has violated the minimum valid value constraint}"
+                6. Create Fabric Profile6 with missing resource_type
+                   "error_message" : "Could not read JSON: Unexpected token (END_OBJECT), expected FIELD_NAME: missing property resource_type"
+                7. Create Fabric Profile7 with missing hello_interval
+                8. Create Fabric Profile8 with missing declare_dead_timer
+                9. Delete all Fabric Profiles'
+    ExpectedResult: 'CRD operation should be successful for Fabric Profiles'
+    Duration: '5'
+    Tags: 'cat-01'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+
+    WORKLOADS:
+        # Many of these fabric profile creations are negative test cases; however since many validations are not present in the product level
+        # therefore these cases are passing in the test case. Once validations are in place we need to update these cases accordingly.
+        Sequence:
+            - ["CreateFabricProfile1", "CreateFabricProfile2", "CreateFabricProfile3", "CreateFabricProfile4", "CreateFabricProfile5", "CreateFabricProfile6", "CreateFabricProfile7", "CreateFabricProfile8"]
+            - ["ReadFabricProfile1", "ReadFabricProfile3", "ReadFabricProfile7", "ReadFabricProfile8"]
+        ExitSequence:
+            - ["DeleteFabricProfiles"]
+
+        CreateFabricProfile1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            fabricprofile:
+                '[1]':
+                    name: 'Fabric_Profile_1'
+                    summary: "Fabric Profile created through automation"
+                    resource_type: "FabricProfileClusterKeepAlive"
+                    hello_interval: 1000
+                    declare_dead_timer: 6000
+
+        ReadFabricProfile1:
+            Type: "Gateway"
+            TestGateway: 'nsxmanager.[1].fabricprofile.[1]'
+            read:
+              'name[?]defined': 'Fabric_Profile_1'
+              'summary[?]equal_to': "Fabric Profile created through automation"
+              'id_[?]equal_to': 'nsxmanager.[1].fabricprofile.[1]'
+              'resource_type[?]equal_to': "FabricProfileClusterKeepAlive"
+              'hello_interval[?]equal_to': 1000
+              'declare_dead_timer[?]equal_to': 6000
+
+        CreateFabricProfile2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            fabricprofile:
+                '[2]':
+                    name: 'Fabric_Profile_2'
+                    summary: "Fabric Profile created through automation"
+                    resource_type: "FabricProfileClusterKeepAlive"
+                    hello_interval: 10000
+                    declare_dead_timer: 15000
+
+        CreateFabricProfile3:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            fabricprofile:
+                '[3]':
+                    name: 'Fabric_Profile_3'
+                    summary: "Fabric Profile created through automation"
+                    resource_type: "FabricProfileClusterKeepAlive"
+                    hello_interval: 20000
+                    declare_dead_timer: 20000
+
+        ReadFabricProfile3:
+            Type: "Gateway"
+            TestGateway: 'nsxmanager.[1].fabricprofile.[3]'
+            read:
+              'name[?]defined': 'Fabric_Profile_3'
+              'summary[?]equal_to': "Fabric Profile created through automation"
+              'id_[?]equal_to': 'nsxmanager.[1].fabricprofile.[3]'
+              'resource_type[?]equal_to': "FabricProfileClusterKeepAlive"
+              'hello_interval[?]equal_to': 20000
+              'declare_dead_timer[?]equal_to': 20000
+
+        CreateFabricProfile4:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            fabricprofile:
+                '[4]':
+                    name: 'Fabric_Profile_4'
+                    summary: "Fabric Profile created through automation"
+                    resource_type: "FabricProfileClusterKeepAlive"
+                    hello_interval: 75000
+                    declare_dead_timer: 70000
+
+        CreateFabricProfile5:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            fabricprofile:
+                '[5]':
+                    name: 'Fabric_Profile_5'
+                    summary: "Fabric Profile created through automation"
+                    resource_type: "FabricProfileClusterKeepAlive"
+                    hello_interval: 1000
+                    declare_dead_timer: 5000
+
+        CreateFabricProfile6:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            fabricprofile:
+                '[6]':
+                    name: 'Fabric_Profile_6'
+                    summary: "Fabric Profile created through automation"
+                    hello_interval: 1000
+                    declare_dead_timer: 60000
+
+        CreateFabricProfile7:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            fabricprofile:
+                '[7]':
+                    name: 'Fabric_Profile_7'
+                    summary: "Fabric Profile created through automation"
+                    resource_type: "FabricProfileClusterKeepAlive"
+                    hello_interval: 5000
+
+        ReadFabricProfile7:
+            Type: "Gateway"
+            TestGateway: 'nsxmanager.[1].fabricprofile.[7]'
+            read:
+              'name[?]defined': 'Fabric_Profile_8'
+              'summary[?]equal_to': "Fabric Profile created through automation"
+              'id_[?]equal_to': 'nsxmanager.[1].fabricprofile.[7]'
+              'resource_type[?]equal_to': "FabricProfileClusterKeepAlive"
+              'hello_interval[?]equal_to': 5000
+
+        CreateFabricProfile8:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            fabricprofile:
+                '[8]':
+                    name: 'Fabric_Profile_8'
+                    summary: "Fabric Profile created through automation"
+                    resource_type: "FabricProfileClusterKeepAlive"
+                    declare_dead_timer: 60000
+
+        ReadFabricProfile8:
+            Type: "Gateway"
+            TestGateway: 'nsxmanager.[1].fabricprofile.[8]'
+            read:
+              'name[?]defined': 'Fabric_Profile_8'
+              'summary[?]equal_to': "Fabric Profile created through automation"
+              'id_[?]equal_to': 'nsxmanager.[1].fabricprofile.[8]'
+              'resource_type[?]equal_to': "FabricProfileClusterKeepAlive"
+              'declare_dead_timer[?]equal_to': 60000
+
+        DeleteFabricProfiles: *DELETE_FABRIC_PROFILE

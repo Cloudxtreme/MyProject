@@ -1,0 +1,373 @@
+Workloads:
+    CreateTransportZone: &CREATE_TRANSPORT_ZONE_01--ESX
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[1]':
+                name: autogenerate
+                transport_zone_type: 'OVERLAY' # or VLAN, both case-senstive
+                switch_name: 'nsxvswitch'
+
+    CreateTransportNodes:
+        ESX: &CREATE_TRANSPORT_NODE_01--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[1]':
+                    node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                    host_switches:
+                          - switch_name: 'nsxvswitch'
+                            host_switch_profile_ids:
+                               - key: 'UplinkHostSwitchProfile'
+                                 value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                            uplinks:
+                               - device_name: 'vmnic1'
+                                 adapter_name: 'uplink1'
+                            vteps:
+                               - device_name: 'vmk10'
+                                 ip:
+                                    ip_address: ''
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+    CreateUplinkProfile:
+        ESX: &CREATE_UPLINK_PROFILE_01--ESX
+           Type: 'NSX'
+           TestNSX: 'nsxmanager.[1]'
+           UplinkProfile:
+               '[1]':
+                   mtu: 1600
+                   teaming:
+                       active:
+                           - adapter_name: 'uplink1'
+                             adapter_type: 'PNIC'
+                       policy: 'FAILOVER_ORDER'
+                   vlan: '0'
+                   resource_type: 'UplinkHostSwitchProfile'
+
+    CreateLogicalSwitch: &CREATE_LOGICAL_SWITCH_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1]':
+                name: 'ls-demo'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                # replication_mode's value is case sensitive
+                replication_mode: MTEP # source
+
+    Create2LogicalSwitches: &CREATE_2_LOGICAL_SWITCHES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1]':
+                name: 'LogicalSwitch-01'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                # replication_mode's value is case sensitive
+                replication_mode: MTEP # source
+            '[2]':
+                name: 'LogicalSwitch-02'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                # replication_mode's value is case sensitive
+                replication_mode: MTEP # source
+
+    CleanupNSX: &CLEAN_NSX
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletetransportzone: "nsxmanager.[1].transportzone.[-1]"
+        deletetransportnode: "nsxmanager.[1].transportnode.[-1]"
+        deleteuplinkprofile: "nsxmanager.[1].uplinkprofile.[-1]"
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[-1]"
+        deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[-1]"
+        deletelogicalrouter: "nsxmanager.[1].logicalrouter.[-1]"
+
+    VIF_ATTACHMENT_VM1:
+        ESX: &VIF_ATTACHMENT_VM1--ESX
+            Type: VM
+            TestVM: 'vm.[1]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: "nsxmanager.[1].logicalswitch.[1]"
+                   connected: 1
+                   startconnected: 1
+
+    VIF_ATTACHMENT_VM2:
+        ESX: &VIF_ATTACHMENT_VM2--ESX
+            Type: VM
+            TestVM: 'vm.[2]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: "nsxmanager.[1].logicalswitch.[2]"
+                   connected: 1
+                   startconnected: 1
+
+    RealizeLogicalports: &REALIZE_LOGICALPORTS
+         Type: NSX
+         TestNSX: nsxmanager.[1]
+         logicalport:
+             '[1]':
+                 discover: true
+                 vif: 'vm.[1].vnic.[1]'
+
+    CreateLogicalRouter: &CREATE_LOGICALROUTER
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         sleepbetweenworkloads: "10"
+         logicalrouter:
+             '[1]':
+                 name: 'lrouter-1'
+                 summary: "LRouter created through automation"
+                 # TLR only topology, for PLR it's TIER0
+                 router_type: "TIER1"
+
+    Create2LRPorts: &CREATE_2_LRPORTS
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         logicalrouterport:
+             '[1]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-1'
+                 summary: "LRPort1 created through automation"
+                 linked_switch_port_id: nsxmanager.[1].logicalport.[3]->id
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                         - '192.168.1.1'
+             '[2]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-2'
+                 summary: "LRPort2 created through automation"
+                 linked_switch_port_id: nsxmanager.[1].logicalport.[4]->id
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                          - '192.168.2.1'
+
+    CreateLogicalPorts: &CREATE_LPORTS
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[3]':
+                switch_id: nsxmanager.[1].logicalswitch.[1]
+                name: 'lport-3'
+                admin_state: UP
+                attachment:
+                   attachment_type: 'logicalrouter'
+                   id: ''
+            '[4]':
+                switch_id: nsxmanager.[1].logicalswitch.[2]
+                name: 'lport-4'
+                admin_state: UP
+                attachment:
+                   attachment_type: 'logicalrouter'
+                   id: ''
+
+    DeleteUplinkProfile: &DELETE_UPLINK_PROFILE_01--ESX
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       deleteuplinkprofile: 'nsxmanager.[1].uplinkprofile.[1]'
+
+    DeleteTransportNode: &DELETE_TRANSPORT_NODE_01--ESX
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletetransportnode: 'nsxmanager.[1].transportnode.[1]'
+
+    DeleteTransportZone: &DELETE_TRANSPORT_ZONE_01--ESX
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletetransportzone: 'nsxmanager.[1].transportzone.[1]'
+
+    DeleteLogicalPort: &DELETE_LOGICAL_PORT_01
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+
+    DeleteLogicalSwitch: &DELETE_LOGICAL_SWITCH_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[-1]'
+
+    DeleteLogicalRouter: &DELETE_LOGICAL_ROUTER_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletelogicalrouter: "nsxmanager.[1].logicalrouter.[-1]"
+
+    DeleteLogicalRouterPort: &DELETE_LOGICAL_ROUTER_PORT_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[-1]"
+
+    DeleteLogicalRouterUplinkPort: &DELETE_LOGICAL_ROUTER_UPLINK_PORT
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletelogicalrouteruplinkport: "nsxmanager.[1].logicalrouteruplinkport.[-1]"
+
+    DeleteEdgeCluster: &DELETE_EDGE_CLUSTER
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        deleteedgecluster: "nsxmanager.[1].edgecluster.[-1]"
+
+    DeleteFabricProfile: &DELETE_FABRIC_PROFILE
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        deletefabricprofile: "nsxmanager.[1].fabricprofile.[-1]"
+
+    DeleteEdgeNode: &DELETE_EDGE_NODE
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        deleteedgenode: "nsxmanager.[1].edgenode.[-1]"
+
+    # create a logical switch for Tier0
+    CreateLogicalSwitch1ForTIER0: &CREATE_LOGICAL_SWITCH_01_TIER0
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1]':
+                name: 'Tier0-Logical-Switch-1'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                # replication_mode's value is case sensitive
+                replication_mode: MTEP # source
+
+    CreateLogicalSwitch2ForTIER0: &CREATE_LOGICAL_SWITCH_02_TIER0
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[2]':
+                name: 'Tier0-Logical-Switch-2'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                # replication_mode's value is case sensitive
+                replication_mode: MTEP # source
+
+    # create 2 logical port on switch 1 for uplink for tier0
+    CreateLogicalPortForUplinkForTIER0: &CREATE_LOGICAL_PORT_FOR_UPLINK_TIER0
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[1]':
+                switch_id: nsxmanager.[1].logicalswitch.[1]
+                name: 'TIER0-LogicalPort-1-For-uplink'
+                admin_state: UP
+            '[2]':
+                switch_id: nsxmanager.[1].logicalswitch.[1]
+                name: 'TIER0-LogicalPort-2-For-uplink'
+                admin_state: UP
+
+    CreateLogicalPortForDownlinkForTIER0: &CREATE_LOGICAL_PORT_FOR_DOWNLINK_TIER0
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[3]':
+                switch_id: nsxmanager.[1].logicalswitch.[2]
+                name: 'TIER0-LogicalPort-3-For-downlink'
+                admin_state: UP
+
+    CreateTIER0LogicalRouterForEdge: &CREATE_LOGICAL_ROUTER_TIER0
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        sleepbetweenworkloads: "10"
+        logicalrouter:
+            '[1]':
+                name: 'lrouter-tier-0'
+                summary: "LRouter TIER-0 router"
+                # TLR only topology, for PLR it's TIER0
+                router_type: "TIER0"
+                cluster_id: 'nsxmanager.[1].edgecluster.[1]'
+
+    CreateDownlinkLogicalRouterPortForEdge: &CREATE_DOWNLINK_LOGICAL_ROUTER_PORT
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        logicalrouterport:
+            '[1]':
+                logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                name: 'TIER0-LRPort-2-Downlinkport'
+                summary: "LRPort Downlink Port1 created through automation"
+                linked_switch_port_id: nsxmanager.[1].logicalport.[3]->id
+                resource_type: "LogicalRouterDownLinkPort"
+                subnets:
+                   - prefixlen: 24
+                     ip_addresses:
+                         - '192.168.60.1'
+
+    CreateUplinkLogicalRouterPortForEdge: &CREATE_UPLINK_LOGICAL_ROUTER_PORT
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        logicalrouteruplinkport:
+            '[1]':
+                logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                name: 'TIER0-LRPort-1-UPLINKPORT'
+                summary: "TIER0 LRPort Uplink Port1 created through automation"
+                linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+                resource_type: "LogicalRouterUpLinkPort"
+                gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[1]->member_index'
+                subnets:
+                   - prefixlen: 24
+                     ip_addresses:
+                         - '192.168.50.1'
+
+    CreateFabricProfile: &CREATE_FABRIC_PROFILE
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        fabricprofile:
+            '[1]':
+                name: 'Fabric_Profile_1'
+                summary: "Fabric Profile created through automation"
+                resource_type: "FabricProfileClusterKeepAlive"
+                hello_interval: 3000
+                declare_dead_timer: 15000
+
+    DiscoverEdgeNodeId: &DISCOVER_EDGE_NODE_ID
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        edgenode:
+            '[1]':
+                discover: 'true'
+                resource_type: "EdgeNode"
+                ipaddresses:
+                   - 'nsxedge.[1]->management_ip'
+
+    DiscoverHostnodes: &DISCOVER_HOST_NODES
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        hostnode:
+            '[1]':
+                discover: 'true'
+                ip_addresses: 'esx.[1]'
+
+    CreateEdgeClusterWithEdgeNode: &CREATE_EDGE_CLUSTER_WITH_EDGE_NODE
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        edgecluster:
+            '[1]':
+                name: 'Edge_Cluster_1'
+                summary: "Edge Cluster created through automation"
+                members:
+                  - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+                  #- edge_node_id: '07b0c421-9f23-46d4-aa50-e2a1216c8387'
+                  #- edge_node_id: 'e9a69289-c7d2-40e4-8838-59bfe9a436bd'
+                fabric_profile_bindings:
+                  - resource_type: "FabricProfileClusterKeepAlive"
+                    # enter the fabric_profile_id: uuid1
+                    fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+    UpdateStaticRoutes: &UPDATE_STATIC_ROUTES
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrstaticroutes:
+            '[1]':
+                staticroutes:
+                    - name: 'static-route-1'
+                      summary: 'Static route for 192.168.30.0/24'
+                      next_hops:
+                          - '192.168.50.253'
+                      network: '192.168.200.0/24'
+                      lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"

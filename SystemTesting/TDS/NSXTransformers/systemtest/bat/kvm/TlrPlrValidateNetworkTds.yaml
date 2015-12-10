@@ -1,0 +1,86 @@
+!include ../TestbedSpecKvm.yaml
+!include ../workload/WorkloadsCommon.yaml
+!include ../workload/WorkloadsHostIpRoute.yaml
+!include ../workload/WorkloadsHostKvm.yaml
+!include ../workload/WorkloadsHostVif.yaml
+!include ../workload/WorkloadsNetwork.yaml
+!include ../workload/WorkloadsJumbo.yaml
+!include ../workload/WorkloadsTraffic.yaml
+!include ../workload/WorkloadsAliasesKvm.yaml
+
+# 3rd in YAML file merge
+
+Validate:
+    AutomationLevel: Automated
+    Category: SystemTest
+    Component: BAT
+    Developer: jworsnup
+    ExpectedResult: pass
+    FullyAutomatable: Y
+    Priority: P0
+    Procedure:
+    -
+    -
+    Product: NSXTransformers
+    Summary: Testcase deploys testbed and verifies with various pings between VMs in network
+    Tags: nsx,avalanche
+    TestName: TdsTenantsLocalValidateNetworkEsxTds
+    TestcaseLevel: SystemTest
+    TestcaseType: SystemTest
+    Version: 2
+
+    TestbedSpec: *BAT_TESTBED_SPEC_KVM
+
+    WORKLOADS:
+        <<: *WorkloadsCommon
+        <<: *WorkloadsNetwork
+        <<: *WorkloadsTraffic
+        <<: *WorkloadsAliasesKvm
+        Sequence:
+
+#---------------------------------------
+# CREATE EDGE NETWORK
+#---------------------------------------
+
+          - [RegisterAllEdgeNodes]
+          - [DiscoverEdgeNodeId]
+          - [CreateFabricProfile]
+          - [CreateEdgeCluster]
+          - [CreateTier0LogicalRouterForEdge]
+          - [CreateUplinkLogicalRouterPortForEdge]
+          - [CreateRouterLinkPortOnTIER0Router]
+          - [CreateRouterLinkPortOnTIER1Router]
+          # XXX(dbadiani): In the final product, DiscoverEdgeVnics, AttachAllEdgeVnicstoUplinkLSes,
+          # DiscoverTransitLS and AttachEdgeVnicstoTransitLS will be done by MP.
+          # In the absence of this feature, we need to do it using VDNet.
+          - [SetTIER1RouteAdvertisement]
+          - [DiscoverEdgeVnics]
+          - [AttachAllEdgeVnicstoUplinkLSes]
+          - [DiscoverTransitLS]
+          - [AttachEdgeVnicstoTransitLS]
+
+#---------------------------------------
+# NETWORK VALIDATION
+#---------------------------------------
+
+          - [TrafficPingSrcKvm_13-1]
+
+#---------------------------------------
+# CLEANUP AND EXIT
+#---------------------------------------
+        ExitSequence:
+#          - [PowerOffAllVM]
+#          - [DeleteEdgenode]
+#          - [DeleteLogicalRouterPort]
+#          - [DeleteLogicalRouter]
+#          - [DeleteLogicalSwitch]
+#          - [DeleteVnic]
+#          - [DeleteUpinkProfile]
+#          - [DeleteFabricHost]
+#          - [DeleteTransportNode]
+#          - [DeleteTransportZone]
+
+          # - [DeleteManagerOnHost]
+
+# //++/++//////////////////////////////
+# last line is empty no spaces, nada, so yaml files join happens correctly

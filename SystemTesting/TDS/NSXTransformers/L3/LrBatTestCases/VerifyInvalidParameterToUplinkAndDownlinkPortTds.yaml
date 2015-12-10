@@ -1,0 +1,137 @@
+VerifyInvalidParameterToUplinkAndDownlinkPort:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "Edge"
+    TestName: "LR BAT Test case to Verify Downlink and uplink router port creation with Invalid param"
+    Summary: "LR BAT Test case to Verify Downlink and uplink router port creation with Invalid param"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: TBD
+    Priority: "P0"
+    Developer: "prodge"
+    QCPath: "/NSXTransformers/L3/LrBatTestCases"
+    Procedure: '
+                1. Discover the host nodes
+                2. Create Transport Zone
+                3. Create the uplink profile
+                4. Create the transportnodes
+                5. Create the Fabric Profile ID
+                6. Discover the Edge-node id
+                7. Create a Edge Cluster with EdgeNode added to it
+                5. Create Logical Switches for Tier0
+                6. Create Logical Ports for uplink and downlink
+                8. Create Tier0 logical router
+                9. Create Downlink logical router port with invalid param
+                10. Create uplink logical router port with invalid param
+                11. Clean up'
+
+    Duration: '5'
+    Tags: 'cat-01'
+    Partnerfacing: "N"
+    TestbedSpec: *PLR_TLR_TESTBED
+
+
+    WORKLOADS:
+        Sequence:
+             - ['DiscoverHostnodes']
+             - ['CreateTransportZone']
+             - ['CreateUplinkProfile']
+             - ['CreateTransportNodes']
+             - ["CreateFabricProfile"]
+             - ["DiscoverEdgeNodeId"]
+             - ["CreateEdgeClusterWithEdgeNode"]
+             - ["CreateLogicalSwitchForTIER0"]
+             - ["CreateLogicalPortForUplinkForTIER0"]
+             - ["CreateLogicalPortForDownlinkForTIER0"]
+             - ["CreateTIER0LogicalRouterForEdge"]
+             - ["CreateDownlinkLogicalRouterPortForEdge"]
+             - ["CreateUplinkLogicalRouterPortForEdge"]
+
+        ExitSequence:
+             - ['DeleteLogicalRouter']
+             - ['DeleteLogicalPort']
+             - ['DeleteLogicalSwitch']
+             - ['DeleteEdgeClusterWithEdgeNode']
+             - ['DeleteFabricProfile']
+             - ['DeleteTransportNode1']
+             - ['DeleteTransportNode2']
+             - ['DeleteUplinkProfile']
+             - ['DeleteTransportZone']
+
+        CleanUp: *CLEANUP_PLR_TLR_TESTBED
+        DiscoverHostnodes: *PLRTLR_DISCOVER_HOST_NODES
+        CreateTransportZone: *PLRTLR_CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *PLRTLR_CREATE_UPLINK_PROFILE_01--ESX
+        CreateTransportNodes: *PLRTLR_CREATE_TRANSPORT_NODE_01--ESX
+
+        DeleteTransportZone: *PLRTLR_DELETE_TRANSPORT_ZONE_01--ESX
+
+        DeleteUplinkProfile: *PLRTLR_DELETE_UPLINK_PROFILE_01--ESX
+
+        DeleteTransportNode1: *PLRTLR_DELETE_TRANSPORT_NODE_01--ESX
+
+        DeleteTransportNode2: *PLRTLR_DELETE_TRANSPORT_NODE_02--ESX
+
+        CreateFabricProfile: *PLRTLR_CREATE_FABRIC_PROFILE
+
+        DiscoverEdgeNodeId: *PLRTLR_DISCOVER_EDGE_NODE_ID
+
+        CreateEdgeClusterWithEdgeNode: *PLRTLR_CREATE_EDGE_CLUSTER
+
+        CreateLogicalSwitchForTIER0: *PLRTLR_CREATE_LOGICAL_SWITCH_FOR_TIER0
+
+        CreateLogicalPortForUplinkForTIER0: *PLRTLR_CREATE_LP_FOR_UPLINK_TIER0
+
+        CreateLogicalPortForDownlinkForTIER0: *PLRTLR_CREATE_LP_FOR_DOWNLINK_TIER0
+
+        CreateTIER0LogicalRouterForEdge: *PLRTLR_CREATE_TIER0_LR
+
+        CreateUplinkLogicalRouterPortForEdge: *PLRTLR_CREATE_UPLINK_LRP_FOR_TIER0
+
+
+        CreateDownlinkLogicalRouterPortForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            logicalrouterport:
+                '[3]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-2-Downlinkport'
+                    summary: "LRPort Downlink Port1 created through automation"
+                    linked_switch_port_id: 'abcd23562262'
+                    resource_type: "LogicalRouterDownLinkPort"
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.60.1'
+
+        CreateUplinkLogicalRouterPortForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            logicalrouteruplinkport:
+                '[1]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port1 created through automation"
+                    linked_switch_port_id: 'abcd23562262'
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[1]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.1'
+
+        DeleteEdgeClusterWithEdgeNode: *PLRTLR_DELETE_EDGE_CLUSTER
+        DeleteFabricProfile: *PLRTLR_DELETE_FABRIC_PROFILE
+        DeleteLogicalRouter: *PLRTLR_DELETE_LOGICAL_ROUTER
+        DeleteLogicalSwitch: *PLRTLR_DELETE_LOGICAL_SWITCH
+        DeleteLogicalPort: *PLRTLR_DELETE_LOGICAL_PORT
+

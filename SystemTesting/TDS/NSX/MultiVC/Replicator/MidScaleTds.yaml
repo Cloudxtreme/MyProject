@@ -1,0 +1,198 @@
+# ------------------------------------------------------------------------------
+# This TDS covers Scale Tests for Replicator
+# ------------------------------------------------------------------------------
+
+TDSCommonFieldsP0Case: &TDS_COMMON_FIELDS_P0_CASE
+  Product: "vShield"
+  Component: "Replicator"
+  Category: "MultiVC"
+  Version: "2"
+  Tags: "multivc"
+  QCPath: ""
+  ExpectedResult: "PASS"
+  Status: "Execution Ready"
+  AutomationLevel: "Automated"
+  FullyAutomatable: "Y"
+  TestcaseLevel: "Functional"
+  TestcaseType: "Functional"
+  Priority: "P0"
+  Partnerfacing: "N"
+
+RegisterUnRegister8NSXManagersWithMaster:
+  <<: *TDS_COMMON_FIELDS_P0_CASE
+  TestName:  "RegisterUnRegister8NSXManagersWithMaster"
+  Developer: "yvhora"
+  Summary: 'Topology with one master 7 slaves. Verify registration/unregistration of nsx managers'
+  Procedure: '1. Login to the NSX managers
+              2. Get the replication roles from node1 to node 8 ==> STANDALONE
+              3. Set the replication role to Master for node1 ==> PRIMARY
+              4. Register the node 2 to node 8
+              5. Read the replication role from node 2 to node 8 ==> SECONDARY
+              6. Unregister the node 2 from node 8
+              7. Cleanup'
+  ExpectedResult: 'After step 2 - node 1 to node 8 have standalone replication role
+                   After step 3 - node 1 has primary replication role
+                   After step 5 - node 2 to node 7 has secondary replication role
+                   After step 6 - node 2 to node 7 has standalone replication role while node 1 has primary role'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC_SCALE
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - ReadReplicatorRoleAsStandaloneOnVSM4
+            - - ReadReplicatorRoleAsStandaloneOnVSM5
+            - - ReadReplicatorRoleAsStandaloneOnVSM6
+            - - ReadReplicatorRoleAsStandaloneOnVSM7
+            - - ReadReplicatorRoleAsStandaloneOnVSM8
+            - - RegisterSlaveNSXWithMaster
+            - - RegisterSlaveNSXWithMaster_VSM3
+            - - RegisterSlaveNSXWithMaster_VSM4
+            - - RegisterSlaveNSXWithMaster_VSM5
+            - - RegisterSlaveNSXWithMaster_VSM6
+            - - RegisterSlaveNSXWithMaster_VSM7
+            - - RegisterSlaveNSXWithMaster_VSM8
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - ReadReplicatorRoleAsSecondaryOnVSM3
+            - - ReadReplicatorRoleAsSecondaryOnVSM4
+            - - ReadReplicatorRoleAsSecondaryOnVSM5
+            - - ReadReplicatorRoleAsSecondaryOnVSM6
+            - - ReadReplicatorRoleAsSecondaryOnVSM7
+            - - ReadReplicatorRoleAsSecondaryOnVSM8
+            - - UnRegisterAllSlaves
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - ReadReplicatorRoleAsStandaloneOnVSM4
+            - - ReadReplicatorRoleAsStandaloneOnVSM5
+            - - ReadReplicatorRoleAsStandaloneOnVSM6
+            - - ReadReplicatorRoleAsStandaloneOnVSM7
+            - - ReadReplicatorRoleAsStandaloneOnVSM8
+      ExitSequence:
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      ReadReplicatorRoleAsStandaloneOnVSM3:
+          <<: *READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM1
+          TestNSX: "vsm.[3]"
+
+      ReadReplicatorRoleAsStandaloneOnVSM4:
+          <<: *READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM1
+          TestNSX: "vsm.[4]"
+
+      ReadReplicatorRoleAsStandaloneOnVSM5:
+          <<: *READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM1
+          TestNSX: "vsm.[5]"
+
+      ReadReplicatorRoleAsStandaloneOnVSM6:
+          <<: *READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM1
+          TestNSX: "vsm.[6]"
+
+      ReadReplicatorRoleAsStandaloneOnVSM7:
+          <<: *READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM1
+          TestNSX: "vsm.[7]"
+
+      ReadReplicatorRoleAsStandaloneOnVSM8:
+          <<: *READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM1
+          TestNSX: "vsm.[8]"
+
+      RegisterSlaveNSXWithMaster_VSM3:
+          <<: *REGISTER_NSX_MANAGER_WITH_REPLICATOR
+          nsxslave:
+              '[2]':
+                  ipaddress: 'vsm.[3]'
+                  username: 'vsm.[3]'
+                  password: 'vsm.[3]'
+                  cert_thumbprint: 'vsm.[3]'
+
+      RegisterSlaveNSXWithMaster_VSM4:
+          <<: *REGISTER_NSX_MANAGER_WITH_REPLICATOR
+          nsxslave:
+              '[3]':
+                  ipaddress: 'vsm.[4]'
+                  username: 'vsm.[4]'
+                  password: 'vsm.[4]'
+                  cert_thumbprint: 'vsm.[4]'
+
+      RegisterSlaveNSXWithMaster_VSM5:
+          <<: *REGISTER_NSX_MANAGER_WITH_REPLICATOR
+          nsxslave:
+              '[4]':
+                  ipaddress: 'vsm.[5]'
+                  username: 'vsm.[5]'
+                  password: 'vsm.[5]'
+                  cert_thumbprint: 'vsm.[5]'
+
+      RegisterSlaveNSXWithMaster_VSM6:
+          <<: *REGISTER_NSX_MANAGER_WITH_REPLICATOR
+          nsxslave:
+              '[5]':
+                  ipaddress: 'vsm.[6]'
+                  username: 'vsm.[6]'
+                  password: 'vsm.[6]'
+                  cert_thumbprint: 'vsm.[6]'
+
+      RegisterSlaveNSXWithMaster_VSM7:
+          <<: *REGISTER_NSX_MANAGER_WITH_REPLICATOR
+          nsxslave:
+              '[6]':
+                  ipaddress: 'vsm.[7]'
+                  username: 'vsm.[7]'
+                  password: 'vsm.[7]'
+                  cert_thumbprint: 'vsm.[7]'
+
+      RegisterSlaveNSXWithMaster_VSM8:
+          <<: *REGISTER_NSX_MANAGER_WITH_REPLICATOR
+          nsxslave:
+              '[7]':
+                  ipaddress: 'vsm.[8]'
+                  username: 'vsm.[8]'
+                  password: 'vsm.[8]'
+                  cert_thumbprint: 'vsm.[8]'
+
+      ReadReplicatorRoleAsSecondaryOnVSM3:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          TestNSX: "vsm.[3]"
+
+      ReadReplicatorRoleAsSecondaryOnVSM4:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          TestNSX: "vsm.[4]"
+
+      ReadReplicatorRoleAsSecondaryOnVSM5:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          TestNSX: "vsm.[5]"
+
+      ReadReplicatorRoleAsSecondaryOnVSM6:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          TestNSX: "vsm.[6]"
+
+      ReadReplicatorRoleAsSecondaryOnVSM7:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          TestNSX: "vsm.[7]"
+
+      ReadReplicatorRoleAsSecondaryOnVSM8:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          TestNSX: "vsm.[8]"
+
+CreateDelete1000ULSOnMaster:
+  <<: *TDS_COMMON_FIELDS_P0_CASE
+  TestName:  "CreateDelete1000ULSOnMaster"
+  Developer: "yvhora"
+  Summary: 'Register/Unregister "8" NSX Managers with master NSX Manager
+            Create 1000 logical switches on Master
+            Verify they are created on slave
+            Delete all created logical switches
+            Loop above 3 steps multiple times'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2-9 as secondary
+              3. Create 1000 global logical switches from master node
+              4. Read all the 1000 ULS from all slave nodes
+              5. Delete all the ULS from master node
+              6. Loop the step3 to step5 thrice
+              7. Cleanup'
+  ExpectedResult: 'After step 3 - 1000 ULS gets created isGlobal flag set to true
+                   After step 4 - 1000 ULS are read from all slave nodes
+                   After step 5 - 1000 ULS are deleted from master node
+                   After step 6 - Results are same for each loop compared to verifications done previously'

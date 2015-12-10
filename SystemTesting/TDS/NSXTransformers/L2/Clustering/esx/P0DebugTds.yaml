@@ -1,0 +1,767 @@
+!include ../../esx/CommonWorkloads.yaml
+!include ../../esx/TestbedSpec.yaml
+
+COMMON_CLUSTERING_TAGS:
+    P0_CLUSTERING_TAGS: &P0_CLUSTERING_TAGS
+        <<: *P0_TAGS
+        QCPath: *QCPATH--ESX
+        Component: "Clustering"
+        Tags: "MP cluster, CCP cluster, L2 logical entity operation"
+        TestbedSpec: *FUNCTIONAL_TOPOLOGY_1--ESX
+        Developer: "jialiangl"
+
+MPJoinCCPJoinDeleteLS:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPJoinCCPJoinDeleteLS"
+    Summary: "Delete logical switch when there is a MP node joining
+              and a CCP node join."
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+        ExitSequence:
+            - ['Unregister4Hosts']
+
+
+MPRebootCCPRebootHostReboot:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPRebootCCPRebootHostReboot"
+    Summary: "Reboot host when one of the MP nodes reboots and
+              one of the CCP nodes reboots"
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+        ExitSequence:
+            - ['Unregister4Hosts']
+
+MPServiceRestartCCPServiceRestartDeleteIPDiscoveryProfile:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPServiceRestartCCPServiceRestartDeleteIPDiscoveryProfile"
+    Summary: "Delete IP Discovery Profile when one of the MP nodes
+              restarts service and one of the CCP nodes restarts service."
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+        ExitSequence:
+            - ['Unregister4Hosts']
+
+MPLeaveCCPLeaveDeleteUplinkProfile:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPLeaveCCPLeaveDeleteUplinkProfile"
+    Summary: "Delete uplink profile when one of the MP nodes leaves
+              and one of the CCP nodes leaves."
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+        ExitSequence:
+            - ['Unregister4Hosts']
+
+MPPartitionCCPPartitionAttachVnic:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPPartitionCCPPartitionAttachVnic"
+    Summary: "Attach vnic of a VM when MP nodes partition and
+              CCP nodes partition"
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+        ExitSequence:
+            - ['Unregister4Hosts']
+
+
+MPDisconnectCCPDisconnectDeleteTN:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPDisconnectCCPDisconnectDeleteTN"
+    Summary: "Delete transport node when all MP nodes are disconnected to
+              hosts, and all CCP nodes are disconnected to hosts."
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+        ExitSequence:
+            - ['Unregister4Hosts']
+
+CCPJoinDeleteUplinkProfile:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "CCPJoinDeleteUplinkProfile"
+    Summary: "Delete uplink profile when one of the CCP nodes joins"
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+        ExitSequence:
+            - ['Unregister4Hosts']
+
+CCPRebootCreateLS:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "CCPRebootCreateLS"
+    Summary: "Create LS whe one of the CCP nodes reboot"
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_4VMs_1TZ_2LS_Workloads--ESX
+        Sequence:
+            - ['TopoSetup_3MP_3CCP']
+            - ['Register2Hosts']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch1', 'RebootCCP1', 'RebootCCP2']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1']
+            - ['VerifyLS1ReplicationModeOnHost']
+            - ['CreateLogicalSwitch2', 'RebootCCP1', 'RebootCCP2', 'RebootCCP3']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2']
+            - ['VerifyLS2ReplicationModeOnHost']
+            - ['ConfigureVnicIP']
+            - ['Sanity_Check_Controller']
+            - ['LogicalSwitch1Traffic', 'LogicalSwitch2Traffic']
+
+        ExitSequence:
+            - ['TopoCleanup']
+
+        RebootCCP1: *REBOOT_CCP_1
+        RebootCCP2: *REBOOT_CCP_2
+        RebootCCP3: *REBOOT_CCP_3
+        CreateLogicalSwitch1: *CREATE_LOGICALSWITCH_1
+        CreateLogicalSwitch2: *CREATE_LOGICALSWITCH_2
+
+        VerifyLS1ReplicationModeOnHost:
+            Type: "Host"
+            testHost: "esx.[1-2]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+
+        VerifyLS2ReplicationModeOnHost:
+            Type: "Host"
+            testHost: "esx.[1-2]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+
+CCPServiceRestartDeleteVnic:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "CCPServiceRestartDeleteVnic"
+    Summary: "Detach vnic of a VM when a CCP node restart service"
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_4VMs_1TZ_2LS_Workloads--ESX
+        Sequence:
+            - ['TopoSetup_3MP_3CCP']
+            - ['TopoSetup_LogicalEntity']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['Sanity_Check_Controller']
+            - ['VerifyLS1VtepEntryOnHost2',
+               'VerifyLS2VtepEntryOnHost1']
+            - ['LogicalSwitch1Traffic']
+            - ['LogicalSwitch2Traffic']
+            - ['RestartServiceController1', 'DeleteVM1Vnic1FromLSwitch1']
+            - ['RestartServiceController1', 'RestartServiceController2',
+               'RestartServiceController3', 'DeleteVM4Vnic1FromLSwitch2']
+            - ['VerifyLS1MacEntryOnControllersAfterVnicDeletion',
+               'VerifyLS2MacEntryOnControllersAfterVnicDeletion']
+            - ['VerifyLS1DeletedMacEntryOnControllersAfterVnicDeletion',
+               'VerifyLS2DeletedMacEntryOnControllersAfterVnicDeletion']
+            - ['VerifyLS1VtepEntryOnControllersAfterVnicDeletion',
+               'VerifyLS2VtepEntryOnControllersAfterVnicDeletion']
+            - ['VerifyLS1DeletedVtepEntryOnControllersAfterVnicDeletion',
+               'VerifyLS2DeletedVtepEntryOnControllersAfterVnicDeletion']
+
+        ExitSequence:
+            - ['DeleteVM3Vnic1FromLSwitch1', 'DeleteVM2Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister2Hosts']
+
+        Unregister4Hosts: *UNREGISTER_4HOSTS--ESX
+        NSXCleanup: *NSX_CLEANUP--ESX
+        RestartServiceController1: *RESTART_CONTROLLER_1
+        RestartServiceController2: *RESTART_CONTROLLER_2
+        RestartServiceController3: *RESTART_CONTROLLER_3
+
+        VerifyLS1VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[4]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[1].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'esx.[1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[2].vtep.[1]"
+
+        TrafficVM3toVM1Fail:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[3].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            testduration: '5'
+            ExpectedResult: 'Fail'
+
+        TrafficVM3toVM7Fail:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[3].vnic.[1]"
+            SupportAdapter: "vm.[7].vnic.[1]"
+            testduration: '5'
+            ExpectedResult: 'Fail'
+
+        TrafficVM2toVM4Fail:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[4].vnic.[1]"
+            testduration: '5'
+            ExpectedResult: 'Fail'
+
+        VerifyLS1MacEntryOnControllersAfterVnicDeletion:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[3].vnic.[1]"
+                      adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLS1DeletedMacEntryOnControllersAfterVnicDeletion:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]not_contains' :
+                table:
+                    - adapter_ip: "esx.[1].vtep.[1]"
+
+        VerifyLS2MacEntryOnControllersAfterVnicDeletion:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[2].vnic.[1]"
+                      adapter_ip: "esx.[1].vtep.[1]"
+
+        VerifyLS2DeletedMacEntryOnControllersAfterVnicDeletion:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]not_contains' :
+                table:
+                    - adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLS1VtepEntryOnControllersAfterVnicDeletion:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLS1DeletedVtepEntryOnControllersAfterVnicDeletion:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_vtep_table[?]not_contains':
+                table:
+                    - adapter_ip: "esx.[1].vtep.[1]"
+
+        VerifyLS2VtepEntryOnControllersAfterVnicDeletion:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[1].vtep.[1]"
+
+        VerifyLS2DeletedVtepEntryOnControllersAfterVnicDeletion:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_vtep_table[?]not_contains':
+                table:
+                    - adapter_ip: "esx.[2].vtep.[1]"
+
+CCPLeaveHostReboot:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "CCPLeaveHostReboot"
+    Summary: "Reboot host when one of the CCP nodes leaves"
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_4VMs_1TZ_2LS_Workloads--ESX
+        Sequence:
+            - ['TopoSetup_3MP_3CCP']
+            - ['TopoSetup_LogicalEntity']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['Sanity_Check_Controller']
+            - ['LogicalSwitch1Traffic', 'LogicalSwitch2Traffic',
+               'VerifyLS1MacEntryOnHost1', 'VerifyLS2MacEntryOnHost2']
+            - ['RemoveNSXController3FromCluster', 'RebootTN1']
+            - ['PoweronVM1']
+            - ['PoweronVM2']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['Sanity_Check_Controller']
+            - ['VerifyLS1VtepEntryOnHost1', 'VerifyLS1VtepEntryOnHost2']
+            - ['VerifyLS2VtepEntryOnHost1', 'VerifyLS2VtepEntryOnHost2']
+            - ['LogicalSwitch1Traffic', 'LogicalSwitch2Traffic',
+               'VerifyLS1MacEntryOnHost1', 'VerifyLS2MacEntryOnHost2']
+        ExitSequence:
+            - ['PoweronVM1', 'PoweronVM7']
+            - ['PoweronVM2', 'PoweronVM8']
+            - ['SetSecurityOnController2']
+            - ['JoinController2ToCluster']
+            - ['ActivateController2']
+            - ['SetSecurityOnController3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController3']
+            - ['TopoCleanup']
+
+        VerifyLSReplicationModeOnHost: *VERIFY_2_LS_REP_MODE--ESX
+        RemoveNSXController3FromCluster: *REMOVE_NSXCONTROLLER3_FROM_CLUSTER
+        RemoveNSXController2FromCluster: *REMOVE_NSXCONTROLLER2_FROM_CLUSTER
+        PoweronVM1: *POWER_ON_VM_1
+        PoweronVM2: *POWER_ON_VM_2
+        SetSecurityOnController2: *SET_SECURITY_ON_CONTROLLER_2
+        SetSecurityOnController3: *SET_SECURITY_ON_CONTROLLER_3
+        JoinController2ToCluster: *JOIN_CONTROLLER_2_TO_CLUSTER
+        JoinController3ToCluster: *JOIN_CONTROLLER_3_TO_CLUSTER
+        ActivateController2: *ACTIVATE_CONTROLLER_2
+        ActivateController3: *ACTIVATE_CONTROLLER_3
+
+        VerifyLS1MacEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]contains_once':
+                table:
+                    - adapter_mac: "vm.[3].vnic.[1]"
+                      adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLS2MacEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'esx.[4]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[2].vnic.[1]"
+                      adapter_ip: "esx.[1].vtep.[1]"
+
+        RebootTN1:
+            Type: "Host"
+            TestHost: "esx.[1]"
+            reboot: "yes"
+            sleepbetweenworkloads: "30"
+
+        RebootTN2:
+            Type: "Host"
+            TestHost: "esx.[2]"
+            reboot: "yes"
+            sleepbetweenworkloads: "30"
+
+        VerifyLS1VtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[4]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[1].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'esx.[1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'esx.[4]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[1].vtep.[1]"
+
+CCPPartitionDeleteTN:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "CCPPartitionDeleteTN"
+    Summary: "Delete a transport node when CCP nodes are partitioned"
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_4VMs_1TZ_2LS_Workloads--ESX
+        Sequence:
+            - ['TopoSetup_3MP_3CCP']
+            - ['TopoSetup_LogicalEntity']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['Sanity_Check_Controller']
+            - ['LogicalSwitch1Traffic', 'LogicalSwitch2Traffic',
+               'VerifyLS1MacEntryOnHost1', 'VerifyLS2MacEntryOnHost2']
+            - ['DeleteVM1Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2']
+            - ['DeleteTransportNode1', 'BlockController1toControllers']
+            - ['UnblockController1toControllers']
+            - ['CreateTransportNode1']
+            - ['AttachVM1toSwitch1']
+            - ['AttachVM2toSwitch2']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['Sanity_Check_Controller']
+            - ['LogicalSwitch1Traffic', 'LogicalSwitch2Traffic',
+               'VerifyLS1MacEntryOnHost1', 'VerifyLS2MacEntryOnHost2']
+
+        ExitSequence:
+            - ['UnblockController1toControllers']
+            - ['TopoCleanup']
+
+        VerifyLSReplicationModeOnHost: *VERIFY_2_LS_REP_MODE--ESX
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--ESX
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--ESX
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--ESX
+        DeleteVM2Vnic1FromLSwitch2: *DELETE_VM2_VNIC1_LSWITCH2--ESX
+        CreateTransportNode1: *CREATE_TRANSPORTNODE_1--ESX
+
+        BlockController1toControllers:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[1]'
+            network_partitioning:
+                operation: 'set'
+                ip_address: 'nsxcontroller.[2]->controller_ip,nsxcontroller.[3]->controller_ip'
+                execution_type: 'cmd'
+
+        UnblockController1toControllers:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[1]'
+            network_partitioning:
+                operation: 'reset'
+                ip_address: 'nsxcontroller.[2]->controller_ip,nsxcontroller.[3]->controller_ip'
+                execution_type: 'cmd'
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[3].vif.[1]"
+            TestDuration  : "10"
+
+        LogicalSwitch2Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[2].vif.[1]"
+            SupportAdapter: "vm.[4].vif.[1]"
+            TestDuration  : "10"
+
+        VerifyLS1MacEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]contains_once':
+                table:
+                    - adapter_mac: "vm.[3].vnic.[1]"
+                      adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLS2MacEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'esx.[4]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[2].vnic.[1]"
+                      adapter_ip: "esx.[1].vtep.[1]"
+
+        DeleteTransportNode1:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            sync: true
+            deletetransportnode: 'nsxmanager.[1].transportnode.[1]'
+
+CCPDisconnectCreateIPDiscoveryProfile:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "CCPDisconnectCreateIPDiscoveryProfile"
+    Summary: "Create IP Discovery Profile when all CCP nodes disconnect
+              from MP nodes and hosts"
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_4VMs_1TZ_2LS_Workloads--ESX
+        Sequence:
+            - ['TopoSetup_3MP_3CCP']
+            - ['Register2Hosts']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['BlockController1fromothers', 'BlockController2fromothers',
+               'BlockController3fromothers', 'CreateIPDiscoveryProfile']
+            - ['UnblockController1fromothers', 'UnblockController2fromothers',
+               'UnblockController3fromothers']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['LogicalSwitch1Traffic', 'LogicalSwitch2Traffic']
+        ExitSequence:
+            - ['UnblockController1fromothers', 'UnblockController2fromothers',
+               'UnblockController3fromothers']
+            - ['TopoCleanup']
+
+        BlockController1fromothers:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[1]'
+            network_partitioning:
+                operation: 'set'
+                ip_address: 'nsxcontroller.[2]->controller_ip,nsxcontroller.[3]->controller_ip,nsxmanager.[1]->manager_ip,nsxmanager.[2]->manager_ip,naxmanager.[3]->manager_ip,esx.[1]->ip_addresses,esx.[2]->ip_addresses'
+                execution_type: 'cmd'
+
+        BlockController2fromothers:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[2]'
+            network_partitioning:
+                operation: 'set'
+                ip_address: 'nsxcontroller.[1]->controller_ip,nsxcontroller.[3]->controller_ip,nsxmanager.[1]->manager_ip,nsxmanager.[2]->manager_ip,naxmanager.[3]->manager_ip,esx.[1]->ip_addresses,esx.[2]->ip_addresses'
+                execution_type: 'cmd'
+
+        BlockController3fromothers:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[3]'
+            network_partitioning:
+                operation: 'set'
+                ip_address: 'nsxcontroller.[1]->controller_ip,nsxcontroller.[2]->controller_ip,nsxmanager.[1]->manager_ip,nsxmanager.[2]->manager_ip,naxmanager.[3]->manager_ip,esx.[1]->ip_addresses,esx.[2]->ip_addresses'
+                execution_type: 'cmd'
+
+        UnblockController1fromothers:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[1]'
+            network_partitioning:
+                operation: 'reset'
+                ip_address: 'nsxcontroller.[2]->controller_ip,nsxcontroller.[3]->controller_ip,nsxmanager.[1]->manager_ip,nsxmanager.[2]->manager_ip,naxmanager.[3]->manager_ip,esx.[1]->ip_addresses,esx.[2]->ip_addresses'
+                execution_type: 'cmd'
+
+        UnblockController2fromothers:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[2]'
+            network_partitioning:
+                operation: 'reset'
+                ip_address: 'nsxcontroller.[1]->controller_ip,nsxcontroller.[3]->controller_ip,nsxmanager.[1]->manager_ip,nsxmanager.[2]->manager_ip,naxmanager.[3]->manager_ip,esx.[1]->ip_addresses,esx.[2]->ip_addresses'
+                execution_type: 'cmd'
+
+        UnblockController3fromothers:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[3]'
+            network_partitioning:
+                operation: 'reset'
+                ip_address: 'nsxcontroller.[1]->controller_ip,nsxcontroller.[2]->controller_ip,nsxmanager.[1]->manager_ip,nsxmanager.[2]->manager_ip,naxmanager.[3]->manager_ip,esx.[1]->ip_addresses,esx.[2]->ip_addresses'
+                execution_type: 'cmd'
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[3].vif.[1]"
+            SupportAdapter: "vm.[1].vif.[1]"
+            TestDuration  : "10"
+
+        LogicalSwitch2Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[2].vif.[1]"
+            SupportAdapter: "vm.[4].vif.[1]"
+            TestDuration  : "10"
+
+MPJoinCreateUplinkProfile:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPJoinCreateUplinkProfile"
+    Summary: "Create uplink profile when one of the MP nodes joins"
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_4VMs_1TZ_2LS_Workloads--ESX
+        Sequence:
+            - ['Register2Hosts']
+            - ['Form1NodeMPCluster']
+            - ['AddMPNode2ToCluster']
+            - ['MapNSXManager2ToCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['AddMPNode3ToCluster', 'CreateUplinkProfile']
+            - ['MapNSXManager3ToCluster']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['Sanity_Check_Controller']
+            - ['LogicalSwitch1Traffic']
+            - ['LogicalSwitch2Traffic']
+
+        ExitSequence:
+            - ['TopoCleanup']
+
+        Form1NodeMPCluster: *FORM_1_NODE_MP_CLUSTER
+        AddMPNode2ToCluster: *ADD_MPNODE_2_TO_CLUSTER
+        MapNSXManager2ToCluster: *MAP_NSXMANAGER_2_TO_CLUSTER
+        AddMPNode3ToCluster: *ADD_MPNODE_3_TO_CLUSTER
+        MapNSXManager3ToCluster: *MAP_NSXMANAGER_3_TO_CLUSTER
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            TestDuration  : "5"
+
+        LogicalSwitch2Traffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[4].vnic.[1]"
+            TestDuration  : "5"
+
+MPRebootCreateLS:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPRebootCreateLS"
+    Summary: "Create LS when one of the MP nodes reboots"
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_4VMs_1TZ_2LS_Workloads--ESX
+        Sequence:
+            - ['TopoSetup_3MP_3CCP']
+            - ['Register2Hosts']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch', 'RebootMP2']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['ConfigureVnicIP']
+            - ['LogicalSwitch1Traffic', 'LogicalSwitch2Traffic']
+
+        ExitSequence:
+            - ['TopoCleanup']
+
+        RebootMP2: *REBOOT_MP_2
+
+MPServiceRestartAttachVnic:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPServiceRestartAttachVnic"
+    Summary: "Attach vnic of a VM when a MP node restart service"
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_4VMs_1TZ_2LS_Workloads--ESX
+        Sequence:
+            - ['TopoSetup_3MP_3CCP']
+            - ['TopoSetup_LogicalEntity']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['Sanity_Check_Controller']
+            - ['LogicalSwitch1Traffic', 'LogicalSwitch2Traffic']
+            - ['RestartServiceManager1', 'DeleteVM1Vnic1FromLSwitch1']
+            - ['RestartServiceManager2', 'AttachVM1toSwitch1']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['ConfigureVnicIP']
+            - ['LogicalSwitch1Traffic', 'LogicalSwitch2Traffic']
+
+        ExitSequence:
+            - ['TopoCleanup']
+
+        RestartServiceManager1: *RESTART_PROTON_SERVICE_ON_NODE_1
+        RestartServiceManager2: *RESTART_PROTON_SERVICE_ON_NODE_2
+
+MPLeaveHostReboot:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPLeaveHostReboot"
+    Summary: "Reboot host when one of the MP nodes leaves"
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+        ExitSequence:
+            - ['Unregister4Hosts']
+
+MPPartitionCreateTN:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPPartitionCreateTN"
+    Summary: "Create a transport node when MP nodes are partitioned"
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+        ExitSequence:
+            - ['Unregister4Hosts']
+
+MPDisconnectCreateIPDiscoveryProfile:
+    <<: *P0_CLUSTERING_TAGS
+    TestName: "MPDisconnectCreateIPDiscoveryProfile"
+    Summary: "Create IP Discovery Profile when all MP nodes disconnect
+              from CCP nodes and hosts."
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+        ExitSequence:
+            - ['Unregister4Hosts']

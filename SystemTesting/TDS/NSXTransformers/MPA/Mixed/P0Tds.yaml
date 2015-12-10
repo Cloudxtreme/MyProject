@@ -1,0 +1,431 @@
+!include ../ESX/MPACommon.yaml
+!include TestbedSpec.yaml
+
+SmokeMPARestartSurvival_KVM:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: MPA Restart Survival - KVM
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: mihaid
+    Summary: Ensure that MPA survives a reboot
+    Version: 2
+    TestbedSpec: *MPA_MIXED_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['RestartMPA_KVM']
+             - ['SyslogCheckForMessage']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: kvm.[1]
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeMPARestartSurvival'
+
+        RestartMPA_KVM:
+            <<: *RESTART_MPA
+            TestHost: kvm.[1]
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: kvm.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'SmokeMPARestartSurvival'
+                grep_string: 'MPA connection fully established'
+                max_wait: 600
+
+SmokeSampleClientRPC_KVM:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: Sample Client RPC - KVM
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: mihaid
+    Summary: Sample Client Send RPC Message
+    Version: 2
+    TestbedSpec: *MPA_MIXED_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['RPC_KVM']
+             - ['SyslogCheckForSend']
+             - ['RPCSent_KVM']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: kvm.[1]
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientRPC'
+
+        RPC_KVM:
+            <<: *RPC
+            TestHost: kvm.[1]
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: kvm.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'SmokeSampleClientRPC'
+                grep_string: 'Sending message:RMQ_CLIENT_RPC_REQUEST to mp'
+                max_wait: 20
+
+        RPCSent_KVM:
+            Type: Host
+            TestHost: kvm.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'Sending message:RMQ_CLIENT_RPC_REQUEST to mp'
+                grep_string: 'Successfully sent app data to broker'
+                max_wait: 20
+
+SmokeSampleClientGenericMessage_KVM:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: Sample Client Generic Message - KVM
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: mihaid
+    Summary: Sample Client Send Generic Message
+    Version: 2
+    TestbedSpec: *MPA_MIXED_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['GenericMessage_KVM']
+             - ['SyslogCheckForSend']
+             - ['GenericMessageSent_KVM']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: kvm.[1]
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientGenericMessage'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: kvm.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'SmokeSampleClientGenericMessage'
+                grep_string: 'Sending message:RMQ_VSM_PAYLOAD to mp'
+                max_wait: 20
+
+        GenericMessage_KVM:
+            <<: *GENERIC
+            TestHost: kvm.[1]
+
+        GenericMessageSent_KVM:
+            Type: Host
+            TestHost: kvm.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'Sending message:RMQ_VSM_PAYLOAD to mp'
+                grep_string: 'Successfully sent app data to broker'
+                max_wait: 20
+
+SmokeSampleClientPublish_KVM:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: Sample Client Publish Subscribe - KVM
+    Summary: Sample Client Send Publish Subscribe Message
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: mihaid
+    Version: 2
+    TestbedSpec: *MPA_MIXED_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['PublishSubscribe_KVM']
+             - ['SyslogCheckForSend']
+             - ['PublishSubscribeSent_KVM']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: kvm.[1]
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientPublish'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: kvm.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'SmokeSampleClientPublish'
+                grep_string: 'Sending message:RMQ_CLIENT_PUBLISH to mp'
+                max_wait: 20
+
+        PublishSubscribe_KVM:
+            <<: *PUBLISH
+            TestHost: kvm.[1]
+
+        PublishSubscribeSent_KVM:
+            Type: Host
+            TestHost: kvm.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'Sending message:RMQ_CLIENT_PUBLISH to mp'
+                grep_string: 'Successfully sent app data to broker'
+                max_wait: 20
+
+SmokeMPARestartSurvival_ESX:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: Restart MPA - ESX
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: mihaid
+    Summary: Ensure that MPA survives a reboot
+    Version: 2
+    TestbedSpec: *MPA_MIXED_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['RestartMPA']
+             - ['SyslogCheckForMessage']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: esx.[1]
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeMPARestartSurvival'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: esx.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeMPARestartSurvival'
+                grep_string: 'MPA connection fully established'
+                max_wait: 600
+
+SmokeSampleClientRPC_ESX:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: Sample Client RPC - ESX
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: mihaid
+    Summary: Sample Client Send RPC Message
+    Version: 2
+    TestbedSpec: *MPA_MIXED_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient']
+             - ['SyslogWriteIndex']
+             - ['RPC']
+             - ['SyslogCheckForSend']
+             - ['SyslogCheckForSent']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: esx.[1]
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientRPC'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: esx.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeSampleClientRPC'
+                grep_string: 'Sending message:RMQ_CLIENT_RPC_REQUEST to mp'
+                max_wait: 20
+
+        SyslogCheckForSent:
+            Type: Host
+            TestHost: esx.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'Sending message:RMQ_CLIENT_RPC_REQUEST to mp'
+                grep_string: 'Successfully sent app data to broker'
+                max_wait: 20
+
+SmokeSampleClientGenericMessage_ESX:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: Sample Client Generic Message - ESX
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: mihaid
+    Summary: Sample Client Send Generic Message
+    Version: 2
+    TestbedSpec: *MPA_MIXED_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient']
+             - ['SyslogWriteIndex']
+             - ['GenericMessage']
+             - ['SyslogCheckForSend']
+             - ['SyslogCheckForSent']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: esx.[1]
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientGenericMessage'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: esx.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeSampleClientGenericMessage'
+                grep_string: 'Sending message:RMQ_VSM_PAYLOAD to mp'
+                max_wait: 20
+
+        SyslogCheckForSent:
+            Type: Host
+            TestHost: esx.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'Sending message:RMQ_VSM_PAYLOAD to mp'
+                grep_string: 'Successfully sent app data to broker'
+                max_wait: 20
+
+SmokeSampleClientPublish_ESX:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: Sample Client Publish Subscribe - ESX
+    Summary: Sample Client Send Publish Subscribe Message
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: mihaid
+    Version: 2
+    TestbedSpec: *MPA_MIXED_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient']
+             - ['SyslogWriteIndex']
+             - ['PublishSubscribe']
+             - ['SyslogCheckForSend']
+             - ['SyslogCheckForSent']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: esx.[1]
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientPublish'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: esx.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeSampleClientPublish'
+                grep_string: 'Sending message:RMQ_CLIENT_PUBLISH to mp'
+                max_wait: 20
+
+        SyslogCheckForSent:
+            Type: Host
+            TestHost: esx.[1]
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'Sending message:RMQ_CLIENT_PUBLISH to mp'
+                grep_string: 'Successfully sent app data to broker'
+                max_wait: 20

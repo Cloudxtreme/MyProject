@@ -1,0 +1,97 @@
+TestEdgeClusterOperations:
+    Product: "NSXTransformers"
+    Category: "Edge"
+    Component: "Cluster"
+    TestName: "Test CRUD operation for Edge Cluster"
+    Summary: "Verify CRUD operations for Edge Cluster"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: TBD
+    Priority: "P0"
+    Developer: "sarkars"
+    QCPath: "/NSXTransformers/EDGE/Clustering"
+    Procedure: '
+                1. Create and read Fabric Profile
+                2. Create and read Dummy Edge Node
+                3. Create one Edge Cluster
+                4. Perform the Read operation
+                5. Update the Edge Cluster by adding a Node
+                6. Check whether Edge Cluster has been updated
+                7. Delete the Edge Cluster and Node
+                8. Delete Fabric Profile'
+    ExpectedResult: "Verify New Node should be added and removed from Cluster"
+    Duration: '5'
+    Tags: 'cat-01'
+    Partnerfacing: "N"
+
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+
+    WORKLOADS:
+        Sequence:
+            - ["CreateFabricProfile"]
+            - ["ReadFabricProfile"]
+            - ["CreateEdgeNode"]
+            - ["ReadEdgeNode"]
+            - ["CreateEdgeCluster"]
+            - ["ReadEdgeCluster"]
+            - ["UpdateEdgeCluster"]
+            - ["ReadEdgeClusterAfterUpdate"]
+        ExitSequence:
+            - ["DeleteEdgeCluster"]
+            - ["DeleteEdgeNode"]
+            - ["DeleteFabricProfile"]
+
+        CreateFabricProfile: *CREATE_FABRIC_PROFILE
+
+        CreateEdgeNode: *CREATE_EDGE_NODE
+
+        ReadEdgeNode: *READ_EDGE_NODE
+
+        CreateEdgeCluster: *CREATE_EDGE_CLUSTER
+
+        UpdateEdgeCluster:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].edgecluster.[1]"
+            reconfigure: true
+            name: 'Edge_Cluster_1_update'
+            summary: "Edge Cluster updated through automation"
+            members:
+              - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+            fabric_profile_bindings:
+              - resource_type: "FabricProfileClusterKeepAlive"
+                # enter the fabric_profile_id: uuid1
+                fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        ReadFabricProfile: *READ_FABRIC_PROFILE
+
+        ReadEdgeCluster: *READ_EDGE_CLUSTER
+
+        ReadEdgeClusterAfterUpdate:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].edgecluster.[1]"
+            read:
+              'name[?]defined': 'Edge_Cluster_1_update'
+              'summary[?]equal_to': "Edge Cluster updated through automation"
+              'id_[?]equal_to': 'nsxmanager.[1].edgecluster.[1]'
+              'resource_type[?]equal_to': "EdgeCluster"
+              'fabric_profile_bindings[?]contain_once':
+                - resource_type: "FabricProfileClusterKeepAlive"
+                  # enter the fabric_profile_id: uuid1
+                  fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+              'members[?]contain_once':
+                - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+                  member_index: 0
+
+        DeleteEdgeNode: *DELETE_EDGE_NODE
+
+        DeleteEdgeCluster: *DELETE_EDGE_CLUSTER
+
+        DeleteFabricProfile: *DELETE_FABRIC_PROFILE

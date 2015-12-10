@@ -1,0 +1,127 @@
+#-------------------------------------------------------------------------------
+#          BFD (ACTIVE-ACTIVE)-TOPOLOGY
+#-------------------------------------------------------------------------------
+#
+#                  +-----+
+#                  | VM1 |192.168.50.20
+#                  +--+--+
+#                     |
+#    +----------------+------------------+
+#    |      Logical_Switch_01            |
+#    +------+----------------------+-----+
+#           |                      |
+#           |                      |
+#  +---------------------------------------------+
+#  |          |                      |           |
+#  |   +------+---+             +----+------+    |
+#  |   |  SR1     |             |   SR2     |    |
+#  |   |192.168.50.1            |192.168.50.2    |
+#  |   +----------+             +-----------+    |
+#  |                                             |
+#  |                 TIER-0                      |
+#  +---------------------------------------------+
+#                      |
+#                      |
+#    +-----------------+-----------------+
+#    |       Logical_Switch_03           |
+#    +-----------------+-----------------+
+#                      |
+#                      |
+#                  +---+---+
+#                  |       |
+#                  | VM3   |
+#                  +-------+
+#                 192.168.60.20
+#
+#
+#----------------------------------------------------------------------------------
+
+BAT_Tier0_ActiveFailOver_Topology:
+    Category: L3
+    Component: Edge
+    Summary: "This test case performs Tier0 Active Failover"
+    Tags: nsx,avalanche,bat
+    Version: 2
+    TestName: BAT_Tier0_ActiveFailOver_Test
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            - - 'RegisterController'
+            - - 'SetManagerOnHost'
+            - - 'DiscoverHostNodes'
+            - - 'CreateTransportZone'
+            - - 'CreateUplinkProfile'
+            - - 'CreateTransportNodes'
+            - - 'CreateLogicalSwitch01_FOR_UPLINK_SR1'
+            - - 'CreateLogicalSwitch03_For_Tier0_Downlink'
+            - - 'Create_LogicalPorts_BAT_ActiveFailOver'
+            - - 'VifAttachmentAllVMs_BAT_Tier0_Basic'
+            - - 'PowerOnAllVms_BAT_Tier0_Basic'
+            - - 'ConfigureIPAllVMVNics_BAT_Tier0_Basic'
+            - - 'AddRouteAllVMs_BAT_Tier0_Basic'
+
+           # XXX: Tier0 setup
+            - - 'DeployNSXEdge1'
+            - - 'RegisterEdgeNode1WithNSX'
+            - - 'CreateFabricProfile'
+            - - 'DiscoverEdgeNodeId1'
+            - - 'CreateEdgeClusterWithEdgeNode_BAT_Tier0_Basic'
+            - - 'CreateTIER0LogicalRouter'                    # for Tier0 router
+            - - 'CreateTier0DownlinkLogicalRouterPort'        # for Tier0 router
+            - - 'CreateTier0UplinkLogicalRouterPortForSR1'    # for Tier0 router
+
+            # XXX : Configure static routes on SR1
+            # nexthop: 192.168.50.200, network: 1.1.1.0/24
+            - - 'AddStaticRoutesForActiveFailover_SR1'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'CLI_Show_IP_Route_StaticRoutes_SR1_ActiveFailover'
+
+            # Related to Traffic Flow
+            # Check that Traffic is should flow
+            - - 'Traffic_VM3ToVM1'
+
+            # Register Second Edge
+            - - 'DeployNSXEdge2'
+            - - 'RegisterEdgeNode2WithNSX'
+            - - 'DiscoverEdgeNodeId2'
+            - - 'Update_EdgeCluster_With_EdgeNode2'
+            - - 'CreateTier0UplinkLogicalRouterPortForSR2_ActiveFailover'
+
+            # XXX: Configure Static route on SR2
+            # nexthop: 192.168.50.201, network: 2.2.2.0/24
+            - - 'UpdateStaticRoutesForActiveFailover'
+
+            # Verify routes on SR-2 CLI: [show ip route -ipaddress- ]
+            - - 'CLI_Show_IP_Route_StaticRoutes_SR2_ActiveFailover'
+
+            # Check if the Second Node is in Active State
+            - - 'VerifyEdgeClusterStatus'
+
+            # Get the VNic Ip address or SR1
+            - - 'ReadEdgeVm1SouthIpBfdIp'
+
+            # power off the First SR
+            - - 'PowerOffSR1'
+
+            # make sure that IP of First SR has migrated to Second SR
+            - - 'CheckIPMigrationOnSR2'
+
+            # Change the gateway of VM1
+            - - 'DeleteRouteVM1'
+            - - 'UpdateRouteVM1'
+
+            # Check if the traffic now flows through 2nd SR
+            - - 'Traffic_VM3ToVM1'
+
+        ExitSequence:
+            - - 'PowerOFFAllVms_BAT_Tier0_Basic'
+            - - 'DeleteTestVnicsAllVMsTier0'
+            - - 'DeleteAllStaticRoutes'
+            - - 'CleanupBasicTier0'
+            - - 'CleanupEdge'
+            - - 'DeleteSR1'
+            - - 'DeleteSR2'
+            - - 'UnregisterHosts'
+

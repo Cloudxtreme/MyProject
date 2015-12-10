@@ -1,0 +1,1386 @@
+Sample:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test case checks Test Inventory
+  Tags: ''
+  TestName: Sample
+  Version: '2'
+  TestbedSpec:
+    host:
+        '[101]':
+            ip: None
+        '[1-100]':
+            vmnic:
+                '[1]':
+                    driver: "any"
+    vc:
+        '[1]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            host: "host.[101]"
+                            name: "Controller-Cluster"
+                        '[2]':
+                            host: "host.[1-100]"
+                            name: "Compute-Cluster"
+            vds:
+                '[1]':
+                    datacenter: "vc.[1].datacenter.[1]"
+                    configurehosts: "add"
+                    host: "host.[1-100]"
+                    vmnicadapter: "host.[1-100].vmnic.[1]"
+                    numuplinkports: "1"
+            dvportgroup:
+                '[1]':
+                    name: "dvpg-VDS1-vlan16"
+                    vds: "vc.[1].vds.[1]"
+                    #vlan: "16"
+                    #vlantype: "access"
+                '[2]':
+                    name: "dvpg-VDS1-vlan17"
+                    vds: "vc.[1].vds.[1]"
+                    #vlan: "17"
+                    #vlantype: "access"
+                '[100]':
+                    name: "dvpg-VDS1-vlan100"
+                    vds: "vc.[1].vds.[1]"
+                    dvport:
+                           '[1-500]':
+                    #vlan: "19"
+                    #vlantype: "access"
+    vsm:
+        '[1]':
+            reconfigure: "true"
+            vc: "vc.[1]"
+            assignrole: "enterprise_admin"
+            ippool:
+                 '[1]':
+                     'name'        : 'prme-pool'
+                     'gateway'     : '10.24.31.253'
+                     'prefixlength': '22'
+                     'ipranges'    : ['10.24.29.126-10.24.29.130']
+            vxlancontroller:
+                 '[1]':
+                     'name': 'AutoGenerate'
+                     'firstnodeofcluster': 'true'
+                     'ippool': "vsm.[1].ippool.[1]"
+                     'resourcepool': 'vc.[1].datacenter.[1].cluster.[1]'
+                     'host': 'host.[101]'
+                     'datastore': 'host.[101]'
+            segmentidrange:
+                 '[1]':
+                     'name': "AutoGenerate"
+                     'begin': "5001-10001"
+                     'end': "99000"
+            multicastiprange:
+                 '[1]':
+                     'name': "AutoGenerate"
+                     'begin': "239.0.0.101"
+                     'end': "239.254.254.254"
+            VDNCluster:
+                 '[1]':
+                     'cluster': "vc.[1].datacenter.[1].cluster.[2]"
+                     'vibs': "install"
+                     'switch': "vc.[1].vds.[1]"
+                     #'vlan': "22"
+                     'mtu': "1600"
+                     'vmkniccount': "1"
+                     'teaming':
+                          - "LOADBALANCE_SRCMAC"
+                          - "LOADBALANCE_SRCID"
+                          - "LOADBALANCE_LOADBASED"
+                          - "FAILOVER_ORDER"
+                          - "ETHER_CHANNEL"
+            networkscope:
+                 '[1]':
+                     'name': "network-scope-1-45"
+                     'clusters': "vc.[1].datacenter.[1].cluster.[2]"
+                     'controlplanemode': "HYBRID_MODE"
+
+
+  WORKLOADS:
+     Sequence:
+           - ["DeployGatewayServicesEdge100"]
+           - ["CreateVirtualWires"]
+           - ["DeployGatewayServicesEdge1"]
+           - ["DeployVDREdge1"]
+           - ["DeployVDREdge2"]
+           - ["DeployVDREdge3"]
+           - ["DeployVDREdge4"]
+           - ["DeployVDREdge5"]
+           - ["DeployVDREdge6"]
+           - ["DeployVDREdge7"]
+           - ["DeployVDREdge8"]
+           - ["DeployVDREdge9"]
+           - ["DeployVDREdge10"]
+           - ["CreateGatewayInterface1Edge100"]
+           - ["CreateGatewayInterface1Edge"]
+           - ["CreateGatewayInterface2Edge"]
+           - ["CreateGatewayInterface3Edge"]
+           - ["CreateVXLANLIF1VDR_ODD"]
+           - ["CreateVXLANLIF1VDR_EVEN"]
+           - ["CreateVXLANLIF2VDR_ODD"]
+           - ["CreateVXLANLIF2VDR_EVEN1"]
+           - ["CreateVXLANLIF2VDR_EVEN2"]
+           - ["Enable_ECMP_EDGE_GATEWAY1"]
+           - ["Enable_ECMP_EDGE_GATEWAY_ALL"]
+           - ["Configure_OSPF_EDGE_ALL_1"]
+           - ["Configure_OSPF_EDGE_ALL_2"]
+           - ["Enable_ECMP_EDGE_VDR_ALL"]
+           - ["CreateVM1", "CreateVM2", "CreateVM3"]
+           - ["CreateVM4", "CreateVM5"]
+           - ["PlaceVM_Odd_OnLif"]
+           - ["PowerOnVM1","PowerOnVM2","PowerOnVM3","PowerOnVM4","PowerOnVM5"]
+           - ["SetVNIC_IP_VM_ODD"]
+           #- ["SetVNIC_IP_VM_ODD2"]
+           - ["PlaceVM_Even_OnLif"]
+           - ["PowerOnVMEven1","PowerOnVMEven2","PowerOnVMEven3","PowerOnVMEven4"]
+           - ["SetVNIC_IP_VM_EVEN"]
+           #- ["Configure_OSPF_VDR_ODD"]
+
+     CreateVirtualWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+             '[1-210]':
+                 name: "AutoGenerate"
+                 tenantid: "AutoGenerate"
+
+     DeployGatewayServicesEdge1:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            gateway:
+                '[1-50]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=gateway_index*2 - 1]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.10.gateway_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployGatewayServicesEdge100:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            gateway:
+                '[100]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[100]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.10.gateway_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployVDREdge2:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[11-20]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployVDREdge1:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[1-10]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployVDREdge3:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[21-30]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployVDREdge4:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[31-40]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployVDREdge5:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[41-50]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployVDREdge6:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[51-60]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployVDREdge7:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[61-70]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployVDREdge8:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[71-80]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployVDREdge9:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[81-90]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployVDREdge10:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[91-98]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+
+     CreateGatewayInterface1Edge100:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[100]"
+            interface:
+                '[1]':
+                    name: "vnic1"
+                    index: "1"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                    'ipv4address': "1.1.1.100"
+                    netmask: "255.255.255.0"
+                    type: "uplink"
+
+     CreateGatewayInterface1Edge:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1-49]"
+            interface:
+                '[1]':
+                    name: "vnic1"
+                    index: "1"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                    'ipv4address': "x=1.1.1.gateway_index"
+                    netmask: "255.255.255.0"
+                    type: "uplink"
+
+     CreateGatewayInterface2Edge:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1-49]"
+            interface:
+                '[2]':
+                    name: "vnic2"
+                    index: "2"
+                    #portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=gateway_index*4 - 2]"
+                    'ipv4address': "x=4*gateway_index-2.4*gateway_index-2.4*gateway_index-2.1"
+                    netmask: "255.255.255.0"
+                    type: "uplink"
+
+     CreateGatewayInterface3Edge:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1-49]"
+            interface:
+                '[3]':
+                    name: "vnic3"
+                    index: "3"
+                    #portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+                    #'ipv4address': "3.3.3.1"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=gateway_index*4 - 1]"
+                    'ipv4address': "x=4*gateway_index-1.4*gateway_index-1.4*gateway_index-1.1"
+                    netmask: "255.255.255.0"
+                    type: "uplink"
+
+     CreateVXLANLIF1VDR_ODD:
+            Type: "VM"
+            # TODO(Prabuddh): Once Bug 1333771 is
+            # fixed apply it below to reduce the
+            # TestVM line to one line
+            TestVM: "vsm.[1].vse.[1], vsm.[1].vse.[3], vsm.[1].vse.[5],
+                     vsm.[1].vse.[7], vsm.[1].vse.[9], vsm.[1].vse.[11],
+                     vsm.[1].vse.[13], vsm.[1].vse.[15], vsm.[1].vse.[17],
+                     vsm.[1].vse.[19], vsm.[1].vse.[21], vsm.[1].vse.[23],
+                     vsm.[1].vse.[25], vsm.[1].vse.[27], vsm.[1].vse.[29],
+                     vsm.[1].vse.[31], vsm.[1].vse.[33], vsm.[1].vse.[35],
+                     vsm.[1].vse.[37], vsm.[1].vse.[39], vsm.[1].vse.[41],
+                     vsm.[1].vse.[43], vsm.[1].vse.[45], vsm.[1].vse.[47],
+                     vsm.[1].vse.[49], vsm.[1].vse.[51], vsm.[1].vse.[53],
+                     vsm.[1].vse.[55], vsm.[1].vse.[57], vsm.[1].vse.[59],
+                     vsm.[1].vse.[61], vsm.[1].vse.[63], vsm.[1].vse.[65],
+                     vsm.[1].vse.[67], vsm.[1].vse.[69], vsm.[1].vse.[71],
+                     vsm.[1].vse.[73], vsm.[1].vse.[75], vsm.[1].vse.[77],
+                     vsm.[1].vse.[79], vsm.[1].vse.[81], vsm.[1].vse.[83],
+                     vsm.[1].vse.[85], vsm.[1].vse.[87], vsm.[1].vse.[89],
+                     vsm.[1].vse.[91], vsm.[1].vse.[93], vsm.[1].vse.[95],
+                     vsm.[1].vse.[97]"
+            lif:
+                '[1]':
+                    name: "AutoGenerate"
+                    #portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vse_index*2]"
+                    type: "uplink"
+                    connected: 1
+                    addressgroup:
+                        - addresstype: "primary"
+                          #ipv4address: "2.2.2.2"
+                          'ipv4address': "x=2*vse_index.2*vse_index.2*vse_index.2"
+                          netmask: "255.255.255.0"
+
+     CreateVXLANLIF1VDR_EVEN:
+            Type: "VM"
+            # TODO(Prabuddh): Once Bug 1333771 is
+            # fixed apply it below to reduce the
+            # TestVM line to one line
+            TestVM: "vsm.[1].vse.[2],vsm.[1].vse.[4],vsm.[1].vse.[6],vsm.[1].vse.[8],
+                     vsm.[1].vse.[10],vsm.[1].vse.[12],vsm.[1].vse.[14],
+                     vsm.[1].vse.[16],vsm.[1].vse.[18],vsm.[1].vse.[20],
+                     vsm.[1].vse.[22],vsm.[1].vse.[24],vsm.[1].vse.[26],
+                     vsm.[1].vse.[28],vsm.[1].vse.[30],vsm.[1].vse.[32],
+                     vsm.[1].vse.[34],vsm.[1].vse.[36],vsm.[1].vse.[38],
+                     vsm.[1].vse.[40],vsm.[1].vse.[42],vsm.[1].vse.[44],
+                     vsm.[1].vse.[46],vsm.[1].vse.[48],vsm.[1].vse.[50],
+                     vsm.[1].vse.[52],vsm.[1].vse.[54],vsm.[1].vse.[56],
+                     vsm.[1].vse.[58],vsm.[1].vse.[60],vsm.[1].vse.[62],
+                     vsm.[1].vse.[64],vsm.[1].vse.[66],vsm.[1].vse.[68],
+                     vsm.[1].vse.[70],vsm.[1].vse.[72],vsm.[1].vse.[74],
+                     vsm.[1].vse.[76],vsm.[1].vse.[78],vsm.[1].vse.[80],
+                     vsm.[1].vse.[82],vsm.[1].vse.[84],vsm.[1].vse.[86],
+                     vsm.[1].vse.[88],vsm.[1].vse.[90],vsm.[1].vse.[92],
+                     vsm.[1].vse.[94],vsm.[1].vse.[96],vsm.[1].vse.[98]"
+            lif:
+                '[1]':
+                    name: "AutoGenerate"
+                    #portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vse_index*2-1]"
+                    type: "uplink"
+                    connected: 1
+                    addressgroup:
+                        - addresstype: "primary"
+                          #ipv4address: "3.3.3.2"
+                          'ipv4address': "x=2*vse_index-1.2*vse_index-1.2*vse_index-1.2"
+                          netmask: "255.255.255.0"
+
+     CreateVXLANLIF2VDR_ODD:
+            Type: "VM"
+            # TODO(Prabuddh): Once Bug 1333771 is
+            # fixed apply it below to reduce the
+            # TestVM line to one line
+            TestVM: "vsm.[1].vse.[1], vsm.[1].vse.[3], vsm.[1].vse.[5],
+                     vsm.[1].vse.[7], vsm.[1].vse.[9], vsm.[1].vse.[11],
+                     vsm.[1].vse.[13], vsm.[1].vse.[15], vsm.[1].vse.[17],
+                     vsm.[1].vse.[19], vsm.[1].vse.[21], vsm.[1].vse.[23],
+                     vsm.[1].vse.[25], vsm.[1].vse.[27], vsm.[1].vse.[29],
+                     vsm.[1].vse.[31], vsm.[1].vse.[33], vsm.[1].vse.[35],
+                     vsm.[1].vse.[37], vsm.[1].vse.[39], vsm.[1].vse.[41],
+                     vsm.[1].vse.[43], vsm.[1].vse.[45], vsm.[1].vse.[47],
+                     vsm.[1].vse.[49], vsm.[1].vse.[51], vsm.[1].vse.[53],
+                     vsm.[1].vse.[55], vsm.[1].vse.[57], vsm.[1].vse.[59],
+                     vsm.[1].vse.[61], vsm.[1].vse.[63], vsm.[1].vse.[65],
+                     vsm.[1].vse.[67], vsm.[1].vse.[69], vsm.[1].vse.[71],
+                     vsm.[1].vse.[73], vsm.[1].vse.[75], vsm.[1].vse.[77],
+                     vsm.[1].vse.[79], vsm.[1].vse.[81], vsm.[1].vse.[83],
+                     vsm.[1].vse.[85], vsm.[1].vse.[87], vsm.[1].vse.[89],
+                     vsm.[1].vse.[91], vsm.[1].vse.[93], vsm.[1].vse.[95],
+                     vsm.[1].vse.[97]"
+            lif:
+                '[2]':
+                    name: "AutoGenerate"
+                    #portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vse_index*2 + 2]"
+                    type: "internal"
+                    connected: 1
+                    addressgroup:
+                        - addresstype: "primary"
+                          'ipv4address': "x=2*vse_index+2.2*vse_index+2.2*vse_index+2.1"
+                          netmask: "255.255.255.0"
+
+     CreateVXLANLIF2VDR_EVEN1:
+            Type: "VM"
+            TestVM: "vsm.[1].vse.[2],vsm.[1].vse.[4],vsm.[1].vse.[6],vsm.[1].vse.[8],
+                     vsm.[1].vse.[10]"
+            lif:
+                '[2]':
+                    name: "AutoGenerate"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vse_index*2+1]"
+                    type: "uplink"
+                    connected: 1
+                    addressgroup:
+                        - addresstype: "primary"
+                          'ipv4address': "x=2*vse_index+1.2*vse_index+1.2*vse_index+1.1"
+                          netmask: "255.255.255.0"
+
+     CreateVXLANLIF2VDR_EVEN2:
+            Type: "VM"
+            # TODO(Prabuddh): Once Bug 1333771 is
+            # fixed apply it below to reduce the
+            # TestVM line to one line
+            TestVM: "vsm.[1].vse.[12],vsm.[1].vse.[14],
+                     vsm.[1].vse.[16],vsm.[1].vse.[18],vsm.[1].vse.[20],
+                     vsm.[1].vse.[22],vsm.[1].vse.[24],vsm.[1].vse.[26],
+                     vsm.[1].vse.[28],vsm.[1].vse.[30],vsm.[1].vse.[32],
+                     vsm.[1].vse.[34],vsm.[1].vse.[36],vsm.[1].vse.[38],
+                     vsm.[1].vse.[40],vsm.[1].vse.[42],vsm.[1].vse.[44],
+                     vsm.[1].vse.[46],vsm.[1].vse.[48],vsm.[1].vse.[50],
+                     vsm.[1].vse.[52],vsm.[1].vse.[54],vsm.[1].vse.[56],
+                     vsm.[1].vse.[58],vsm.[1].vse.[60],vsm.[1].vse.[62],
+                     vsm.[1].vse.[64],vsm.[1].vse.[66],vsm.[1].vse.[68],
+                     vsm.[1].vse.[70],vsm.[1].vse.[72],vsm.[1].vse.[74],
+                     vsm.[1].vse.[76],vsm.[1].vse.[78],vsm.[1].vse.[80],
+                     vsm.[1].vse.[82],vsm.[1].vse.[84],vsm.[1].vse.[86],
+                     vsm.[1].vse.[88],vsm.[1].vse.[90],vsm.[1].vse.[92],
+                     vsm.[1].vse.[94],vsm.[1].vse.[96],vsm.[1].vse.[98]"
+            lif:
+                '[2]':
+                    name: "AutoGenerate"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vse_index*2+1]"
+                    type: "uplink"
+                    connected: 1
+                    addressgroup:
+                        - addresstype: "primary"
+                          'ipv4address': "x=2*vse_index+1.2*vse_index+1.2*vse_index+1.1"
+                          netmask: "255.255.255.0"
+
+     Enable_ECMP_EDGE_GATEWAY1:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1]"
+            globalrouteconfig:
+                '[1]':
+                    routerid: "1.1.1.1"
+
+     Enable_ECMP_EDGE_GATEWAY_ALL:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[2-49]"
+            globalrouteconfig:
+                '[1]':
+                    routerid: "x=1.1.1.gateway_index"
+
+     Configure_OSPF_EDGE_ALL_1:
+         Type: 'Router'
+         TestRouter: 'vsm.[1].gateway.[1-28]'
+         ospf:
+             '[1]':
+                 enabled: 'true'
+                 gracefulrestart: 'disabled'
+                 ospfareas:
+                     - areaid: '0'
+                     - areaid: '1'
+                 ospfinterfaces:
+                     - vnic: '2'
+                       areaid: '0'
+                       hellointerval: '10'
+                       deadinterval: '40'
+                       cost: '1'
+                       priority: '128'
+                     - vnic: '3'
+                       areaid: '0'
+                       hellointerval: '10'
+                       deadinterval: '40'
+                       cost: '1'
+                       priority: '128'
+
+
+     Configure_OSPF_EDGE_ALL_2:
+         Type: 'Router'
+         TestRouter: 'vsm.[1].gateway.[29-49]'
+         ospf:
+             '[1]':
+                 enabled: 'true'
+                 gracefulrestart: 'disabled'
+                 ospfareas:
+                     - areaid: '0'
+                     - areaid: '1'
+                 ospfinterfaces:
+                     - vnic: '2'
+                       areaid: '0'
+                       hellointerval: '10'
+                       deadinterval: '40'
+                       cost: '1'
+                       priority: '128'
+                     - vnic: '3'
+                       areaid: '0'
+                       hellointerval: '10'
+                       deadinterval: '40'
+                       cost: '1'
+                       priority: '128'
+
+     Enable_ECMP_EDGE_VDR_ALL:
+            Type: "VM"
+            TestVM: "vsm.[1].vse.[1-98]"
+            globalrouteconfig:
+                '[1]':
+                    routerid: "x=1.1.2.vse_index"
+
+     Configure_OSPF_VDR_ODD:
+            Type: 'Router'
+            # TODO(Prabuddh): Once Bug 1333771 is
+            # fixed apply it below to reduce the
+            # TestVM line to one line
+            TestRouter: "vsm.[1].vse.[1], vsm.[1].vse.[3], vsm.[1].vse.[5],
+                     vsm.[1].vse.[7], vsm.[1].vse.[9], vsm.[1].vse.[11],
+                     vsm.[1].vse.[13], vsm.[1].vse.[15], vsm.[1].vse.[17],
+                     vsm.[1].vse.[19], vsm.[1].vse.[21], vsm.[1].vse.[23],
+                     vsm.[1].vse.[25], vsm.[1].vse.[27], vsm.[1].vse.[29],
+                     vsm.[1].vse.[31], vsm.[1].vse.[33], vsm.[1].vse.[35],
+                     vsm.[1].vse.[37], vsm.[1].vse.[39], vsm.[1].vse.[41],
+                     vsm.[1].vse.[43], vsm.[1].vse.[45], vsm.[1].vse.[47],
+                     vsm.[1].vse.[49], vsm.[1].vse.[51], vsm.[1].vse.[53],
+                     vsm.[1].vse.[55], vsm.[1].vse.[57], vsm.[1].vse.[59],
+                     vsm.[1].vse.[61], vsm.[1].vse.[63], vsm.[1].vse.[65],
+                     vsm.[1].vse.[67], vsm.[1].vse.[69], vsm.[1].vse.[71],
+                     vsm.[1].vse.[73], vsm.[1].vse.[75], vsm.[1].vse.[77],
+                     vsm.[1].vse.[79], vsm.[1].vse.[81], vsm.[1].vse.[83],
+                     vsm.[1].vse.[85], vsm.[1].vse.[87], vsm.[1].vse.[89],
+                     vsm.[1].vse.[91], vsm.[1].vse.[93], vsm.[1].vse.[95],
+                     vsm.[1].vse.[97]"
+            ospf:
+                '[1]':
+                    enabled: 'true'
+                    protocoladdress: 'x=2*vse_index.2*vse_index.2*vse_index.3'
+                    forwardingaddress: 'x=2*vse_index.2*vse_index.2*vse_index.2'
+                    gracefulrestart: 'disabled'
+                    ospfareas:
+                        - areaid: '0'
+                        - areaid: '1'
+                          ospfareatype: 'nssa'
+                    ospfinterfaces:
+                        - vnic: '1'
+                          areaid: '0'
+                          hellointerval: '10'
+                          deadinterval: '40'
+                          cost: '1'
+                          priority: '128'
+                    redistribution:
+                        enabled: 'true'
+                        rules:
+                            - id: '0'
+                              action: 'permit'
+                              fromprotocol:
+                                  connected: 'true'
+
+     CreateVM1:
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       vm:
+        '[1-20]':
+            datastoreType: "shared"
+            vmstate: "poweroff"
+            template: 'RHEL63_srv_64'
+            host: "host.[x=vm_index]"
+     CreateVM2:
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       vm:
+        '[21-40]':
+            datastoreType: "shared"
+            vmstate: "poweroff"
+            template: 'RHEL63_srv_64'
+            host: "host.[x=vm_index]"
+     CreateVM3:
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       vm:
+        '[41-60]':
+            datastoreType: "shared"
+            vmstate: "poweroff"
+            template: 'RHEL63_srv_64'
+            host: "host.[x=vm_index]"
+     CreateVM4:
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       vm:
+        '[61-80]':
+            datastoreType: "shared"
+            vmstate: "poweroff"
+            template: 'RHEL63_srv_64'
+            host: "host.[x=vm_index]"
+     CreateVM5:
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       vm:
+        '[81-98]':
+            datastoreType: "shared"
+            vmstate: "poweroff"
+            template: 'RHEL63_srv_64'
+            host: "host.[x=vm_index]"
+
+     PlaceVM_Odd_OnLif:
+            Type: "VM"
+            # TODO(Prabuddh): Once Bug 1333771 is
+            # fixed apply it below to reduce the
+            # TestVM line to one line
+            TestVM: "vm.[1],vm.[3],vm.[5],vm.[7],vm.[9],vm.[11],vm.[13],
+                     vm.[15],vm.[17],vm.[19],vm.[21],vm.[23],vm.[25],
+                     vm.[27],vm.[29],vm.[31],vm.[33],vm.[35],vm.[37],
+                     vm.[39],vm.[41],vm.[43],vm.[45],vm.[47],vm.[49],
+                     vm.[51],vm.[53],vm.[55],vm.[57],vm.[59],vm.[61],
+                     vm.[63],vm.[65],vm.[67],vm.[69],vm.[71],vm.[73],
+                     vm.[75],vm.[77],vm.[79],vm.[81],vm.[83],vm.[85],
+                     vm.[87],vm.[89],vm.[91],vm.[93],vm.[95],vm.[97],"
+            vnic:
+                '[1]':
+                    driver: "e1000"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vm_index*2+2]"
+                    connected: 1
+                    startconnected: 1
+                    allowguestcontrol: 1
+
+     PlaceVM_Even_OnLif:
+            Type: "VM"
+            # TODO(Prabuddh): Once Bug 1333771 is
+            # fixed apply it below to reduce the
+            # TestVM line to one line
+            TestVM: "vm.[2],vm.[4],vm.[6],vm.[8],vm.[10],vm.[12],vm.[14],
+                     vm.[16],vm.[18],vm.[20],vm.[22],vm.[24],vm.[26],
+                     vm.[28],vm.[30],vm.[32],vm.[34],vm.[36],vm.[38],
+                     vm.[40],vm.[42],vm.[44],vm.[46],vm.[48],vm.[50],
+                     vm.[52],vm.[54],vm.[56],vm.[58],vm.[60],vm.[62],
+                     vm.[64],vm.[66],vm.[68],vm.[70],vm.[72],vm.[74],
+                     vm.[76],vm.[78],vm.[80],vm.[82],vm.[84],vm.[86],
+                     vm.[88],vm.[90],vm.[92],vm.[94],vm.[96],vm.[98]"
+            vnic:
+                '[1]':
+                    driver: "e1000"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vm_index*2+1]"
+                    connected: 1
+                    startconnected: 1
+                    allowguestcontrol: 1
+
+     PowerOnVM1:
+            Type: "VM"
+            TestVM: "vm.[1],vm.[3],vm.[5],vm.[7],vm.[9],vm.[11],vm.[13],
+                     vm.[15],vm.[17],vm.[19],vm.[21],vm.[23],vm.[25]"
+            vmstate: "poweron"
+
+     PowerOnVM2:
+            Type: "VM"
+            TestVM: "vm.[23],vm.[25],vm.[27],vm.[29],vm.[31],vm.[33],vm.[35],vm.[37],
+                     vm.[27],vm.[29],vm.[31],vm.[33],vm.[35],vm.[37],vm.[39],vm.[41]"
+            vmstate: "poweron"
+
+     PowerOnVM3:
+            Type: "VM"
+            TestVM: "vm.[43],vm.[45],vm.[47],vm.[49],vm.[51],vm.[53],vm.[55],vm.[57],vm.[59],vm.[61],
+                     vm.[63],vm.[65]"
+            vmstate: "poweron"
+
+     PowerOnVM4:
+            Type: "VM"
+            TestVM: "vm.[75],vm.[77],vm.[79],vm.[81],vm.[83],vm.[85],
+                     vm.[87],vm.[89],vm.[91],vm.[93],vm.[95],vm.[97]"
+            vmstate: "poweron"
+
+     PowerOnVM5:
+            Type: "VM"
+            TestVM: "vm.[67],vm.[69],vm.[71],vm.[73]"
+            vmstate: "poweron"
+
+     PowerOnVMEven1:
+            Type: "VM"
+            TestVM: "vm.[2],vm.[4],vm.[6],vm.[8],vm.[10],vm.[12],vm.[14],
+                     vm.[16],vm.[18],vm.[20],vm.[22],vm.[24],vm.[26]"
+            vmstate: "poweron"
+
+     PowerOnVMEven2:
+            Type: "VM"
+            TestVM: "vm.[28],vm.[30],vm.[32],vm.[34],vm.[36],vm.[38],
+                     vm.[40],vm.[42],vm.[44],vm.[46],vm.[48],vm.[50]"
+            vmstate: "poweron"
+
+     PowerOnVMEven3:
+            Type: "VM"
+            TestVM: "vm.[52],vm.[54],vm.[56],vm.[58],vm.[60],vm.[62],
+                     vm.[64],vm.[66],vm.[68],vm.[70],vm.[72],vm.[74]"
+            vmstate: "poweron"
+
+     PowerOnVMEven4:
+            Type: "VM"
+            TestVM: "vm.[76],vm.[78],vm.[80],vm.[82],vm.[84],vm.[86],
+                     vm.[88],vm.[90],vm.[92],vm.[94],vm.[96],vm.[98]"
+            vmstate: "poweron"
+
+     SetVNIC_IP_VM_ODD:
+            Type: "NetAdapter"
+            # TODO(Prabuddh): Once Bug 1333771 is
+            # fixed apply it below to reduce the
+            # TestVM line to one line
+            Testadapter: "vm.[1].vnic.[1],vm.[3].vnic.[1],vm.[5].vnic.[1],vm.[7].vnic.[1],vm.[9].vnic.[1],
+                          vm.[11].vnic.[1],vm.[13].vnic.[1],vm.[15].vnic.[1],vm.[17].vnic.[1],
+                          vm.[19].vnic.[1],vm.[21].vnic.[1],vm.[23].vnic.[1],vm.[25].vnic.[1],
+                          vm.[27].vnic.[1],vm.[29].vnic.[1],vm.[31].vnic.[1],vm.[33].vnic.[1],
+                          vm.[35].vnic.[1],vm.[37].vnic.[1],vm.[39].vnic.[1],vm.[41].vnic.[1],
+                          vm.[43].vnic.[1],vm.[45].vnic.[1],vm.[47].vnic.[1],vm.[49].vnic.[1],
+                          vm.[51].vnic.[1],vm.[53].vnic.[1],vm.[55].vnic.[1],vm.[57].vnic.[1],
+                          vm.[59].vnic.[1],vm.[61].vnic.[1],vm.[63].vnic.[1],vm.[65].vnic.[1],
+                          vm.[67].vnic.[1],vm.[69].vnic.[1],vm.[71].vnic.[1],vm.[73].vnic.[1],
+                          vm.[75].vnic.[1],vm.[77].vnic.[1],vm.[79].vnic.[1],vm.[81].vnic.[1],
+                          vm.[83].vnic.[1],vm.[85].vnic.[1],vm.[87].vnic.[1],vm.[89].vnic.[1],
+                          vm.[91].vnic.[1],vm.[93].vnic.[1],vm.[95].vnic.[1],vm.[97].vnic.[1],"
+            ipv4: 'x=vm_index*2+2.vm_index*2+2.vm_index*2+2.10'
+            netmask: "255.255.255.0"
+
+     SetVNIC_IP_VM_EVEN:
+            Type: "NetAdapter"
+            # TODO(Prabuddh): Once Bug 1333771 is
+            # fixed apply it below to reduce the
+            # TestVM line to one line
+            Testadapter: "vm.[2].vnic.[1],vm.[4].vnic.[1],vm.[6].vnic.[1],vm.[8].vnic.[1],
+                          vm.[10].vnic.[1],vm.[12].vnic.[1],vm.[14].vnic.[1],vm.[16].vnic.[1],vm.[18].vnic.[1],
+                          vm.[20].vnic.[1],vm.[22].vnic.[1],vm.[24].vnic.[1],vm.[26].vnic.[1],vm.[28].vnic.[1],
+                          vm.[30].vnic.[1],vm.[32].vnic.[1],vm.[34].vnic.[1],vm.[36].vnic.[1],vm.[38].vnic.[1],
+                          vm.[40].vnic.[1],vm.[42].vnic.[1],vm.[44].vnic.[1],vm.[46].vnic.[1],vm.[48].vnic.[1],
+                          vm.[50].vnic.[1],vm.[52].vnic.[1],vm.[54].vnic.[1],vm.[56].vnic.[1],vm.[58].vnic.[1],
+                          vm.[60].vnic.[1],vm.[62].vnic.[1],vm.[64].vnic.[1],vm.[66].vnic.[1],vm.[68].vnic.[1],
+                          vm.[70].vnic.[1],vm.[72].vnic.[1],vm.[74].vnic.[1],vm.[76].vnic.[1],vm.[78].vnic.[1],
+                          vm.[80].vnic.[1],vm.[82].vnic.[1],vm.[84].vnic.[1],vm.[86].vnic.[1],vm.[88].vnic.[1],
+                          vm.[90].vnic.[1],vm.[92].vnic.[1],vm.[94].vnic.[1],vm.[96].vnic.[1],vm.[98].vnic.[1]"
+            ipv4: 'x=vm_index*2+1.vm_index*2+1.vm_index*2+1.10'
+            netmask: "255.255.255.0"
+VCOPSScale1:
+#
+#   Instructions and caveatsfor using this Test:
+#       - Make sure host.[51] (controller host) has enough hard disk space for hosting controller vms (150 GB)
+#       - Make sure this setup is deployed on a private network
+#       - Make sure private network has dhcp enabled on it with subnet 192.168.0.0/16
+#       - Make sure private network has SNAT with which VMs inside it can talk to corp network
+#       - NAT can be done on outer edge or on MC
+#       - If you configure NAT on MC make sure add the MC's IP as the default gw on all the hosts.
+#       - Make sure outer edge (make it X-Large) and MC have enough resources
+#       - Make sure to upgrade vmx version of VCVA before powering it on
+#       - Give plenty of resources and reservations to the VCVA (like 32 vCPUs and 64 GB RAM) and VSM
+#       - Make sure to specify a snapshotDir in config yaml that is not in /tmp
+#       - Make sure to give enough of a workload timeout on all workloads (can be changed in config yaml)
+#       - Make sure to give a retry count of at least 3 in all workloads
+#
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test case checks Test Inventory
+  Tags: ''
+  TestName: Sample
+  Version: '2'
+  TestbedSpec:
+    host:
+        '[1-257]':
+            vmnic:
+                '[1]':
+                    driver: "any"
+    vc:
+        '[1]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            host: "host.[1]"
+                            name: "Controller-Cluster"
+                        '[2]':
+                            host: "host.[2-20]"
+                            name: "Autogenerate"
+                        '[3]':
+                            host: "host.[21-40]"
+                            name: "Autogenerate"
+                        '[4]':
+                            host: "host.[41-60]"
+                            name: "Autogenerate"
+                        '[5]':
+                            host: "host.[61-80]"
+                            name: "Autogenerate"
+                        '[6]':
+                            host: "host.[81-100]"
+                            name: "Autogenerate"
+                        '[7]':
+                            host: "host.[101-120]"
+                            name: "Autogenerate"
+                        '[8]':
+                            host: "host.[121-140]"
+                            name: "Autogenerate"
+                        '[9]':
+                            host: "host.[141-160]"
+                            name: "Autogenerate"
+                        '[10]':
+                            host: "host.[161-180]"
+                            name: "Autogenerate"
+                        '[11]':
+                            host: "host.[181-200]"
+                            name: "Autogenerate"
+                        '[12]':
+                            host: "host.[201-257]"
+                            name: "Autogenerate"
+            vds:
+                '[1]':
+                    datacenter: "vc.[1].datacenter.[1]"
+                    configurehosts: "add"
+                    host: "host.[1-257]"
+                    vmnicadapter: "host.[1-257].vmnic.[1]"
+                    numuplinkports: "1"
+            dvportgroup:
+                '[1]':
+                    name: "dvpg-VDS1-vlan16"
+                    vds: "vc.[1].vds.[1]"
+                '[2]':
+                    name: "dvpg-VDS1-vlan17"
+                    vds: "vc.[1].vds.[1]"
+                '[3]':
+                    name: "dvpg-VDS1-vlan18"
+                    vds: "vc.[1].vds.[1]"
+                '[4]':
+                    name: "dvpg-VDS1-vlan19"
+                    vds: "vc.[1].vds.[1]"
+                '[100]':
+                    name: "dvpg-VDS1-vlan100"
+                    vds: "vc.[1].vds.[1]"
+                    dvport:
+                        '[1-4000]':
+    vsm:
+        '[1]':
+            reconfigure: "true"
+            vc: "vc.[1]"
+            assignrole: "enterprise_admin"
+            ippool:
+                 '[1]':
+                     'name'        : 'prme-pool'
+                     'gateway'     : '192.161.1.1'
+                     'prefixlength': '16'
+                     'ipranges'    : ['192.161.1.250-192.161.1.252']
+            vxlancontroller:
+                 '[1]':
+                     'name': 'AutoGenerate'
+                     'firstnodeofcluster': 'true'
+                     'ippool': "vsm.[1].ippool.[1]"
+                     'resourcepool': 'vc.[1].datacenter.[1].cluster.[1]'
+                     'host': 'host.[1]'
+                     'datastore': 'host.[1]'
+            segmentidrange:
+                 '[1]':
+                     'name': "AutoGenerate"
+                     'begin': "5001-10001"
+                     'end': "99000"
+            multicastiprange:
+                 '[1]':
+                     'name': "AutoGenerate"
+                     'begin': "239.0.0.101"
+                     'end': "239.254.254.254"
+            VDNCluster:
+                 '[1-12]':
+                     'cluster': "vc.[1].datacenter.[1].cluster.[x]"
+                     'vibs': "install"
+                     'switch': "vc.[1].vds.[1]"
+                     'mtu': "1600"
+                     'vmkniccount': "1"
+                     'teaming':
+                          - "LOADBALANCE_SRCMAC"
+                          - "LOADBALANCE_SRCID"
+                          - "LOADBALANCE_LOADBASED"
+                          - "FAILOVER_ORDER"
+                          - "ETHER_CHANNEL"
+            networkscope:
+                 '[1]':
+                     'name': "network-scope-1-hybrid"
+                     'clusters': "vc.[1].datacenter.[1].cluster.[1-12]"
+                     'controlplanemode': "HYBRID_MODE"
+                 '[2]':
+                     'name': "network-scope-1-unicast"
+                     'clusters': "vc.[1].datacenter.[1].cluster.[1-12]"
+                     'controlplanemode': "UNICAST_MODE"
+                 '[3]':
+                     'name': "network-scope-1-multicast"
+                     'clusters': "vc.[1].datacenter.[1].cluster.[1-12]"
+                     'controlplanemode': "MULTICAST_MODE"
+
+  WORKLOADS:
+     Sequence:
+           - ["DeployGatewayServicesEdge100"]
+           - ["CreateVirtualWires1"]
+           - ["CreateVirtualWires2"]
+           - ["CreateVirtualWires3"]
+           - ["CreateVirtualWires4"]
+           - ["DeployGatewayServicesEdge1"]
+           - ["DeployGatewayServicesEdge2"]
+           - ["DeployGatewayServicesEdge3"]
+           - ["DeployGatewayServicesEdge4"]
+           - ["DeployVDREdge1"]
+           - ["DeployVDREdge2"]
+           - ["DeployVDREdge3"]
+           - ["DeployVDREdge4"]
+           - ["CreateGatewayInterface1Edge101"]
+           - ["CreateGatewayInterface1Edge"]
+           - ["CreateGatewayInterface2Edge"]
+           - ["CreateGatewayInterface3Edge"]
+           - ["CreateVXLANLIF1VDR"]
+           - ["CreateVXLANLIF2VDR"]
+
+           ### VM Deployement Workloads
+           #- ["CreateVM1"]
+           #- ["CreateVM2"]
+           #- ["CreateVM3"]
+           #- ["CreateVM4"]
+           #- ["PlaceVM_OnLif1"]
+           #-["PlaceVM_OnLif2"] ["PowerOnVM1", "PowerOnVM2", "PowerOnVM3", "PowerOnVM4"]
+           #- ["SetVNIC_IP_VM2"]
+           #- ["SetVNIC_IP_VM1"]
+
+     CreateVirtualWires1:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         noofretries: 3
+         VirtualWire:
+             '[1-100]':
+                 name: "AutoGenerate"
+                 controlplanemode : "HYBRID_MODE"
+                 tenantid: "AutoGenerate"
+     CreateVirtualWires2:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[2]"
+         #noofretries: 3
+         VirtualWire:
+             '[101-200]':
+                 name: "AutoGenerate"
+                 controlplanemode : "UNICAST_MODE"
+                 tenantid: "AutoGenerate"
+     CreateVirtualWires3:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[3]"
+         noofretries: 3
+         VirtualWire:
+             '[201-300]':
+                 name: "AutoGenerate"
+                 tenantid: "AutoGenerate"
+                 controlplanemode : "MULTICAST_MODE"
+     CreateVirtualWires4:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         noofretries: 3
+         VirtualWire:
+             '[301-400]':
+                 name: "AutoGenerate"
+                 tenantid: "AutoGenerate"
+                 controlplanemode : "HYBRID_MODE"
+
+     DeployGatewayServicesEdge1:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            gateway:
+                '[1-25]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=gateway_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.10.gateway_index"
+                    subnetmask: "255.255.255.0"
+                    #datastoretype: "local"
+     DeployGatewayServicesEdge2:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            gateway:
+                '[26-50]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[3]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=gateway_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.10.gateway_index"
+                    subnetmask: "255.255.255.0"
+                    #datastoretype: "local"
+     DeployGatewayServicesEdge3:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            gateway:
+                '[51-75]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[4]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=gateway_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.10.gateway_index"
+                    subnetmask: "255.255.255.0"
+                    #datastoretype: "local"
+     DeployGatewayServicesEdge4:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            gateway:
+                '[76-100]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[5]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=gateway_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.10.gateway_index"
+                    subnetmask: "255.255.255.0"
+                    datastoretype: "shared"
+     DeployVDREdge1:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            vse:
+                '[1-25]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+                    datastoretype: "local"
+     DeployVDREdge2:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            vse:
+                '[26-50]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[3]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+                    datastoretype: "local"
+     DeployVDREdge3:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            vse:
+                '[51-75]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[4]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+     DeployVDREdge4:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            vse:
+                '[76-100]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[5]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+     DeployVDREdge5:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            vse:
+                '[101-125]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[6]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index+100]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+     DeployVDREdge6:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            vse:
+                '[126-150]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[7]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index+100]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+     DeployVDREdge7:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            vse:
+                '[151-175]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[8]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index+100]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+     DeployVDREdge8:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            vse:
+                '[176-200]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[9]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[x=vse_index+100]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.20.vse_index"
+                    subnetmask: "255.255.255.0"
+
+     DeployGatewayServicesEdge100:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            noofretries: 3
+            gateway:
+                '[101]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[4]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.10.gateway_index"
+                    subnetmask: "255.255.255.0"
+                '[102]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[5]"
+                    portgroup: "vc.[1].dvportgroup.[100]"
+                    primaryaddress: "x=200.10.10.gateway_index"
+                    subnetmask: "255.255.255.0"
+
+     CreateGatewayInterface1Edge101:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[101]"
+            noofretries: 3
+            interface:
+                '[1]':
+                    name: "vnic1"
+                    index: "1"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                    'ipv4address': "1.1.1.1"
+                    netmask: "255.255.255.0"
+                    type: "uplink"
+
+     CreateGatewayInterface1Edge:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1-25]"
+            noofretries: 3
+            interface:
+                '[1]':
+                    name: "vnic1"
+                    index: "1"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                    'ipv4address': "x=1.1.1.gateway_index+1"
+                    netmask: "255.255.255.0"
+                    type: "uplink"
+
+     CreateGatewayInterface2Edge:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1-25]"
+            noofretries: 3
+            interface:
+                '[2]':
+                    name: "vnic2"
+                    index: "2"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=gateway_index*4 - 2]"
+                    'ipv4address': "x=1.1.2*gateway_index.1"
+                    netmask: "255.255.255.0"
+                    type: "uplink"
+
+     CreateGatewayInterface3Edge:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1-25]"
+            noofretries: 3
+            interface:
+                '[3]':
+                    name: "vnic3"
+                    index: "3"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=gateway_index*4]"
+                    'ipv4address': "x=1.1.2*gateway_index+1.1"
+                    netmask: "255.255.255.0"
+                    type: "uplink"
+
+     CreateVXLANLIF1VDR:
+            Type: "VM"
+            TestVM: "vsm.[1].vse.[6-50]"
+            noofretries: 3
+            lif:
+                '[1]':
+                    name: "AutoGenerate"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vse_index*2]"
+                    type: "uplink"
+                    connected: 1
+                    addressgroup:
+                        - addresstype: "primary"
+                          'ipv4address': "x=1.1.vse_index+1.2"
+                          netmask: "255.255.255.0"
+
+     CreateVXLANLIF2VDR:
+            Type: "VM"
+            TestVM: "vsm.[1].vse.[6-50]"
+            noofretries: 3
+            lif:
+                '[2]':
+                    name: "AutoGenerate"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vse_index*2+1]"
+                    type: "uplink"
+                    connected: 1
+                    addressgroup:
+                        - addresstype: "primary"
+                          'ipv4address': "x=2.1.vse_index+1.1"
+                          netmask: "255.255.255.0"
+
+     CreateVM1:
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       noofretries: 3
+       vm:
+        '[1-25]':
+            datastoreType: "shared"
+            vmstate: "poweroff"
+            template: 'RHEL63_srv_64'
+            host: "host.[x=vm_index+25]"
+     CreateVM2:
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       noofretries: 3
+       vm:
+        '[26-50]':
+            datastoreType: "shared"
+            vmstate: "poweroff"
+            template: 'RHEL63_srv_64'
+            host: "host.[x=vm_index]"
+     CreateVM3:
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       noofretries: 3
+       vm:
+        '[51-75]':
+            datastoreType: "shared"
+            vmstate: "poweroff"
+            template: 'RHEL63_srv_64'
+            host: "host.[x=vm_index-25]"
+     CreateVM4:
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       noofretries: 3
+       vm:
+        '[76-100]':
+            datastoreType: "shared"
+            vmstate: "poweroff"
+            template: 'RHEL63_srv_64'
+            host: "host.[x=vm_index-50]"
+
+     PlaceVM_OnLif1:
+            Type: "VM"
+            TestVM: "vm.[1-50]"
+            noofretries: 3
+            vnic:
+                '[1]':
+                    driver: "e1000"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vm_index*2+1]"
+                    connected: 1
+                    startconnected: 1
+                    allowguestcontrol: 1
+     PlaceVM_OnLif2:
+            Type: "VM"
+            TestVM: "vm.[51-100]"
+            noofretries: 3
+            vnic:
+                '[1]':
+                    driver: "e1000"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[x=vm_index*2-99]"
+                    connected: 1
+                    startconnected: 1
+                    allowguestcontrol: 1
+
+     PowerOnVM1:
+            Type: "VM"
+            TestVM: "vm.[1-25]"
+            vmstate: "poweron"
+            noofretries: 3
+     PowerOnVM2:
+            Type: "VM"
+            TestVM: "vm.[26-50]"
+            vmstate: "poweron"
+            noofretries: 3
+     PowerOnVM3:
+            Type: "VM"
+            TestVM: "vm.[51-75]"
+            vmstate: "poweron"
+            noofretries: 3
+     PowerOnVM4:
+            Type: "VM"
+            TestVM: "vm.[76-100]"
+            vmstate: "poweron"
+            noofretries: 3
+
+     SetVNIC_IP_VM1:
+            Type: "NetAdapter"
+            Testadapter: "vm.[1-50].vnic.[1]"
+            ipv4: 'x=2.1.vm_index*2+1.10'
+            netmask: "255.255.255.0"
+            noofretries: 3
+     SetVNIC_IP_VM2:
+            Type: "NetAdapter"
+            Testadapter: "vm.[51-100].vnic.[1]"
+            ipv4: 'x=2.1.vm_index*2-99.10'
+            netmask: "255.255.255.0"
+            noofretries: 3

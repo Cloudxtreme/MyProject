@@ -1,0 +1,47 @@
+!include ../../ManagementPlane/Clustering/L2Workloads.yaml
+!include ../../ManagementPlane/Clustering/MPCommonWorkloads.yaml
+!include ../../ManagementPlane/Clustering/MPVerticalWorkloads.yaml
+!include MPACommon.yaml
+!include TestbedSpec.yaml
+
+ClientRPC:
+  Product: 'NSXTransformers'
+  Component: 'Clustering'
+  Category: 'ManagementPlatform'
+  TestName: 'MPClusterThreeNodeMPCluster'
+  Version: "2"
+  TCMSId: ''
+  Priority: 'P0'
+  PMT: ''
+  Testcaselevel: 'Functional'
+  Testcasetype: 'Functional'
+  QCPath:  ''
+  TestbedSpec: *MPA_KVM_CLUSTER_01
+  summary: 'cluster with 3 mp nodes'
+  Procedure: 'Start with a 3MP Node cluster configured already...'
+  ExpectedResult: 'RPC request should work'
+  Duration: '300'
+  Tags: 'nsx,management,clustering,cat'
+  AutomationLevel: 'Manual'
+  Developer: 'jfieger'
+  FullyAutomatable: 'Y'
+  Status: 'Draft'
+  PartnerFacing: 'Y'
+  WORKLOADS:
+    <<: *MPACommonWorkloads
+
+    Sequence:
+       - ["RestartMPA"]
+       - ["RPC"]
+       - ["ClientRPCCheckForSend"]
+       - ["RPCSent"]
+
+    ClientRPCCheckForSend:
+        Type: Host
+        TestHost: *TEST_HOST
+        query_file:
+            execution_type: 'cmd'
+            file_name: *SYSLOG
+            grep_after: 'SmokeSampleClientRPC'
+            grep_string: 'Sending message:RMQ_CLIENT_RPC_REQUEST to mp'
+            max_wait: 20

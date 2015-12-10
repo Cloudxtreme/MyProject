@@ -1,0 +1,102 @@
+Testbed_2ESX_2VM: &Testbed_2ESX_2VM
+    esx:
+        '[1-2]':
+            vmnic:
+                '[1]':
+                    driver: 'any'
+
+    nsxmanager:
+        '[1-3]':
+            ip: none
+
+    nsxcontroller:
+        '[1-3]': null
+    vm:
+        '[1]':
+            host: esx.[1]
+        '[2]':
+            host: esx.[2]
+
+TestbedL2:
+    NSX: &TestbedNSX-3Mp-3Ccp
+        nsxmanager:
+            '[1-3]':
+                ip: none
+        nsxcontroller:
+            '[1-3]':
+                ip: none
+
+    NSX: &TestbedNSX-3MpCluster-3CcpCluster
+        nsxmanager:
+            '[1-3]':
+                ip: none
+                clusternode:
+                    '[1]':
+                        mgr_role_config:
+                            username: 'admin'
+                            password: 'default'
+                            node_type: 'AddManagementNodeSpec'
+                            manager_ip: 'nsxmanager.[1]'
+                            manager_thumbprint: 'nsxmanager.[1]'
+        nsxcontroller:
+            '[1-3]':
+                ip: none
+                set_nsx_registration:
+                    execution_type: 'cli'
+                    manager_ip: 'nsxmanager.[1]'
+                    manager_thumbprint: 'nsxmanager.[1]'
+                clusternode:
+                    '[1]':
+                        execution_type: 'cli'
+                        controller_ip: 'nsxcontroller.[1]'
+
+    ESX: &TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+        <<: *TestbedNSX-3Mp-3Ccp
+        esx:
+            '[1-2]':
+                vmnic:
+                    '[1-2]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+        vm:
+            '[1-8]':
+                # odd-numbered on esx.1, even-numbered on esx.2
+                host: 'esx.[x=(int(1+((vm_index+1)%2)))]'
+
+    KVM: &TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--KVM
+        <<: *TestbedNSX-3Mp-3Ccp
+        kvm:
+            '[1-2]':
+                pif:
+                    '[1]':
+                        driver: any
+                        persist_configuration:
+                            bootproto: "dhcp"
+                            onboot: "yes"
+                    '[2]':
+                        driver: any
+                        persist_configuration:
+                            bootproto: "none"
+                            onboot: "yes"
+                framework_setup:
+                    - disablefirewall
+                    - createanchor
+                    - copysshkey
+                configure_package:
+                   execution_type: cmd
+                   operation: install
+                bridge:
+                    '[1]':
+                        name: nsxvswitch
+                        switch_fail_mode: secure
+                        external_id: nsx-managed
+        vm:
+            '[1-8]':
+                # odd-numbered on kvm.1, even-numbered on kvm.2
+                host: 'kvm.[x=(int(1+((vm_index+1)%2)))]'
+                vmstate: poweron
+                installtype: fullclone

@@ -1,0 +1,3967 @@
+MPReboot:
+    Product: "NSX"
+    Category: "Reboot Scenarios"
+    Component: "L2"
+    TestName: "MPReboot"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    Summary: "To verify the scenario when the MP is rebooted"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "mqing"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_3--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['LogicalSwitch1Traffic']
+            - ['LogicalSwitch2Traffic']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS2_CCP_Verification']
+            - ['RebootMP', 'ArpPingLS1_135_To_7', 'ArpPingLS2_246_To_8']
+            - ['LogicalSwitch1Traffic']
+            - ['LogicalSwitch2Traffic']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS2_CCP_Verification']
+
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1', 'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2', 'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2', 'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        ConfigureVnicIP:  *CONFIGURE_8VMS_IP--KVM
+        DeleteVM1Vnic1FromLSwitch1:  *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2:  *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1:  *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2:  *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1:  *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2:  *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1:  *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2:  *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS2_CCP_Verification: *ARPPING_LS2_CCP_VERIFICATION--KVM
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[1].vif.[1],vm.[3].vif.[1],vm.[5].vif.[1]"
+            SupportAdapter: "vm.[7].vif.[1]"
+            TestDuration  : "10"
+
+        LogicalSwitch2Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[2].vif.[1],vm.[4].vif.[1],vm.[6].vif.[1]"
+            SupportAdapter: "vm.[8].vif.[1]"
+            TestDuration  : "10"
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+        ArpPingLS1_135_To_7:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[1].vif.[1],vm.[3].vif.[1],vm.[5].vif.[1]'
+            SupportAdapter: 'vm.[7].vif.[1]'
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: '0'
+            sleepbetweenworkloads: *SLEEP_FIRST_VM_ARP--KVM
+
+        ArpPingLS2_246_To_8:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[2].vif.[1],vm.[4].vif.[1],vm.[6].vif.[1]'
+            SupportAdapter: 'vm.[8].vif.[1]'
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: '0'
+            sleepbetweenworkloads: *SLEEP_FIRST_VM_ARP--KVM
+
+        RebootMP:
+            Type: 'VM'
+            TestVM: 'nsxmanager.[1]'
+            vmstate: 'poweroff,poweron'
+
+DuplicateAddressDetection:
+    Product: "NSXTransformers"
+    Component: "ARP DAD"
+    Category: "L2"
+    TestName: "DuplicateAddressDetection"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    QCPath: *QCPATH--KVM
+    Summary: 'this case verify duplicate address detection, when there is an
+              arp cache on host,this case come from PR
+              https://bugzilla.eng.vmware.com/show_bug.cgi?id=1296328'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "mqing"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['ConfigureVm1VnicIP']
+            - ['ConfigureVm3VnicIP']
+            - ['ConfigureVm5VnicIP']
+            - ['ConfigureVm7VnicIP']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS1_VM137_Host3_Verification']
+            - ['ConfigureVm5VnicSameIPAsVm1']
+            - ['ArpPingDADHasDuplicate']
+            - ['ShutVM1vif']
+            - ['ArpPingDADNoDuplicate']
+            - ['NoShutVM1vif']
+        ExitSequence:
+            - ['NoShutVM1vif']
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1', 'DeleteVM7Vnic1FromLSwitch1']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        DeleteVM1Vnic1FromLSwitch1:  *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM3Vnic1FromLSwitch1:  *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM5Vnic1FromLSwitch1:  *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM7Vnic1FromLSwitch1:  *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS1_VM137_Host3_Verification: *ARPPING_LS1_VM137_HOST3_VERIFICATION--KVM
+
+        ConfigureVm1VnicIP:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[1].vif.[1]'
+            IPv4: '192.168.1.1'
+            netmask: '255.255.0.0'
+
+        ConfigureVm3VnicIP:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[3].vif.[1]'
+            IPv4: '192.168.3.1'
+            netmask: '255.255.0.0'
+
+        ConfigureVm5VnicIP:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[5].vif.[1]'
+            IPv4: '192.168.5.1'
+            netmask: '255.255.0.0'
+
+        ConfigureVm7VnicIP:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[7].vif.[1]'
+            IPv4: '192.168.7.1'
+            netmask: '255.255.0.0'
+
+        ConfigureVm5VnicSameIPAsVm1:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[5].vif.[1]'
+            IPv4: '192.168.1.1'
+            netmask: '255.255.0.0'
+
+        ArpPingDADHasDuplicate:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[5].vif.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: '0'
+            arpprobe: "DAD"
+            sleepbetweenworkloads: "15"
+
+        ArpPingDADNoDuplicate:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[5].vif.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: '0'
+            arpprobe: "DAD"
+            ExpectedResult: "Fail"
+            sleepbetweenworkloads: "15"
+
+        NoShutVM1vif:
+            Type: "NetAdapter"
+            TestAdapter: "vm.[1].vif.[1]"
+            devicestatus: "UP"
+
+        ShutVM1vif:
+            Type: "NetAdapter"
+            TestAdapter: "vm.[1].vif.[1]"
+            devicestatus: "DOWN"
+
+DeleteLSwitch:
+    Product: "NSXTransformers"
+    Component: "MP to MPA Communication"
+    Category: "L2"
+    TestName: "DeleteLSwitch"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    QCPath: *QCPATH--KVM
+    Summary: "To verify that MP/CCP propagate the LSwitch deletion info to all
+              nodes and that all nodes clear that LSwitch related info from LCP"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "mqing"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['VerifyTNsContainsLSInfo']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS2_CCP_Verification']
+            - ['ReadLS2Vni']
+            - ['ReadVM2Vnic1Mac', 'ReadVM4Vnic1Mac',
+               'ReadVM6Vnic1Mac', 'ReadVM8Vnic1Mac']
+            - ['DeleteVM2Vnic1FromLSwitch2WithoutPost',
+               'DeleteVM4Vnic1FromLSwitch2WithoutPost',
+               'DeleteVM6Vnic1FromLSwitch2WithoutPost',
+               'DeleteVM8Vnic1FromLSwitch2WithoutPost']
+            - ['DeleteLogicalSwitch2']
+            - ['VerifyTNsContainsLS1']
+            - ['ArpPingLS1_135_To_7', 'ArpPingLS1_7_To_135',
+               'VerifyLS2NotExistOnControllers', 'VerifyTNsNotContainsLS2']
+            - ['CreateLogicalSwitch2']
+
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1', 'DeleteVM7Vnic1FromLSwitch1']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        CreateLogicalSwitch2: *CREATE_LOGICALSWITCH_2
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        ConfigureVnicIP:  *CONFIGURE_8VMS_IP--KVM
+        DeleteVM1Vnic1FromLSwitch1:  *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM3Vnic1FromLSwitch1:  *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM5Vnic1FromLSwitch1:  *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM7Vnic1FromLSwitch1:  *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2WithoutPost:  *DELETE_VM2_VNIC1_LSWITCH2_WITHOUT_POST--KVM
+        DeleteVM4Vnic1FromLSwitch2WithoutPost:  *DELETE_VM4_VNIC1_LSWITCH2_WITHOUT_POST--KVM
+        DeleteVM6Vnic1FromLSwitch2WithoutPost:  *DELETE_VM6_VNIC1_LSWITCH2_WITHOUT_POST--KVM
+        DeleteVM8Vnic1FromLSwitch2WithoutPost:  *DELETE_VM8_VNIC1_LSWITCH2_WITHOUT_POST--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS2_CCP_Verification: *ARPPING_LS2_CCP_VERIFICATION--KVM
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+        VerifyTNsContainsLSInfo:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+
+        ReadLS2Vni:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            PersistData: "Yes"
+            read:
+                'vni[?]defined': ''
+
+        ReadVM2Vnic1Mac: &READ_VM2_VNIC1_MAC
+            Type: "NetAdapter"
+            TestAdapter: "vm.[2].vif.[1]"
+            PersistData: "Yes"
+            read:
+                'mac[?]defined': ''
+
+        ReadVM4Vnic1Mac:
+            <<: *READ_VM2_VNIC1_MAC
+            TestAdapter: "vm.[4].vif.[1]"
+
+        ReadVM6Vnic1Mac:
+            <<: *READ_VM2_VNIC1_MAC
+            TestAdapter: "vm.[6].vif.[1]"
+
+        ReadVM8Vnic1Mac:
+            <<: *READ_VM2_VNIC1_MAC
+            TestAdapter: "vm.[8].vif.[1]"
+
+        VerifyTNsContainsLS1:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+
+        VerifyTNsNotContainsLS2:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]not_contains':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]->read->vni"
+
+        ArpPingLS1_135_To_7:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[1].vif.[1],vm.[3].vif.[1],vm.[5].vif.[1]'
+            SupportAdapter: 'vm.[7].vif.[1]'
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: '0'
+            sleepbetweenworkloads: *SLEEP_FIRST_VM_ARP--KVM
+
+        ArpPingLS1_7_To_135:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[7].vif.[1]'
+            SupportAdapter: 'vm.[1].vif.[1],vm.[3].vif.[1],vm.[5].vif.[1]'
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: '0'
+            sleepbetweenworkloads: *SLEEP_FIRST_VM_ARP--KVM
+
+        DeleteLogicalSwitch2:
+            Type : "NSX"
+            TestNSX : "nsxmanager.[1]"
+            deletelogicalswitch: "nsxmanager.[1].logicalswitch.[2]"
+            SkipPostProcess: "1"
+
+        VerifyLS2NotExistOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]->read->vni'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_mac_table[?]contains':
+                table:
+                    - adapter_mac: "vm.[2].vif.[1]->read->mac"
+                    - adapter_mac: "vm.[4].vif.[1]->read->mac"
+                    - adapter_mac: "vm.[6].vif.[1]->read->mac"
+                    - adapter_mac: "vm.[8].vif.[1]->read->mac"
+            ExpectedResult:
+                status_code: NOT_FOUND
+
+ARPProxyVMinSameHost:
+    Product: "NSXTransformers"
+    Component: "ARP proxy"
+    Category: "L2"
+    TestName: "ARPProxyVMinSameHost"
+    Version: "2"
+    Tags: "nsxmanager"
+    QCPath: *QCPATH--KVM
+    Summary: "To verify that ARP request for a VM in same host is not broadcasted
+             and no request is sent to CCP"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "shawntu"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch2']
+            - ['AttachVM2toSwitch1', 'AttachVM4toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost1']
+            - ['VerifyLSReplicationModeOnHost2']
+            - ['ArpPingVM1']
+            - ['VerifyLS1ArpEntryNotOnControllers']
+            - ['ArpPingVM3']
+            - ['VerifyLS2ArpEntryNotOnControllers']
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM2Vnic1FromLSwitch1',
+               'DeleteVM3Vnic1FromLSwitch2', 'DeleteVM4Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM2toSwitch1: *ATTACH_VM2_TO_SWITCH_1--KVM
+        AttachVM3toSwitch2: *ATTACH_VM3_TO_SWITCH_2--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        ConfigureVnicIP:  *CONFIGURE_4VMS_IP--KVM
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch1: *DELETE_VM2_VNIC1_LSWITCH1--KVM
+        DeleteVM3Vnic1FromLSwitch2: *DELETE_VM3_VNIC1_LSWITCH2--KVM
+        DeleteVM4Vnic1FromLSwitch2: *DELETE_VM4_VNIC1_LSWITCH2--KVM
+
+        #VM1 would not unicast ARP request to MTEP
+        ArpPingVM1:
+            Type: "Traffic"
+            toolName: "ArpPing"
+            TestAdapter: "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[2].vif.[1]"
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: "0"
+            verification  : 'Verification_0'
+            sleepbetweenworkloads: *SLEEP_FIRST_VM_ARP--KVM
+
+        Verification_0:
+            PktCapVerification:
+                target:       'kvm.[1].pif.[1]'
+                pktcapfilter: *PKTCAP_LS1_TX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                vni:      "nsxmanager.[1].logicalswitch.[1]"
+                pktcount: '0'
+                innerpkttype: 'broadcast'
+                innerl2protocol: 'arp'
+
+        #VM3 would not unicast ARP request to MTEP
+        ArpPingVM3:
+            Type: "Traffic"
+            toolName: "ArpPing"
+            TestAdapter: "vm.[3].vif.[1]"
+            SupportAdapter: "vm.[4].vif.[1]"
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: "0"
+            verification  : 'Verification_0'
+            sleepbetweenworkloads: *SLEEP_FIRST_VM_ARP--KVM
+
+        Verification_0:
+            PktCapVerification:
+                target:       'kvm.[2].pif.[1]'
+                pktcapfilter: *PKTCAP_LS2_TX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                vni:      "nsxmanager.[1].logicalswitch.[2]"
+                pktcount: '0'
+                innerpkttype: 'broadcast'
+                innerl2protocol: 'arp'
+
+        VerifyLS1ArpEntryNotOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_ARP_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_ARP_ENTRY_CHECK--KVM
+            'get_arp_table[?]not_contains':
+                table:
+                    - adapter_ip: "vm.[2].vif.[1]"
+                      adapter_mac: "vm.[2].vif.[1]"
+
+        VerifyLS2ArpEntryNotOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_ARP_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_ARP_ENTRY_CHECK--KVM
+            'get_arp_table[?]not_contains':
+                table:
+                    - adapter_ip: "vm.[4].vif.[1]"
+                      adapter_mac: "vm.[4].vif.[1]"
+
+        VerifyLSReplicationModeOnHost1:
+            Type: "Host"
+            testHost: "kvm.[1]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+
+        VerifyLSReplicationModeOnHost2:
+            Type: "Host"
+            testHost: "kvm.[2]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+ControllerTableVerification:
+    Product: "NSXTransformers"
+    Component: "CCP to LCP communication"
+    Category: "L2"
+    TestName: "ControllerTableVerification"
+    Version: "2"
+    Tags: "NSX, Avalanche, L2, VxSTT"
+    QCPath: *QCPATH--KVM
+    Summary: "To verify the MAC and ARP table on CCP"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "shawntu"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['VerifyLS1MacEntryOnControllers',
+               'VerifyLS2MacEntryOnControllers']
+            - ['VerifyLS1StatsDiffOnControllers']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['VerifyLS1StatsDiffOnControllers']
+            - ['VerifyLS2StatsDiffOnControllers']
+            - ['ARPPING_LS2_CCP_Verification']
+            - ['VerifyLS2StatsDiffOnControllers']
+
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1',  'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1',  'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2',  'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2',  'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        ConfigureVnicIP:  *CONFIGURE_8VMS_IP--KVM
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2: *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1: *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2: *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1: *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2: *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1: *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2: *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS2_CCP_Verification: *ARPPING_LS2_CCP_VERIFICATION--KVM
+
+        VerifyLS1StatsDiffOnControllers: *VerifyLS1StatsDiffOnControllers--KVM
+
+        VerifyLS2StatsDiffOnControllers: *VerifyLS2StatsDiffOnControllers--KVM
+
+        VerifyLS1MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[3].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[5].vif.[1]"
+                      adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_mac: "vm.[7].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[2].vif.[1]"
+                    - adapter_mac: "vm.[4].vif.[1]"
+                    - adapter_mac: "vm.[6].vif.[1]"
+                    - adapter_mac: "vm.[8].vif.[1]"
+
+        VerifyLS1VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+MTEPFuncVTEPUpDown:
+    Product: "NSXTransformers"
+    Component: "MTEP Func"
+    Category: "L2"
+    TestName: "MTEPFuncVTEPUpDown"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    QCPath: *QCPATH--KVM
+    Summary: "MTEPFuncVTEPUpDown: To verify whether the MTEP table is updated
+              on all hosts when a new VTEP is added or deleted to the
+              controller. Verify that the TN distributes the VNIs across the
+              newly joined MTEP"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "mqing"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['Create3TransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['Discover3Vteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1',
+               'AttachVM3toSwitch1', 'AttachVM5toSwitch1']
+            - ['AttachVM2toSwitch2',
+               'AttachVM4toSwitch2', 'AttachVM6toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOn_3_Host']
+            - ['VerifyLS1_3_VtepEntryOnControllers',
+               'VerifyLS1_3_VtepEntryOnHost']
+            - ['VerifyLS2_3_VtepEntryOnControllers',
+               'VerifyLS2_3_VtepEntryOnHost']
+            - ['CreateTransportNode_4']
+            - ['DiscoverVtep4']
+            - ['AttachVM7toSwitch1']
+            - ['AttachVM8toSwitch2']
+            - ['ConfigureVM78VnicIP']
+            - ['VerifyLSReplicationModeOn_4_Host']
+            - ['VerifyLS1_4_VtepEntryOnControllers']
+            - ['VerifyLS1_4_VtepEntryOnHost']
+            - ['VerifyLS2_4_VtepEntryOnControllers']
+            - ['VerifyLS2_4_VtepEntryOnHost']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS2_CCP_Verification']
+            - ['ReadVtep4IP']
+            - ['DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM8Vnic1FromLSwitch2']
+            - ['DeleteVtep4WithoutPost']
+            - ['DeleteTransportNode4']
+            - ['VerifyLSReplicationModeOn_3_Host']
+            - ['VerifyLS1_3_VtepEntryOnControllers',
+               'VerifyLS1_3_VtepEntryOnHost']
+            - ['VerifyLS2_3_VtepEntryOnControllers',
+               'VerifyLS2_3_VtepEntryOnHost']
+            - ['VerifyLS1VtepEntry4NotOnControllers',
+               'VerifyLS1VtepEntry4NotOnHost']
+            - ['VerifyLS2VtepEntry4NotOnControllers',
+               'VerifyLS2VtepEntry4NotOnHost']
+
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1',  'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1',  'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2',  'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2',  'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        Create3TransportNodes: *CREATE_3_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        Discover3Vteps: *DISCOVER_3_VTEPS--KVM
+        DiscoverVtep4: *DISCOVER_VTEP_4--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        CreateTransportNode_4: *CREATE_TRANSPORTNODE_4--KVM
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2: *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1: *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2: *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1: *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2: *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1: *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2: *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS2_CCP_Verification: *ARPPING_LS2_CCP_VERIFICATION--KVM
+
+        ConfigureVnicIP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[1-6].vif.[1]'
+            IPv4: auto
+
+        ConfigureVM78VnicIP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[7-8].vif.[1]'
+            IPv4: auto
+
+        VerifyLSReplicationModeOn_3_Host:
+            Type: "Host"
+            testHost: "kvm.[1-3]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+
+        VerifyLSReplicationModeOn_4_Host:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+
+        VerifyLS1_3_VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+
+        VerifyLS2_3_VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+
+        VerifyLS1_3_VtepEntryOnHost:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+
+        VerifyLS2_3_VtepEntryOnHost:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[2]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+
+        VerifyLS1_4_VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2_4_VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1_4_VtepEntryOnHost:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2_4_VtepEntryOnHost:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[2]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        DeleteTransportNode4:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            deletetransportnode: 'nsxmanager.[1].transportnode.[4]'
+
+        VerifyLS1VtepEntry4NotOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]not_contains':
+                table:
+                    - adapter_ip: "kvm.[4].vtep.[1]->read->ip"
+
+        VerifyLS2VtepEntry4NotOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]not_contains':
+                table:
+                    - adapter_ip: "kvm.[4].vtep.[1]->read->ip"
+
+        VerifyLS1VtepEntry4NotOnHost:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            'get_vtep_table[?]not_contains':
+                table:
+                    - adapter_ip: "kvm.[4].vtep.[1]->read->ip"
+
+        VerifyLS2VtepEntry4NotOnHost:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[2]'
+            'get_vtep_table[?]not_contains':
+                table:
+                    - adapter_ip: "kvm.[4].vtep.[1]->read->ip"
+
+        ReadVtep4IP:
+            Type: "NetAdapter"
+            TestAdapter: 'kvm.[4].vtep.[1]'
+            PersistData: "Yes"
+            read:
+                'ip[?]defined': ''
+
+        DeleteVtep4WithoutPost:
+            Type: Host
+            TestHost: 'kvm.[4]'
+            deletevtep: 'kvm.[4].vtep.[1]'
+            SkipPostProcess: "1"
+
+MTEPPrimaryChangeTrafficConvergence:
+    Product: "NSXTransformers"
+    Component: 'MTEP'
+    Category: 'L2'
+    TestName: "MTEPPrimaryChangeTrafficConvergence"
+    Version: '2'
+    Tags: 'L2, LogicalSwitch, VM'
+    QCPath: *QCPATH--KVM
+    Summary: "To verify whether a VTEP chooses only one MTEP per segment and
+              sends traffic to only that MTEP."
+    ExpectedResult: 'PASS'
+    Status: 'Execution Ready'
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "mqing"
+    Partnerfacing: 'N'
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['ArpPingLS1Vm1To5']
+            # here is to verify the mtep failover, reboot host4, host3 must be
+            # the mtep
+            - ['FailoverHost4inSegement2']
+            - ['ArpPingLS1Vm1ToUnknownIP']
+            - ['LogicalSwitch1Traffic_VM135']
+            - ['PoweronVM7', 'PoweronVM8']
+            # reboot host3, host4 must be the mtep
+            - ['FailoverHost3inSegement2', 'ArpPingLS1Vm1To7']
+            - ['PoweronVM5', 'PoweronVM6']
+            - ['LogicalSwitch1Traffic_VM137']
+            - ['LogicalSwitch1Traffic']
+
+        ExitSequence:
+            - ['PoweronVM7', 'PoweronVM5']
+            - ['PoweronVM8', 'PoweronVM6']
+            - ['DeleteVM1Vnic1FromLSwitch1',  'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1',  'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2',  'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2',  'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        ConfigureVnicIP:  *CONFIGURE_8VMS_IP--KVM
+        PoweronVM5: *POWER_ON_VM_5
+        PoweronVM6: *POWER_ON_VM_6
+        PoweronVM7: *POWER_ON_VM_7
+        PoweronVM8: *POWER_ON_VM_8
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2: *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1: *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2: *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1: *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2: *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1: *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2: *DELETE_VM8_VNIC1_LSWITCH2--KVM
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[1].vif.[1],vm.[3].vif.[1],vm.[5].vif.[1]"
+            SupportAdapter: "vm.[7].vif.[1]"
+            TestDuration  : "10"
+
+        ArpPingLS1Vm1To5:
+            Type: 'Traffic'
+            toolname: 'scapy'
+            protocol: 'arp'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[5].vif.[1]'
+            interval: *SCAPY_INTERVAL
+            pktcount: *ARP_PING_DURATION_FOR_CAPTURE
+            connectivitytest: '0'
+            verification: "Verification_0"
+            sleepbetweenworkloads: *SLEEP_FIRST_VM_ARP--KVM
+
+        Verification_0:
+            PktCapVerification:
+                target: 'kvm.[1].pif.[1]'
+                pktcapfilter: *PKTCAP_LS1_TX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                vni: "nsxmanager.[1].logicalswitch.[1]"
+                pktcount: *ARP_PING_DURATION_FOR_CAPTURE
+                sttflags: '0x00'
+                replicationbit: '0x1'
+                pkttype: 'unicast'
+                tos: '0x0'
+                innerpkttype: 'broadcast'
+
+        ArpPingLS1Vm1ToUnknownIP:
+            Type: 'Traffic'
+            toolname: 'scapy'
+            protocol: 'arp'
+            TestAdapter: "vm.[1].vif.[1]"
+            SupportAdapter: 'vm.[5].vif.[1]'
+            connectivitytest: "0"
+            DestinationAddress: *LS1_UNASSIGNED_IP
+            interval: *SCAPY_INTERVAL
+            pktcount: 1
+            verification:  "Verification_UnkownIP"
+
+        Verification_UnkownIP:
+            PktCapVerification:
+                target: 'kvm.[1].pif.[1]'
+                pktcapfilter: *PKTCAP_LS1_TX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                vni: "nsxmanager.[1].logicalswitch.[1]"
+                pktcount: 1
+                sttflags: '0x00'
+                replicationbit: '0x1'
+                pkttype:  'unicast'
+                innerpkttype: 'broadcast'
+
+        ArpPingLS1Vm1To7:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[7].vif.[1]'
+            TestDuration: *ARP_PING_DURATION_FOR_CAPTURE
+            connectivitytest: '0'
+            verification: "Verification_2"
+            sleepbetweenworkloads: *SLEEP_FIRST_VM_ARP--KVM
+
+        Verification_2:
+            PktCapVerification:
+                target: 'kvm.[4].pif.[1]'
+                pktcapfilter: *PKTCAP_RX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                vni: "nsxmanager.[1].logicalswitch.[1]"
+                pktcount: *ARP_PING_DURATION_FOR_CAPTURE
+                pkttype: 'unicast'
+                replicationbit: '0x1'
+                tos: '0x0'
+                innerpkttype: 'broadcast'
+
+        LogicalSwitch1Traffic_VM135:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[1].vif.[1],vm.[3].vif.[1]"
+            SupportAdapter: "vm.[5].vif.[1]"
+            TestDuration  : "10"
+
+        LogicalSwitch1Traffic_VM137:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[1].vif.[1],vm.[3].vif.[1]"
+            SupportAdapter: "vm.[7].vif.[1]"
+            TestDuration  : "10"
+
+        FailoverHost3inSegement2:
+            Type:       "Host"
+            TestHost:   "kvm.[3]"
+            reboot:     "yes"
+
+        FailoverHost4inSegement2:
+            Type:       "Host"
+            TestHost:   "kvm.[4]"
+            reboot:     "yes"
+            sleepbetweenworkloads: "30"
+
+ConfigurationSyncAfterHeadlessOperation:
+    Product: "NSXTransformers"
+    Component: "Headless Operations"
+    Category: "L2"
+    TestName: "ConfigurationSyncAfterHeadlessOperation"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    QCPath: *QCPATH--KVM
+    Summary: "To verify the scenario when CCP<->MP, MP<->TN and CCP<->TN
+              connection is down and changes are made to the logical state
+              of the network."
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "mqing"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['ConfigureLS1VnicIP']
+            - ['LogicalSwitch1Traffic']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['EnableFirewallOnHost1to4']
+            - ['BlockConnectionToMPOnHosts']
+            - ['AttachVM2468toSwitch2WithFail']
+            - ['UnblockConnectionToMPOnHosts']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureLS2VnicIP']
+            - ['LogicalSwitch2Traffic']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['ARPPING_LS2_CCP_Verification']
+            - ['BlockConnectionTo4HostOnCCP']
+            - ['LogicalSwitch2Traffic']
+            - ['ArpPingLS2_246_To_8', 'ArpPingLS2_8_To_246',
+               'VerifyLS2ArpEntryNotOnControllers']
+            - ['UnblockConnectionTo4HostOnCCP']
+            - ['ARPPING_LS2_CCP_Verification']
+
+        ExitSequence:
+            - ['UnblockConnectionTo4HostOnCCPLenient']
+            - ['DisableFirewallOnHost1to4']
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1', 'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2', 'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2', 'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        BlockConnectionTo4HostOnCCP: *BLOCK_CONNECTION_TO_4_HOST_ON_CCP
+        UnblockConnectionTo4HostOnCCP: *UNBLOCK_CONNECTION_TO_4_HOST_ON_CCP
+        UnblockConnectionTo4HostOnCCPLenient: *UNBLOCK_CONNECTION_TO_4_HOST_ON_CCP_LENIENT
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        DeleteVM1Vnic1FromLSwitch1:  *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2:  *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1:  *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2:  *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1:  *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2:  *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1:  *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2:  *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        BlockConnectionToMPOnHosts: *BLOCK_CONNECTION_TO_MP_HOSTS--KVM
+        UnblockConnectionToMPOnHosts: *UNBLOCK_CONNECTION_TO_MP_HOSTS--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS2_CCP_Verification: *ARPPING_LS2_CCP_VERIFICATION--KVM
+
+        ConfigureLS1VnicIP:
+            Type: NetAdapter
+            TestAdapter: "vm.[1].vif.[1],vm.[3].vif.[1],vm.[5].vif.[1],vm.[7].vif.[1]"
+            IPv4: auto
+
+        ConfigureLS2VnicIP:
+            Type: NetAdapter
+            TestAdapter: "vm.[2].vif.[1],vm.[4].vif.[1],vm.[6].vif.[1],vm.[8].vif.[1]"
+            IPv4: auto
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[1].vif.[1],vm.[3].vif.[1],vm.[5].vif.[1]"
+            SupportAdapter: "vm.[7].vif.[1]"
+            TestDuration  : "10"
+
+        LogicalSwitch2Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[2].vif.[1],vm.[4].vif.[1],vm.[6].vif.[1]"
+            SupportAdapter: "vm.[8].vif.[1]"
+            TestDuration  : "10"
+
+        AttachVM2468toSwitch2WithFail:
+            Type: VM
+            TestVM: 'vm.[2],vm.[4],vm.[6],vm.[8]'
+            vif:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of FIXME
+                   FIXME: "nsxmanager.[1].logicalswitch.[2]"
+                   connected: 1
+                   startconnected: 1
+            ExpectedResult: "FAIL"
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+        ArpPingLS2_246_To_8:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[2].vif.[1],vm.[4].vif.[1],vm.[6].vif.[1]'
+            SupportAdapter: 'vm.[8].vif.[1]'
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: '0'
+            sleepbetweenworkloads: *SLEEP_FIRST_VM_ARP--KVM
+
+        ArpPingLS2_8_To_246:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[8].vif.[1]'
+            SupportAdapter: 'vm.[2].vif.[1],vm.[4].vif.[1],vm.[6].vif.[1]'
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: '0'
+            sleepbetweenworkloads: *SLEEP_FIRST_VM_ARP--KVM
+
+        VerifyLS2ArpEntryNotOnControllers:
+            Type: 'Switch'
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[2]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            noofretries: *NUM_ARP_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_ARP_ENTRY_CHECK--KVM
+            endpoints: 'nsxcontroller.[-1]'
+            'get_arp_table[?]not_contains':
+                table:
+                    - adapter_ip:  "vm.[2].vif.[1]"
+                      adapter_mac: "vm.[2].vif.[1]"
+                    - adapter_ip:  "vm.[4].vif.[1]"
+                      adapter_mac: "vm.[4].vif.[1]"
+                    - adapter_ip:  "vm.[6].vif.[1]"
+                      adapter_mac: "vm.[6].vif.[1]"
+                    - adapter_ip:  "vm.[8].vif.[1]"
+                      adapter_mac: "vm.[8].vif.[1]"
+
+        EnableFirewallOnHost1to4: &ENABLE_FIREWALL_ON_HOST_1_TO_4
+            Type: Host
+            TestHost: kvm.[1-4]
+            execution_type: *FIREWALL_EXECUTION_TYPE--KVM
+            firewall_status: enable
+
+        DisableFirewallOnHost1to4:
+            <<: *ENABLE_FIREWALL_ON_HOST_1_TO_4
+            firewall_status: disable
+
+MovingVMAcrossLogicalSwitches:
+    Product: "NSXTransformers"
+    Component: "VM Property change"
+    Category: "L2"
+    TestName: "MovingVMAcrossLogicalSwitches"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    QCPath: *QCPATH--KVM
+    Summary: 'To verify that the VIF is reachable when it is disconnected from
+              one Logical Switch and connected to another Logical Switch.'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "mqing"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['LogicalSwitch1Traffic']
+            - ['LogicalSwitch2Traffic']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS2_CCP_Verification']
+            - ['UnplugVM7Vnic1FromLSwitch1']
+            - ['PlugVM7Vnic1ToLSwitch2']
+            # vm disconnect will trigger ip report to CCP
+            - ['VerifyLS1ArpEntryWithoutVm7OnControllers']
+            - ['VerifyLS1MACEntryWithoutVm7OnControllers']
+            - ['ARPPING_LS2_24678_CCP_Verification']
+            - ['UnplugVM7Vnic1FromLSwitch2']
+            - ['PlugVM7Vnic1ToLSwitch1']
+            - ['VerifyLS2ArpEntryWithoutVm7OnControllers']
+            - ['VerifyLS2MACEntryWithoutVm7OnControllers']
+            - ['ARPPING_LS1_CCP_Verification']
+
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1', 'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2', 'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2', 'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+        UnplugVM7Vnic1FromLSwitch1: *UNPLUG_VM7_VNIC1_FROM_LSWITCH1--KVM
+        UnplugVM7Vnic1FromLSwitch2: *UNPLUG_VM7_VNIC1_FROM_LSWITCH2--KVM
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        ConfigureVnicIP:  *CONFIGURE_8VMS_IP--KVM
+        PlugVM7Vnic1ToLSwitch2: *PLUG_VM7_VNIC1_TO_LSWITCH2--KVM
+        PlugVM7Vnic1ToLSwitch1: *PLUG_VM7_VNIC1_TO_LSWITCH1--KVM
+        DeleteVM1Vnic1FromLSwitch1:  *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2:  *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1:  *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2:  *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1:  *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2:  *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1:  *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2:  *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS2_CCP_Verification: *ARPPING_LS2_CCP_VERIFICATION--KVM
+        ARPPING_LS2_24678_CCP_Verification: *ARPPING_LS2_24678_CCP_VERIFICATION--KVM
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[1].vif.[1],vm.[3].vif.[1],vm.[5].vif.[1]"
+            SupportAdapter: "vm.[7].vif.[1]"
+            TestDuration  : "10"
+
+        LogicalSwitch2Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[2].vif.[1],vm.[4].vif.[1],vm.[6].vif.[1]"
+            SupportAdapter: "vm.[8].vif.[1]"
+            TestDuration  : "10"
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+        VerifyLS1ArpEntryWithoutVm7OnControllers:
+            Type: 'Switch'
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_ARP_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_ARP_ENTRY_CHECK--KVM
+            'get_arp_table[?]not_contains':
+                table:
+                    - adapter_ip:  "vm.[7].vif.[1]"
+                      adapter_mac: "vm.[7].vif.[1]"
+
+        VerifyLS1MACEntryWithoutVm7OnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]not_contains' :
+                table:
+                    - adapter_mac: "vm.[7].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2ArpEntryWithoutVm7OnControllers:
+            Type: 'Switch'
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[2]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_ARP_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_ARP_ENTRY_CHECK--KVM
+            'get_arp_table[?]not_contains':
+                table:
+                    - adapter_ip:  "vm.[7].vif.[1]"
+                      adapter_mac: "vm.[7].vif.[1]"
+
+        VerifyLS2MACEntryWithoutVm7OnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]not_contains' :
+                table:
+                    - adapter_mac: "vm.[7].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+VMIPChange:
+    Product: "NSXTransformers"
+    Category: "L2"
+    Component: "VM property change"
+    TestName: "VMIPChange"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    QCPath: *QCPATH--KVM
+    Summary: "To verify when VM changes IP, the underlying VTEP updates CCP"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "jialiangl"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS2_CCP_Verification']
+            - ['VerifyLS1MacEntryOnControllers']
+            - ['VerifyLS2MacEntryOnControllers']
+            - ['ChangeVM1Vnic1IpAddress']
+            - ['ChangeVM2Vnic1IpAddress']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS2_CCP_Verification']
+            - ['VerifyLS1MacEntryOnControllersAfterIpChange']
+            - ['VerifyLS2MacEntryOnControllersAfterIpChange']
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1',  'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1',  'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2',  'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2',  'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        ConfigureVnicIP: *CONFIGURE_8VMS_IP--KVM
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        DeleteVM1Vnic1FromLSwitch1:  *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2:  *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1:  *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2:  *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1:  *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2:  *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1:  *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2:  *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS2_CCP_Verification: *ARPPING_LS2_CCP_VERIFICATION--KVM
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+        VerifyLS1MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[3].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[5].vif.[1]"
+                      adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_mac: "vm.[7].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[2].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[4].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[6].vif.[1]"
+                      adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_mac: "vm.[8].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+        ChangeVM1Vnic1IpAddress:
+            Type: "NetAdapter"
+            TestAdapter: "vm.[1].vif.[1]"
+            IPv4: '192.168.253.253'
+            netmask: '255.255.0.0'
+
+        ChangeVM2Vnic1IpAddress:
+            Type: "NetAdapter"
+            TestAdapter: "vm.[2].vif.[1]"
+            IPv4: '192.168.253.253'
+            netmask: '255.255.0.0'
+
+        VerifyLS1MacEntryOnControllersAfterIpChange:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+
+        VerifyLS2MacEntryOnControllersAfterIpChange:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[2].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+
+VMToVMCommunicationInsideHost:
+    Product: "NSXTransformers"
+    Category: "L2"
+    Component: "VM to VM Communication"
+    TestName: "VMToVMCommunicationInsideHost"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    QCPath: *QCPATH--KVM
+    Summary: "Verify that the VMs in same VNI and on the same host can talk to
+              each other without involving the controller"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "jialiangl"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register2Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM2toSwitch1', 'AttachVM4toSwitch1']
+            - ['ConfigureVnicIP']
+            - ['TrafficVM1_2WithoutFirewall']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['EnableFirewallOnHost1']
+            - ['DisableNetCPOnHost1']
+            - ['TrafficVM1_2']
+        ExitSequence:
+            - ['EnableNetCPOnHost1']
+            - ['DisableFirewallOnHost1']
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM2Vnic1FromLSwitch1', 'DeleteVM4Vnic1FromLSwitch1']
+            - ['NSXCleanup']
+            - ['Unregister2Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register2Hosts: *REGISTER_2_HOSTS--KVM
+        Unregister2Hosts: *UNREGISTER_2HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_2_HOST_NODES--KVM
+        DiscoverVteps: *DISCOVER_2_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_LOGICALSWITCH_1
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_2_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        ConfigureVnicIP: *CONFIGURE_4VMS_IP--KVM
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM2toSwitch1: *ATTACH_VM2_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM4toSwitch1: *ATTACH_VM4_TO_SWITCH_1--KVM
+        DeleteVM1Vnic1FromLSwitch1:  *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch1:  *DELETE_VM2_VNIC1_LSWITCH1--KVM
+        DeleteVM3Vnic1FromLSwitch1:  *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch1:  *DELETE_VM4_VNIC1_LSWITCH1--KVM
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-2]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+
+        VerifyLS1MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[2].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[3].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[4].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+
+        TrafficVM1_2WithoutFirewall:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[2].vif.[1]'
+            TestDuration: *ARP_PING_DURATION_FOR_CAPTURE
+            connectivitytest: '0'
+            verification:  "Verification_1"
+
+        Verification_1:
+            PktCapVerification:
+                target: 'kvm.[1].pif.[1]'
+                pktcapfilter: *PKTCAP_LS1_TX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                vni: "nsxmanager.[1].logicalswitch.[1]"
+                pktcount: '0'
+                sttflags: '0x40'
+
+        EnableFirewallOnHost1:
+            Type: Host
+            TestHost: kvm.[1]
+            execution_type: *FIREWALL_EXECUTION_TYPE--KVM
+            firewall_status: enable
+
+        DisableNetCPOnHost1: *DISABLE_NETCP_ON_HOST1--KVM
+
+        TrafficVM1_2:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[2].vif.[1]'
+            TestDuration: *ARP_PING_DURATION_FOR_CAPTURE
+            connectivitytest: '0'
+            verification:  "Verification_0"
+
+        Verification_0:
+            PktCapVerification:
+                target: 'kvm.[1].pif.[1]'
+                pktcapfilter: *PKTCAP_LS1_TX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                vni: "nsxmanager.[1].logicalswitch.[1]"
+                pktcount: '0'
+                sttflags: '0x40'
+
+        EnableNetCPOnHost1: *ENABLE_NETCP_ON_HOST1--KVM
+
+        DisableFirewallOnHost1:
+            Type: Host
+            TestHost: kvm.[1]
+            firewall_status: disable
+            execution_type: *FIREWALL_EXECUTION_TYPE--KVM
+
+AddVlanTagForVMTraffic:
+    Product: "NSXTransformers"
+    Category: "L2"
+    Component: "Virtual switch tagging"
+    TestName: "AddVlanTagForVMTraffic"
+    Version: "2"
+    Tags: "vlan"
+    QCPath: *QCPATH--KVM
+    Summary: "To verify that VLAN tagged traffic can be processed correctly."
+    ExpectedResult: "FAIL"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "jialiangl"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['VerifyLSReplicationModeOnHost',
+               'VerifyLS1VtepEntryOnControllers',
+               'VerifyLS1MacEntryOnControllers',
+               'VerifyLS1VtepEntryOnHost2']
+            - ['ConfigureVnicIP']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['SetVLANforVM3', 'SetVLANforVM5']
+            - ['TrafficLS1_3_to_5']
+            - ['VerifyLS1VLANMacEntryOnControllers']
+            - ['RestoreVLANforVM3', 'RestoreVLANforVM5']
+            - ['TrafficLS1_1_to_357']
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1',  'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1',  'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2',  'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2',  'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        ConfigureVnicIP: *CONFIGURE_8VMS_IP--KVM
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2: *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1: *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2: *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1: *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2: *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1: *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2: *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+
+        VerifyLS1VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cmd'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[3].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[5].vif.[1]"
+                      adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_mac: "vm.[7].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        SetVLANforVM3:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[3].vif.[1]'
+            vlaninterface:
+                '[1]':
+                    vlanid: 100
+
+        SetVLANforVM5:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[5].vif.[1]'
+            vlaninterface:
+                '[1]':
+                    vlanid: 100
+
+        TrafficLS1_3_to_5:
+            Type: 'Traffic'
+            toolName: 'ping'
+            TestAdapter:    'vm.[3].vif.[1].vlaninterface.[1]'
+            SupportAdapter: 'vm.[5].vif.[1].vlaninterface.[1]'
+            TestDuration: '5'
+
+        VerifyLS1VLANMacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[3].vif.[1].vlaninterface.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[5].vif.[1].vlaninterface.[1]"
+                      adapter_ip: "kvm.[3].vtep.[1]"
+
+        RestoreVLANforVM3:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[3].vif.[1]'
+            vlaninterface:
+                '[1]':
+                    vlanid: '0'
+
+        RestoreVLANforVM5:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[5].vif.[1]'
+            vlaninterface:
+                '[1]':
+                    vlanid: '0'
+
+        TrafficLS1_1_to_357:
+            Type: 'Traffic'
+            toolName: 'ping'
+            TestAdapter:    'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[3].vif.[1],vm.[5].vif.[1],vm.[7].vif.[1]'
+            TestDuration: '5'
+
+VLanTagMismatch:
+    Product: "NSXTransformers"
+    Category: "L2"
+    Component: "Virtual switch tagging"
+    TestName: "VLanTagMismatch"
+    Version: "2"
+    Tags: "vlan"
+    QCPath: *QCPATH--KVM
+    Summary: "To verify that VM in different vlan cannot communicate."
+    ExpectedResult: "FAIL"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "jialiangl"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['VerifyLSReplicationModeOnHost',
+               'VerifyLS1VtepEntryOnControllers',
+               'VerifyLS1MacEntryOnControllers',
+               'VerifyLS1VtepEntryOnHost2']
+            - ['ConfigureVnicIP']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['SetVLANforVM3', 'SetVLANforVM5']
+            - ['VerifyLS1VLANMacEntryOnControllers']
+            - ['TrafficLS1_3_to_5_fail', 'TrafficLS1_1_to_3_fail',
+               'TrafficLS1_5_to_7_fail']
+            - ['RestoreVLANforVM3', 'RestoreVLANforVM5']
+            - ['TrafficLS1_1_to_357']
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1',  'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1',  'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2',  'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2',  'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        ConfigureVnicIP: *CONFIGURE_8VMS_IP--KVM
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2: *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1: *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2: *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1: *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2: *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1: *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2: *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+
+        VerifyLS1VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cmd'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[3].vif.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[5].vif.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_mac: "vm.[7].vif.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        SetVLANforVM3:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[3].vif.[1]'
+            vlaninterface:
+                '[1]':
+                    vlanid: 100
+
+        SetVLANforVM5:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[5].vif.[1]'
+            vlaninterface:
+                '[1]':
+                    vlanid: 200
+
+        VerifyLS1VLANMacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[3].vif.[1].vlaninterface.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[5].vif.[1].vlaninterface.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+
+        TrafficLS1_3_to_5_fail:
+            Type: 'Traffic'
+            toolName: 'ping'
+            TestAdapter:    'vm.[3].vif.[1].vlaninterface.[1]'
+            SupportAdapter: 'vm.[5].vif.[1].vlaninterface.[1]'
+            TestDuration: '5'
+            ExpectedResult: 'Fail'
+
+        TrafficLS1_1_to_3_fail:
+            Type: 'Traffic'
+            toolName: 'ping'
+            TestAdapter:    'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[3].vif.[1].vlaninterface.[1]'
+            TestDuration: '5'
+            ExpectedResult: 'Fail'
+
+        TrafficLS1_5_to_7_fail:
+            Type: 'Traffic'
+            toolName: 'ping'
+            TestAdapter:    'vm.[5].vif.[1].vlaninterface.[1]'
+            SupportAdapter: 'vm.[7].vif.[1]'
+            TestDuration: '5'
+            ExpectedResult: 'Fail'
+
+        RestoreVLANforVM3:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[3].vif.[1]'
+            vlaninterface:
+                '[1]':
+                    vlanid: '0'
+
+        RestoreVLANforVM5:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[5].vif.[1]'
+            vlaninterface:
+                '[1]':
+                    vlanid: '0'
+
+        TrafficLS1_1_to_357:
+            Type: 'Traffic'
+            toolName: 'ping'
+            TestAdapter:    'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[3].vif.[1],vm.[5].vif.[1],vm.[7].vif.[1]'
+            TestDuration: '5'
+
+CCPClusterDownUPSourceNodeMode:
+    Product: "NSXTransformers"
+    Component: "MP to MPA Communication"
+    Category: "L2"
+    TestName: "CCPClusterDownUPSourceNodeMode"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    QCPath: *QCPATH--KVM
+    Summary: "To verify the scenario when the whole Controller cluster goes
+              down and comes back up, when the replication mode is source node replication based"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "shawntu"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['ARPPING_LS2_VM246_Host4_Verification']
+            - ['BlockConnectionBetweenTNandCCP']
+            # just after block the connection, the local cache still works,
+            # verify the entry exist and traffic works
+            # ARP verification will be enabled when KVM is ready
+            # - ['VerifyLS2ArpEntryOnHost4NoWait']
+            - ['VerifyLS2MacEntryOnHost4']
+            - ['ArpPingLS2Vm8']
+            # retry sometimes until the local cache aged, in future we can
+            # write workload to reset mac table directly, thus no need to wait
+            - ['VerifyLS2MacEntryOnHost4AfterLCPToCCPDisconnect']
+            # if there is no ccp connection, local arp entry should be empty
+            - ['ArpPingLS2Vm8ToUnknownIP',
+               'VerifyLS1ArpEntryOnHost4AfterLCPToCCPDisconnect']
+            - ['RestoreConnectionBetweenTNandCCP']
+            - ['ARPPING_LS2_VM246_Host4_Verification']
+            - ['ARPPING_LS2_CCP_Verification']
+        ExitSequence:
+            - ['UnblockConnectionTo4HostOnCCPLenient']
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1', 'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2', 'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2', 'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+        VerifyLS1ArpEntryOnHost4AfterLCPToCCPDisconnect: *VerifyLS2ArpEntryOnHost4AfterLCPToCCPDisconnect--KVM
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        ConfigureVnicIP:  *CONFIGURE_8VMS_IP--KVM
+        DeleteVM1Vnic1FromLSwitch1:  *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2:  *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1:  *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2:  *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1:  *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2:  *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1:  *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2:  *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        ARPPING_LS2_CCP_Verification: *ARPPING_LS2_CCP_VERIFICATION--KVM
+        ARPPING_LS2_VM246_Host4_Verification: *ARPPING_LS2_VM246_HOST4_VERIFICATION--KVM
+        VerifyLS2MacEntryOnHost4AfterLCPToCCPDisconnect: *VerifyLS2MacEntryOnHost4AfterLCPToCCPDisconnect--KVM
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[1].vif.[1],vm.[3].vif.[1],vm.[5].vif.[1]"
+            SupportAdapter: "vm.[7].vif.[1]"
+            TestDuration  : "10"
+
+        LogicalSwitch2Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[2].vif.[1],vm.[4].vif.[1],vm.[6].vif.[1]"
+            SupportAdapter: "vm.[8].vif.[1]"
+            TestDuration  : "10"
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+        BlockConnectionBetweenTNandCCP: *BLOCK_CONNECTION_TO_4_HOST_ON_CCP
+
+        RestoreConnectionBetweenTNandCCP: *UNBLOCK_CONNECTION_TO_4_HOST_ON_CCP
+
+        UnblockConnectionTo4HostOnCCPLenient: *UNBLOCK_CONNECTION_TO_4_HOST_ON_CCP_LENIENT
+
+        VerifyLS2ArpEntryOnHost4NoWait:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[4]'
+            noofretries: *NUM_ARP_ENTRY_CHECK_RETRIES
+            'get_arp_table[?]contain_once':
+                table:
+                    - adapter_ip:  "vm.[2].vif.[1]"
+                      adapter_mac: "vm.[2].vif.[1]"
+                    - adapter_ip:  "vm.[4].vif.[1]"
+                      adapter_mac: "vm.[4].vif.[1]"
+                    - adapter_ip:  "vm.[6].vif.[1]"
+                      adapter_mac: "vm.[6].vif.[1]"
+
+        VerifyLS2MacEntryOnHost4:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[4]'
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[2].vif.[1]"
+
+        ArpPingLS2Vm8:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[2].vif.[1]'
+            SupportAdapter: 'vm.[8].vif.[1]'
+            TestDuration: *ARP_PING_DURATION
+            connectivitytest: '0'
+
+        ArpPingLS2Vm8ToUnknownIP:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            protocol: icmp
+            TestAdapter:    'vm.[8].vif.[1]'
+            SupportAdapter: 'vm.[2].vif.[1]'
+            DestinationAddress: *LS2_UNASSIGNED_IP
+            pktcount: *ARP_PING_DURATION
+            connectivitytest: '0'
+            verification:  "Verification_0"
+
+        Verification_0:
+            PktCapVerification:
+                target: 'kvm.[4].pif.[1]'
+                pktcapfilter: *PKTCAP_LS2_TX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                vni: "nsxmanager.[1].logicalswitch.[2]"
+                pktcount: *ARP_PING_COUNT_SOURCE_NODE
+                sttflags: '0x00'
+                replicationbit: '0x0'
+                innerdestinationarpip: *LS2_UNASSIGNED_IP
+                pkttype:  'unicast'
+                tos:  '0x0'
+                innerpkttype: 'broadcast'
+
+VTEPIPUpdate:
+    Product: "NSXTransformers"
+    Component: *LCP--KVM
+    Category: "L2"
+    TestName: "VTEPIPUpdate"
+    Version: "2"
+    Tags: "Avalanche"
+    QCPath: *QCPATH--KVM
+    Summary: 'This test case verifies that the VTEP IP change does not affect
+              the overlay traffic'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "salmanm"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['VerifyLSConnTableOnControllers']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSMacEntryOnControllers',
+               'VerifyLSVtepEntryOnControllers',
+               'VerifyLSVtepEntryOnHost1',
+               'VerifyLSVtepEntryOnHost2']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS1_VM157_Host2_Verification']
+            - ['Traffic', 'VerifyLSMacEntryOnHost1',
+               'VerifyLSMacEntryOnHost2']
+            - ['StoreDefaultGatewaysHost1And2']
+            - ['ConfigureVtepIP', 'ConfigureVtepIP2']
+            - ['RestoreDefaultGatewaysHost1And2']
+            - ['DiscoverVteps']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['VerifyLSMacEntryOnControllers',
+               'VerifyLSVtepEntryOnControllers',
+               'VerifyLSVtepEntryOnHost1',
+               'VerifyLSVtepEntryOnHost2']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS1_VM157_Host2_Verification']
+            - ['Traffic', 'VerifyLSMacEntryOnHost1',
+               'VerifyLSMacEntryOnHost2']
+        ExitSequence:
+            - ['ConfigureVtepIPAuto']
+            - ['DeleteVM1Vnic1FromLSwitch1',  'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1',  'DeleteVM7Vnic1FromLSwitch1']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+        StoreDefaultGatewaysHost1And2: *STORE_DEFAULT_GATEWAYS_HOST1_2--KVM
+        RestoreDefaultGatewaysHost1And2: *RESTORE_DEFAULT_GATEWAYS_HOST1_2--KVM
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        CreateLogicalSwitch: *CREATE_LOGICALSWITCH_1
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM3Vnic1FromLSwitch1: *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM5Vnic1FromLSwitch1: *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM7Vnic1FromLSwitch1: *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        ConfigureVnicIP: *CONFIGURE_LS1_4VMS_IP--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS1_VM157_Host2_Verification: *ARPPING_LS1_VM157_HOST2_VERIFICATION--KVM
+
+
+        ConfigureVtepIP:
+            Type: NetAdapter
+            TestAdapter: kvm.[1].vtep.[1]
+            IPv4: *NETWORK1_VTEP_IP1--KVM
+
+        ConfigureVtepIPAuto:
+            Type: NetAdapter
+            TestAdapter: kvm.[1].vtep.[1]
+            IPv4: auto
+
+        ConfigureVtepIP2:
+            Type: NetAdapter
+            TestAdapter: kvm.[2].vtep.[1]
+            IPv4: *NETWORK1_VTEP_IP2--KVM
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            TestHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+               table:
+                   - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                     replication_mode: 'mtep'
+                     controller_status: 'up'
+
+        VerifyLSConnTableOnControllers:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            get_connection_table[?]contain_once:
+              table:
+                - adapter_ip: "kvm.[1]->mgmt_ip"
+                - adapter_ip: "kvm.[2]->mgmt_ip"
+                - adapter_ip: "kvm.[3]->mgmt_ip"
+                - adapter_ip: "kvm.[4]->mgmt_ip"
+
+        Traffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[3].vif.[1]"
+            SupportAdapter: "vm.[1].vif.[1]"
+            TestDuration  : "10"
+            NoofInbound   : "1"
+            NoofOutbound  : "1"
+
+        VerifyLSMacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[3].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[5].vif.[1]"
+                      adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_mac: "vm.[7].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLSVtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLSVtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLSVtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLSMacEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[3].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyLSMacEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads:  "30"
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+
+ARPLearningMethodsDHCPSnooping:
+    Product: "NSXTransformers"
+    Component: "ARP Proxy testing"
+    Category: "L2"
+    TestName: "ARPLearningMethodsDHCPSnooping"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    QCPath: *QCPATH--KVM
+    Summary: "To verify DHCP snooping used by the TN in learning
+             the {VM-IP, VM-MAC} table"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "mqing"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_4--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['LogicalSwitch1Traffic']
+            - ['LogicalSwitch2Traffic']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS2_CCP_Verification']
+            - ['VifAttachmentDHCPServer9Switch1']
+            - ['PoweronDHCPServer9']
+            - ['ConfigureDHCPserver9Vnic1IP']
+            - ['AddRouteDHCPserver9']
+            - ['SetupDHCPServer9']
+            - ['EnableDHCPServer9Oninterfaces']
+            - ['AddDefaultConfigurationDHCPServer9interface']
+            - ['RestartDHCPServer9']
+            - ['ConfigureLogicalSwitch1VnicIPDhcp']
+            # check arp entry controllers before send traffic, this means
+            # arp entry learned from dhcp offer packets, not arp packets
+            # Disable arp verification before KVM is ready
+            # - ['VerifyLS1ArpEntryOnControllers']
+            - ['LogicalSwitch1Traffic']
+            - ['LogicalSwitch2Traffic']
+            #configure vms with another ip, and check CCP can
+            #refect the chagnes
+            - ['ConfigureLS1VM1StaticIP', 'ConfigureLS1VM3StaticIP',
+               'ConfigureLS1VM5StaticIP', 'ConfigureLS1VM7StaticIP']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['LogicalSwitch1Traffic']
+
+        ExitSequence:
+            - ['PoweroffDHCPServers']
+            - ['DeleteDhcpServer9Vnic1FromLSwitch1']
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1', 'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2', 'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2', 'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        ConfigureVnicIP:  *CONFIGURE_8VMS_IP--KVM
+        VifAttachmentDHCPServer9Switch1: *ATTACH_DHCP_SERVER9_TO_SWITCH_1--KVM
+        PoweronDHCPServer9: *POWER_ON_DHCP_SERVER_9
+        SetupDHCPServer9: *SETUP_DHCP_SERVER_9
+        EnableDHCPServer9Oninterfaces: *ENABLE_DHCP_SERVER_9_ON_INTERFACES--KVM
+        RestartDHCPServer9:  *RESTART_DHCP_SERVER_9
+        PoweroffDHCPServers: *POWER_OFF_DHCP_SERVERS
+
+        DeleteDhcpServer9Vnic1FromLSwitch1: *DELETE_DHCP_SERVER9_VNIC1_LSWITCH1--KVM
+        DeleteVM1Vnic1FromLSwitch1:  *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2:  *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1:  *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2:  *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1:  *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2:  *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1:  *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2:  *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS2_CCP_Verification: *ARPPING_LS2_CCP_VERIFICATION--KVM
+
+        ConfigureLogicalSwitch1VnicIPDhcp:
+            Type: NetAdapter
+            TestAdapter: 'vm.[1].vif.[1], vm.[3].vif.[1],
+                          vm.[5].vif.[1], vm.[7].vif.[1]'
+            ipv4:       'dhcp'
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[1].vif.[1],vm.[3].vif.[1],vm.[5].vif.[1]"
+            SupportAdapter: "vm.[7].vif.[1]"
+            TestDuration  : "10"
+
+        LogicalSwitch2Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            TestAdapter   : "vm.[2].vif.[1],vm.[4].vif.[1],vm.[6].vif.[1]"
+            SupportAdapter: "vm.[8].vif.[1]"
+            TestDuration  : "10"
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+        VerifyLS1ArpEntryOnControllers:
+            Type: 'Switch'
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_ARP_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_ARP_ENTRY_CHECK--KVM
+            'get_arp_table[?]contain_once':
+                table:
+                    - adapter_ip:  "vm.[1].vif.[1]"
+                      adapter_mac: "vm.[1].vif.[1]"
+                    - adapter_ip:  "vm.[3].vif.[1]"
+                      adapter_mac: "vm.[3].vif.[1]"
+                    - adapter_ip:  "vm.[5].vif.[1]"
+                      adapter_mac: "vm.[5].vif.[1]"
+                    - adapter_ip:  "vm.[7].vif.[1]"
+                      adapter_mac: "vm.[7].vif.[1]"
+
+        ConfigureDHCPserver9Vnic1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[9].vif.[1]'
+            ipv4: *DHCP_SERVER_9_GATEWAY_IP
+            netmask:    '255.255.255.0'
+
+        AddRouteDHCPserver9:
+            Type:        "NetAdapter"
+            Testadapter: "dhcpserver.[9].vif.[1]"
+            route:       "add"
+            gateway:     *DHCP_SERVER_9_GATEWAY_IP
+
+        AddDefaultConfigurationDHCPServer9interface:
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[9]"
+            configure_dhcp_server:
+                dhcp_type: 'dynamic'
+                subnet: *DHCP_SERVER_9_SUBNET
+                netmask: '255.255.255.0'
+                ip_range: *DHCP_SERVER_9_IP_RANGE
+                execution_type: 'cmd'
+
+        # DHCP server is using netmask 255.255.255.0
+        ConfigureLS1VM1StaticIP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[1].vif.[1]'
+            IPv4: *LS1_VM1_STATIC_IP
+            netmask: *24_BIT_NETMASK
+
+        ConfigureLS1VM3StaticIP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[3].vif.[1]'
+            IPv4: *LS1_VM3_STATIC_IP
+            netmask: *24_BIT_NETMASK
+
+        ConfigureLS1VM5StaticIP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[5].vif.[1]'
+            IPv4: *LS1_VM5_STATIC_IP
+            netmask: *24_BIT_NETMASK
+
+        ConfigureLS1VM7StaticIP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[7].vif.[1]'
+            IPv4: *LS1_VM7_STATIC_IP
+            netmask: *24_BIT_NETMASK
+
+VMMultipleIP:
+    Product: "NSXTransformer"
+    Component: *LCP--KVM
+    Category: "L2"
+    TestName: "VMMultipleIP"
+    Version: 2
+    Tags: "VM, Vnic, IP"
+    QCPath: *QCPATH--KVM
+    Summary: 'This test case verifies whether VTEP updates the controller when
+              a VM has multiple IP addresses'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "leng"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register2Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1Nic1toSwitch1',
+               'AttachVM2Nic1toSwitch1']
+            - ['AttachVM1Nic2toSwitch1']
+            - ['AttachVM1Nic3toSwitch1']
+            - ['ConfigureVnic1IP', 'ConfigureVnic2IP', 'ConfigureVnic3IP']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyMACEntryOnControllers']
+
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromSwitch1']
+            - ['DeleteVM1Vnic2FromSwitch1']
+            - ['DeleteVM1Vnic3FromSwitch1']
+            - ['DeleteVM2Vnic1FromSwitch1']
+            - ['NSXCleanup']
+            - ['Unregister2Hosts']
+
+
+        DiscoverHostnodes: *DISCOVER_2_HOST_NODES--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_2_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        DiscoverVteps: *DISCOVER_2_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_LOGICALSWITCH_1
+        AttachVM1Nic1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM1Nic2toSwitch1: *ATTACH_VM1_NIC2_TO_SWITCH_1--KVM
+        AttachVM1Nic3toSwitch1: *ATTACH_VM1_NIC3_TO_SWITCH_1--KVM
+        AttachVM2Nic1toSwitch1: *ATTACH_VM2_TO_SWITCH_1--KVM
+        DeleteVM1Vnic1FromSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM1Vnic2FromSwitch1: *DELETE_VM1_VNIC2_LSWITCH1--KVM
+        DeleteVM1Vnic3FromSwitch1: *DELETE_VM1_VNIC3_LSWITCH1--KVM
+        DeleteVM2Vnic1FromSwitch1: *DELETE_VM2_VNIC1_LSWITCH1--KVM
+        NSXCleanup: *NSX_CLEANUP--KVM
+
+        ConfigureVnic1IP:
+            Type: NetAdapter
+            TestAdapter: vm.[1-2].vif.[1]
+            IPv4: auto
+
+        ConfigureVnic2IP:
+            Type: NetAdapter
+            TestAdapter: vm.[1].vif.[2]
+            IPv4: auto
+
+        ConfigureVnic3IP:
+            Type: NetAdapter
+            TestAdapter: vm.[1].vif.[3]
+            IPv4: auto
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4,ipv6"
+            L4Protocol    : "tcp,udp"
+            NoofInbound     : "1"
+            NoofOutbound    : "1"
+            TestAdapter   : "vm.[1].vif.[1],vm.[1].vif.[2],vm.[1].vif.[3]"
+            SupportAdapter: "vm.[2].vif.[1]"
+            TestDuration  : "10"
+
+        VerifyMACEntryOnControllers:
+            Type: 'Switch'
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[1].vif.[2]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[1].vif.[3]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[2].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+
+        Register2Hosts: *REGISTER_2_HOSTS--KVM
+        Unregister2Hosts: *UNREGISTER_2HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+
+VTEPTrafficUnicastInfoNotPresent:
+    Product: "NSXTransformers"
+    Category: *LCP--KVM
+    Component: "L2"
+    TestName: 'VTEPTrafficUnicastInfoNotPresent'
+    Version: '2'
+    Tags: 'L2, VTEP, CCP'
+    QCPath: *QCPATH--KVM
+    Summary: "To verify VTEP replicates the initial ARP requests from a VM
+              in both MTEP and Source mode if the controller does not know how
+              to reach the destination ip."
+    ExpectedResult: 'PASS'
+    Status: 'Execution Ready'
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "sshu"
+    Partnerfacing: 'N'
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureLS1VM1StaticIP', 'ConfigureLS2VM2StaticIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['VerifyLS1ConnTableOnController',
+               'VerifyLS2ConnTableOnController']
+            - ['VerifyLS1MacEntryOnControllers',
+               'VerifyLS2MacEntryOnControllers']
+            - ['VerifyLS1VtepEntryOnControllers',
+               'VerifyLS2VtepEntryOnControllers']
+            - ['VerifyLS1VtepEntryOnHost1',
+               'VerifyLS1VtepEntryOnHost2',
+               'VerifyLS1VtepEntryOnHost3',
+               'VerifyLS1VtepEntryOnHost4']
+            - ['VerifyLS2VtepEntryOnHost1',
+               'VerifyLS2VtepEntryOnHost2',
+               'VerifyLS2VtepEntryOnHost3',
+               'VerifyLS2VtepEntryOnHost4']
+            - ['VM1PingUnknownIPVerifyReplication']
+            - ['VM2PingUnknownIPVerifyReplication']
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1', 'DeleteVM7Vnic1FromLSwitch1',
+               'DeleteVM2Vnic1FromLSwitch2', 'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2', 'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2: *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1: *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2: *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1: *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2: *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1: *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2: *DELETE_VM8_VNIC1_LSWITCH2--KVM
+
+        ConfigureLS1VM1StaticIP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[1].vif.[1]'
+            IPv4: *LS1_VM1_STATIC_IP
+            netmask: *24_BIT_NETMASK
+
+        ConfigureLS2VM2StaticIP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[2].vif.[1]'
+            IPv4: *LS2_VM2_STATIC_IP
+            netmask: *24_BIT_NETMASK
+
+        VM1PingUnknownIPVerifyReplication:
+            Type: 'Traffic'
+            toolname: 'scapy'
+            protocol: 'arp'
+            TestAdapter: "vm.[1].vif.[1]"
+            SupportAdapter: 'vm.[5].vif.[1]'
+            connectivitytest: "0"
+            DestinationAddress: *LS1_UNASSIGNED_IP
+            interval: *SCAPY_INTERVAL
+            pktcount: *UNKNOWN_PING_COUNT
+            verification: 'VerificationOnHostsLS1'
+
+        VerificationOnHostsLS1:
+            PktCapVerification:
+                target: *PIF1_OF_HOST_2_3_4--KVM
+                pktcapfilter: *PKTCAP_RX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                pktcount: *UNKNOWN_PING_COUNT
+                vni: 'nsxmanager.[1].logicalswitch.[1]'
+                innerarpdestinationip: *LS1_UNASSIGNED_IP
+                pkttype: 'unicast'
+                innerpkttype: 'broadcast'
+
+        VM2PingUnknownIPVerifyReplication:
+            Type: 'Traffic'
+            toolname: 'scapy'
+            protocol: 'arp'
+            TestAdapter: "vm.[2].vif.[1]"
+            SupportAdapter: 'vm.[4].vif.[1]'
+            connectivitytest: "0"
+            DestinationAddress: *LS2_UNASSIGNED_IP
+            interval: *SCAPY_INTERVAL
+            pktcount: *UNKNOWN_PING_COUNT
+            verification: 'VerificationOnHostsLS2'
+
+        VerificationOnHostsLS2:
+            PktCapVerification:
+                target: *PIF1_OF_HOST_2_3_4--KVM
+                pktcapfilter: *PKTCAP_RX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                pktcount: *UNKNOWN_PING_COUNT
+                vni: 'nsxmanager.[1].logicalswitch.[2]'
+                # if not set replicationbit as '0x0', on the segment 2 mtep
+                # host, it will capture double count arp message because of
+                # 'PKTCAP_RX_FILTER--KVM' filter only match dest mac address,
+                # and in will include both RX and TX
+                replicationbit: '0x0'
+                innerarpdestinationip: *LS2_UNASSIGNED_IP
+                pkttype: 'unicast'
+                innerpkttype: 'broadcast'
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+        VerifyLS1ConnTableOnController:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            get_connection_table[?]contain_once:
+              table:
+                - adapter_ip: "kvm.[1]->mgmt_ip"
+                - adapter_ip: "kvm.[2]->mgmt_ip"
+                - adapter_ip: "kvm.[3]->mgmt_ip"
+                - adapter_ip: "kvm.[4]->mgmt_ip"
+
+        VerifyLS2ConnTableOnController:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            get_connection_table[?]contain_once:
+              table:
+                - adapter_ip: "kvm.[1]->mgmt_ip"
+                - adapter_ip: "kvm.[2]->mgmt_ip"
+                - adapter_ip: "kvm.[3]->mgmt_ip"
+                - adapter_ip: "kvm.[4]->mgmt_ip"
+
+        VerifyLS1MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[3].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[5].vif.[1]"
+                      adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_mac: "vm.[7].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[2].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[4].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[6].vif.[1]"
+                      adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_mac: "vm.[8].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost3:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[3]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost4:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[4]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[1]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[2]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost3:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[3]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost4:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[4]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+
+VTEPTrafficUnicastDIPNotreachable:
+    Product: 'NSXTransformers'
+    Category: *LCP--KVM
+    Component: 'L2'
+    TestName: 'VTEPTrafficUnicastDIPNotreachable'
+    Version: '2'
+    Tags: 'L2, VTEP, CCP'
+    QCPath: *QCPATH--KVM
+    Summary: "To verify VTEP considers unicast packet from VM
+              as BUM traffic after deletion of destination logical
+              port and DIP becomes unreachable."
+    ExpectedResult: 'PASS'
+    Status: 'Execution Ready'
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "sshu"
+    Partnerfacing: 'N'
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--KVM
+    WORKLOADS:
+        Sequence:
+            - ['Register4Hosts']
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['VerifyLS1ConnTableOnController',
+               'VerifyLS2ConnTableOnController']
+            - ['VerifyLS1MacEntryOnControllers',
+               'VerifyLS2MacEntryOnControllers']
+            - ['VerifyLS1VtepEntryOnControllers',
+               'VerifyLS2VtepEntryOnControllers']
+            - ['VerifyLS1VtepEntryOnHost1',
+               'VerifyLS1VtepEntryOnHost2',
+               'VerifyLS1VtepEntryOnHost3',
+               'VerifyLS1VtepEntryOnHost4']
+            - ['VerifyLS2VtepEntryOnHost1',
+               'VerifyLS2VtepEntryOnHost2',
+               'VerifyLS2VtepEntryOnHost3',
+               'VerifyLS2VtepEntryOnHost4']
+            - ['ARPPING_LS1_CCP_Verification']
+            - ['ARPPING_LS2_CCP_Verification']
+            - ['PingVM1And3', 'PingVM2And4',
+               'VerifyLS1MacEntryOnHost1',
+               'VerifyLS2MacEntryOnHost1',
+               'VerifyLS1MacEntryOnHost2',
+               'VerifyLS2MacEntryOnHost2']
+            - ['DetachVM3Vnic1FromLSwitch1']
+            - ['TrafficPassVM2VM4']
+            # Due to bug 1338057, after delete logical port ping still can pass
+            # through between VM1 and VM3. So following verification failed at
+            # packet innertype is unicast instead of broadcast.
+            - ['VerifyLS1MacEntryOnControllersAfterVM3Detach']
+            - ['VM1PingVM3VerifyReplication']
+
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1', 'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1', 'DeleteVM7Vnic1FromLSwitch1',
+               'DeleteVM2Vnic1FromLSwitch2', 'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2', 'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+            - ['Unregister4Hosts']
+
+
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--KVM
+        DiscoverVteps: *DISCOVER_VERIFY_VTEPS--KVM
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--KVM
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--KVM
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--KVM
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--KVM
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--KVM
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--KVM
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--KVM
+        DeleteVM2Vnic1FromLSwitch2: *DELETE_VM2_VNIC1_LSWITCH2--KVM
+        DeleteVM3Vnic1FromLSwitch1: *DELETE_VM3_VNIC1_LSWITCH1--KVM
+        DeleteVM4Vnic1FromLSwitch2: *DELETE_VM4_VNIC1_LSWITCH2--KVM
+        DeleteVM5Vnic1FromLSwitch1: *DELETE_VM5_VNIC1_LSWITCH1--KVM
+        DeleteVM6Vnic1FromLSwitch2: *DELETE_VM6_VNIC1_LSWITCH2--KVM
+        DeleteVM7Vnic1FromLSwitch1: *DELETE_VM7_VNIC1_LSWITCH1--KVM
+        DeleteVM8Vnic1FromLSwitch2: *DELETE_VM8_VNIC1_LSWITCH2--KVM
+        ConfigureVnicIP:  *CONFIGURE_8VMS_IP--KVM
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Register4Hosts: *REGISTER_4_HOSTS--KVM
+        Unregister4Hosts: *UNREGISTER_4HOSTS--KVM
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        DetachVM3Vnic1FromLSwitch1: *DETACH_VM3_VNIC1_LSWITCH1--KVM
+        ARPPING_LS1_CCP_Verification: *ARPPING_LS1_CCP_VERIFICATION--KVM
+        ARPPING_LS2_CCP_Verification: *ARPPING_LS2_CCP_VERIFICATION--KVM
+
+        PingVM1And3:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[3].vif.[1]"
+            TestDuration: *PING_DURATION
+            NoofInbound   : "1"
+            NoofOutbound  : "1"
+
+        PingVM2And4:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[2].vif.[1]"
+            SupportAdapter: "vm.[4].vif.[1]"
+            TestDuration: *PING_DURATION
+            NoofInbound   : "1"
+            NoofOutbound  : "1"
+
+        TrafficPassVM2VM4:
+            Type: 'Traffic'
+            toolName: 'Ping'
+            TestAdapter:    'vm.[2].vif.[1]'
+            SupportAdapter: 'vm.[4].vif.[1]'
+            TestDuration: '5'
+            connectivitytest: '0'
+            ExpectedResult: 'Pass'
+
+        VerifyLS1MacEntryOnControllersAfterVM3Detach:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]not_contains' :
+                table:
+                    - adapter_mac: "vm.[3].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+
+        VM1PingVM3VerifyReplication:
+            Type: 'Traffic'
+            toolname: 'scapy'
+            protocol: 'icmp'
+            TestAdapter: "vm.[1].vif.[1]"
+            SupportAdapter: 'vm.[3].vif.[1]'
+            connectivitytest: "0"
+            interval: *SCAPY_INTERVAL
+            pktcount: *UNKNOWN_PING_COUNT
+            verification: 'VerificationOnHostsLS1'
+
+        VerificationOnHostsLS1:
+            PktCapVerification:
+                target: *PIF1_OF_HOST_2_3_4--KVM
+                pktcapfilter: *PKTCAP_RX_FILTER--KVM
+                verificationtype: *PKT_VERIFICATION_TYPE--KVM
+                pktcount: *UNKNOWN_PING_COUNT
+                vni: 'nsxmanager.[1].logicalswitch.[1]'
+                pkttype: 'unicast'
+                innerpkttype: 'broadcast'
+                innerl4protocol: 'icmp'
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-4]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      controller_status: 'up'
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+                      replication_mode: 'source'
+                      controller_status: 'up'
+
+        VerifyLS1ConnTableOnController:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            get_connection_table[?]contain_once:
+              table:
+                - adapter_ip: "kvm.[1]->mgmt_ip"
+                - adapter_ip: "kvm.[2]->mgmt_ip"
+                - adapter_ip: "kvm.[3]->mgmt_ip"
+                - adapter_ip: "kvm.[4]->mgmt_ip"
+
+        VerifyLS2ConnTableOnController:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            get_connection_table[?]contain_once:
+              table:
+                - adapter_ip: "kvm.[1]->mgmt_ip"
+                - adapter_ip: "kvm.[2]->mgmt_ip"
+                - adapter_ip: "kvm.[3]->mgmt_ip"
+                - adapter_ip: "kvm.[4]->mgmt_ip"
+
+        VerifyLS1MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[3].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[5].vif.[1]"
+                      adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_mac: "vm.[7].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[2].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[4].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_mac: "vm.[6].vif.[1]"
+                      adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_mac: "vm.[8].vif.[1]"
+                      adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost3:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[3]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost4:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[4]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[1]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[2]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost3:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[3]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[4].vtep.[1]"
+
+        VerifyLS2VtepEntryOnHost4:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[4]'
+            noofretries: *NUM_VTEP_ENTRY_CHECK_RETRIES
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                    - adapter_ip: "kvm.[3].vtep.[1]"
+
+        VerifyLS1MacEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[3].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyLS2MacEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[2]'
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[1]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[4].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyLS1MacEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+
+        VerifyLS2MacEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[2]'
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[2]'
+            endpoints: 'kvm.[2]'
+            noofretries: *NUM_MAC_ENTRY_CHECK_RETRIES
+            sleepbetweenworkloads: *SLEEP_BEFORE_MAC_ENTRY_CHECK
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[2].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"

@@ -1,0 +1,423 @@
+#######################################################################################################
+#   Topology with 2 HVs and 1 Edge                                                                    #
+#                                                                                                     #
+#                                           +------------------+                                      #
+#                                           |   EDGE CLUSTER   |                                      #
+#                                           |                  |                                      #
+#                                           |                  |                                      #
+#            +-LP91-LS91                    |            NSXE1-|----------------------------+         #
+#            |                              |              |   |                            |         #
+#  HV2---VM1---LP1--LS101--LP101---LRP101---|----+       GWMC0 |                            |         #
+#                                           |    |         |   |                            |         #
+#                                           |    |-PLR1--ULRP1-|--LP201--LS201--LP3---VM100-+--HV1    #
+#                                           |    |             |                    |                 #
+#  HV3---VM2---LP2--LS102--LP102---LRP102---|----+             |         LS93--LP93-+                 #
+#            |                              |                  |                                      #
+#            +-LP92-LS92                    +------------------+                                      #
+#                                                                                                     #
+#######################################################################################################
+TopoSR_2Hosts_1Edge_Plr: &TopoSR_2Hosts_1Edge_Plr
+    CreateEdgeCluster:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        edgecluster:
+            '[1]':
+                fabric_profile_bindings:
+                -   fabric_profile_id: nsxmanager.[1].fabricprofile.[1]
+                    resource_type: FabricProfileClusterKeepAlive
+                members:
+                -   edge_node_id: nsxmanager.[1].edgenode.[1]
+                name: Edge_Cluster_1
+                summary: Edge Cluster created through automation
+
+    AddStaticRoutesOnPLR--ESX:
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        Type: Router
+        lrstaticroutes:
+            '[1]':
+                staticroutes:
+                -   name: static-route-to-vm1-vnic2
+                    network: vm.[1].vnic.[2]->netcidr
+                    next_hops:
+                    - vm.[1].vnic.[1]->ip
+                    summary: Static route for VM1Vnic2 using LRP101
+                -   name: static-route-to-vm2-vnic2
+                    network: vm.[2].vnic.[2]->netcidr
+                    next_hops:
+                    - vm.[2].vnic.[1]->ip
+                    summary: Static route for VM2Vnic2 using LRP102
+                -   name: static-route-to-vm100-vnic2
+                    network: vm.[100].vnic.[2]->netcidr
+                    next_hops:
+                    - vm.[100].vnic.[1]->ip
+                    summary: Static route for VM100Vnic2 using ULRP1
+
+    AddStaticRoutesOnPLR--KVM:
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        Type: Router
+        lrstaticroutes:
+            '[1]':
+                staticroutes:
+                -   name: static-route-to-vm1-vif2
+                    network: vm.[1].vif.[2]->netcidr
+                    next_hops:
+                    - vm.[1].vif.[1]->ip
+                    summary: Static route for VM1Vif2 using LRP101
+                -   name: static-route-to-vm2-vif2
+                    network: vm.[2].vif.[2]->netcidr
+                    next_hops:
+                    - vm.[2].vif.[1]->ip
+                    summary: Static route for VM2Vif2 using LRP102
+                -   name: static-route-to-vm100-vnic2
+                    network: vm.[100].vnic.[2]->netcidr
+                    next_hops:
+                    - vm.[100].vnic.[1]->ip
+                    summary: Static route for VM100Vnic2 using ULRP1
+
+    LogicalSetup:
+        - - CreateTZ-1
+        - - CreateUPROF-1_MTU-1600
+        - - CreateLS-201  # UplinkLS
+          - CreateLS-101  # DownlinkLS
+          - CreateLS-102  # DownlinkLS
+          - CreateLS-91   # For StaticRouting
+          - CreateLS-92
+          - CreateLS-93
+        - - CreateLSP-201_LS-201  # UplinkLSPort
+          - CreateLSP-101_LS-101  # DownlinkLSPort
+          - CreateLSP-102_LS-102  # DownlinkLSPort
+
+    LogicalCleanup:
+        - - DeleteLSP-101-102
+        - - DeleteLSP-201
+        - - DeleteLS-101
+          - DeleteLS-102
+          - DeleteLS-201
+          - DeleteLS-91
+          - DeleteLS-92
+          - DeleteLS-93
+        - - DeleteUPROF-1
+        - - DeleteTZ-1
+
+    TNSetup--ESX:
+        - - SetManagerOnESX-2
+          - SetManagerOnESX-3
+        - - DiscoverHostNode2FromESX2
+          - DiscoverHostNode3FromESX3
+        - - CreateTN-2_HOSTNODE-2_TZ-1_VMNIC-1
+          - CreateTN-3_HOSTNODE-3_TZ-1_VMNIC-1
+    TNSetup--KVM:
+        - - SetManagerOnKVM-2
+          - SetManagerOnKVM-3
+        - - DiscoverHostNode2FromKVM2
+          - DiscoverHostNode3FromKVM3
+        - - CreateTN-2_HOSTNODE-2_TZ-1_ETH-1
+          - CreateTN-3_HOSTNODE-3_TZ-1_ETH-1
+
+    TNCleanup--ESX:
+        - - DeleteTN-2
+          - DeleteTN-3
+        - - RemoveManagerOnESX-2
+          - RemoveManagerOnESX-3
+        - - UndiscoverHostNode-2
+          - UndiscoverHostNode-3
+    TNCleanup--KVM:
+        - - DeleteTN-2
+          - DeleteTN-3
+        - - RemoveManagerOnKVM-2
+          - RemoveManagerOnKVM-3
+        - - UndiscoverHostNode-2
+          - UndiscoverHostNode-3
+
+    EdgeSetup--EDGEESX:
+        - - SetManagerOnESX-1
+        - - DiscoverHostNode1FromESX1
+        - - CreateTN-1_HOSTNODE-1_TZ-1_VMNIC-1
+        - - RegisterEdge
+        - - DiscoverEdgeNode-1_EDGE-1
+        - - CreateFPROF-1
+        - - CreateEdgeCluster
+
+    EdgeCleanup--EDGEESX:
+        - - DeleteEdgeCluster-1
+        - - DeleteEdgeNode-1
+        - - DeleteFPROF-1
+        - - DeleteTN-1
+        - - RemoveManagerOnESX-1
+        - - UndiscoverHostNode-1
+
+    L3Setup:
+        - - CreatePLR-1_EDGECLUSTER-1
+        - - CreateULRP-1_LSP-201_GWMC-0_IP-192.168.50.1  # CreateUplinkPortsPLR1
+        - - CreateLRP-101_LR-1_IP-192.168.1.1_LSP-101  # CreateDownlinkPortsPLR1
+        - - CreateLRP-102_LR-1_IP-192.168.2.1_LSP-102  # CreateDownlinkPortsPLR1
+
+    SRSetup--ESX:
+        - - Add192RouteOnVM1Vnic1viaLRP101
+          - Add192RouteOnVM2Vnic1viaLRP102
+        - - Add192RouteOnVM100Vnic1viaULRP1
+        - - AddStaticRoutesOnPLR--ESX
+
+    SRSetup--KVM:
+        - - Add192RouteOnVM1Vif1viaLRP101
+          - Add192RouteOnVM2Vif1viaLRP102
+        - - Add192RouteOnVM100Vnic1viaULRP1
+        - - AddStaticRoutesOnPLR--KVM
+
+    L3Cleanup:
+        - - DeleteULRP-1
+        - - DeleteLRP-101
+        - - DeleteLRP-102
+        - - DeleteLR-1
+
+    UplinkVMSetup--EDGEESX:
+        - - AddVM100Vnic1ToLS201
+        - - AddVM100Vnic2ToLS93
+        - - DiscoverLport3FromVM100Vnic1
+        - - DiscoverLport93FromVM100Vnic2
+        - - ConfigureVM100Vnic1IP-192.168.50.10
+        - - ConfigureVM100Vnic2IP-192.168.93.10
+
+    DownlinkVMSetup--ESX:
+        - - AddVM1Vnic1ToLS101
+        - - AddVM2Vnic1ToLS102
+        - - AddVM1Vnic2ToLS91
+        - - AddVM2Vnic2ToLS92
+        - - DiscoverLport1FromVM1Vnic1
+        - - DiscoverLport2FromVM2Vnic1
+        - - DiscoverLport91FromVM1Vnic2
+        - - DiscoverLport92FromVM2Vnic2
+        - - ConfigureVM1Vnic1IP-192.168.1.10
+          - ConfigureVM2Vnic1IP-192.168.2.10
+          - ConfigureVM1Vnic2IP-192.168.91.10
+          - ConfigureVM2Vnic2IP-192.168.92.10
+
+    DownlinkVMSetup--KVM:
+        - - AddVM1Vif1ToKVM2Bridge1
+        - - AddVM2Vif1ToKVM3Bridge1
+        - - AddVM1Vif2ToKVM2Bridge1
+        - - AddVM2Vif2ToKVM3Bridge1
+        - - CreateLP1OnLS101ForVM1Vif1
+          - CreateLP2OnLS102ForVM2Vif1
+        - - CreateLP91OnLS91ForVM1Vif2
+          - CreateLP92OnLS92ForVM2Vif2
+        - - ConfigureVM1Vif1IP-192.168.1.10
+          - ConfigureVM2Vif1IP-192.168.2.10
+          - ConfigureVM1Vif2IP-192.168.91.10
+          - ConfigureVM2Vif2IP-192.168.92.10
+
+    VMSetup--ESX:
+        - - DownlinkVMSetup--ESX
+        - - UplinkVMSetup--EDGEESX
+
+    VMSetup--KVM:
+        - - DownlinkVMSetup--KVM
+        - - UplinkVMSetup--EDGEESX
+
+    DownlinkVMCleanup--ESX:
+        - - DeleteVnic-1-2_VM-1
+          - DeleteVnic-1-2_VM-2
+        - - UndiscoverLSP-1
+          - UndiscoverLSP-2
+          - UndiscoverLSP-91
+          - UndiscoverLSP-92
+
+    DownlinkVMCleanup--KVM:
+        - - DeleteVif-1-2_VM-1
+          - DeleteVif-1-2_VM-2
+        - - DeleteLSP-1
+          - DeleteLSP-2
+          - DeleteLSP-91
+          - DeleteLSP-92
+
+    UplinkVMCleanup--EDGEESX:
+        - - DeleteVnic-1-2_VM-100
+        - - UndiscoverLSP-3
+          - UndiscoverLSP-93
+
+    VMCleanup--ESX:
+        - - DownlinkVMCleanup--ESX
+        - - UplinkVMCleanup--EDGEESX
+
+    VMCleanup--KVM:
+        - - DownlinkVMCleanup--KVM
+        - - UplinkVMCleanup--EDGEESX
+
+    TopoSetup--ESX:
+        - - LogicalSetup
+        - - EdgeSetup--EDGEESX
+        - - TNSetup--ESX
+        - - L3Setup
+        - - VMSetup--ESX
+        - - SRSetup--ESX
+
+    TopoSetup--KVM:
+        - - LogicalSetup
+        - - EdgeSetup--EDGEESX
+        - - TNSetup--KVM
+        - - L3Setup
+        - - VMSetup--KVM
+        - - SRSetup--KVM
+
+    TopoCleanup--ESX:
+        - - L3Cleanup
+        - - VMCleanup--ESX
+        - - TNCleanup--ESX
+        - - EdgeCleanup--EDGEESX
+        - - LogicalCleanup
+
+    TopoCleanup--KVM:
+        - - L3Cleanup
+        - - VMCleanup--KVM
+        - - TNCleanup--KVM
+        - - EdgeCleanup--EDGEESX
+        - - LogicalCleanup
+
+    Traffic--ESX:
+        - - EWTraffic--ESX
+        - - NSTraffic--ESX
+
+    TrafficFail--ESX:
+        - - EWTrafficFail--ESX
+        - - NSTrafficFail--ESX
+
+    EWTraffic--ESX:
+        - - NetPerfTCPFromVM1Vnic1ToVM2Vnic1
+
+        - - NetPerfTCPFromVM1Vnic1ToVM2Vnic2
+        - - NetPerfTCPFromVM2Vnic1ToVM1Vnic2
+
+    EWTrafficFail--ESX:
+        - - NetPerfTCPFailFromVM1Vnic1ToVM2Vnic1
+
+        - - NetPerfTCPFailFromVM1Vnic1ToVM2Vnic2
+        - - NetPerfTCPFailFromVM2Vnic1ToVM1Vnic2
+
+    NSTraffic--ESX:
+        - - NetPerfTCPFromVM100Vnic1ToVM1Vnic1
+        - - NetPerfTCPFromVM100Vnic1ToVM2Vnic1
+
+        - - NetPerfTCPFromVM1Vnic1ToVM100Vnic2
+        - - NetPerfTCPFromVM2Vnic1ToVM100Vnic2
+        - - NetPerfTCPFromVM100Vnic1ToVM1Vnic2
+        - - NetPerfTCPFromVM100Vnic1ToVM2Vnic2
+
+    LRP102NSTraffic--ESX:
+        - - NetPerfTCPFromVM100Vnic1ToVM2Vnic1
+        - - NetPerfTCPFromVM2Vnic1ToVM100Vnic2
+        - - NetPerfTCPFromVM100Vnic1ToVM2Vnic2
+
+    NSTrafficFail--ESX:
+        - - NetPerfTCPFailFromVM100Vnic1ToVM1Vnic1
+        - - NetPerfTCPFailFromVM100Vnic1ToVM2Vnic1
+
+        - - NetPerfTCPFailFromVM1Vnic1ToVM100Vnic2
+        - - NetPerfTCPFailFromVM2Vnic1ToVM100Vnic2
+        - - NetPerfTCPFailFromVM100Vnic1ToVM1Vnic2
+        - - NetPerfTCPFailFromVM100Vnic1ToVM2Vnic2
+
+    LRP101TrafficFail--ESX:
+        - - NetPerfTCPFailFromVM1Vnic1ToVM2Vnic1
+        - - NetPerfTCPFailFromVM100Vnic1ToVM1Vnic1
+
+        - - NetPerfTCPFailFromVM1Vnic1ToVM2Vnic2
+        - - NetPerfTCPFailFromVM1Vnic1ToVM100Vnic2
+        - - NetPerfTCPFailFromVM100Vnic1ToVM1Vnic2
+
+    Traffic--KVM:
+        - - EWTraffic--KVM
+        - - NSTraffic--KVM
+
+    TrafficFail--KVM:
+        - - EWTrafficFail--KVM
+        - - NSTrafficFail--KVM
+
+    EWTraffic--KVM:
+        - - NetPerfTCPFromVM1Vif1ToVM2Vif1
+
+        - - NetPerfTCPFromVM1Vif1ToVM2Vif2
+        - - NetPerfTCPFromVM2Vif1ToVM1Vif2
+
+    EWTrafficFail--KVM:
+        - - NetPerfTCPFailFromVM1Vif1ToVM2Vif1
+
+        - - NetPerfTCPFailFromVM1Vif1ToVM2Vif2
+        - - NetPerfTCPFailFromVM2Vif1ToVM1Vif2
+
+    NSTraffic--KVM:
+        - - NetPerfTCPFromVM100Vnic1ToVM1Vif1
+        - - NetPerfTCPFromVM100Vnic1ToVM2Vif1
+
+        - - NetPerfTCPFromVM1Vif1ToVM100Vnic2
+        - - NetPerfTCPFromVM2Vif1ToVM100Vnic2
+        - - NetPerfTCPFromVM100Vnic1ToVM1Vif2
+        - - NetPerfTCPFromVM100Vnic1ToVM2Vif2
+
+    LRP102NSTraffic--KVM:
+        - - NetPerfTCPFromVM100Vnic1ToVM2Vif1
+        - - NetPerfTCPFromVM2Vif1ToVM100Vnic2
+        - - NetPerfTCPFromVM100Vnic1ToVM2Vif2
+
+    NSTrafficFail--KVM:
+        - - NetPerfTCPFailFromVM100Vnic1ToVM1Vif1
+        - - NetPerfTCPFailFromVM100Vnic1ToVM2Vif1
+
+        - - NetPerfTCPFailFromVM1Vif1ToVM100Vnic2
+        - - NetPerfTCPFailFromVM2Vif1ToVM100Vnic2
+        - - NetPerfTCPFailFromVM100Vnic1ToVM1Vif2
+        - - NetPerfTCPFailFromVM100Vnic1ToVM2Vif2
+
+    LRP101TrafficFail--KVM:
+        - - NetPerfTCPFailFromVM1Vif1ToVM2Vif1
+        - - NetPerfTCPFailFromVM100Vnic1ToVM1Vif1
+
+        - - NetPerfTCPFailFromVM1Vif1ToVM2Vif2
+        - - NetPerfTCPFailFromVM1Vif1ToVM100Vnic2
+        - - NetPerfTCPFailFromVM100Vnic1ToVM1Vif2
+
+    #TODO(Krishna): Add DR/SR verifications on EDGEESX
+    L3SRDRVerifications--ESX:
+        - - VerifyLRsOnHVs--ESX
+        - - VerifyLRPortsOnHVs--ESX
+
+    L3SRDRVerifications--KVM:
+        - - VerifyLRsOnHVs--KVM
+        - - VerifyLRPortsOnHVs--KVM
+
+    VerifyLRsOnHVs--ESX:
+        Type: Host
+        TestHost: esx.[2-3]
+        execution_type: cli
+        get_logical_routers[?]contain_once:
+            table:
+                - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+
+    VerifyLRPortsOnHVs--ESX:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: esx.[2-3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_logical_router_ports[?]contain_once:
+            table:
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[101]->lr_port_id
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[102]->lr_port_id
+
+    VerifyLRsOnHVs--KVM:
+        Type: Host
+        TestHost: kvm.[2-3]
+        execution_type: cli
+        get_logical_routers[?]contain_once:
+            table:
+                - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+
+    VerifyLRPortsOnHVs--KVM:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: kvm.[2-3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_logical_router_ports[?]contain_once:
+            table:
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[101]->lr_port_id
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[102]->lr_port_id

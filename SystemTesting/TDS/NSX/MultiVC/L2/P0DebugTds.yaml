@@ -1,0 +1,521 @@
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+
+TDSCommonFieldsP0Case: &TDS_COMMON_FIELDS_P0_CASE
+    Product: "vshield"
+    Component: "L2"
+    Category: "MultiVC"
+    Version: "2"
+    Tags: "multivc"
+    #QCPath: *QCPATH--ESX
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "araman"
+    Partnerfacing: "N"
+
+# ------------------------------------------------------------------------------
+# P0
+# ------------------------------------------------------------------------------
+
+
+Unicast:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary: |
+        "verify ping and BUM traffic across multiple VC sites in unicast mode of GLS"
+        "To verify controller info sync to host by deleting TZ and GLS"
+        "Ref vxlan tds for additional verification steps"
+    TestName: Unicast
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['ArpPingFromVM345To2']
+            - ['ArpPingFromVM2ToVM3']
+            - ['VerifyArpEntryOnController']
+
+        ExitSequence:
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigAllSite']
+            - ['DELETE_ALL_CONTROLLERS']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+            - ['VIBInstallVxlanConfigMasterSite']
+
+Multicast:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary: |
+        "verify ping and BUM traffic across multiple VC sites in multicast mode of GLS"
+    TestName: Multicast
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2MulticastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+
+        ExitSequence:
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigAllSite']
+            - ['DELETE_ALL_CONTROLLERS']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+            - ['VIBInstallVxlanConfigMasterSite']
+
+Hybrid:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary: |
+        "verify ping and BUM traffic across multiple VC sites in hybrid mode of GLS"
+    TestName: Hybrid
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2HybridtGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['ArpPingFromVM345To2']
+            - ['ArpPingFromVM2ToVM3']
+            - ['VerifyArpEntryOnController']
+
+        ExitSequence:
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigAllSite']
+            - ['DELETE_ALL_CONTROLLERS']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+            - ['VIBInstallVxlanConfigMasterSite']
+
+L2Isolation:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary: |
+        VM on GLS1 should not talk to VM on GLS2. Move VMs to same GLS by changing VNIC
+        backing of VM1 from GLS1 to GLS2. Ref VXLANTds for additonal steps
+    TestName: L2Isolation
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['EvenVMsOnEvenGlobalLogicalSwitch2']
+            - ['VM2VM4PingEachOther']
+            - ['VM3VM5PingEachOther']
+            - ['EvenVMsOnOddGlobalLogicalSwitch1']
+            - ['AllVMsPingEachOther']
+            - ['ArpPingFromVM345To2']
+            - ['ArpPingFromVM2ToVM3']
+            - ['VerifyArpEntryOnController']
+
+        ExitSequence:
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigAllSite']
+            - ['DELETE_ALL_CONTROLLERS']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+            - ['VIBInstallVxlanConfigMasterSite']
+
+        VM3VM5PingEachOther:
+            <<: *ALL_VMS_PING_EACH_OTHER
+            TestAdapter: 'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[5].vnic.[1]'
+
+        VM2VM4PingEachOther:
+            <<: *ALL_VMS_PING_EACH_OTHER
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[4].vnic.[1]'
+
+        EvenVMsOnOddGlobalLogicalSwitch1:
+            <<: *EVEN_VMS_EVEN_GLS_BACKING_2
+            portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+
+xVCvMotion:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary:
+        "To verify the vMotion in vxlan spanning across vc"
+    TestName: xVCvMotion
+    TestbedSpec: *L2_TOPOLOGY_02
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+            - ['AddvmknicHosts']
+            - ['PingVmotionVMKNic']
+            - ['vmotion1']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+            - ['vmotion2']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+            - ['VmotionCrossVC1_2']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+            - ['VmotionCrossVC2_1']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+
+        ExitSequence:
+            - ['RemoveVmk1OnHost2','RemoveVmk1OnHost3']
+            - ['RemoveVmk1OnHost4','RemoveVmk1OnHost5']
+            - ['CleanSetupAndReconfigure']
+
+        AddvmknicHosts:
+            Type: Host
+            TestHost: esx.[2-5]
+            vmknic:
+                '[1]':
+                    portgroup: vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]
+                    configurevmotion: enable
+                    ipv4: auto
+
+        vmotion1:
+            Type: VM
+            TestVM: vm.[2]
+            vmotion: oneway
+            dsthost: esx.[3]
+
+        vmotion2:
+            Type: VM
+            TestVM: vm.[2]
+            vmotion: oneway
+            dsthost: esx.[2]
+
+        PingVmotionVMKNic:
+            Type: Traffic
+            ToolName: Ping
+            TestAdapter: esx.[2-3].vmknic.[1]
+            SupportAdapter: esx.[4-5].vmknic.[1]
+            TestDuration: 10
+
+        VmotionCrossVC1_2:
+            Type:       'VM'
+            TestVM:     'vm.[2]'
+            priority:   'high'
+            vmotion:    'xvmotion'
+            portgroup:  'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            dsthost:    'esx.[4]'
+            vc:         'vc.[1]'
+            staytime:   '30'
+
+        VmotionCrossVC2_1:
+            Type:       'VM'
+            TestVM:     'vm.[2]'
+            priority:   'high'
+            vmotion:    'xvmotion'
+            portgroup:  'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            dsthost:    'esx.[2]'
+            vc:         'vc.[2]'
+            staytime:   '30'
+
+ShrinkExpandGlobalTransportZone:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary: |
+        test traffic in single VC. Then expand GTZ by adding slave managers verify traffic.
+        Shrink by removing cluster from Master site. ping shoud fail. Add it back again. Ping passes now
+        Do same steps on slave sites
+    TestName: ShrinkExpandGlobalTransportZone
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersVC1DC1VC2DC1ToGTZSlaveSites']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['VM2VM3VM4AddvNICOnSameGlobalLogicalSwitch']
+            - ['VM2VM3VM4PingEachOther']
+            - ['AddCluster1VC2DC2toGTZSlaveSite']
+            - ['VM5AddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['ArpPingFromVM345To2']
+            - ['ArpPingFromVM2ToVM3']
+            - ['VerifyArpEntryOnController']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+        AddClustersVC1DC1VC2DC1ToGTZSlaveSites:
+            <<: *ADD_CLUSTERS_GTZ_SLAVE_SITES
+            clusters: 'vc.[x=vsm_index].datacenter.[1].cluster.[1]'
+
+        AddCluster1VC2DC2toGTZSlaveSite:
+            <<: *ADD_CLUSTERS_GTZ_SLAVE_SITES
+            clusters: 'vc.[2].datacenter.[2].cluster.[1]'
+
+        VM2VM3VM4AddvNICOnSameGlobalLogicalSwitch:
+            <<: *ALL_VMS_ADD_VNIC_ON_SAME_GLS_1_BACKING
+            TestVM: 'vm.[2-4]'
+
+        VM2VM3VM4PingEachOther:
+            <<: *ALL_VMS_PING_EACH_OTHER
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[3-4].vnic.[1]'
+
+        VM5AddvNICOnSameGlobalLogicalSwitch:
+            <<: *ALL_VMS_ADD_VNIC_ON_SAME_GLS_1_BACKING
+            TestVM: 'vm.[5]'
+
+TestWithandWithoutTransportVLAN:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary: |
+        "This is to verify the data flow between VMs between VCs with and without transport VLAN"
+    TestName: TestWithandWithoutTransportVLAN
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsPingEachOther']
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['UnconfigureVxlanConfigAllSite']
+            - ['VIBInstallVxlanConfigMasterSiteWithVLAN0']
+            - ['VIBInstallVxlanConfigAllSlavesSiteWithVLAN0']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsPingEachOther']
+            - ['ArpPingFromVM345To2']
+            - ['ArpPingFromVM2ToVM3']
+            - ['VerifyArpEntryOnController']
+
+        ExitSequence:
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigAllSite']
+            - ['DELETE_ALL_CONTROLLERS']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+            - ['VIBInstallVxlanConfigMasterSite']
+
+        VIBInstallVxlanConfigMasterSiteWithVLAN0:
+            <<: *INSTALLVIBS_CONFIGUREVXLAN_MASTER_SITE
+            vlan: 0
+
+        VIBInstallVxlanConfigAllSlavesSiteWithVLAN0:
+            <<: *INSTALLVIBS_CONFIGUREVXLAN_ALL_SLAVE_SITES
+            vlan: 0
+
+# Check with vivek if its P0
+#Traceflow:
+    #<<: *TDS_COMMON_FIELDS_P0_CASE
+    #Summary: |
+        #"verify ping across multiple VC sites in unicast mode of GLS"
+
+ChangeReplicationMode:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary: |
+        Change Replication mode from unicast to multicast and back
+    TestName: ChangeReplicationMode
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['EvenVMsOnEvenGlobalLogicalSwitch2']
+            - ['EvenVMsMulticastEachOther','OddVMsMulticastEachOther']
+            - ['EvenVMsUnicastEachOther','OddVMsUnicastEachOther']
+            # change the replication mode to Multicast
+            - ['UpdateVerifyGlobalLogicalSwitchesToMulticastMode']
+            - ['EvenVMsMulticastEachOther','OddVMsMulticastEachOther']
+            - ['EvenVMsUnicastEachOther','OddVMsUnicastEachOther']
+            # Restore the replication mode to Unicast
+            - ['UpdateVerifyGlobalLogicalSwitchesToUnicastMode']
+            - ['EvenVMsMulticastEachOther','OddVMsMulticastEachOther']
+            - ['EvenVMsUnicastEachOther','OddVMsUnicastEachOther']
+            - ['EvenVMsOnEvenGlobalLogicalSwitch1']
+            - ['ArpPingFromVM345To2','ArpPingFromVM2ToVM3']
+            - ['VerifyArpEntryOnController']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+        EvenVMsMulticastEachOther:
+            <<: *ALL_VMS_MULTICAST_TRAFFIC
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[4].vnic.[1]'
+
+        EvenVMsUnicastEachOther:
+            <<: *NETPERF_TEST_ALL_VMS
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[4].vnic.[1]'
+
+        OddVMsMulticastEachOther:
+            <<: *ALL_VMS_MULTICAST_TRAFFIC
+            TestAdapter: 'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[5].vnic.[1]'
+
+        OddVMsUnicastEachOther:
+            <<: *NETPERF_TEST_ALL_VMS
+            TestAdapter: 'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[5].vnic.[1]'
+
+        EvenVMsOnEvenGlobalLogicalSwitch1:
+            <<: *EVEN_VMS_EVEN_GLS_BACKING_2
+            portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+
+LateRegistration:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary: |
+        "verify ping and BUM traffic across multiple VC sites in unicast mode of GLS"
+        "To verify controller info sync to host by deleting TZ and GLS"
+        "Ref vxlan tds for additional verification steps"
+    TestName: LateRegistration
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['CheckController1SyncToHost2And3']
+            - ['CheckController1NotSyncToHost4And5']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['AddClustersToGTZSlaveSites']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['ArpPingFromVM345To2']
+            - ['ArpPingFromVM2ToVM3']
+            - ['VerifyArpEntryOnController']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+        CheckController1NotSyncToHost4And5:
+            Type: Host
+            testhost: 'esx.[4-5]'
+            sleepbetweenworkloads: 60
+            noofretries: 5
+            'verifycontrollerinfoonhost[?]not_contains':
+                - port: 1234
+                  server: 'vsm.[1].vxlancontroller.[1]'
+                  sslenabled: 'true'
+
+        CheckController1SyncToHost2And3:
+            <<: *CHECK_CONTROLLER_1_SYNC_ALL_HOST
+            testhost: 'esx.[2-3]'
+
+#Commenting this as its moved to P2
+#OnDemandSyncofGLS:
+    #<<: *TDS_COMMON_FIELDS_P0_CASE
+    #Summary: |
+        #Verify that on demand sync of GLS is successful
+        #Ensure the replicator service is on
+        #configure a new gls in unicast on master and configure in unicast mode
+        #ensure the switch is seen on secondary
+        #stop replicator service based on timer timeout
+        #change gls from unicast to multicast
+        #sleep for for set timeout
+        #ensure the changes are not seen on the secondary
+        #start the replicator service
+        #verify that the changes are kicked on
+        #verify the ping between the VM's is successful
+        #stop the replicator service
+        #delete gls on primary
+        #find the object on secondary is still present
+        #ping should fail
+        #start the replicator service
+        #note the gls object does not exist on the slave
+    #TestName: OnDemandSyncofGLS
+    #TestbedSpec: *L2_TOPOLOGY_01
+    #WORKLOADS:
+        #Sequence:
+            #- ['SetMasterNSXReplicatorAsPrimary']
+            #- ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            #- ['CheckController1SyncAllHost']
+            #- ['CreateVerifyGlobalVNIPool']
+            #- ['CreateVerifyGlobalTransportZone']
+            #- ['AddClustersToGTZSlaveSites']
+            #- ['CreateVerify2UnicastGlobalLogicalSwitches']
+            #- ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            #- ['EvenVMsOnEvenGlobalLogicalSwitch2']
+            #- ['AllVMsBUMEachOther']
+              ## - [ stop_replicator_update_timer ]
+            #- ['UpdateVerifyGlobalLogicalSwitchesToMulticastMode']
+              ## [  start replicator  on demand sync from user space]
+
+            #- ['AllVMsBUMEachOther']
+              ## - [ stop_replicator_update_timer ]
+            #- ['VerifyReplicationOnSlaveFail']
+            #- ['sleep fro 20 sec']
+            #- ['UpdateVerifyGlobalLogicalSwitchesToUnicastMode']
+            #- ['AllVMsBUMEachOther']
+              ## - [ stop_replicator_update_timer ]
+        #ExitSequence:
+            #- ['DeleteAllVnicsAllVMs']
+            #- ['DeleteAllGlobalLogicalSwitches']
+            #- ['DeleteVerifyGlobalTransportZone']
+            #- ['DeleteVerifyGlobalVNIPool']
+            #- ['UnRegisterAllSlaves']
+            #- ['SetMasterNSXReplicatorAsStandalone']

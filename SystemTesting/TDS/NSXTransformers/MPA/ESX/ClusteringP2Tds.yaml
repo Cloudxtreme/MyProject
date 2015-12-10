@@ -1,0 +1,739 @@
+!include MPACommon.yaml
+!include TestbedSpec.yaml
+
+    #
+    # REQUIRES FAILOVER
+    #
+
+Draft_OrphanedBroker:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: MPA should not reconnect to an orphaned broker
+    TestName: Orphaned Broker
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'OrphanedBroker'
+
+MultipleConnections:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: MPA should not be connected to more than one broker
+    TestName: Multiple Connections
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['ReadIP_Master']
+            - ['SetServiceId_SavedMP']
+            - ['StopService_SavedMP']
+            - ['StartMPA']
+            - ['CheckConnections']
+            - ['StartService_SavedMP']
+            - ['CheckConnections']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'MultipleConnections'
+
+        CheckConnections:
+            Type: Host
+            TestHost: 'esx.[1-3]'
+            PersistData: Yes
+            execution_type: 'cli'
+            port: 5671
+            connection_states:
+                - 'ESTABLISHED'
+            keywords:
+                - 'nsx-mpa'
+                - 'tcp'
+            get_tcp_connection_count[?]equal_to:
+                result_count: 2
+
+MisconfigureFirstNonMaster:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Misconfigure the first non-master broker
+    TestName: Misconfigure First Non-Master Broker
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['ReadIP_Master']
+            - ['SetServiceId_SavedMP']
+            - ['StopService_SavedMP']
+            - ['SaveConfigDetails']
+            - ['ReadIP_MP2']
+            - ['ReplaceIP_SavedMP']
+            - ['ReadIP_Master']
+            - ['StartMPA']
+            - ['SyslogCheckForFullyEstablished']
+            - ['StartService_SavedMP']
+            - ['CheckConfigSame']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'MisconfigureFirstNonMaster'
+
+        ReadIP_MP2:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            read_broker_ip:
+                num: 1
+                ip[?]defined: ''
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'MisconfigureFirstNonMaster'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+MisconfigureAllNonMasters:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Misconfigure all non-master brokers
+    TestName: Misconfigure All Non-Master Brokers
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['ReadIP_Master']
+            - ['SetServiceId_SavedMP']
+            - ['StopService_SavedMP']
+            - ['SaveConfigDetails']
+            - ['ReadIP_MP2']
+            - ['ReplaceIP_SavedMP']
+            - ['ReadIP_MP3']
+            - ['ReplaceIP_SavedMP']
+            - ['ReadIP_Master']
+            - ['StartMPA']
+            - ['SyslogCheckForFullyEstablished']
+            - ['StartService_SavedMP']
+            - ['CheckConfigSame']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'MisconfigureAllNonMasters'
+
+        ReadIP_MP2:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            read_broker_ip:
+                num: 1
+                ip[?]defined: ''
+
+        ReadIP_MP3:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            read_broker_ip:
+                num: 2
+                ip[?]defined: ''
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'MisconfigureAllNonMasters'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+    #
+    # NO FAILOVER
+    #
+
+InvalidMasterBrokerIP:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Change master MP IP in config file to invalid value
+    TestName: Invalid Master Broker IP
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['ReadIP_Master']
+            - ['ReplaceIP_SavedMP']
+            - ['StartMPA']
+            - ['SyslogCheckForFullyEstablished']
+            - ['CheckConfigBadValue']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'InvalidMasterBrokerIP'
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'InvalidMasterBrokerIP'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+        CheckConfigBadValue:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *CONFIG_FILE
+                grep_after: '{'
+                grep_string: ''
+                pattern: '0.0.0.0'
+                count: 0
+                max_wait: 60
+
+IncorrectMasterBrokerPort:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Change master MP port in config file to wrong value
+    TestName: Incorrect Master Broker Port
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['ReadPort_Master']
+            - ['ReplacePort_SavedMP']
+            - ['StartMPA']
+            - ['SyslogCheckForFullyEstablished']
+            - ['CheckConfigBadValue']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'IncorrectMasterBrokerPort'
+
+        ReadPort_Master:
+            Type: Host
+            TestHost: *TEST_HOST
+            PersistData: "Yes"
+            execution_type: 'cmd'
+            num: 0
+            read_broker_port:
+                port[?]defined: ''
+
+        ReplacePort_SavedMP:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: 'esx.[1]->read_broker_port->port'
+                replace: '10000'
+                first: True
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'IncorrectMasterBrokerPort'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+        CheckConfigBadValue:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *CONFIG_FILE
+                grep_after: '{'
+                grep_string: ''
+                pattern: '10000'
+                count: 0
+                max_wait: 60
+
+InvalidMasterBrokerVirtualHost:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Change master MP virtual host in config file to invalid value
+    TestName: Invalid Master Broker Virtual Host
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['ReplaceVirtualHost']
+            - ['StartMPA']
+            - ['SyslogCheckForFullyEstablished']
+            - ['CheckConfigBadValue']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'InvalidMasterBrokerVirtualHost'
+
+        ReplaceVirtualHost:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: 'nsx'
+                replace: 'vsphere'
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'InvalidMasterBrokerVirtualHost'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+        CheckConfigBadValue:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *CONFIG_FILE
+                grep_after: '{'
+                grep_string: ''
+                pattern: 'vsphere'
+                count: 0
+                max_wait: 60
+
+InvalidMasterBrokerThumbprint:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Change master MP thumbprint in config file to wrong value
+    TestName: Incorrect Master Broker Thumbprint
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['ReadThumbprint_Master']
+            - ['ReplaceThumbprint_SavedMP']
+            - ['StartMPA']
+            - ['SyslogCheckForFullyEstablished']
+            - ['CheckConfigBadValue']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'InvalidMasterBrokerThumbprint'
+
+        ReadThumbprint_Master:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            read_broker_thumbprint:
+                num: 0
+                thumbprint[?]defined: ''
+
+        ReplaceThumbprint_SavedMP:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: 'esx.[1]->read_broker_thumbprint->thumbprint'
+                replace: 'wrongwrongwrongwrongwrongwrongwrongwrongwrongwrongwrongwrong0123'
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'InvalidMasterBrokerThumbprint'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+        CheckConfigBadValue:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *CONFIG_FILE
+                grep_after: '{'
+                grep_string: ''
+                replace: 'wrongwrongwrongwrongwrongwrongwrongwrongwrongwrongwrongwrong0123'
+                count: 0
+                max_wait: 60
+
+NoAssignedMasterBroker:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Change config to have no master broker be assigned
+    TestName: No Assigned Master Broker
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['ReplaceBool_Master']
+            - ['StartMPA']
+            - ['SyslogCheckForMaster']
+            - ['SyslogCheckForFullyEstablished']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'NoAssignedMasterBroker'
+
+        ReplaceBool_Master:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: '"BrokerIsMaster" => "TRUE"'
+                replace: '"BrokerIsMaster" => "FALSE"'
+
+        SyslogCheckForMaster:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *CONFIG_FILE
+                grep_after: '{'
+                grep_string: '"BrokerIsMaster" => "TRUE"'
+                max_wait: 60
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'NoAssignedMasterBroker'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+RemoveMasterBrokerEntry:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Change config to completely remove master broker
+    TestName: Removed Master Broker Entry
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['RemoveMasterBroker']
+            - ['StartMPA']
+            - ['SyslogCheckForMaster']
+            - ['SyslogCheckForFullyEstablished']
+            #- ['CheckThreeClientsConnected']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'RemoveMasterBrokerEntry'
+
+        RemoveMasterBroker:
+            Type: Host
+            TestHost: *TEST_HOST
+            remove_broker:
+                execution_type: 'cmd'
+                num: 0
+
+        SyslogCheckForMaster:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *CONFIG_FILE
+                grep_after: '{'
+                grep_string: '"BrokerIsMaster" => "TRUE"'
+                max_wait: 60
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'RemoveMasterBrokerEntry'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+RemoveNonMasterBrokerEntry:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Change config to completely remove a non-master broker
+    TestName: Removed Non-Master Broker Entry
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['RemoveMP1']
+            - ['StartMPA']
+            - ['SyslogCheckForFullyEstablished']
+            #- ['CheckThreeClientsConnected']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'RemoveNonMasterBrokerEntry'
+
+        RemoveMP1:
+            Type: Host
+            TestHost: *TEST_HOST
+            remove_broker:
+                execution_type: 'cmd'
+                num: 1
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'RemoveNonMasterBrokerEntry'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+RemoveAllNonMasterBrokerEntries:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Change config to completely remove all non-master brokers
+    TestName: Removed All Non-Master Brokers Entry
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['RemoveMP1']
+            - ['RemoveMP2']
+            - ['StartMPA']
+            - ['SyslogCheckForFullyEstablished']
+            #- ['CheckThreeClientsConnected']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'RemoveAllNonMasterBrokerEntries'
+
+        RemoveMP1:
+            Type: Host
+            TestHost: *TEST_HOST
+            remove_broker:
+                execution_type: 'cmd'
+                num: 1
+
+        RemoveMP2:
+            Type: Host
+            TestHost: *TEST_HOST
+            remove_broker:
+                execution_type: 'cmd'
+                num: 1
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'RemoveAllNonMasterBrokerEntries'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+AddFakeNonMasterBroker:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Change config to add a fictitious non-master broker
+    TestName: Add Fake Non-Master Broker
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['AddFakeBroker']
+            - ['StartMPA']
+            - ['SyslogCheckForFullyEstablished']
+            - ['CheckThreeClientsConnected']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'AddFakeNonMasterBroker'
+
+        AddFakeBroker:
+            Type: Host
+            TestHost: *TEST_HOST
+            add_broker:
+                execution_type: 'cmd'
+                num: 3
+                ip: '10.10.10.10'
+                port: 5671
+                virtual_host: nsx
+                thumbprint: wrongwrongwrongwrongwrongwrongwrongwrongwrongwrongwrongwrong0123
+                master: False
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'AddFakeNonMasterBroker'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+InvalidNonMasterBrokerIP:
+    <<: *MPACommonTestParams
+    Priority: p2
+    Summary: Change non-master MP IP in config file to invalid value
+    TestName: Invalid Non-Master Broker IP
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Status: 'Draft'
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['StopMPA']
+            - ['ReadIP_MP2']
+            - ['ReplaceIP_SavedMP']
+            - ['StartMPA']
+            - ['SyslogCheckForFullyEstablished']
+            - ['CheckConfigBadValue']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'InvalidNonMasterBrokerIP'
+
+        ReadIP_MP2:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            read_broker_ip:
+                num: 1
+                ip[?]defined: ''
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'InvalidNonMasterBrokerIP'
+                grep_string: 'MPA connection fully established'
+                max_wait: 200
+
+        CheckConfigBadValue:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *CONFIG_FILE
+                grep_after: '{'
+                grep_string: ''
+                pattern: '0.0.0.0'
+                count: 0
+                max_wait: 60

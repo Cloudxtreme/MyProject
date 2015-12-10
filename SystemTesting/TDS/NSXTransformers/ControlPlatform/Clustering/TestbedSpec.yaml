@@ -1,0 +1,154 @@
+# Basic CCP Clustering ESX setup for Avalanche
+# Note: parameter names will go through a change
+
+CCPClusteringEsxTestbedSpec01:
+    # vdnet bug, esx [1-2] not working. so split
+    ESX: &CCP_Clustering_TOPOLOGY_01--ESX
+        esx:
+            '[1-2]':
+                vmnic:
+                    '[1]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+                set_nsx_manager:
+                    manager_ip: 'nsxmanager.[1]'
+                    manager_thumbprint: 'nsxmanager.[1]'
+                    execution_type: 'cli'
+            '[3]':
+        nsxmanager:
+            '[1]':
+                ip: none
+        nsxcontroller:
+            '[1]':
+                ip: none
+                set_nsx_registration:
+                    manager_ip: 'nsxmanager.[1]'
+                    manager_thumbprint: 'nsxmanager.[1]'
+                    execution_type: 'cli'
+            '[2-3]':
+        vm:
+            '[1-2]':
+                host: 'esx.[x]'
+    KVM: &CCP_Clustering_TOPOLOGY_01--KVM
+        kvm:
+            '[1-2]':
+                pif:
+                    '[1]':
+                        persist_configuration:
+                            bootproto: "none"
+                            onboot: "yes"
+                framework_setup:
+                    - disablefirewall
+                    - createanchor
+                    - copysshkey
+                configure_package:
+                   execution_type: 'cmd'
+                   operation: install
+                set_nsx_manager:
+                    manager_ip: 'nsxmanager.[1]'
+                    manager_thumbprint: 'nsxmanager.[1]'
+                    execution_type: 'cli'
+                bridge:
+                    '[1]':
+                        name: nsxvswitch
+                        switch_fail_mode: secure
+                        external_id:
+                            bridge-id: nsx-managed
+
+        esx:
+            '[3]':
+
+        nsxmanager:
+            '[1]':
+                'ip': none
+
+        nsxcontroller:
+            '[1]':
+                'ip': none
+                set_nsx_registration:
+                    manager_ip: 'nsxmanager.[1]'
+                    manager_thumbprint: 'nsxmanager.[1]'
+                    execution_type: 'cli'
+            '[2-3]':
+        vm:
+            '[1-2]':
+                host: "kvm.[x]"
+                template: template_kvm_debian
+                vmstate: poweron
+                installtype: fullclone
+
+CCPClusteringTestbedSpec02:
+    # vdnet bug, esx [1-2] not working. so split
+    ESX: &CCP_Clustering_TOPOLOGY_02--ESX
+        esx:
+            '[1-2]':
+                vmnic:
+                    '[1]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+                set_nsx_manager:
+                    manager_ip: 'nsxmanager.[1]'
+                    manager_thumbprint: 'nsxmanager.[1]'
+                    execution_type: 'cli'
+            '[3]':
+
+        nsxmanager:
+            '[1-3]':
+                ip: none
+
+        nsxcontroller:
+            '[1-3]':
+
+        vm:
+            '[1-2]':
+                host: 'esx.[x]'
+    KVM: &CCP_Clustering_TOPOLOGY_02--KVM
+        kvm:
+            '[1-2]':
+                pif:
+                    '[1]':
+                        persist_configuration:
+                            bootproto: "none"
+                            onboot: "yes"
+                framework_setup:
+                    - disablefirewall
+                    - createanchor
+                    - copysshkey
+                configure_package:
+                   execution_type: 'cmd'
+                   operation: install
+                set_nsx_manager:
+                    manager_ip: 'nsxmanager.[1]'
+                    manager_thumbprint: 'nsxmanager.[1]'
+                    execution_type: 'cli'
+                bridge:
+                    '[1]':
+                        name: nsxvswitch
+                        switch_fail_mode: secure
+                        external_id:
+                            bridge-id: nsx-managed
+
+        esx:
+            '[3]':
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]':
+
+        vm:
+            '[1-2]':
+                host: "kvm.[x]"
+                template: template_kvm_debian
+                vmstate: poweron
+                installtype: fullclone

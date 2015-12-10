@@ -1,0 +1,228 @@
+WORKLOADS:
+
+   CreateVirtualWires: &CREATE_VIRTUALWIRES_NETWORKSCOPE1
+      Type: "TransportZone"
+      TestTransportZone: "vsm.[1].networkscope.[1]"
+      VirtualWire:
+         '[1]':
+            name: "AutoGenerate"
+            tenantid: "AutoGenerate"
+            controlplanemode: "MULTICAST_MODE"
+         '[2]':
+            name: "AutoGenerate"
+            tenantid: "AutoGenerate"
+            controlplanemode: "UNICAST_MODE"
+         '[3]':
+            name: "AutoGenerate"
+            tenantid: "AutoGenerate"
+            controlplanemode: "HYBRID_MODE"
+
+   BridgeVXLANToVLAN: &BRIDGE_VXLAN1_TO_VLAN
+      Type   : "VM"
+      TestVM : "vsm.[1].vse.[1]"
+      bridge :
+         '[1]':
+            name        : "AutoGenerate"
+            virtualwire : "vsm.[1].networkscope.[1].virtualwire.[2]"
+            portgroup   : "vc.[1].dvportgroup.[2]"
+
+   DeleteAllVirtualWires: &DELETE_VIRTUALWIRES_NETWORKSCOPE1
+      Type  : "TransportZone"
+      TestTransportZone : "vsm.[1].networkscope.[1]"
+      deletevirtualwire : "vsm.[1].networkscope.[1].virtualwire.[-1]"
+
+   DeployEdge: &DEPLOY_EDGE
+      Type    : "NSX"
+      TestNSX : "vsm.[1]"
+      vse:
+         '[1]':
+            name          : "AutoGenerate"
+            resourcepool  : "vc.[1].datacenter.[1].cluster.[2]"
+            datacenter    : "vc.[1].datacenter.[1]"
+            host          : "host.[2]"
+            portgroup     : "vc.[1].dvportgroup.[1]"
+            primaryaddress : "10.10.10.41"
+            subnetmask     : "255.255.255.0"
+
+   CreateVXLANLIF1: &CREATE_VXLAN_LIF1
+      Type   : "VM"
+      TestVM : "vsm.[1].vse.[1]"
+      lif:
+         '[1]':
+            name        : "AutoGenerate"
+            portgroup   : "vsm.[1].networkscope.[1].virtualwire.[1]"
+            type        : "internal"
+            connected   : 1
+            addressgroup :
+               - addresstype : "primary"
+                 ipv4address : "192.168.1.1"
+                 netmask     : "255.255.255.0"
+
+   CreateVXLANLIF2: &CREATE_VXLAN_LIF2
+      Type   : "VM"
+      TestVM : "vsm.[1].vse.[1]"
+      lif :
+         '[2]':
+            name        : "AutoGenerate"
+            portgroup   : "vsm.[1].networkscope.[1].virtualwire.[2]"
+            type        : "internal"
+            connected   : 1
+            addressgroup:
+               - addresstype : "primary"
+                 ipv4address : "192.168.2.1"
+                 netmask     : "255.255.255.0"
+
+   CreateVXLANLIF3: &CREATE_VXLAN_LIF3
+      Type   : "VM"
+      TestVM : "vsm.[1].vse.[1]"
+      lif :
+         '[3]':
+            name        : "AutoGenerate"
+            portgroup   : "vsm.[1].networkscope.[1].virtualwire.[3]"
+            type        : "internal"
+            connected   : 1
+            addressgroup:
+               - addresstype : "primary"
+                 ipv4address : "192.168.3.1"
+                 netmask     : "255.255.255.0"
+
+   DeleteVDREdge: &DELETE_VDR_EDGE
+      Type     : 'NSX'
+      TestNSX  : "vsm.[1]"
+      deletevse: "vsm.[1].vse.[1]"
+
+   PlaceVMsOnVirtualWire1: &PLACE_VM1_ON_VIRTUALWIRE1
+      Type   : "VM"
+      TestVM : "vm.[1]"
+      vnic :
+         '[1]':
+            driver            : "e1000"
+            portgroup         : "vsm.[1].networkscope.[1].virtualwire.[1]"
+            connected         : 1
+            startconnected    : 1
+            allowguestcontrol : 1
+
+   PlaceVMsOnVirtualWire2: &PLACE_VM2_ON_VIRTUALWIRE2
+      Type   : "VM"
+      TestVM : "vm.[2]"
+      vnic :
+         '[1]':
+            driver            : "e1000"
+            portgroup         : "vsm.[1].networkscope.[1].virtualwire.[2]"
+            connected         : 1
+            startconnected    : 1
+            allowguestcontrol : 1
+
+   DeleteVM1Vnic1: &DELETE_VM1_VNIC1
+      Type   : "VM"
+      TestVM : "vm.[1]"
+      deletevnic : "vm.[1].vnic.[1]"
+
+   DeleteVM2Vnic1: &DELETE_VM2_VNIC1
+      Type   : "VM"
+      TestVM : "vm.[2]"
+      deletevnic : "vm.[2].vnic.[1]"
+
+   PowerOnVM1: &POWERON_VM1
+      Type    : "VM"
+      TestVM  : "vm.[1]"
+      vmstate : "poweron"
+
+   PowerOnVM2: &POWERON_VM2
+      Type    : "VM"
+      TestVM  : "vm.[2]"
+      vmstate : "poweron"
+
+   PowerOffALLVM: &POWEROFF_ALL_VM
+      Type    : "VM"
+      TestVM  : "vm.[-1]"
+      vmstate : "poweroff"
+
+   PowerOffVM1: &POWEROFF_VM1
+      Type    : "VM"
+      TestVM  : "vm.[1]"
+      vmstate : "poweroff"
+
+   PowerOffVM2: &POWEROFF_VM2
+      Type    : "VM"
+      TestVM  : "vm.[2]"
+      vmstate : "poweroff"
+
+   SetVXLANIPVM1: &SET_VXLANIP_VM1
+      Type       : "NetAdapter"
+      Testadapter: "vm.[1].vnic.[1]"
+      ipv4       : '192.168.2.4'
+      netmask    : "255.255.255.0"
+
+   SetVXLANIPVM2: &SET_VXLANIP_VM2
+      Type       : "NetAdapter"
+      Testadapter: "vm.[2].vnic.[1]"
+      ipv4       : '192.168.2.5'
+      netmask    : "255.255.255.0"
+
+   SetVXLANIPVM3: &SET_VXLANIP_VM3
+      Type       : "NetAdapter"
+      Testadapter: "vm.[3].vnic.[1]"
+      ipv4       : '192.168.3.5'
+      netmask    : "255.255.255.0"
+
+   AddVXLANRouteVM1: &ADD_VXLANROUTE_VM1
+      Type       : "NetAdapter"
+      Testadapter: "vm.[1].vnic.[1]"
+      netmask    : "255.255.255.0"
+      route      : "add"
+      network    : "192.168.3.0"
+      gateway    : "192.168.2.1"
+
+   AddVXLANRouteVM2: &ADD_VXLANROUTE_VM2
+      Type       : "NetAdapter"
+      Testadapter: "vm.[2].vnic.[1]"
+      netmask    : "255.255.255.0"
+      route      : "add"
+      network    : "192.168.3.0"
+      gateway    : "192.168.2.1"
+
+   AddVXLANRouteVM3: &ADD_VXLANROUTE_VM3
+      Type       : "NetAdapter"
+      Testadapter: "vm.[3].vnic.[1]"
+      netmask    : "255.255.255.0"
+      route      : "add"
+      network    : "192.168.2.0"
+      gateway    : "192.168.3.1"
+
+   PingTest1: &PINGTEST1
+      Type            : "Traffic"
+      ToolName        : "Ping"
+      TestAdapter     : "vm.[1].vnic.[1]"
+      SupportAdapter  : "vm.[3].vnic.[1]"
+      TestDuration    : "10"
+
+   NetperfTest1: &NETPERFTEST1
+      Type           : "Traffic"
+      toolname       : "iperf"
+      L4Protocol     : "tcp,udp"
+      L3Protocol     : "ipv4"
+      TestAdapter    : "vm.[1].vnic.[1]"
+      SupportAdapter : "vm.[3].vnic.[1]"
+      TestDuration   : "10"
+
+   VDRSetup: &VDR_SETUP
+      - ['DeployEdge']
+      - ['CreateVXLANLIF1']
+      - ['CreateVXLANLIF2']
+      - ['CreateVXLANLIF3']
+      - ['SetVXLANIPVM1']
+      - ['SetVXLANIPVM2']
+      - ['SetVXLANIPVM3']
+      - ['AddVXLANRouteVM1']
+      - ['AddVXLANRouteVM2']
+      - ['AddVXLANRouteVM3']
+      - ['NetperfTest1']
+      - ['PingTest1']
+      - ['BridgeVXLANToVLAN']
+
+   VDRCleanup: &VDR_CLEANUP
+      - ['PowerOffALLVM']
+      - ['DeleteVM1Vnic1']
+      - ['DeleteVM2Vnic1']
+      - ['DeleteAllVirtualWires']

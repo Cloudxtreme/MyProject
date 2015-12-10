@@ -1,0 +1,160 @@
+NSXUpgrade:
+    Component: "NSXAPI"
+    Category: "Node Management"
+    TestName: "NSXUpgrade"
+    Version: "2"
+    Tags: "nsx,vsm,BAT"
+    Summary: "This test case upgrdes vsm and all its components"
+    ExpectedResult: "PASS"
+    TestbedSpec: *VDR_ONE_VDS_TESTBEDSPEC
+    WORKLOADS:
+        Sequence:
+            - ["EditCluster"]
+            - ['SetSegmentIDRange']
+            - ['SetMulticastRange']
+            - ['DeployFirstController']
+            - ['InstallVIBs_And_ConfigureVXLAN']
+            - ['CreateVDNScope']
+            - ['CreateVirtualWires']
+            - ['PlaceVMsOnVirtualWire1']
+            - ['PlaceVMsOnVirtualWire2']
+            - ['PowerOnVM1','PowerOnVM3','PowerOnVM2','PowerOnVM4']
+            - ['DeployEdge']
+            - ['CreateVXLANLIF1']
+            - ['CreateVXLANLIF2']
+            - ['SetVXLANIPVM1','SetVXLANIPVM2','SetVXLANIPVM3','SetVXLANIPVM4']
+            - ['AddVXLANRouteVM1','AddVXLANRouteVM2','AddVXLANRouteVM3','AddVXLANRouteVM4']
+            - ['PingTest1']
+            - ['PingTest2']
+            - ['PingTest3']
+            - ['PingTest4']
+            - ['NetperfTest1']
+            - ['NetperfTest2']
+            - ['NetperfTest3']
+            - ['NetperfTest4']
+            - ["Upgrade"]
+            - ['PingTest1']
+            - ['PingTest2']
+            - ['PingTest3']
+            - ['PingTest4']
+            - ['NetperfTest1']
+            - ['NetperfTest2']
+            - ['NetperfTest3']
+            - ['NetperfTest4']
+            - ["UpgradeVDNCluster"]
+            - ["RebootHosts"]
+            - ['PingTest1']
+            - ['PingTest2']
+            - ['PingTest3']
+            - ['PingTest4']
+            - ['NetperfTest1']
+            - ['NetperfTest2']
+            - ['NetperfTest3']
+            - ['NetperfTest4']
+            - ["UpgradeVSE"]
+            - ['PingTest1']
+            - ['PingTest2']
+            - ['PingTest3']
+            - ['PingTest4']
+            - ['NetperfTest1']
+            - ['NetperfTest2']
+            - ['NetperfTest3']
+            - ['NetperfTest4']
+
+#WORKLOADS:
+#    VDR_DEPLOY_WORKLOADS:
+        EditCluster: *EDIT_CLUSTER
+        SetSegmentIDRange: *SET_SEGMENT_ID_RANGE
+        SetMulticastRange: *SET_MULTICAST_RANGE
+        DeployFirstController: *DEPLOY_FIRST_CONTROLLER
+        InstallVIBs_And_ConfigureVXLAN: *INSTALL_VIBS_AND_CONFIGURE_VXLAN
+#    VDR_SETUP_WORKLOADS:
+        DeployEdge: *DEPLOY_EDGE
+        CreateVDNScope: *CREATE_VDN_SCOPE
+        CreateVirtualWires: *CREATE_VIRTUAL_WIRES
+        CreateVXLANLIF1: *CREATE_VXLAN_LIF_1
+        CreateVXLANLIF2: *CREATE_VXLAN_LIF_2
+        PlaceVMsOnVirtualWire1: *PLACE_VMS_ON_VIRTUAL_WIRE_1
+        PlaceVMsOnVirtualWire2: *PLACE_VMS_ON_VIRTUAL_WIRE_2
+        PowerOnVM1: *POWER_ON_VM_1
+        PowerOnVM2: *POWER_ON_VM_2
+        PowerOnVM3: *POWER_ON_VM_3
+        PowerOnVM4: *POWER_ON_VM_4
+        SetVXLANIPVM1: *SET_VXLAN_IP_VM_1
+        SetVXLANIPVM2: *SET_VXLAN_IP_VM_2
+        SetVXLANIPVM3: *SET_VXLAN_IP_VM_3
+        SetVXLANIPVM4: *SET_VXLAN_IP_VM_4
+        AddVXLANRouteVM1: *ADD_VXLAN_ROUTE_VM_1
+        AddVXLANRouteVM2: *ADD_VXLAN_ROUTE_VM_2
+        AddVXLANRouteVM3: *ADD_VXLAN_ROUTE_VM_3
+        AddVXLANRouteVM4: *ADD_VXLAN_ROUTE_VM_4
+#    VDR_DATAPATH_WORKLOADS:
+        PingTest1: *PING_TEST_1
+        PingTest2: *PING_TEST_2
+        PingTest3: *PING_TEST_3
+        PingTest4: *PING_TEST_4
+        NetperfTest1: *NETPERF_TEST_1
+        NetperfTest2: *NETPERF_TEST_2
+        NetperfTest3: *NETPERF_TEST_3
+        NetperfTest4: *NETPERF_TEST_4
+        Upgrade:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            profile: "update"
+            #build: "2176282"
+            build: "from_buildweb"
+            build_product: "vsmva"
+            build_branch: "vshield-trinity-patch"
+            build_context: "ob"
+            build_type: "release"
+            name: "VMware-NSX-Manager-upgrade-bundle-"
+        UpgradeVDNCluster:
+            Type: "Cluster"
+            TestCluster: "vsm.[1].vdncluster.[1]"
+            profile: "update"
+            cluster: "vc.[1].datacenter.[1].cluster.[1]"
+        VerifyUpgradeStatus:
+            Type: "Cluster"
+            TestCluster: "vsm.[1].vdncluster.[1]"
+            verifyupgradestatus:
+                'resourceStatus[?]contain_once':
+                    - featureId: "com.vmware.vshield.vsm.nwfabric.hostPrep"
+                    - updateAvailable: "true"
+        RebootHosts:
+            Type: "Cluster"
+            TestCluster: "vc.[1].datacenter.[1].cluster.[1]"
+            hosts: "host.[1-2]"
+            RebootHostsInCluster: "sequential"
+        ResolveCluster:
+            Type: "Cluster"
+            TestCluster: "vsm.[1].vdncluster.[1]"
+            resolve: "vibs"
+        UpgradeVSE:
+            Type: "VM"
+            TestVM: "vsm.[1].vse.[1]"
+            profile: "update"
+        VerifyControllerClusterUpgradable:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            controllerupgradecapability:
+                'capability[?]equal_to': "TRUE"
+        VerifyClusterUpgradeNotUpgraded:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            controllerupgradestatus:
+                'status[?]equal_to': "NOT_UPGRADED"
+        UpgradeControllersCluster:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vxlancontrollers: "UPGRADE"
+        VerifyClusterUpgradeComplete:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            controllerupgradestatus:
+                'status[?]equal_to': "UPGRADE_COMPLETE"
+        VerifyEachControllerUpgradeSuccess:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            controllers: "vsm.[1].vxlancontroller.[-1]"
+            controllerupgradestatus:
+                 'status[?]equal_to':  "UPGRADED"

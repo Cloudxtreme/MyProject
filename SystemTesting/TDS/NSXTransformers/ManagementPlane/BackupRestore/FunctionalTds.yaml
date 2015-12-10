@@ -1,0 +1,1799 @@
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+!include ../Clustering/MPCommonWorkloads.yaml
+!include ../Clustering/MPVerticalWorkloads.yaml
+!include ../Clustering/DeploymentWorkloads.yaml
+!include ../Clustering/L2Workloads.yaml
+
+###############################################################################
+#                           P0 TESTS                                          #
+###############################################################################
+
+SimpleNodeLevelBackup:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat,gating_test_cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "Simple Node Level Backup Restore test"
+    Summary: "Verify basic node level backup restore function"
+    Procedure: '1. Take simple node level backup
+                2. Perform Restore on same NSX node.
+                3. Delete Node level backup'
+    ExpectedResult: 'Backup Restore should be successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        Sequence:
+            - ["CreateNodeLevelBackup1"]
+            - ["GetNodeLevelBackup1"]
+            - ["RestoreNodeLevelBackup1"]
+        ExitSequence:
+            - ["DeleteAllNodeBackup"]
+
+        DeleteAllNodeBackup:
+            <<: *DELETE_ALL_NODE_BACKUPS
+            sleepbetweenworkloads: 2
+
+SimpleClusterLevelBackupRestore:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Semi-Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat,gating_test_cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "Simple Cluster level Backup Restore test"
+    Summary: "Verify basic cluster level backup restore function"
+    Procedure: '1. Take Cluster level backup
+                2. Download cluster level backup
+                3. Upload cluster level backup
+                4. Perform cluster level restore
+                5. Delete Cluster Level Backup'
+
+    ExpectedResult: 'Backup Restore should be successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        Sequence:
+            - ["CreateClusterLevelBackup1"]
+            - ["GetClusterLevelBackup1"]
+            - ["DownloadClusterLevelBackup1"]
+            - ["UploadClusterLevelBackup1"]
+            - ["CopyToRestoreFolderBackup1"]
+            - ["RestoreClusterLevelBackup"]
+        ExitSequence:
+            - ["DeleteAllClusterBackups"]
+            - ["DeleteClusterBackupFile"]
+
+DeleteNodeLevelBackup:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "Delete Node level backups"
+    Summary: "Verify Delete node level backup is successful"
+    Procedure: '1. Take 3 node level backup
+                2. Delete 2nd backup
+                3. Check 1st,3rd are intact.
+                4. Delete 1st and 3rd backups'
+    ExpectedResult: 'Delete node level backup should be successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        Sequence:
+            - ["CreateNodeLevelBackup1"]
+            - ["CreateNodeLevelBackup2"]
+            - ["CreateNodeLevelBackup3"]
+            - ["GetAllNodeLevelBackups"]
+            - ["DeleteNodeBackup2"]
+            - ["CheckNodeLevelBackups"]
+        ExitSequence:
+            - ["DeleteAllNodeBackups"]
+
+        GetAllNodeLevelBackups:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[1]"
+            get_snapshot:
+                'results[?]contain_once':
+                    - id_: "nsxmanager.[1].nodebackuprestore.[1]"
+                    - id_: "nsxmanager.[1].nodebackuprestore.[2]"
+                    - id_: "nsxmanager.[1].nodebackuprestore.[3]"
+        DeleteNodeBackup2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletenodebackup: "nsxmanager.[1].nodebackuprestore.[2]"
+        CheckNodeLevelBackups:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[1]"
+            get_snapshot:
+                'results[?]contain_once':
+                    - id_: "nsxmanager.[1].nodebackuprestore.[1]"
+                    - id_: "nsxmanager.[1].nodebackuprestore.[3]"
+
+DeleteClusterLevelBackupId:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "Delete Cluster level backup Ids"
+    Summary: "Verify Delete Cluster level backup Ids is successful"
+    Procedure: '1. Take 3 Cluster level backup
+                2. Delete 2nd backup Id
+                3. Check 1st,3rd are intact.
+                4. Delete 1st and 3rd backups Ids'
+    ExpectedResult: 'Delete Cluster level backup Ids should be successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        Sequence:
+            - ["CreateClusterLevelBackup1"]
+            - ["CreateClusterLevelBackup2"]
+            - ["CreateClusterLevelBackup3"]
+            - ["CreateDummyObjectClusterLevelBackup2"]
+            - ["GetAllClusterLevelBackups"]
+            - ["DeleteClusterBackup2"]
+            - ["CheckDeletedClusterLevelBackups"]
+            - ["CheckClusterLevelBackups"]
+        ExitSequence:
+            - ["DeleteClusterBackup1"]
+            - ["DeleteClusterBackup3"]
+
+        CreateDummyObjectClusterLevelBackup2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            clusterbackuprestore:
+              '[4]':
+                  map_object: true
+                  id_: "nsxmanager.[1].clusterbackuprestore.[2]"
+        GetAllClusterLevelBackups:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[1]"
+            get_snapshot:
+                'results[?]contain_once':
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[1]"
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[2]"
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[3]"
+        DeleteClusterBackup2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteclusterbackup: "nsxmanager.[1].clusterbackuprestore.[2]"
+        CheckDeletedClusterLevelBackups:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[1]"
+            get_snapshot:
+                'results[?]not_contains':
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[4]"
+        CheckClusterLevelBackups:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[1]"
+            get_snapshot:
+                'results[?]contain_once':
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[1]"
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[3]"
+        DeleteClusterBackup1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteclusterbackup: "nsxmanager.[1].clusterbackuprestore.[1]"
+        DeleteClusterBackup3:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteclusterbackup: "nsxmanager.[1].clusterbackuprestore.[3]"
+
+NodeLevelRestoreAfterApplianceManagementSettingsChanges:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "kchougule"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "NodeLevelRestoreAfterApplianceManagementSettingsChanges"
+    Summary: "Verify NTP configuration persists after node level restore"
+    Procedure: '1. Take node level backup
+                2. Configure NTP server on NSX node
+                3. Verfiy NTP server configurations
+                2. Perform Restore on same NSX node.
+                3. Verfiy NTP server configurations persist after restore'
+    ExpectedResult: 'NTP server configurations should persist after restore '
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        Sequence:
+            - - CreateNodeLevelBackup1
+            - - GetNodeLevelBackup1
+            - - SetNtpServerId
+            - - GetConfiguredNTPServers
+            - - SetNTPServer
+            - - VerifyConfiguredNtpServer
+            - - RestoreNodeLevelBackup1
+            - - VerifyConfiguredNtpServer
+            - - ConfigureDefaultNtpServer
+        ExitSequence:
+            - - DeleteAllNodeBackups
+
+        SetNtpServerId:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          ntpserver:
+            '[1]':
+                map_object: true
+                id_: 'ntp'
+
+        GetConfiguredNTPServers:
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           PersistData: "Yes"
+           read:
+              service_properties[?]defined: ''
+
+        SetNTPServer:
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           reconfigure: true
+           service_properties:
+               servers:
+                  - 'time.vmware.com'
+
+        VerifyConfiguredNtpServer:
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           read:
+              service_properties:
+                 'servers[?]equal_to':
+                    - 'time.vmware.com'
+
+        ConfigureDefaultNtpServer :
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           reconfigure: true
+           service_properties: 'nsxmanager.[1].ntpserver.[1]->read->service_properties'
+
+NodeLevelRestoreAfterAdminSettingsChanges:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "kchougule"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "NodeLevelRestoreAfterAdminSettingsChanges"
+    Summary: "Verify user configuration persists after node level restore"
+    Procedure: '1. Take node level backup
+                2. Configure user full name on NSX node
+                3. Verfiy user full name changed
+                2. Perform Restore on same NSX node.
+                3. Verfiy user full name persist after restore'
+    ExpectedResult: 'User full name should persist after restore '
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        Sequence:
+            - - CreateNodeLevelBackup1
+            - - GetNodeLevelBackup1
+            - - SetLocalUser
+            - - UpdateLocalUser
+            - - VerifyLocalUser
+            - - RestoreNodeLevelBackup1
+            - - VerifyLocalUser
+            - - ResetLocalUser
+        ExitSequence:
+            - - DeleteAllNodeBackups
+
+        SetLocalUser:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          localuser:
+            '[1]':
+                map_object: true
+                id_: '1000'
+
+        UpdateLocalUser:
+           Type: "User"
+           TestUser: "nsxmanager.[1].localuser.[1]"
+           reconfigure: true
+           full_name: 'updatedadmin'
+
+        ResetLocalUser:
+           Type: "User"
+           TestUser: "nsxmanager.[1].localuser.[1]"
+           reconfigure: true
+           full_name: 'admin'
+
+        VerifyLocalUser:
+           Type: "User"
+           TestUser: "nsxmanager.[1].localuser.[1]"
+           get_local_user:
+                'result_count[?]equal_to': 2
+                'results[?]contain_once':
+                    - username: 'admin'
+                      full_name: 'updatedadmin'
+                    - username: 'root'
+
+RestoreDifferentClusterLevelSnapshots:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat,gating_test_cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "RestoreDifferentClusterLevelSnapshots"
+    Summary: "Verify basic cluster level backup restore function"
+    Procedure: '1. Create IP Pool 1
+                2. Take Cluster level backup 1, download backup
+                3. Create IP Pool 2
+                4. Take Cluster level backup 2, download backup
+                5. Create IP Pool 3
+                6. Take Cluster level backup 3, download backup
+                7. Verify all 3 IP pools created.
+                8. Upload and restore Cluster level backup 1
+                9. Verify only IP pool 1 is restored.
+                10. Upload and restore Cluster level backup 2
+                11. Verify only IP pool 1,2 is restored.
+                12. Upload and restore Cluster level backup 3
+                13. Verify all 3 IP pools are restored'
+
+    ExpectedResult: 'Each snapshot should restore expected IP Pool objects'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *OTHER_WORKLOADS
+        Sequence:
+            - - CreateIPPool1
+            - - CreateClusterLevelBackup1
+            - - GetClusterLevelBackup1
+            - - DownloadClusterLevelBackup1
+
+            - - CreateIPPool2
+            - - CreateClusterLevelBackup2
+            - - GetClusterLevelBackup2
+            - - DownloadClusterLevelBackup2
+
+            - - CreateIPPool3
+            - - CreateClusterLevelBackup3
+            - - GetClusterLevelBackup3
+            - - DownloadClusterLevelBackup3
+
+            - - VerifyIPPoolList
+
+            - - UploadClusterLevelBackup1
+            - - CopyToRestoreFolderBackup1
+            - - RestoreClusterLevelBackup
+            - - VerifyIPPool1
+
+            - - UploadClusterLevelBackup2
+            - - CopyToRestoreFolderBackup2
+            - - RestoreClusterLevelBackup
+            - - VerifyIPPool1And2
+
+            - - UploadClusterLevelBackup3
+            - - CopyToRestoreFolderBackup3
+            - - RestoreClusterLevelBackup
+            - - VerifyIPPoolList
+
+        ExitSequence:
+            - - DeleteAllIPPool
+            - - DeleteAllClusterBackups
+            - - DeleteClusterBackupFile
+
+        VerifyIPPool1And2:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].ippool.[1]"
+            sleepbetweenworkloads: 2
+            get_pool_list:
+               'result_count[?]equal_to': 2
+               'results[?]contain_once':
+                   - name: 'AUTO-IPPool-1'
+                     subnets:
+                        - cidr: '192.168.1.0/24'
+                   - name: 'AUTO-IPPool-2'
+                     subnets:
+                        - cidr: '192.168.2.0/24'
+
+GetAllClusterLevelBackups:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "kchougule"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "GetAllClusterLevelBackups"
+    Summary: "Verify get cluster level backup function"
+    Procedure: '1. Take 3 Cluster level backup
+                2. Get backups
+                3. Delete all Cluster level backups'
+    ExpectedResult: 'Get Backup should show only one backup file cluster_backup.zip'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        Sequence:
+            - - CreateClusterLevelBackup1
+            - - CreateClusterLevelBackup2
+            - - CreateClusterLevelBackup3
+            - - GetAllClusterLevelBackups
+            - - VerifyOneBackupFileIsCreated
+        ExitSequence:
+            - - DeleteAllClusterBackups
+
+        GetAllClusterLevelBackups:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[1]"
+            get_snapshot:
+                'results[?]contain_once':
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[1]"
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[2]"
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[3]"
+
+        VerifyOneBackupFileIsCreated:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            execution_type: 'cli'
+            path: '/home/secureall/secureall/backup/cluster/'
+            check_cluster_backup_file:
+              'content[?]match': 'found'
+
+GetAllNodeLevelBackups:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "kchougule"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "GetNodeLevelBackups"
+    Summary: "Verify get node level backup function"
+    Procedure: '1. Take multiple node level backups
+                2. Get backups
+                3. Delete all Node level backups'
+    ExpectedResult: 'Get Backup should show backup files for each node level backup'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        Sequence:
+            - - SetNodeBackupRestoreId
+            - - PurgeNodeLevelBackups
+            - - CreateNodeLevelBackup1
+            - - CreateNodeLevelBackup2
+            - - CreateNodeLevelBackup3
+            - - GetNodeLevelBackup1
+            - - GetNodeLevelBackup2
+            - - GetNodeLevelBackup3
+            - - VerifyThreeBackupFilesAreCreated
+        ExitSequence:
+            - - DeleteAllNodeBackups
+
+        SetNodeBackupRestoreId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nodebackuprestore:
+              '[1]':
+                  map_object: true
+                  id_: 1
+
+        VerifyThreeBackupFilesAreCreated:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            execution_type: 'cli'
+            path: '/home/secureall/secureall/backup/node_requests'
+            check_node_backup_file:
+              'content[?]match': 'nsxmanager.[1].nodebackuprestore.[1]->read->id_'
+              'content[?]match': 'nsxmanager.[1].nodebackuprestore.[2]->read->id_'
+              'content[?]match': 'nsxmanager.[1].nodebackuprestore.[3]->read->id_'
+
+RestoreVerifyMPMPACommunication:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,1MP_1ESX_cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "RestoreVerifyMPMPACommunication"
+    Summary: "Verify after node,cluster level restore MP-MPA Communcation is ok"
+    Procedure: '1. Verify MP-MPA communication
+                2. Create Node level Backup
+                3. Restore Node level Backup
+                4. Verify MP-MPA Commmunication
+                5. Create Cluster level Backup
+                6. Restore Cluster level Backup
+                7. Verify MP-MPA Commmunication'
+    ExpectedResult: 'MP-MPA communication should be intact after restore'
+    TestbedSpec: *1MP_1ESX
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *OTHER_WORKLOADS
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - GetClient
+            - - GetClientsById
+            - - VerifyClient
+            - - VerifyHeartbeatStatusOfClient1
+            - - PingClient_1
+
+            - - CreateNodeLevelBackup1
+            - - GetNodeLevelBackup1
+            - - RestoreNodeLevelBackup1
+
+            - - GetClientAfterNodeLevelRestore
+            - - VerifyClientAfterNodeLevelRestore
+            - - VerifyHeartbeatStatusOfClient1
+            - - CheckPingClientAfterNodeLevelRestore
+
+            - - CreateClusterLevelBackup1
+            - - GetClusterLevelBackup1
+            - - DownloadClusterLevelBackup1
+            - - UploadClusterLevelBackup1
+            - - CopyToRestoreFolderBackup1
+            - - RestoreClusterLevelBackup
+
+            - - GetClientAfterClusterLevelRestore
+            - - VerifyClientAfterClusterLevelRestore
+            - - CheckPingClientAfterClusterLevelRestore
+            - - VerifyHeartbeatStatusOfClient1
+
+        ExitSequence:
+            - - DeleteAllNodeBackups
+            - - DeleteAllClusterBackups
+            - - DeleteClusterBackupFile
+
+        GetClientAfterNodeLevelRestore:
+            <<: *GET_CLIENT_DETAILS
+            sleepbetweenworkloads: 20
+
+        VerifyClientAfterNodeLevelRestore: *VERIFY_CLIENT
+
+        CheckPingClientAfterNodeLevelRestore: *PING_CLIENT_1
+
+        VerifyHeartbeatStatusOfClientAfterNodeLevelRestore:
+            <<: *VERIFY_HEARTBEAT_STATUS_OF_CLIENT_1
+
+        GetClientAfterClusterLevelRestore:
+            <<: *GET_CLIENT_DETAILS
+            sleepbetweenworkloads: 20
+
+        VerifyClientAfterClusterLevelRestore: *VERIFY_CLIENT
+
+        CheckPingClientAfterClusterLevelRestore: *PING_CLIENT_1
+
+        VerifyHeartbeatStatusOfClientAfterClusterLevelRestore:
+            <<: *VERIFY_HEARTBEAT_STATUS_OF_CLIENT_1
+
+RestoreClusterLevelOnFreshMPNode:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "kchougule"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,2MP_cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "RestoreClusterLevelOnFreshMPNode"
+    Summary: "To verify restore on fresh node"
+    Procedure: '1. Create IP Pool on node 1
+                2. Take Cluster Level Backup on node 1
+                3. Download backup file on linux host
+                4. Upload backup file on NSXManager node 2
+                5. Restore backup file on node 2
+                7. Verify IPpool is restored on node 2
+                8. Delete Cluster Level Backup'
+
+    ExpectedResult: 'Restore on fresh MP node should be successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+            '[2]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *OTHER_WORKLOADS
+        Sequence:
+            - - CreateIPPool1
+            - - VerifyIPPool1
+            - - CreateClusterLevelBackup1
+            - - GetClusterLevelBackup1
+            - - DownloadClusterLevelBackup1
+            - - UploadClusterLevelBackupOnNode2
+            - - CopyToRestoreFolderBackupOnNode2
+            - - SetClusterBackupRestoreIdOnNode2
+            - - RestoreClusterLevelBackupOnNode2
+            - - SetIPPoolIdOnNode2
+            - - VerifyIPPoolOnNode2
+
+        ExitSequence:
+            - - DeleteAllIPPool
+            - - DeleteAllIPPoolOnNode2
+            - - DeleteAllClusterBackups
+            - - DeleteClusterBackupFileOnNode2
+
+        UploadClusterLevelBackupOnNode2:
+            <<: *UPLOAD_CLUSTER_BACKUP1
+            TestNSX: 'nsxmanager.[2]'
+
+        CopyToRestoreFolderBackupOnNode2:
+            <<: *COPY_TO_RESTORE_FOLDER_BACKUP1
+            TestNSX: 'nsxmanager.[2]'
+
+        SetClusterBackupRestoreIdOnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            clusterbackuprestore:
+              '[1]':
+                  map_object: true
+                  id_: 1
+
+        RestoreClusterLevelBackupOnNode2:
+            <<: *RESTORE_CLUSTER_BACKUP
+            TestSnapshot: "nsxmanager.[2].clusterbackuprestore.[1]"
+
+        SetIPPoolIdOnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            sleepbetweenworkloads: 10
+            ippool:
+              '[1]':
+                  map_object: true
+                  id_: "nsxmanager.[1].ippool.[1]"
+
+        VerifyIPPoolOnNode2:
+            <<: *VERIFY_IPPOOL1
+            TestGroupingObject: "nsxmanager.[2].ippool.[1]"
+
+        DeleteAllIPPoolOnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            deleteippool: "nsxmanager.[2].ippool.[-1]"
+
+        DeleteClusterBackupFileOnNode2:
+            <<: *DELETE_CLUSTER_BACKUP_FILE
+            TestNSX: 'nsxmanager.[2]'
+
+###############################################################################
+#                           P1 TESTS                                          #
+###############################################################################
+PurgeNodeLevelBackup:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "Purge Node level backups"
+    Summary: "Verify Purging node level backup is successful"
+    Procedure: '1. Take 3 node level backup
+                2. Get all node backups
+                3. Purge node level backups.
+                4. Try Restore with a node level backup
+                5. Check node level backups do not exist'
+    ExpectedResult: 'Purging node level backup should be successful
+                     Restore should fail.'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        Sequence:
+            - ["CreateNodeLevelBackup1"]
+            - ["CreateNodeLevelBackup2"]
+            - ["CreateNodeLevelBackup3"]
+            - ["GetAllNodeLevelBackups"]
+            - ["PurgeNodeLevelBackups"]
+            - ["RestoreNodeBackup"]
+            - ["CheckNodeLevelBackups"]
+
+        GetAllNodeLevelBackups:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[1]"
+            get_snapshot:
+                'results[?]contain_once':
+                    - id_: "nsxmanager.[1].nodebackuprestore.[1]"
+                    - id_: "nsxmanager.[1].nodebackuprestore.[2]"
+                    - id_: "nsxmanager.[1].nodebackuprestore.[3]"
+        RestoreNodeBackup:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[2]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            restore:
+                passphrase: "xxx"
+        CheckNodeLevelBackups:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[1]"
+            get_snapshot:
+                'results[?]not_contains':
+                    - id_: "nsxmanager.[1].nodebackuprestore.[1]"
+                    - id_: "nsxmanager.[1].nodebackuprestore.[2]"
+                    - id_: "nsxmanager.[1].nodebackuprestore.[3]"
+
+PurgeClusterLevelBackup:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "Purge Cluster level backups"
+    Summary: "Verify Purging node level backup is successful"
+    Procedure: '1. Take 3 cluster level backup
+                2. Get all cluster backups
+                3. Purge cluster level backups.
+                4. Check cluster level backups do not exist'
+    ExpectedResult: 'Purging cluster level backup should be successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        Sequence:
+            - ["CreateClusterLevelBackup1"]
+            - ["CreateClusterLevelBackup2"]
+            - ["CreateClusterLevelBackup3"]
+            - ["GetAllClusterLevelBackups"]
+            - ["PurgeClusterLevelBackups"]
+            - ["CheckClusterLevelBackups"]
+
+        GetAllClusterLevelBackups:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[1]"
+            get_snapshot:
+                'results[?]contain_once':
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[1]"
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[2]"
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[3]"
+        CheckClusterLevelBackups:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[1]"
+            get_snapshot:
+                'results[?]not_contains':
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[1]"
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[2]"
+                    - id_: "nsxmanager.[1].clusterbackuprestore.[3]"
+
+RestoreNodeLevelBackupWithWrongPassphrase:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "Wrong Passphrase while restoring node level backup"
+    Summary: "Verify wrong passphrase returns error"
+    Procedure: '1. Take simple node level backup
+                2. Perform Restore on same NSX node.
+                3. Restore with wrong passphrase
+                4. Delete Node level backup'
+    ExpectedResult: 'Restore should fail'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        Sequence:
+            - ["CreateNodeLevelBackup1"]
+            - ["GetNodeLevelBackup1"]
+            - ["RestoreNodeBackup"]
+        ExitSequence:
+            - ["DeleteAllNodeBackups"]
+
+        RestoreNodeBackup:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            restore:
+                passphrase: "xyz"
+
+PostCallWhenRestoreIsInProgress:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "kchougule"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "PostCallWhenRestoreIsInProgress"
+    Summary: "To verify whether REST call is allowed while restore"
+    Procedure: '1. Take Cluster level backup
+                2. Download cluster level backup
+                3. Upload cluster level backup
+                4. Start cluster level restore and in parellel create IPPool
+                5. Delete Cluster Level Backup
+                6. Delete IPPool'
+
+    ExpectedResult: 'Restore backup and POST IPPool call should succeed'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *OTHER_WORKLOADS
+        Sequence:
+            - - CreateClusterLevelBackup1
+            - - GetClusterLevelBackup1
+            - - DownloadClusterLevelBackup1
+            - - UploadClusterLevelBackup1
+            - - CopyToRestoreFolderBackup1
+            - - RestoreClusterLevelBackup
+              - CreateIPPool
+        ExitSequence:
+            - - DeleteAllClusterBackups
+            - - DeleteAllIPPool
+            - - DeleteClusterBackupFile
+
+        CreateIPPool:
+          <<: *CREATE_IPPOOL1
+          sleepbetweenworkloads: 1
+
+PostCallWhenBackupIsInProgress:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "kchougule"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "PostCallWhenBackupIsInProgress"
+    Summary: "To verify whether REST call is allowed while backup"
+    Procedure: '1. Start Cluster level backup
+                2. Execute IPPool POST api
+                3. Delete Cluster Level Backup
+                4. Delete IPPool'
+
+    ExpectedResult: 'Backup process and POST IPPool call should succeed'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *OTHER_WORKLOADS
+        Sequence:
+            - - CreateClusterLevelBackup1
+              - CreateIPPool
+        ExitSequence:
+            - - DeleteAllIPPool
+            - - DeleteAllClusterBackups
+
+        CreateIPPool:
+            <<: *CREATE_IPPOOL1
+            sleepbetweenworkloads: 1
+
+DownloadBackupFileOnLinuxAndRestore:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "Simple Cluster level Backup Restore test"
+    Summary: "Verify basic cluster level backup restore function"
+    Procedure: '1. Create IP Pool
+                2. Take Cluster Level Backup
+                3. Download backup file on linux host/ Launcher
+                4. Upload backup file on NSXManager
+                5. Delete Ippool
+                6. Restore backup file
+                7. Verify IPpool is restored
+                8. Delete Cluster Level Backup'
+
+    ExpectedResult: 'Backup Restore should be successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *OTHER_WORKLOADS
+        Sequence:
+            - - CreateIPPool1
+            - - CreateDummyObjectIppool
+            - - VerifyIPPool1
+            - - CreateClusterLevelBackup1
+            - - GetClusterLevelBackup1
+            - - DownloadClusterLevelBackup1
+            - - UploadClusterLevelBackup1
+            - - CopyToRestoreFolderBackup1
+            - - DeleteIPPool
+            - - VerifyDeletedIPPool
+            - - RestoreClusterLevelBackup
+            - - ReVerifyIPPool1
+
+        ExitSequence:
+            - - DeleteAllIPPool
+            - - DeleteAllClusterBackups
+            - - DeleteClusterBackupFile
+
+        CreateDummyObjectIppool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+              '[2]':
+                  map_object: true
+                  id_: "nsxmanager.[1].ippool.[1]"
+
+        DeleteIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteippool: "nsxmanager.[1].ippool.[1]"
+
+        VerifyDeletedIPPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].ippool.[2]"
+            get_pool_list:
+               'result_count[?]equal_to': 0
+
+        ReVerifyIPPool1:
+            <<: *VERIFY_IPPOOL1
+            TestGroupingObject: "nsxmanager.[1].ippool.[2]"
+
+RestoreWhileClusterHaving3Nodes:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,4MP_cat'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "RestoreWhileClusterHaving3Nodes"
+    Summary: "Verify Cluster level restore fails when cluster has 3 nodes"
+    Procedure: '1. Create 3 MP Node Cluster
+                2. Take node level backup
+                3. Take cluster level backup
+                4. Restore Cluster level backup
+                5. Restore Node level backup'
+    ExpectedResult: 'Cluster level restore should fail when cluster has 3 nodes
+                      while node level restore should succeed'
+    TestbedSpec: *3MP_NODE
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringVerificationWorkloads
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - AddMPNode2ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - VerifyClusterStatusFrom_Node1
+            - - AddMPNode3ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - VerifyClusterStatusFrom_Node1
+
+            - - CreateNodeLevelBackup1
+            - - GetNodeLevelBackup1
+
+            - - CreateClusterLevelBackup1
+            - - GetClusterLevelBackup1
+            - - DownloadClusterLevelBackup1
+            - - UploadClusterLevelBackup1
+            - - CopyToRestoreFolderBackup1
+
+            - - RestoreClusterLevelBackupFailure
+
+            - - RestoreNodeLevelBackup1
+
+        ExitSequence:
+            - - DeleteAllNodeBackups
+            - - DeleteAllClusterBackups
+            - - DeleteClusterBackupFile
+
+        RestoreClusterLevelBackupFailure:
+            <<: *RESTORE_CLUSTER_BACKUP
+            ExpectedResult:
+                status_code: 500
+
+BackupPassphraseValidation:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "BackupPassphraseValidation"
+    Summary: "Verify there are passphrase validations for backup"
+    Procedure: '1. Take node level backup with invalid passphrase
+                2. Take cluster level backup with invalid passphrase'
+    ExpectedResult: 'Backup node level and cluster level should fail'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        Sequence:
+            - - CreateNodeLevelBackup1
+            - - CreateNodeLevelBackup2
+
+            - - CreateClusterLevelBackup1
+            - - CreateClusterLevelBackup2
+
+        CreateNodeLevelBackup1:
+            <<: *CREATE_NODE_BACKUP1
+            nodebackuprestore:
+              '[1]':
+                  passphrase: "Passphrase Validation"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+
+        CreateNodeLevelBackup2:
+            <<: *CREATE_NODE_BACKUP1
+            nodebackuprestore:
+              '[1]':
+                  passphrase: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+
+        CreateNodeLevelBackup1:
+            <<: *CREATE_NODE_BACKUP1
+            clusterbackuprestore:
+              '[1]':
+                  passphrase: "Passphrase Validation"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+
+        CreateNodeLevelBackup2:
+            <<: *CREATE_NODE_BACKUP1
+            clusterbackuprestore:
+              '[1]':
+                  passphrase: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+
+RestoreDeletedNodeLevelBackup:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "RestoreDeletedNodeLevelBackup"
+    Summary: "Verify restore with deleted node level backup fails"
+    Procedure: '1. Take node level backup
+                2. Delete Node level backup
+                3. Restore with deleted node level backup'
+    ExpectedResult: 'Restore should fail'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        Sequence:
+            - - CreateNodeLevelBackup1
+            - - CreateDummyNodeLevelBackup
+            - - GetNodeLevelBackup1
+            - - DeleteNodeLevelBackup
+            - - RestoreDeletedNodeLevelBackup
+
+        CreateDummyNodeLevelBackup:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nodebackuprestore:
+              '[2]':
+                  map_object: true
+                  id_: "nsxmanager.[1].nodebackuprestore.[1]"
+
+        DeleteNodeLevelBackup:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletenodebackup: "nsxmanager.[1].nodebackuprestore.[1]"
+
+        RestoreDeletedNodeLevelBackup:
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[2]"
+            restore:
+                passphrase: "xxx"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+
+RestoreWithIncompatibleBackupFormat:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "RestoreWithIncompatibleBackupFormat"
+    Summary: "Verify basic cluster level backup restore function"
+    Procedure: '1. Create Tech support Bundle
+                2. Verify tech support bundle is created
+                3. Copy tech support bundle to restore dir
+                4. Perform cluster level restore'
+
+    ExpectedResult: 'Restore should fail with error as backup file is not compatible'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        Sequence:
+            - - CreateTechSupportTar
+            - - GetDirList
+            - - CopyTechsupportToRestoreFolder
+            - - CreateDummyObjectClusterLevelBackup
+            - - RestoreClusterLevelBackupFailure
+
+        ExitSequence:
+            - ["DeleteClusterBackupFile"]
+
+        CreateTechSupportTar:
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          create_tech_support_tar:
+              file_name: 'tech_support_logs.tgz'
+              execution_type: 'cli'
+
+        GetDirList:
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          execution_type: 'cli'
+          get_dir_list:
+            'table[?]contains':
+              - file_name: 'tech_support_logs.tgz'
+
+        CopyTechsupportToRestoreFolder:
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          move_file:
+            <<: *MOVE_FILE
+            file_name: 'tech_support_logs.tgz'
+
+        CreateDummyObjectClusterLevelBackup:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            clusterbackuprestore:
+              '[1]':
+                  map_object: true
+                  id_: "cluster_backup"
+
+        RestoreClusterLevelBackupFailure:
+            <<: *RESTORE_CLUSTER_BACKUP
+            ExpectedResult:
+                status_code: BAD_REQUEST
+
+RestoreOnFreshMPClusterSetup:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "kchougule"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,4MP_cat'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "RestoreOnFreshMPClusterSetup"
+    Summary: "To verify restore on fresh cluster setup"
+    Procedure: '1. Create IP Pool on node 1
+                2. Take Cluster Level Backup on node 1
+                3. Download backup file on linux host
+                4. Shrink cluster to single node
+                5. Upload backup file on NSXManager node 4
+                6. Restore backup file on node 4
+                7. Add nodes to node 4 to form fresh cluster setup
+                8. Verify IPPool is restored on node 4
+                9. Verify IPPool is restored on node 2 and node 3
+                10. Delete Cluster Level Backup'
+
+    ExpectedResult: 'Restore on fresh MP cluster setup should be successful'
+    TestbedSpec: *4MP_NODE
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *OTHER_WORKLOADS
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringVerificationWorkloads
+        Sequence:
+            - - InitialVerificationOf3MPNodeCluster
+            - - CreateIPPool1
+            - - VerifyIPPool1
+            - - CreateClusterLevelBackup1
+            - - GetClusterLevelBackup1
+            - - DownloadClusterLevelBackup1
+            - - CleanupMPClusterOfNode1-2-3
+            - - UploadClusterLevelBackupOnNode4
+            - - CopyToRestoreFolderBackupOnNode4
+            - - SetClusterBackupRestoreIdOnNode4
+            - - RestoreClusterLevelBackupOnNode4
+            - - Add2-3-4MPNodesToCluster
+            - - SetIPPoolIdOnNode4
+            - - VerifyIPPoolOnNode4
+            - - RestoreClusterLevelBackupOnNode4AfterClusterFormed
+        ExitSequence:
+            - - DeleteAllIPPool
+            - - DeleteAllIPPoolOnNode4
+            - - DeleteAllClusterBackups
+            - - DeleteClusterBackupFileOnNode4
+            - - CleanupMPClusterOfNode2-3-4
+            - - Add1-2-3MPNodesToCluster
+
+        UploadClusterLevelBackupOnNode4:
+            <<: *UPLOAD_CLUSTER_BACKUP1
+            TestNSX: 'nsxmanager.[4]'
+
+        CopyToRestoreFolderBackupOnNode4:
+            <<: *COPY_TO_RESTORE_FOLDER_BACKUP1
+            TestNSX: 'nsxmanager.[4]'
+
+        SetClusterBackupRestoreIdOnNode4:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[4]"
+            clusterbackuprestore:
+              '[1]':
+                  map_object: true
+                  id_: 1
+
+        RestoreClusterLevelBackupOnNode4:
+            <<: *RESTORE_CLUSTER_BACKUP
+            TestSnapshot: "nsxmanager.[4].clusterbackuprestore.[1]"
+
+        RestoreClusterLevelBackupOnNode4AfterClusterFormed:
+            <<: *RESTORE_CLUSTER_BACKUP
+            TestSnapshot: "nsxmanager.[4].clusterbackuprestore.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+
+        Add2-3-4MPNodesToCluster:
+            Type: NSX
+            TestNSX: "nsxmanager.[4]"
+            clusternode:
+              '[2-3]':
+                mgr_role_config:
+                  username: 'admin'
+                  password: 'default'
+                  node_type: 'AddManagementNodeSpec'
+                  manager_ip: "nsxmanager.[x=clusternode_index]"
+                  manager_thumbprint: "nsxmanager.[x=clusternode_index]"
+
+        SetIPPoolIdOnNode4:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[4]"
+            sleepbetweenworkloads: 60
+            ippool:
+              '[1]':
+                  map_object: true
+                  id_: "nsxmanager.[1].ippool.[1]"
+
+        VerifyIPPoolOnNode4:
+            <<: *VERIFY_IPPOOL1
+            TestGroupingObject: "nsxmanager.[4].ippool.[1]"
+
+        DeleteAllIPPoolOnNode4:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[4]"
+            deleteippool: "nsxmanager.[4].ippool.[-1]"
+
+        DeleteClusterBackupFileOnNode4:
+            <<: *DELETE_CLUSTER_BACKUP_FILE
+            TestNSX: 'nsxmanager.[4]'
+
+        CleanupMPClusterOfNode1-2-3: *CLEANUP_3_NODES_MP_CLUSTER
+
+        CleanupMPClusterOfNode2-3-4:
+          - - DeleteNode2FromClusterNode4
+          - - DeleteDataAndConfigFileFromNode2
+          - - StartProtonServiceOn_Node2
+          - - VerifyStartProtonServiceStatusFor_Node2
+          - - MapNSXManager2ToCluster
+          - - Wait_For_Cluster_Status_Stable_On_Node2
+          - - VerifyClusterMembers_1MP_From_Node2
+          - - DeleteNode3FromClusterNode4
+          - - DeleteDataAndConfigFileFromNode3
+          - - StartProtonServiceOn_Node3
+          - - VerifyStartProtonServiceStatusFor_Node3
+          - - MapNSXManager3ToCluster
+          - - Wait_For_Cluster_Status_Stable_On_Node3
+          - - VerifyClusterMembers_1MP_From_Node3
+
+        DeleteNode2FromClusterNode4:
+          - - SetProtonServiceIdFor_Node2
+          - - StopProtonServiceOn_Node2
+          - - VerifyStopProtonServiceStatusFor_Node2
+          - - RemoveMPNode2FromNode4
+
+        RemoveMPNode2FromNode4:
+            Type : "NSX"
+            TestNSX : "nsxmanager.[4]"
+            deleteclusternode:  "nsxmanager.[4].clusternode.[2]"
+
+        DeleteNode3FromClusterNode4:
+          - - SetProtonServiceIdFor_Node3
+          - - StopProtonServiceOn_Node3
+          - - VerifyStopProtonServiceStatusFor_Node3
+          - - RemoveMPNode3FromNode4
+
+        RemoveMPNode3FromNode4:
+            Type : "NSX"
+            TestNSX : "nsxmanager.[4]"
+            deleteclusternode:  "nsxmanager.[4].clusternode.[3]"
+
+        Add1-2-3MPNodesToCluster:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            clusternode:
+              '[2-3]':
+                mgr_role_config:
+                  username: 'admin'
+                  password: 'default'
+                  node_type: 'AddManagementNodeSpec'
+                  manager_ip: "nsxmanager.[x=clusternode_index]"
+                  manager_thumbprint: "nsxmanager.[x=clusternode_index]"
+
+RestoreHttpdServiceCertificate:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,cat'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "RestoreHttpdServiceCertificate"
+    Summary: "Verify node level backup restore is successful for httpd certificate"
+    Procedure: '1. Take Node level backup
+                2. Create a Self Signed Certificate
+                3. Update httpd service certificate with Self Signed Certificate
+                4. Verify httpd service certificate is updated
+                5. Perform Node level restore
+                6. Verify old httpd certificate is restored'
+
+    ExpectedResult: 'Httpd service cert restore should be successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        Sequence:
+            - - SetHttpd
+            - - GetHttpdCertificate
+            - - SetDummyHttpd
+            - - GetDummyHttpdCertificate
+            - - CreateNodeLevelBackup1
+            - - GetNodeLevelBackup1
+            - - CreateCSR
+            - - CreateSelfSignedCertificate
+            - - VerifySelfSigned
+            - - UpdateHttpdCertificate
+            - - VerifyUpdatedHttpdCertificate
+            - - RestoreNodeLevelBackup1
+            - - VerifyRestoredHttpdCertificate
+
+        ExitSequence:
+            - - DeleteSelfSignedCertificate
+            - - DeleteAllCSR
+            - - DeleteAllNodeBackups
+
+        SetHttpd:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            httpd_service_cert:
+              '[1]':
+                  map_object: true
+                  id_: 'httpdservicecert'
+
+        SetDummyHttpd:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            httpd_service_cert:
+              '[2]':
+                  map_object: true
+                  id_: 'httpdservicecert'
+
+        GetHttpdCertificate:
+            Type: "Certificate"
+            TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+            read:
+                'service_name[?]equal_to': 'httpd'
+                'service_properties':
+                    'certificate[?]defined': ''
+
+        GetDummyHttpdCertificate:
+            Type: "Certificate"
+            TestCertificate: "nsxmanager.[1].httpd_service_cert.[2]"
+            PersistData: "Yes"
+            read:
+                'service_name[?]equal_to': 'httpd'
+                'service_properties':
+                    'certificate[?]defined': ''
+
+        CreateCSR:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            csr:
+                '[1]':
+                    algorithm: "RSA"
+                    key_size: "2048"
+                    subject:
+                      attributes:
+                        - key: CN
+                          value: NSX
+                        - key: O
+                          value: VMware
+                        - key: OU
+                          value: NSBU
+                        - key: C
+                          value: US
+                        - key: ST
+                          value: CA
+                        - key: L
+                          value: PA
+
+        CreateSelfSignedCertificate:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            selfsignedcertificate:
+                '[1]':
+                    csr_id: "nsxmanager.[1].csr.[1]"
+
+        VerifySelfSigned:
+            Type: "Certificate"
+            Testcertificate: "nsxmanager.[1].selfsignedcertificate.[1]"
+            PersistData: "Yes"
+            read:
+              'pem_encoded[?]defined': ''
+
+        UpdateHttpdCertificate:
+            Type: "Certificate"
+            TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+            configure_certificate:
+                id_: "nsxmanager.[1].selfsignedcertificate.[1]->id"
+            expectedResult: ignore
+
+        VerifyUpdatedHttpdCertificate:
+            Type: "Certificate"
+            TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+            sleepbetweenworkloads: 10
+            read:
+                'service_name[?]equal_to': 'httpd'
+                'service_properties':
+                    'certificate':
+                        'pem_encoded[?]equal_to': "nsxmanager.[1].selfsignedcertificate.[1]->read->pem_encoded"
+
+        VerifyRestoredHttpdCertificate:
+            Type: "Certificate"
+            TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+            sleepbetweenworkloads: 50
+            read:
+                'service_name[?]equal_to': 'httpd'
+                'service_properties':
+                    'certificate':
+                        'pem_encoded[?]equal_to': "nsxmanager.[1].httpd_service_cert.[2]->read->service_properties->certificate->pem_encoded"
+
+        DeleteSelfSignedCertificate:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteselfsignedcertificate: "nsxmanager.[1].selfsignedcertificate.[-1]"
+            sleepbetweenworkloads: 50
+
+        DeleteAllCSR:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletecsr: "nsxmanager.[1].csr.[-1]"
+
+
+EndToEndTrafficTestAfterRestore:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BackupRestore"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore,end_to_end_test'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "EndToEndTrafficTestAfterRestore"
+    Summary: "Verify cluster,node level backup restore does not affect end to end traffic test"
+    Procedure: '1. Create a test-bed with one MP, one CCP, two ESX and one VM
+                2. Create one logical switch
+                3. Create two logical switch ports and attach them to VM NICs
+                4. Configure IPs on the VM NICs
+                5. Ping VM-1 from VM-2 and vice-a-versa
+                6. Verify ping operation succeeds
+                7. Perform Cluster Level Restore
+                8. Perform Node Level Restore
+                9. Ping VM-1 from VM-2 and vice-a-versa'
+
+    ExpectedResult: 'Ping operation should succeed as VM NICs are connected to logical switch ports before and after backup restore'
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *MPClusteringL2Workloads
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *NODE_BACKUP_WORKLOADS
+        <<: *OTHER_WORKLOADS
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - CreateTransportNodesFrom_Node1
+            - - CreateLogicalSwitch01From_Node1
+            - - VifAttachment01
+            - - GetClient
+            - - VerifyLSReplicationModeOnHostForLS1
+            - - DiscoverLogicalPortsFrom_Node1
+            - - ConfigureVnicIP
+            - - PingVM1ToVM2
+            - - PingVM2ToVM1
+
+            - - CreateNodeLevelBackup1
+            - - GetNodeLevelBackup1
+
+            - - CreateClusterLevelBackup1
+            - - GetClusterLevelBackup1
+            - - DownloadClusterLevelBackup1
+            - - UploadClusterLevelBackup1
+            - - CopyToRestoreFolderBackup1
+
+            - - RestoreClusterLevelBackup
+            - - RestoreNodeLevelBackup1
+            - - VerifyHeartbeatStatusOfClient
+            - - ReTestPingVM1ToVM2
+            - - ReTestPingVM2ToVM1
+
+        ExitSequence:
+            - - VifDetachment01
+            - - DeleteVnic1FromVM1
+            - - DeleteVnic1FromVM2
+            - - DeleteLogicalSwitchFrom_Node1
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteTransportNodesFrom_Node1
+            - - DeleteAllNodeBackups
+            - - DeleteAllClusterBackups
+            - - DeleteClusterBackupFile
+
+        CreateTransportNodesFrom_Node1: *CREATE_TRANSPORT_NODE_01--ESX
+        VifAttachment01: *VIF_ATTACHMENT_01--ESX
+        VifDetachment01: *VIF_DETACHMENT_01--ESX
+
+        ConfigureVnicIP:
+            Type: NetAdapter
+            TestAdapter: vm.[1-2].vnic.[1]
+            IPv4: auto
+
+        ReTestPingVM1ToVM2:
+            <<: *PING_VM1_TO_VM2
+
+        ReTestPingVM2ToVM1:
+            <<: *PING_VM2_TO_VM1
+
+        VerifyHeartbeatStatusOfClient:
+            <<: *VERIFY_HEARTBEAT_STATUS_OF_CLIENT_1
+            sleepbetweenworkloads: 60
+

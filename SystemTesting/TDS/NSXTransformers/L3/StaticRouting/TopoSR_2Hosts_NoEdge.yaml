@@ -1,0 +1,485 @@
+#######################################################################
+# StaticRouting Topology Diagram: (2 Host, No Edges)
+#           |- LP5--- LS3
+# HV2---VM1-|
+#           |- LP1---
+#                   |--- LS1 --- LSP101 ---- LRP1---
+#     |-VM2--- LP2---                              |
+#     |                                            |
+#     |                                            |---- LR1
+# HV3-|-VM3--- LP3---                              |
+#     |             |--- LS2 --- LSP102 ---- LRP2---
+#     |     |- LP4---
+#     |-VM4-|
+#           |- LP6--- LS4
+#######################################################################
+
+TopoSR_2Hosts_NoEdge: &TopoSR_2Hosts_NoEdge
+    AddStaticRouteOnLR-1_VM1Vnic2viaVM1Vnic1onLRP1_VM4Vnic2viaVM4Vnic1onLRP2:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        lrstaticroutes:
+            '[1]':
+                staticroutes:
+                    - name: static-route-to-vm1-vnic2
+                      summary: Static route for VM1Vnic2 using LRP1
+                      next_hops:
+                          - vm.[1].vnic.[1]->ip
+                      network: vm.[1].vnic.[2]->netcidr
+                      lr_port_id: nsxmanager.[1].logicalrouterport.[1]->id
+                    - name: static-route-to-vm4-vnic2
+                      summary: Static route for VM4Vnic2 using LRP2
+                      next_hops:
+                          - vm.[4].vnic.[1]->ip
+                      network: vm.[4].vnic.[2]->netcidr
+                      lr_port_id: nsxmanager.[1].logicalrouterport.[2]->id
+    AddStaticRouteOnLR-1_VM1Vif2viaVM1Vif1onLRP1_VM4Vif2viaVM4Vif1onLRP2:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        lrstaticroutes:
+            '[1]':
+                staticroutes:
+                    - name: static-route-to-vm1-vif2
+                      summary: Static route for VM1Vif2 using LRP1
+                      next_hops:
+                          - vm.[1].vif.[1]->ip
+                      network: vm.[1].vif.[2]->netcidr
+                      lr_port_id: nsxmanager.[1].logicalrouterport.[1]->id
+                    - name: static-route-to-vm4-vif2
+                      summary: Static route for VM4Vif2 using LRP2
+                      next_hops:
+                          - vm.[4].vif.[1]->ip
+                      network: vm.[4].vif.[2]->netcidr
+                      lr_port_id: nsxmanager.[1].logicalrouterport.[2]->id
+    AddConflictingRouteOnLR-1_VM1Vnic2viaVM1Vnic1onLRP1_VM4Vnic2viaVM4Vnic1onLRP2_VM1Vnic1viaVM3Vnic1:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        lrstaticroutes:
+            '[1]':
+                staticroutes:
+                    - name: static-route-to-vm1-vnic2
+                      summary: Static route for VM1Vnic2 using LRP1
+                      next_hops:
+                          - vm.[1].vnic.[1]->ip
+                      network: vm.[1].vnic.[2]->netcidr
+                      lr_port_id: nsxmanager.[1].logicalrouterport.[1]->id
+                    - name: static-route-to-vm4-vnic2
+                      summary: Static route for VM4Vnic2 using LRP2
+                      next_hops:
+                          - vm.[4].vnic.[1]->ip
+                      network: vm.[4].vnic.[2]->netcidr
+                      lr_port_id: nsxmanager.[1].logicalrouterport.[2]->id
+                    - name: conflicting-route-to-vm1-vnic1
+                      summary: Conflicting route for VM1Vnic1 using VM3Vnic1
+                      next_hops:
+                          - vm.[3].vnic.[1]->ip
+                      network: vm.[1].vnic.[1]->netcidr
+    AddConflictingRouteOnLR-1_VM1Vif2viaVM1Vif1onLRP1_VM4Vif2viaVM4Vif1onLRP2_VM1Vif1viaVM3Vif1:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        lrstaticroutes:
+            '[1]':
+                staticroutes:
+                    - name: static-route-to-vm1-vif2
+                      summary: Static route for VM1Vif2 using LRP1
+                      next_hops:
+                          - vm.[1].vif.[1]->ip
+                      network: vm.[1].vif.[2]->netcidr
+                      lr_port_id: nsxmanager.[1].logicalrouterport.[1]->id
+                    - name: static-route-to-vm4-vif2
+                      summary: Static route for VM4Vif2 using LRP2
+                      next_hops:
+                          - vm.[4].vif.[1]->ip
+                      network: vm.[4].vif.[2]->netcidr
+                      lr_port_id: nsxmanager.[1].logicalrouterport.[2]->id
+                    - name: conflicting-route-to-vm1-vif1
+                      summary: Conflicting route for VM1Vif1 using VM3Vif1
+                      next_hops:
+                          - vm.[3].vif.[1]->ip
+                      network: vm.[1].vif.[1]->netcidr
+    VerifyLRsOnESX:
+        Type: Host
+        TestHost: esx.[2-3]
+        execution_type: cli
+        get_logical_routers[?]contain_once:
+            table:
+                - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+    VerifyLRsOnKVM:
+        Type: Host
+        TestHost: kvm.[2-3]
+        execution_type: cli
+        get_logical_routers[?]contain_once:
+            table:
+                - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+    VerifyLRPortsOnESX:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: esx.[2-3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_logical_router_ports[?]contain_once:
+            table:
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[1]->id
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[2]->id
+    VerifyLRPortsOnKVM:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: kvm.[2-3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_logical_router_ports[?]contain_once:
+            table:
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[1]->lr_port_id
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[2]->lr_port_id
+    VerifyLRStaticRoutesOnESX:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: esx.[2-3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_route_table[?]contain_once:
+            table:
+                # FIXME(Krishna): origin fields are not filled up correctly
+                # Fix it once issue #1368794 is fixed
+                - destination: nsxmanager.[1].logicalrouterport.[1]->network
+                  mask: nsxmanager.[1].logicalrouterport.[1]->netmask
+                  next_hop: 0.0.0.0
+                  dr_flags: UCI
+                  origin: MANUAL
+                - destination: nsxmanager.[1].logicalrouterport.[2]->network
+                  mask: nsxmanager.[1].logicalrouterport.[2]->netmask
+                  next_hop: 0.0.0.0
+                  dr_flags: UCI
+                  origin: MANUAL
+                - destination: vm.[1].vnic.[2]->network
+                  mask: vm.[1].vnic.[2]->netmask
+                  next_hop: vm.[1].vnic.[1]->ip
+                  dr_flags: UG
+                  origin: AUTO
+                - destination: vm.[4].vnic.[2]->network
+                  mask: vm.[4].vnic.[2]->netmask
+                  next_hop: vm.[4].vnic.[1]->ip
+                  dr_flags: UG
+                  origin: AUTO
+    VerifyLRStaticRoutesOnKVM:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: kvm.[2-3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_route_table[?]contain_once:
+            table:
+                # FIXME(Krishna): origin fields are not filled up correctly
+                # Fix it once issue #1368794 is fixed
+                - destination: vm.[1].vif.[2]->network
+                  mask: vm.[1].vif.[2]->netmask
+                  next_hop: vm.[1].vif.[1]->ip
+                # FIXME(Krishna): Add missing fields once Bug 1376840 is fixed.
+                #  dr_flags: UG
+                #  origin: AUTO
+                - destination: vm.[4].vif.[2]->network
+                  mask: vm.[4].vif.[2]->netmask
+                  next_hop: vm.[4].vif.[1]->ip
+                # FIXME(Krishna): Add missing fields once Bug 1376840 is fixed.
+                #  dr_flags: UG
+                #  origin: AUTO
+    VerifyLRStaticRoutesOnESXWithConflictingRoute:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: esx.[2-3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_route_table[?]contain_once:
+            table:
+                # FIXME(Krishna): origin fields are not filled up correctly
+                # Fix it once issue #1368794 is fixed
+                - destination: nsxmanager.[1].logicalrouterport.[1]->network
+                  mask: nsxmanager.[1].logicalrouterport.[1]->netmask
+                  next_hop: 0.0.0.0
+                  dr_flags: UCI
+                  origin: MANUAL
+                - destination: nsxmanager.[1].logicalrouterport.[2]->network
+                  mask: nsxmanager.[1].logicalrouterport.[2]->netmask
+                  next_hop: 0.0.0.0
+                  dr_flags: UCI
+                  origin: MANUAL
+                - destination: vm.[1].vnic.[2]->network
+                  mask: vm.[1].vnic.[2]->netmask
+                  next_hop: vm.[1].vnic.[1]->ip
+                  dr_flags: UG
+                  origin: AUTO
+                - destination: vm.[4].vnic.[2]->network
+                  mask: vm.[4].vnic.[2]->netmask
+                  next_hop: vm.[4].vnic.[1]->ip
+                  dr_flags: UG
+                  origin: AUTO
+                - destination: vm.[1].vnic.[1]->network
+                  mask: vm.[1].vnic.[1]->netmask
+                  next_hop: vm.[3].vnic.[1]->ip
+                  dr_flags: UG
+                  origin: AUTO
+    VerifyLRStaticRoutesOnKVMWithConflictingRoute:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: kvm.[2-3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_route_table[?]contain_once:
+            table:
+                # FIXME(Krishna): origin fields are not filled up correctly
+                # Fix it once issue #1368794 is fixed
+                - destination: vm.[1].vif.[2]->network
+                  mask: vm.[1].vif.[2]->netmask
+                  next_hop: vm.[1].vif.[1]->ip
+                # FIXME(Krishna): Add missing fields once Bug 1376840 is fixed.
+                # dr_flags: UG
+                # origin: AUTO
+                - destination: vm.[4].vif.[2]->network
+                  mask: vm.[4].vif.[2]->netmask
+                  next_hop: vm.[4].vif.[1]->ip
+                # FIXME(Krishna): Add missing fields once Bug 1376840 is fixed.
+                # dr_flags: UG
+                # origin: AUTO
+                - destination: vm.[1].vif.[1]->network
+                  mask: vm.[1].vif.[1]->netmask
+                  next_hop: vm.[3].vif.[1]->ip
+                # FIXME(Krishna): Add missing fields once Bug 1376840 is fixed.
+                # dr_flags: UG
+                # origin: AUTO
+    VerifyLRArpTableOnESX-2:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: esx.[2]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_dr_arp_table[?]contain_once:
+            #FIXME(Krishna): Fix the list of entries to be checked for all vms
+            table:
+                - ip: vm.[3].vnic.[1]->adapter_ip
+                  mac: vm.[3].vnic.[1]->adapter_mac
+                - ip: vm.[4].vnic.[1]->adapter_ip
+                  mac: vm.[4].vnic.[1]->adapter_mac
+    VerifyLRArpTableOnKVM-2:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: kvm.[2]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_dr_arp_table[?]contain_once:
+            #FIXME(Krishna): Fix the list of entries to be checked for all vms
+            table:
+                - ip: vm.[3].vif.[1]->adapter_ip
+                  mac: vm.[3].vif.[1]->adapter_mac
+                - ip: vm.[4].vif.[1]->adapter_ip
+                  mac: vm.[4].vif.[1]->adapter_mac
+    VerifyLRArpTableOnESX-3:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: esx.[3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_dr_arp_table[?]contain_once:
+            table:
+                - ip: vm.[1].vnic.[1]->adapter_ip
+                  mac: vm.[1].vnic.[1]->adapter_mac
+    VerifyLRArpTableOnKVM-3:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: kvm.[3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        get_dr_arp_table[?]contain_once:
+            table:
+                - ip: vm.[1].vif.[1]->adapter_ip
+                  mac: vm.[1].vif.[1]->adapter_mac
+    LogicalSetup:
+        - - CreateTZ-1
+        - - CreateUPROF-1_MTU-1600
+        - - CreateLS-1
+          - CreateLS-2
+          - CreateLS-3
+          - CreateLS-4
+    TNSetup--ESX:
+        - - SetManagerOnESX-2
+          - SetManagerOnESX-3
+        - - DiscoverHostNode1FromESX2
+          - DiscoverHostNode2FromESX3
+        - - CreateTN-1_HOSTNODE-1_TZ-1_VMNIC-1
+          - CreateTN-2_HOSTNODE-2_TZ-1_VMNIC-1
+    TNSetup--KVM:
+        - - SetManagerOnKVM-2
+          - SetManagerOnKVM-3
+        - - DiscoverHostNode1FromKVM2
+          - DiscoverHostNode2FromKVM3
+        - - CreateTN-1_HOSTNODE-1_TZ-1_ETH-1
+          - CreateTN-2_HOSTNODE-2_TZ-1_ETH-1
+    VMSetup--ESX:
+        - - AddVM1Vnic1ToLS1
+          - AddVM2Vnic1ToLS1
+          - AddVM3Vnic1ToLS2
+          - AddVM4Vnic1ToLS2
+        - - AddVM1Vnic2ToLS3
+          - AddVM4Vnic2ToLS4
+        - - DiscoverLport1FromVM1Vnic1
+          - DiscoverLport2FromVM2Vnic1
+          - DiscoverLport3FromVM3Vnic1
+          - DiscoverLport4FromVM4Vnic1
+          - DiscoverLport5FromVM1Vnic2
+          - DiscoverLport6FromVM4Vnic2
+        - - ConfigureVM1Vnic1IP-192.168.1.10
+          - ConfigureVM2Vnic1IP-192.168.1.11
+          - ConfigureVM3Vnic1IP-192.168.2.10
+          - ConfigureVM4Vnic1IP-192.168.2.11
+        - - ConfigureVM1Vnic2IP-192.168.200.10
+          - ConfigureVM4Vnic2IP-192.168.201.11
+    VMSetup--KVM:
+        - - AddVM1Vif1ToKVM2Bridge1
+          - AddVM2Vif1ToKVM3Bridge1
+          - AddVM3Vif1ToKVM3Bridge1
+          - AddVM4Vif1ToKVM3Bridge1
+        - - AddVM1Vif2ToKVM2Bridge1
+          - AddVM4Vif2ToKVM3Bridge1
+        - - CreateLP1OnLS1ForVM1Vif1
+          - CreateLP2OnLS1ForVM2Vif1
+          - CreateLP3OnLS2ForVM3Vif1
+          - CreateLP4OnLS2ForVM4Vif1
+          - CreateLP5OnLS3ForVM1Vif2
+          - CreateLP6OnLS4ForVM4Vif2
+        - - ConfigureVM1Vif1IP-192.168.1.10
+          - ConfigureVM2Vif1IP-192.168.1.11
+          - ConfigureVM3Vif1IP-192.168.2.10
+          - ConfigureVM4Vif1IP-192.168.2.11
+        - - ConfigureVM1Vif2IP-192.168.200.10
+          - ConfigureVM4Vif2IP-192.168.201.11
+    L3Setup--ESX:
+        - - CreateLSP-101_LS-1_ATYPE-logicalrouter
+          - CreateLSP-102_LS-2_ATYPE-logicalrouter
+        - - CreateLR-1
+        - - CreateLRP-1_IP-192.168.1.1_LSP-101
+        - - CreateLRP-2_IP-192.168.2.1_LSP-102
+    L3Setup--KVM:
+        - - CreateLSP-101_LS-1_ATYPE-logicalrouter
+          - CreateLSP-102_LS-2_ATYPE-logicalrouter
+        - - CreateLR-1
+        - - CreateLRP-1_IP-192.168.1.1_LSP-101
+        - - CreateLRP-2_IP-192.168.2.1_LSP-102
+    SRSetup--ESX:
+        - - AddStaticRouteOnLR-1_VM1Vnic2viaVM1Vnic1onLRP1_VM4Vnic2viaVM4Vnic1onLRP2
+        - - AddRouteOnVM1Vnic1_VM3Vnic1viaLRP1
+          - AddRouteOnVM2Vnic1_VM3Vnic1viaLRP1
+          - AddRouteOnVM3Vnic1_VM1Vnic1viaLRP2
+          - AddRouteOnVM4Vnic1_VM1Vnic1viaLRP2
+        - - AddRouteOnVM1Vnic1_VM4Vnic2viaLRP1
+          - AddRouteOnVM2Vnic1_VM4Vnic2viaLRP1
+          - AddRouteOnVM3Vnic1_VM4Vnic2viaLRP2
+        - - AddRouteOnVM2Vnic1_VM1Vnic2viaLRP1
+          - AddRouteOnVM3Vnic1_VM1Vnic2viaLRP2
+          - AddRouteOnVM4Vnic1_VM1Vnic2viaLRP2
+    SRSetup--KVM:
+        - - AddStaticRouteOnLR-1_VM1Vif2viaVM1Vif1onLRP1_VM4Vif2viaVM4Vif1onLRP2
+        - - AddRouteOnVM1Vif1_VM3Vif1viaLRP1
+          - AddRouteOnVM2Vif1_VM3Vif1viaLRP1
+          - AddRouteOnVM3Vif1_VM1Vif1viaLRP2
+          - AddRouteOnVM4Vif1_VM1Vif1viaLRP2
+        - - AddRouteOnVM1Vif1_VM4Vif2viaLRP1
+          - AddRouteOnVM2Vif1_VM4Vif2viaLRP1
+          - AddRouteOnVM3Vif1_VM4Vif2viaLRP2
+        - - AddRouteOnVM2Vif1_VM1Vif2viaLRP1
+          - AddRouteOnVM3Vif1_VM1Vif2viaLRP2
+          - AddRouteOnVM4Vif1_VM1Vif2viaLRP2
+    L3SetupVerification--ESX:
+        - - VerifyLRsOnESX
+        - - VerifyLRPortsOnESX
+        - - VerifyLRStaticRoutesOnESX
+    L3SetupVerification--KVM:
+        - - VerifyLRsOnKVM
+        - - VerifyLRPortsOnKVM
+        - - VerifyLRStaticRoutesOnKVM
+    L2Traffic--ESX:
+        - - PingFromVM1Vnic1ToVM2Vnic1
+          - PingFromVM3Vnic1ToVM4Vnic1
+    L2Traffic--KVM:
+        - - PingFromVM1Vif1ToVM2Vif1
+          - PingFromVM3Vif1ToVM4Vif1
+    L3Traffic--ESX:
+        - - PingFromVM1Vnic1ToIP-192.168.1.1
+          - PingFromVM2Vnic1ToIP-192.168.1.1
+          - PingFromVM3Vnic1ToIP-192.168.2.1
+          - PingFromVM4Vnic1ToIP-192.168.2.1
+        - - PingFromVM1Vnic1ToVM3Vnic1
+          - PingFromVM2Vnic1ToVM4Vnic1
+    L3Traffic--KVM:
+        - - PingFromVM1Vif1ToIP-192.168.1.1
+          - PingFromVM2Vif1ToIP-192.168.1.1
+          - PingFromVM3Vif1ToIP-192.168.2.1
+          - PingFromVM4Vif1ToIP-192.168.2.1
+        - - PingFromVM1Vif1ToVM3Vif1
+          - PingFromVM2Vif1ToVM4Vif1
+    SRTraffic--ESX:
+        - - PingFromVM1Vnic1ToVM4Vnic2
+          - PingFromVM2Vnic1ToVM4Vnic2
+          - PingFromVM3Vnic1ToVM1Vnic2
+          - PingFromVM4Vnic1ToVM1Vnic2
+    SRTraffic--KVM:
+        - - PingFromVM1Vif1ToVM4Vif2
+          - PingFromVM2Vif1ToVM4Vif2
+          - PingFromVM3Vif1ToVM1Vif2
+          - PingFromVM4Vif1ToVM1Vif2
+    L3TrafficVerification--ESX:
+        - - VerifyLRArpTableOnESX-2
+          - VerifyLRArpTableOnESX-3
+    L3TrafficVerification--KVM:
+        - - VerifyLRArpTableOnKVM-2
+          - VerifyLRArpTableOnKVM-3
+    SRCleanup--ESX:
+        - - DeleteStaticRoutesOnLR-1
+    SRCleanup--KVM:
+        - - DeleteStaticRoutesOnLR-1
+    L3Cleanup--ESX:
+        # FIXME: BUG 1346002, Parallel Deletion of lrport fails
+        - - DeleteLRP-1
+        - - DeleteLRP-2
+        - - DeleteLR-1
+    L3Cleanup--KVM:
+        - - DeleteLRP-1
+        - - DeleteLRP-2
+        - - DeleteLR-1
+    VMCleanup--ESX:
+        - - DeleteVnic-2_VM-1
+          - DeleteVnic-2_VM-4
+        - - DeleteVnic-1_VM-1
+          - DeleteVnic-1_VM-2
+          - DeleteVnic-1_VM-3
+          - DeleteVnic-1_VM-4
+        - - UndiscoverLSP-1-6
+        - - DeleteLSP-101-102
+    VMCleanup--KVM:
+        - - DeleteVif-2_VM-1
+          - DeleteVif-2_VM-4
+        - - DeleteVif-1_VM-1
+          - DeleteVif-1_VM-2
+          - DeleteVif-1_VM-3
+          - DeleteVif-1_VM-4
+        - - DeleteLSP-1-6
+        - - DeleteLSP-101-102
+    TNCleanup--ESX:
+        - - DeleteTN-1
+          - DeleteTN-2
+        - - RemoveManagerOnESX-2
+          - RemoveManagerOnESX-3
+        - - UndiscoverHostNode-1
+          - UndiscoverHostNode-2
+    TNCleanup--KVM:
+        - - DeleteTN-1
+          - DeleteTN-2
+        - - RemoveManagerOnKVM-2
+          - RemoveManagerOnKVM-3
+        - - UndiscoverHostNode-1
+          - UndiscoverHostNode-2
+    LogicalCleanup:
+        - - DeleteLS-1
+          - DeleteLS-2
+          - DeleteLS-3
+          - DeleteLS-4
+        - - DeleteUPROF-1
+        - - DeleteTZ-1

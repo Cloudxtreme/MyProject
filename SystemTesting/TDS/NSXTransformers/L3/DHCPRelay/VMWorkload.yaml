@@ -1,0 +1,710 @@
+DHCPServerVMConfig1: &DHCPServerVMConfig1
+    ConfigureDHCPserverVif1IP:
+        Type: NetAdapter
+        Testadapter: 'dhcpserver.[1].vnic.[1]'
+        ipv4:       '192.168.9.4'
+        netmask:    '255.255.255.0'
+    AddRouteDHCPserver:
+        Type:        "NetAdapter"
+        Testadapter: "dhcpserver.[1].vnic.[1]"
+        route:       "add"
+        gateway:     "192.168.9.1"
+        netmask:     "0.0.0.0"
+        network:     "0.0.0.0"
+    AddDefaultConfigurationDHCPServerinterface:
+        Type: "DHCPServer"
+        TestDHCPServer: "dhcpserver.[1]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'dynamic'
+           subnet: '192.168.9.0'
+           netmask: '255.255.255.0'
+    SetStaticBindingDHCP1VM1:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[1]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[1].vnic.[1]'
+           host_name: 'host1'
+           adapter_ip: '192.168.7.3'
+           option_routers: '192.168.7.1'
+    SetStaticBindingDHCP1VM2:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[1]"
+        configure_dhcp_server:
+           dhcp_type: 'static'
+           execution_type: 'cmd'
+           adapter_mac: 'vm.[2].vnic.[1]'
+           host_name: 'host2'
+           adapter_ip: '192.168.8.3'
+           option_routers: '192.168.8.1'
+    VerifyVM1Vif1IP:
+        Type: 'VM'
+        TestVM: vm.[1]
+        adapter_name: vm.[1].vnic.[1]->adapter_interface
+        execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+        noofretries: 3
+        timeout: 300
+        get_single_adapter_info:
+           ip[?]equal_to: '192.168.7.3'
+    VerifyVM2Vif1IP:
+        Type: 'VM'
+        TestVM: vm.[2]
+        adapter_name: vm.[2].vnic.[1]->adapter_interface
+        execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+        noofretries: 3
+        timeout: 300
+        get_single_adapter_info:
+           ip[?]equal_to: '192.168.8.3'
+
+DHCPServerVMConfigESXNorthSouthTopo2: &DHCPServerVMConfigESXNorthSouthTopo2
+    ConfigureDHCPserver1Vif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[1].vnic.[1]'
+            ipv4:       '192.168.9.4'
+            netmask:    '255.255.255.0'
+    ConfigureDHCPserver2Vif1IP:
+          Type: NetAdapter
+          Testadapter: 'dhcpserver.[2].vnic.[1]'
+          ipv4:       '192.168.9.5'
+          netmask:    '255.255.255.0'
+    ConfigureDHCPserver3Vif1IP:
+          Type: NetAdapter
+          Testadapter: 'dhcpserver.[3].vnic.[1]'
+          ipv4:       '192.168.9.6'
+          netmask:    '255.255.255.0'
+    AddRouteDHCPserver1:
+          Type:        "NetAdapter"
+          Testadapter: "dhcpserver.[1].vnic.[1]"
+          route:       "add"
+          gateway:     "192.168.9.1"
+          netmask:     "0.0.0.0"
+          network:     "0.0.0.0"
+    AddRouteDHCPserver2:
+          Type:        "NetAdapter"
+          Testadapter: "dhcpserver.[2].vnic.[1]"
+          route:       "add"
+          gateway:     "192.168.9.1"
+          netmask:     "0.0.0.0"
+          network:     "0.0.0.0"
+    AddRouteDHCPserver3:
+          Type:        "NetAdapter"
+          Testadapter: "dhcpserver.[3].vnic.[1]"
+          route:       "add"
+          gateway:     "192.168.9.1"
+          netmask:     "0.0.0.0"
+          network:     "0.0.0.0"
+    AddDefaultConfigurationDHCPServer1interface:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[1]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.9.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer2interface:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[2]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.9.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer3interface:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[3]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.9.0'
+             netmask: '255.255.255.0'
+    CreateDHCPRelayServiceProfilesServer123:
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        dhcprelay_profile:
+            '[1]':
+                resource_type: 'DhcpRelayProfile'
+                ipaddresses:
+                  - '192.168.9.4'
+                  - '192.168.9.5'
+                  - '192.168.9.6'
+    CreateDHCPRelayServiceProfilesServer3:
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        dhcprelay_profile:
+            '[2]':
+                resource_type: 'DhcpRelayProfile'
+                ipaddresses:
+                  - '192.168.9.6'
+    VerifyDHCPRelayEnabledNorthSouthMultiDHCPTLRPort12cliESX:
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            endpoints: 'esx.[4]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.9.4,192.168.9.5,192.168.9.6"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.9.6"
+
+RelayPacketVerificationWorkload: &RelayPacketVerificationWorkload
+    ConfigureVM3Vif1IP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[3].vnic.[1]'
+            ipv4:       '192.168.7.10'
+            netmask:    "255.255.255.0"
+    ConfigureVM2Vif1IPDelay:
+        Type: NetAdapter
+        Testadapter: 'vm.[2].vnic.[1]'
+        sleepbetweenworkloads: '20'
+        ipv4:       'dhcp'
+    DummyTraffic:
+        Type: "Traffic"
+        ToolName      : "ping"
+        TestAdapter: "vm.[1].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        TestDuration: "3"
+        verification  : 'Verification_0'
+    Verification_0:
+        PktCapVerification:
+            target:       'dhcpserver.[1].vnic.[1]'
+            pktcapfilter: 'count 100,src host 192.168.8.1,dst host 192.168.9.4'
+            verificationtype: 'pktcap'
+            pktcount: '1-10'
+
+CommonHybridDHCPServerWorkloads: &CommonHybridDHCPServerWorkloads
+    ConfigureDHCPserver1Vif1IP:
+              Type: NetAdapter
+              Testadapter: 'dhcpserver.[1].vnic.[1]'
+              ipv4:       '192.168.10.4'
+              netmask:    '255.255.255.0'
+    ConfigureDHCPserver2Vif1IP:
+          Type: NetAdapter
+          Testadapter: 'dhcpserver.[2].vnic.[1]'
+          ipv4:       '192.168.9.4'
+          netmask:    '255.255.255.0'
+    ConfigureDHCPserver3Vif1IP:
+          Type: NetAdapter
+          Testadapter: 'dhcpserver.[3].vnic.[1]'
+          ipv4:       '192.168.12.4'
+          netmask:    '255.255.255.0'
+    ConfigureDHCPserver4Vif1IP:
+          Type: NetAdapter
+          Testadapter: 'dhcpserver.[4].vnic.[1]'
+          ipv4:       '192.168.10.5'
+          netmask:    '255.255.255.0'
+    AddRouteDHCPserver1:
+          Type:        "NetAdapter"
+          Testadapter: "dhcpserver.[1].vnic.[1]"
+          route:       "add"
+          gateway:     "192.168.10.1"
+          netmask:     "0.0.0.0"
+          network:     "0.0.0.0"
+    AddRouteDHCPserver2:
+          Type:        "NetAdapter"
+          Testadapter: "dhcpserver.[2].vnic.[1]"
+          route:       "add"
+          gateway:     "192.168.9.1"
+          netmask:     "0.0.0.0"
+          network:     "0.0.0.0"
+    AddRouteDHCPserver3:
+          Type:        "NetAdapter"
+          Testadapter: "dhcpserver.[3].vnic.[1]"
+          route:       "add"
+          gateway:     "192.168.12.1"
+          netmask:     "0.0.0.0"
+          network:     "0.0.0.0"
+    AddRouteDHCPserver4:
+          Type:        "NetAdapter"
+          Testadapter: "dhcpserver.[4].vnic.[1]"
+          route:       "add"
+          gateway:     "192.168.10.1"
+          netmask:     "0.0.0.0"
+          network:     "0.0.0.0"
+    AddDefaultConfigurationDHCPServer1interface:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[1]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.10.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer2interface:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[2]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.9.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer3interface:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[3]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.12.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer4interface:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[4]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.10.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer1VM1:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[1]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.7.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer2VM1:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[2]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.7.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer3VM2:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[3]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.8.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer4VM2:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[4]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.8.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer3VM3:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[3]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.15.0'
+             netmask: '255.255.255.0'
+    AddDefaultConfigurationDHCPServer4VM3:
+          Type: "DHCPServer"
+          TestDHCPServer: "dhcpserver.[4]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'dynamic'
+             subnet: '192.168.15.0'
+             netmask: '255.255.255.0'
+    CreateSwitchLinkInterfacePLR:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         logicalrouterport:
+             '[4]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+                 name: 'lrouterport-1'
+                 summary: "LRPort1 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[6]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.15.1'
+             '[5]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+                 name: 'lrouterport-2'
+                 summary: "LRPort2 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[7]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.12.1'
+    CreateUplinksPLRSwitch6:
+       Type: NSX
+       TestNSX: 'nsxmanager.[1]'
+       logicalrouteruplinkport:
+           '[1]':
+               logical_router_id: 'nsxmanager.[1].logicalrouter.[2]'
+               name: 'plr1_uplink1'
+               summary: 'Uplink 1 for PLR 01'
+               linked_switch_port_id: 'nsxmanager.[1].logicalport.[8]->id'
+               resource_type: 'LogicalRouterUpLinkPort'
+               gateway_cluster_member_index: [0]
+               subnets:
+                   - prefixlen: 24
+                     ip_addresses:
+                       - '192.168.10.1'
+           '[2]':
+               logical_router_id: 'nsxmanager.[1].logicalrouter.[2]'
+               name: 'plr1_uplink2'
+               summary: 'Uplink 2 for PLR 01'
+               linked_switch_port_id: 'nsxmanager.[1].logicalport.[9]->id'
+               resource_type: 'LogicalRouterUpLinkPort'
+               gateway_cluster_member_index: [1]
+               subnets:
+                   - prefixlen: 24
+                     ip_addresses:
+                       - '192.168.10.2'
+   
+    CreateDHCPRelayServiceProfilesServer12:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          dhcprelay_profile:
+              '[1]':
+                  resource_type: 'DhcpRelayProfile'
+                  ipaddresses:
+                    - '192.168.10.4'
+                    - '192.168.9.4'
+    CreateDHCPRelayServiceProfilesServer34:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          dhcprelay_profile:
+              '[2]':
+                  resource_type: 'DhcpRelayProfile'
+                  ipaddresses:
+                    - '192.168.10.5'
+                    - '192.168.12.4'
+    CreateService2BindingPLRPort1:
+        Type: "NetAdapter"
+        Testadapter: "nsxmanager.[1].logicalrouterport.[4]"
+        reconfigure: true
+        service_bindings:
+          - resource_type: 'DhcpRelayService'
+            service_id: nsxmanager.[1].dhcprelay_service.[2]->profile_id
+
+CommonESXHybridDHCPServerWorkloads: &CommonESXHybridDHCPServerWorkloads
+    VerifyDHCPRelayEnabledESXTLRPort12cli:
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            endpoints: 'esx.[1-2]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.10.4,192.168.9.4"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.10.5,192.168.12.4"
+    VerifyDHCPRelayEnabledESXPLRPort1cli:
+        Type: "Router"
+        TestRouter: nsxmanager.[1].logicalrouter.[2]
+        logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+        execution_type: 'cli'
+        noofretries: "3"
+        sleepbetweenworkloads:  "30"
+        endpoints: 'esx.[1-2]'
+        'get_logical_router_ports[?]contain_once':
+            table:
+                - lrport_uuid: "nsxmanager.[1].logicalrouterport.[4]->lr_port_id"
+                  dhcp_relay_servers: "server list: 192.168.10.5,192.168.12.4"
+    SetStaticBindingDHCP1VM1:
+          Type: 'DHCPServer'
+          TestDHCPServer: "dhcpserver.[1]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'static'
+             adapter_mac: 'vm.[1].vnic.[1]'
+             host_name: 'host1'
+             adapter_ip: '192.168.7.2'
+             option_routers: '192.168.7.1'
+    SetStaticBindingDHCP2VM1:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[2]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[1].vnic.[1]'
+           host_name: 'host1'
+           adapter_ip: '192.168.7.3'
+           option_routers: '192.168.7.1'
+    SetStaticBindingDHCP3VM2:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[3]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[2].vnic.[1]'
+           host_name: 'host2'
+           adapter_ip: '192.168.8.2'
+           option_routers: '192.168.8.1'
+    SetStaticBindingDHCP4VM2:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[4]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[2].vnic.[1]'
+           host_name: 'host2'
+           adapter_ip: '192.168.8.3'
+           option_routers: '192.168.8.1'
+    SetStaticBindingDHCP3VM3:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[3]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[3].vnic.[1]'
+           host_name: 'host3'
+           adapter_ip: '192.168.15.2'
+           option_routers: '192.168.15.1'
+    SetStaticBindingDHCP4VM3:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[4]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[3].vnic.[1]'
+           host_name: 'host3'
+           adapter_ip: '192.168.15.3'
+           option_routers: '192.168.15.1'
+    VerifyVM1Vif1IP:
+        Type: 'VM'
+        TestVM: vm.[1]
+        adapter_name: vm.[1].vnic.[1]->adapter_interface
+        execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+        noofretries: 3
+        timeout: 300
+        get_single_adapter_info:
+           ip[?]ip_range: '192.168.7.0/24'
+    VerifyVM2Vif1IP:
+        Type: 'VM'
+        TestVM: vm.[2]
+        adapter_name: vm.[2].vnic.[1]->adapter_interface
+        execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+        noofretries: 3
+        timeout: 300
+        get_single_adapter_info:
+           ip[?]ip_range: '192.168.8.0/24'
+    VerifyVM3Vif1IP:
+        Type: 'VM'
+        TestVM: vm.[3]
+        adapter_name: vm.[3].vnic.[1]->adapter_interface
+        execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+        noofretries: 3
+        timeout: 300
+        get_single_adapter_info:
+           ip[?]ip_range: '192.168.15.0/24'
+
+KVMDHCPServerVMConfig1: &KVMDHCPServerVMConfig1
+    ConfigureDHCPserverVif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[1].vnic.[1]'
+            ipv4:       '192.168.9.4'
+            netmask:    '255.255.255.0'
+    AddRouteDHCPserver:
+            Type:        "NetAdapter"
+            Testadapter: "dhcpserver.[1].vnic.[1]"
+            route:       "add"
+            gateway:     "192.168.9.1"
+            netmask:     "0.0.0.0"
+            network:     "0.0.0.0"
+    AddDefaultConfigurationDHCPServerinterface:
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1]"
+            configure_dhcp_server:
+               execution_type: "cmd"
+               dhcp_type: 'dynamic'
+               subnet: '192.168.9.0'
+               netmask: '255.255.255.0'
+    SetStaticBindingDHCP1VM1:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[1]"
+        configure_dhcp_server:
+           execution_type: "cmd"
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[1].vif.[1]'
+           host_name: 'host1'
+           adapter_ip: '192.168.7.3'
+           option_routers: '192.168.7.1'
+    SetStaticBindingDHCP1VM2:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[1]"
+        configure_dhcp_server:
+           execution_type: "cmd"
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[2].vif.[1]'
+           host_name: 'host2'
+           adapter_ip: '192.168.8.3'
+           option_routers: '192.168.8.1'
+    VerifyVM1Vif1IP:
+        Type: 'VM'
+        TestVM: vm.[1]
+        adapter_name: vm.[1].vif.[1]->adapter_interface
+        execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+        noofretries: 3
+        timeout: 300
+        get_single_adapter_info:
+           ip[?]equal_to: '192.168.7.3'
+    VerifyVM2Vif1IP:
+        Type: 'VM'
+        TestVM: vm.[2]
+        adapter_name: vm.[2].vif.[1]->adapter_interface
+        execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+        noofretries: 3
+        timeout: 300
+        get_single_adapter_info:
+           ip[?]equal_to: '192.168.8.3'
+
+KVMRelayPacketVerificationWorkload: &KVMRelayPacketVerificationWorkload
+    ConfigureVM2Vif1IPDelay:
+            Type: NetAdapter
+            Testadapter: 'vm.[2].vif.[1]'
+            sleepbetweenworkloads: '20'
+            ipv4:       'dhcp'
+    ConfigureVM3Vif1IP:
+        Type: NetAdapter
+        TestAdapter: 'vm.[3].vif.[1]'
+        ipv4:       '192.168.7.10'
+        netmask:    "255.255.255.0"
+    DummyTraffic:
+          Type: "Traffic"
+          ToolName      : "ping"
+          TestAdapter: "vm.[1].vif.[1]"
+          SupportAdapter: "vm.[3].vif.[1]"
+          TestDuration: "3"
+          verification  : 'Verification_0'
+    Verification_0:
+          PktCapVerification:
+              target:       'dhcpserver.[1].vnic.[1]'
+              pktcapfilter: 'count 100,src host 192.168.8.1,dst host 192.168.9.4'
+              verificationtype: 'pktcap'
+              pktcount: '1-10'
+
+CommonKVMHybridDHCPServerWorkloads: &CommonKVMHybridDHCPServerWorkloads
+    VerifyDHCPRelayEnabledKVMTLRPort12cli:
+        Type: "Router"
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: 'cli'
+        noofretries: "3"
+        sleepbetweenworkloads:  "30"
+        get_dhcp_relay_info: true
+        endpoints: 'kvm.[1]'
+        'get_logical_router_ports[?]contain_once':
+            table:
+                - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                  dhcp_relay_servers: ["192.168.10.4", "192.168.9.4"]
+                - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                  dhcp_relay_servers: ["192.168.10.5", "192.168.12.4"]
+    VerifyDHCPRelayEnabledKVMPLRPort1cli:
+        Type: "Router"
+        TestRouter: nsxmanager.[1].logicalrouter.[2]
+        logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+        execution_type: 'cli'
+        noofretries: "3"
+        sleepbetweenworkloads:  "30"
+        get_dhcp_relay_info: true
+        endpoints: 'kvm.[1]'
+        'get_logical_router_ports[?]contain_once':
+            table:
+                - lrport_uuid: "nsxmanager.[1].logicalrouterport.[4]->lr_port_id"
+                  dhcp_relay_servers: ["192.168.10.5", "192.168.12.4"]
+    SetStaticBindingDHCP1VM1:
+          Type: 'DHCPServer'
+          TestDHCPServer: "dhcpserver.[1]"
+          configure_dhcp_server:
+             execution_type: 'cmd'
+             dhcp_type: 'static'
+             adapter_mac: 'vm.[1].vif.[1]'
+             host_name: 'host1'
+             adapter_ip: '192.168.7.2'
+             option_routers: '192.168.7.1'
+    SetStaticBindingDHCP2VM1:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[2]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[1].vif.[1]'
+           host_name: 'host1'
+           adapter_ip: '192.168.7.3'
+           option_routers: '192.168.7.1'
+    SetStaticBindingDHCP3VM2:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[3]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[2].vif.[1]'
+           host_name: 'host2'
+           adapter_ip: '192.168.8.2'
+           option_routers: '192.168.8.1'
+    SetStaticBindingDHCP4VM2:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[4]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[2].vif.[1]'
+           host_name: 'host2'
+           adapter_ip: '192.168.8.3'
+           option_routers: '192.168.8.1'
+    SetStaticBindingDHCP3VM3:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[3]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[3].vif.[1]'
+           host_name: 'host3'
+           adapter_ip: '192.168.15.2'
+           option_routers: '192.168.15.1'
+    SetStaticBindingDHCP4VM3:
+        Type: 'DHCPServer'
+        TestDHCPServer: "dhcpserver.[4]"
+        configure_dhcp_server:
+           execution_type: 'cmd'
+           dhcp_type: 'static'
+           adapter_mac: 'vm.[3].vif.[1]'
+           host_name: 'host3'
+           adapter_ip: '192.168.15.3'
+           option_routers: '192.168.15.1'
+    VerifyVM1Vif1IP:
+        Type: 'VM'
+        TestVM: vm.[1]
+        adapter_name: vm.[1].vif.[1]->adapter_interface
+        execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+        noofretries: 3
+        timeout: 300
+        get_single_adapter_info:
+           ip[?]ip_range: '192.168.7.0/24'
+    VerifyVM2Vif1IP:
+        Type: 'VM'
+        TestVM: vm.[2]
+        adapter_name: vm.[2].vif.[1]->adapter_interface
+        execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+        noofretries: 3
+        timeout: 300
+        get_single_adapter_info:
+           ip[?]ip_range: '192.168.8.0/24'
+    VerifyVM3Vif1IP:
+        Type: 'VM'
+        TestVM: vm.[3]
+        adapter_name: vm.[3].vif.[1]->adapter_interface
+        execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+        noofretries: 3
+        timeout: 300
+        get_single_adapter_info:
+           ip[?]ip_range: '192.168.15.0/24'

@@ -1,0 +1,856 @@
+#####################################################################
+# Title : Avalanche IPAM Multinode TDS                                        |
+#####################################################################
+
+
+#####################################################################
+#                 P2 Test Cases                                     |
+#####################################################################
+
+MultiNode_IPPool_POST_API:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "MultiNode_IPPool_POST_API"
+    Version: "2"
+    Summary: "To verify IPPool gets replicated to other nodes in cluster"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool on NSXManager node-1
+                2. Verify newly created IPPool is available on all the NSXManager cluster nodes'
+    ExpectedResult: 'Newly created IPPool should be replicated on all the NSXManager cluster nodes'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode2"]
+            - ["VerifyIPPoolOnClusterNode3"]
+        ExitSequence:
+            - ["DeleteIPPoolFromClusterNode1"]
+
+        CreateIPPoolOnClusterNode1: *CREATE_IPPOOL
+
+        VerifyIPPoolOnClusterNode1: *IPPOOL_VERIFICATION_NODE1
+
+        VerifyIPPoolOnClusterNode2: *IPPOOL_VERIFICATION_NODE2
+
+        VerifyIPPoolOnClusterNode3: *IPPOOL_VERIFICATION_NODE3
+
+        DeleteIPPoolFromClusterNode1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteippool: "nsxmanager.[1].ippool.[-1]"
+
+MultiNode_IPPool_PUT_API:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "MultiNode_IPPool_PUT_API"
+    Version: "2"
+    Summary: "To verify updated IPPool data gets replicated to other nodes in cluster"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool on NSXManager node-1
+                2. Verify newly created IPPool is available on all the NSXManager cluster nodes
+                3. Update IPPool from any one node
+                4. Verify updated IPPool is available on all the NSXManager cluster nodes'
+    ExpectedResult: 'Updated IPPool data should be available on all the NSXManager cluster nodes'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode2"]
+            - ["VerifyIPPoolOnClusterNode3"]
+            - ["UpdateIPPoolOnClusterNode2"]
+            - ["VerifyUpdatedIPPoolOnClusterNode1"]
+            - ["VerifyUpdatedIPPoolOnClusterNode2"]
+            - ["VerifyUpdatedIPPoolOnClusterNode3"]
+
+        ExitSequence:
+            - ["DeleteIPPoolFromClusterNode1"]
+
+        CreateIPPoolOnClusterNode1: *CREATE_IPPOOL
+
+        VerifyIPPoolOnClusterNode1: *IPPOOL_VERIFICATION_NODE1
+
+        VerifyIPPoolOnClusterNode2: *IPPOOL_VERIFICATION_NODE2
+
+        VerifyIPPoolOnClusterNode3: *IPPOOL_VERIFICATION_NODE3
+
+        UpdateIPPoolOnClusterNode2:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+
+        VerifyUpdatedIPPoolOnClusterNode1:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'summary[?]equal_to': "Updated summary"
+
+        VerifyUpdatedIPPoolOnClusterNode2:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'summary[?]equal_to': "Updated summary"
+
+        VerifyUpdatedIPPoolOnClusterNode3:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[3].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'summary[?]equal_to': "Updated summary"
+
+        DeleteIPPoolFromClusterNode1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteippool: "nsxmanager.[1].ippool.[-1]"
+
+MultiNode_IPPool_DELETE_API:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "MultiNode_IPPool_DELETE_API"
+    Version: "2"
+    Summary: "To verify IPPool gets deleted from other nodes in cluster"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool on NSXManager node-1
+                2. Verify newly created IPPool is available on all the NSXManager cluster nodes
+                3. Delete IPPool from any one node
+                4. Verify IPPool is deleted from all the cluster nodes'
+    ExpectedResult: 'IPPool should get deleted from all the NSXManager cluster nodes'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode2"]
+            - ["VerifyIPPoolOnClusterNode3"]
+            - ["DeleteIPPoolFromClusterNode2"]
+            - ["SetIPPoolId"]
+            - ["VerifyIPPoolDeletionOnClusterNode1"]
+            - ["VerifyIPPoolDeletionOnClusterNode2"]
+            - ["VerifyIPPoolDeletionOnClusterNode3"]
+
+        CreateIPPoolOnClusterNode1: *CREATE_IPPOOL
+
+        VerifyIPPoolOnClusterNode1: *IPPOOL_VERIFICATION_NODE1
+
+        VerifyIPPoolOnClusterNode2: *IPPOOL_VERIFICATION_NODE2
+
+        VerifyIPPoolOnClusterNode3: *IPPOOL_VERIFICATION_NODE3
+
+        DeleteIPPoolFromClusterNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            deleteippool: "nsxmanager.[2].ippool.[1]"
+
+        SetIPPoolId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    map_object: true
+                    id_: 1
+
+        VerifyIPPoolDeletionOnClusterNode1:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].ippool.[1]"
+            get_pool_list:
+               'result_count[?]equal_to': 0
+
+        VerifyIPPoolDeletionOnClusterNode2:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[2].ippool.[1]"
+            get_pool_list:
+               'result_count[?]equal_to': 0
+
+        VerifyIPPoolDeletionOnClusterNode3:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[3].ippool.[1]"
+            get_pool_list:
+               'result_count[?]equal_to': 0
+
+MultiNode_IPPool_ALLOCATE_API:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "MultiNode_IPPool_ALLOCATE_API"
+    Version: "2"
+    Summary: "To verify IPPool allocation data gets replicated to other nodes in cluster"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool on NSXManager node-1
+                2. Verify newly created IPPool is available on all the NSXManager cluster nodes
+                3. Allocate IP from this IPPool on any one node
+                4. Verify that IP allocation data is successfully replicated to other nodes'
+    ExpectedResult: 'IPPool allocation data successfully replicated to all the NSXManager cluster nodes'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode2"]
+            - ["VerifyIPPoolOnClusterNode3"]
+            - ["AllocateIPFromClusterNode2"]
+            - ["VerifyIPAllocationOnClusterNode1"]
+            - ["VerifyIPAllocationOnClusterNode2"]
+            - ["VerifyIPAllocationOnClusterNode3"]
+
+        ExitSequence:
+            - ["ReleaseIPFromClusterNode1"]
+            - ["DeleteIPPoolFromClusterNode1"]
+
+        CreateIPPoolOnClusterNode1: *CREATE_IPPOOL
+
+        VerifyIPPoolOnClusterNode1: *IPPOOL_VERIFICATION_NODE1
+
+        VerifyIPPoolOnClusterNode2: *IPPOOL_VERIFICATION_NODE2
+
+        VerifyIPPoolOnClusterNode3: *IPPOOL_VERIFICATION_NODE3
+
+        AllocateIPFromClusterNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[2].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        VerifyIPAllocationOnClusterNode1:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        VerifyIPAllocationOnClusterNode2:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        VerifyIPAllocationOnClusterNode3:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[3].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        ReleaseIPFromClusterNode1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        DeleteIPPoolFromClusterNode1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteippool: "nsxmanager.[1].ippool.[-1]"
+
+MultiNode_IPPool_RELEASE_API:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "MultiNode_IPPool_RELEASE_API"
+    Version: "2"
+    Summary: "To verify IPPool release data gets replicated to other nodes in cluster"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool on NSXManager node-1
+                2. Verify newly created IPPool is available on all the NSXManager cluster nodes
+                3. Allocate IP from this IPPool on any one node
+                4. Verify that IP allocation data is successfully replicated to other nodes
+                5. Release IP allocated in previous step on any Node'
+    ExpectedResult: 'Released IP data should be replicated to other nodes in cluster'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode2"]
+            - ["VerifyIPPoolOnClusterNode3"]
+            - ["AllocateIPFromClusterNode2"]
+            - ["VerifyIPAllocationOnClusterNode1"]
+            - ["VerifyIPAllocationOnClusterNode2"]
+            - ["VerifyIPAllocationOnClusterNode3"]
+            - ["ReleaseIPFromClusterNode3"]
+            - ["VerifyIPReleaseOnClusterNode1"]
+            - ["VerifyIPReleaseOnClusterNode2"]
+            - ["VerifyIPReleaseOnClusterNode3"]
+
+        ExitSequence:
+            - ["DeleteIPPoolFromClusterNode1"]
+
+        CreateIPPoolOnClusterNode1: *CREATE_IPPOOL
+
+        VerifyIPPoolOnClusterNode1: *IPPOOL_VERIFICATION_NODE1
+
+        VerifyIPPoolOnClusterNode2: *IPPOOL_VERIFICATION_NODE2
+
+        VerifyIPPoolOnClusterNode3: *IPPOOL_VERIFICATION_NODE3
+
+        AllocateIPFromClusterNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[2].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        VerifyIPAllocationOnClusterNode1:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        VerifyIPAllocationOnClusterNode2:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        VerifyIPAllocationOnClusterNode3:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[3].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        ReleaseIPFromClusterNode3:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[3]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[3].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[3].allocateip.[1]"
+
+        VerifyIPReleaseOnClusterNode1:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 0
+
+        VerifyIPReleaseOnClusterNode2:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 0
+
+        VerifyIPReleaseOnClusterNode3:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[3].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 0
+
+        DeleteIPPoolFromClusterNode1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteippool: "nsxmanager.[1].ippool.[-1]"
+
+Verify_IPPool_After_Rebooting_NSXManager:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "Verify_IPPool_After_Rebooting_NSXManager"
+    Version: "2"
+    Summary: "To verify IPPool data persists after node reboot"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool on NSXManager node-1
+                2. Verify newly created IPPool is available on all the
+                NSXManager cluster nodes
+                3. Reboot one NSXManager node
+                4. Once the rebooted NSXManager node is up, verify IPPool
+                is available on that NSXManager'
+    ExpectedResult: 'IPPool should be available on the rebooted
+    NSXManager cluster nodes'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode2"]
+            - ["VerifyIPPoolOnClusterNode3"]
+            - ["RebootClusterNode1"]
+            - ["VerifyIPPoolOnClusterNode2"]
+            - ["VerifyIPPoolOnClusterNode3"]
+            - ["VerifyIPPoolOnClusterNode1AfterReboot"]
+        ExitSequence:
+            - ["DeleteIPPoolFromClusterNode1"]
+
+        CreateIPPoolOnClusterNode1: *CREATE_IPPOOL
+
+        VerifyIPPoolOnClusterNode1: *IPPOOL_VERIFICATION_NODE1
+
+        VerifyIPPoolOnClusterNode2: *IPPOOL_VERIFICATION_NODE2
+
+        VerifyIPPoolOnClusterNode3: *IPPOOL_VERIFICATION_NODE3
+
+        RebootClusterNode1:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            configure_power_state:
+                state: 'restart'
+
+        VerifyIPPoolOnClusterNode1AfterReboot:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            sleepbetweenworkloads: 600
+            read:
+              'name[?]defined': ''
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.10
+                      begin: 192.168.1.2
+                  gateway_ip: 192.168.1.255
+
+        DeleteIPPoolFromClusterNode1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteippool: "nsxmanager.[1].ippool.[-1]"
+
+IDAS_GatingTest_1:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "IDAS_GatingTest_1"
+    Version: "2"
+    Summary: "To verify IPPool data gets replicated to other nodes in cluster"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool-1 on MP node-1
+                2. Verify IPPool-1 is available on all the NSXManager cluster nodes
+                3. Update IPPool-1 on MP node-2
+                4. Verify updated data is replicated on all cluster nodes
+                5. Allocate IP from IPPool-1 on MP node-3
+                6. Verify that IP allocation data is successfully replicated to other nodes
+                7. Release IP allocated in previous step on MP node-1
+                8. Create IPPool-2 on MP node-2
+                9. Verify IPPool-2 is available on other cluster nodes
+                10. Update IPPool-2 from MP node-3
+                11. Verfiy updated data is replicated to other nodes
+                12. Allocate IP from IPPool-2 on MP node-1
+                13. Release IP on MP node-2
+                14. Create IPPool-3 on MP node-3
+                15. Verify IPPool-3 is available on other cluster nodes
+                16. Update IPPool-3 from MP node-1
+                17. Verify updated data is replicated to other nodes
+                18. Allocate IP from IPPool-3 on MP node-2
+                19. Release IP on MP node-3'
+    ExpectedResult: 'All operations should succeed and data should be
+                     replicated to other cluster nodes'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,gating_test_cat'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            #---  IPPool 1 on MP node 1 ---#
+            - - CreateIPPool1OnNode1
+            - - VerifyIPPool1OnNode1
+            - - VerifyIPPool1OnNode2
+            - - VerifyIPPool1OnNode3
+            - - UpdateIPPool1OnNode2
+            - - VerifyUpdatedIPPool1OnNode1
+            - - VerifyUpdatedIPPool1OnNode2
+            - - VerifyUpdatedIPPool1OnNode3
+            - - AllocateIPFromIPPool1OnNode3
+            - - VerifyIPAllocationFromIPPool1OnNode1
+            - - VerifyIPAllocationFromIPPool1OnNode2
+            - - VerifyIPAllocationFromIPPool1OnNode3
+            - - ReleaseIPToIPPool1OnNode1
+            - - VerifyIPReleaseToIPPool1OnNode1
+            - - VerifyIPReleaseToIPPool1OnNode2
+            - - VerifyIPReleaseToIPPool1OnNode3
+            #---  IPPool 2 on MP node 2 ---#
+            - - CreateIPPool2OnNode2
+            - - VerifyIPPool2OnNode1
+            - - VerifyIPPool2OnNode2
+            - - VerifyIPPool2OnNode3
+            - - UpdateIPPool2OnNode3
+            - - VerifyUpdatedIPPool2OnNode1
+            - - VerifyUpdatedIPPool2OnNode2
+            - - VerifyUpdatedIPPool2OnNode3
+            - - AllocateIPFromIPPool2OnNode1
+            - - VerifyIPAllocationFromIPPool2OnNode1
+            - - VerifyIPAllocationFromIPPool2OnNode2
+            - - VerifyIPAllocationFromIPPool2OnNode3
+            - - ReleaseIPToIPPool2OnNode2
+            - - VerifyIPReleaseToIPPool2OnNode1
+            - - VerifyIPReleaseToIPPool2OnNode2
+            - - VerifyIPReleaseToIPPool2OnNode3
+            #---  IPPool 3 on MP node 3 ---#
+            - - CreateIPPool3OnNode3
+            - - VerifyIPPool3OnNode1
+            - - VerifyIPPool3OnNode2
+            - - VerifyIPPool3OnNode3
+            - - UpdateIPPool3OnNode1
+            - - VerifyUpdatedIPPool3OnNode1
+            - - VerifyUpdatedIPPool3OnNode2
+            - - VerifyUpdatedIPPool3OnNode3
+            - - AllocateIPFromIPPool3OnNode2
+            - - VerifyIPAllocationFromIPPool3OnNode1
+            - - VerifyIPAllocationFromIPPool3OnNode2
+            - - VerifyIPAllocationFromIPPool3OnNode3
+            - - ReleaseIPToIPPool3OnNode3
+            - - VerifyIPReleaseToIPPool3OnNode1
+            - - VerifyIPReleaseToIPPool3OnNode2
+            - - VerifyIPReleaseToIPPool3OnNode3
+        ExitSequence:
+            - - CleanupIPPools
+
+        CreateIPPool1OnNode1: *CREATE_IPPOOL
+
+        VerifyIPPool1OnNode1: *IPPOOL_VERIFICATION_NODE1
+
+        VerifyIPPool1OnNode2: *IPPOOL_VERIFICATION_NODE2
+
+        VerifyIPPool1OnNode3: *IPPOOL_VERIFICATION_NODE3
+
+        UpdateIPPool1OnNode2:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+
+        VerifyUpdatedIPPool1OnNode1: &VERIFY_UPDATED_IPPOOL1_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'summary[?]equal_to': "Updated summary"
+
+        VerifyUpdatedIPPool1OnNode2:
+            <<: *VERIFY_UPDATED_IPPOOL1_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+
+        VerifyUpdatedIPPool1OnNode3:
+            <<: *VERIFY_UPDATED_IPPOOL1_ON_NODE1
+            Testgroupingobject: "nsxmanager.[3].ippool.[1]"
+
+        AllocateIPFromIPPool1OnNode3:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[3]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[3].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        VerifyIPAllocationFromIPPool1OnNode1: &VERIFY_IPALLOCATION_FROM_IPPOOL1_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        VerifyIPAllocationFromIPPool1OnNode2:
+            <<: *VERIFY_IPALLOCATION_FROM_IPPOOL1_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+
+        VerifyIPAllocationFromIPPool1OnNode3:
+            <<: *VERIFY_IPALLOCATION_FROM_IPPOOL1_ON_NODE1
+            Testgroupingobject: "nsxmanager.[3].ippool.[1]"
+
+        ReleaseIPToIPPool1OnNode1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        VerifyIPReleaseToIPPool1OnNode1: &VERIFY_IPRELEASE_TO_IPPOOL1_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 0
+
+        VerifyIPReleaseToIPPool1OnNode2:
+            <<: *VERIFY_IPRELEASE_TO_IPPOOL1_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+
+        VerifyIPReleaseToIPPool1OnNode3:
+            <<: *VERIFY_IPRELEASE_TO_IPPOOL1_ON_NODE1
+            Testgroupingobject: "nsxmanager.[3].ippool.[1]"
+
+        CreateIPPool2OnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[2]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+
+        VerifyIPPool2OnNode1:
+            <<: *IPPOOL_VERIFICATION_NODE1
+            Testgroupingobject: "nsxmanager.[1].ippool.[2]"
+
+        VerifyIPPool2OnNode2:
+            <<: *IPPOOL_VERIFICATION_NODE2
+            Testgroupingobject: "nsxmanager.[2].ippool.[2]"
+
+        VerifyIPPool2OnNode3:
+            <<: *IPPOOL_VERIFICATION_NODE3
+            Testgroupingobject: "nsxmanager.[3].ippool.[2]"
+
+        UpdateIPPool2OnNode3:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[3].ippool.[2]"
+            reconfigure: true
+            name: "Auto-IPPool-2"
+            summary: "Updated summary"
+
+        VerifyUpdatedIPPool2OnNode1: &VERIFY_UPDATED_IPPOOL2_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[2]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-2"
+              'summary[?]equal_to': "Updated summary"
+
+        VerifyUpdatedIPPool2OnNode2:
+            <<: *VERIFY_UPDATED_IPPOOL2_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].ippool.[2]"
+
+        VerifyUpdatedIPPool2OnNode3:
+            <<: *VERIFY_UPDATED_IPPOOL2_ON_NODE1
+            Testgroupingobject: "nsxmanager.[3].ippool.[2]"
+
+        AllocateIPFromIPPool2OnNode1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[2]"
+            allocateip:
+                '[2]':
+                    id_:
+
+        VerifyIPAllocationFromIPPool2OnNode1: &VERIFY_IPALLOCATION_FROM_IPPOOL2_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[2]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        VerifyIPAllocationFromIPPool2OnNode2:
+            <<: *VERIFY_IPALLOCATION_FROM_IPPOOL2_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].ippool.[2]"
+
+        VerifyIPAllocationFromIPPool2OnNode3:
+            <<: *VERIFY_IPALLOCATION_FROM_IPPOOL2_ON_NODE1
+            Testgroupingobject: "nsxmanager.[3].ippool.[2]"
+
+        ReleaseIPToIPPool2OnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[2].ippool.[2]"
+            releaseip:
+                '[2]':
+                    id_: "nsxmanager.[2].allocateip.[2]"
+
+        VerifyIPReleaseToIPPool2OnNode1: &VERIFY_IPRELEASE_TO_IPPOOL2_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[2]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 0
+
+        VerifyIPReleaseToIPPool2OnNode2:
+            <<: *VERIFY_IPRELEASE_TO_IPPOOL2_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].ippool.[2]"
+
+        VerifyIPReleaseToIPPool2OnNode3:
+            <<: *VERIFY_IPRELEASE_TO_IPPOOL2_ON_NODE1
+            Testgroupingobject: "nsxmanager.[3].ippool.[2]"
+
+        CreateIPPool3OnNode3:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[3]"
+            ippool:
+                '[3]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 2001:db8:1234:0000:0000:0000:0000:0005
+                            begin: 2001:db8:1234:0000:0000:0000:0000:0001
+                        cidr: 2001:db8:1234::/48
+                        gateway_ip: 2001:db8:1234:ffff:ffff:ffff:ffff:ffff
+                        servers:
+                          - 2001:a70:cbfa:1:1:1:1:1
+
+        VerifyIPPool3OnNode1: &VERIFY_IPPOOL3_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[3]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        VerifyIPPool3OnNode2:
+            <<: *VERIFY_IPPOOL3_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].ippool.[3]"
+
+        VerifyIPPool3OnNode3:
+            <<: *VERIFY_IPPOOL3_ON_NODE1
+            Testgroupingobject: "nsxmanager.[3].ippool.[3]"
+
+        UpdateIPPool3OnNode1:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[3]"
+            reconfigure: true
+            name: "Auto-IPPool-3"
+            summary: "Updated summary"
+
+        VerifyUpdatedIPPool3OnNode1: &VERIFY_UPDATED_IPPOOL3_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[3]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-3"
+              'summary[?]equal_to': "Updated summary"
+
+        VerifyUpdatedIPPool3OnNode2:
+            <<: *VERIFY_UPDATED_IPPOOL3_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].ippool.[3]"
+
+        VerifyUpdatedIPPool3OnNode3:
+            <<: *VERIFY_UPDATED_IPPOOL3_ON_NODE1
+            Testgroupingobject: "nsxmanager.[3].ippool.[3]"
+
+        AllocateIPFromIPPool3OnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[2].ippool.[3]"
+            allocateip:
+                '[3]':
+                    id_:
+
+        VerifyIPAllocationFromIPPool3OnNode1: &VERIFY_IPALLOCATION_FROM_IPPOOL3_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[3]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        VerifyIPAllocationFromIPPool3OnNode2:
+            <<: *VERIFY_IPALLOCATION_FROM_IPPOOL3_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].ippool.[3]"
+
+        VerifyIPAllocationFromIPPool3OnNode3:
+            <<: *VERIFY_IPALLOCATION_FROM_IPPOOL3_ON_NODE1
+            Testgroupingobject: "nsxmanager.[3].ippool.[3]"
+
+        ReleaseIPToIPPool3OnNode3:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[3]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[3].ippool.[3]"
+            releaseip:
+                '[3]':
+                    id_: "nsxmanager.[3].allocateip.[3]"
+
+        VerifyIPReleaseToIPPool3OnNode1: &VERIFY_IPRELEASE_TO_IPPOOL3_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[3]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 0
+
+        VerifyIPReleaseToIPPool3OnNode2:
+            <<: *VERIFY_IPRELEASE_TO_IPPOOL3_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].ippool.[3]"
+
+        VerifyIPReleaseToIPPool3OnNode3:
+            <<: *VERIFY_IPRELEASE_TO_IPPOOL3_ON_NODE1
+            Testgroupingobject: "nsxmanager.[3].ippool.[3]"
+
+        CleanupIPPools:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteippool: "nsxmanager.[1].ippool.[-1]"

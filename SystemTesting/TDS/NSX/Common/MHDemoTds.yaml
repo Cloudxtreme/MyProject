@@ -1,0 +1,185 @@
+NSXDemoTest:
+    Category: Node Management
+    Component: NSXAPI
+    ExpectedResult: PASS
+    Summary: This test case verifies that connectivity works with 2 ESX, 4VMs, 1 NSX
+    Tags: nsx,vsm,BAT
+    TestName: NSXDemo
+    TestbedSpec: *AVALANCHE_TESTBEDSPEC
+    Version: '2'
+    WORKLOADS:
+        Sequence:
+            - ['CreateTZ']
+            - ['EditUplinksOnHosts']
+            - ['CreateTN1']
+            - ['CreateTN2']
+            - ['CreateLS1', 'CreateLS2']
+            - ['CreateLP1', 'CreateLP2']
+            - ['SetController']
+            - ['Traffic']
+#           - ['RestartController']
+#           - ['Traffic']
+        ExitSequence:
+            -  ['RemoveUplinkIPOnHost1', 'RemoveUplinkIPOnHost2']
+            -  ['RemoveUplinkOnHost1', 'RemoveUplinkOnHost2']
+            -  ['DeleteTZ']
+
+#       RestartController:
+#           Type: "NSX"
+#           TestNSX: "nvpcontroller.[1]"
+#           restartservice:
+#               name: api-server
+#               interval: 10
+
+        Traffic:
+               Type          : "Traffic"
+               ToolName      : "netperf"
+               L3Protocol    : "ipv4"
+               TestAdapter   : "vm.[2].vnic.[1]"
+               SupportAdapter: "vm.[1].vnic.[1]"
+               NoofOutbound     : "1"
+               NoofInbound      : "1"
+               TestDuration  : "10"
+
+        DeleteTZ:
+               Type : "NSX"
+               TestNSX : "nvpcontroller.[1]"
+               deletetransportzone: "nvpcontroller.[1].transportzone.[1]"
+               deletetransportnode: "nvpcontroller.[1].transportnode.[1-2]"
+               deletelogicalswitch : "nvpcontroller.[1].logicalswitch.[1-2]"
+
+        RemoveUplinkIPOnHost1:
+               Type       : "Switch"
+               TestSwitch : "esx.[1].ovs.[1]"
+               vmnicadapter: "esx.[1].vmnic.[1]"
+               configureuplinks: "edit"
+               ipv4address: "none"
+
+        RemoveUplinkIPOnHost2:
+               Type       : "Switch"
+               TestSwitch : "esx.[2].ovs.[1]"
+               vmnicadapter: "esx.[2].vmnic.[1]"
+               configureuplinks: "edit"
+               ipv4address: "none"
+
+        RemoveUplinkOnHost1:
+               Type       : "Switch"
+               TestSwitch : "esx.[1].ovs.[1]"
+               vmnicadapter: "esx.[1].vmnic.[1]"
+               configureuplinks: "remove"
+
+        RemoveUplinkOnHost2:
+               Type       : "Switch"
+               TestSwitch : "esx.[2].ovs.[1]"
+               vmnicadapter: "esx.[2].vmnic.[1]"
+               configureuplinks: "remove"
+
+        EditUplinksOnHosts:
+            Type       : "Switch"
+            TestSwitch : "esx.[1-2].ovs.[1]"
+            vmnicadapter: "esx.[1-2].vmnic.[1]"
+            configureuplinks: "edit"
+            ipv4address: "dhcp"
+
+        CreateLP1:
+            TestSwitch: nvpcontroller.[1].logicalswitch.[1]
+            Type: Switch
+            logicalport:
+                '[1]':
+                    attachment:
+                        type: VifAttachment
+                        vifuuid: vm.[1].vnic.[1]
+                    metadata:
+                        expectedresultcode: '201'
+                        expectedvalue: autogenerate
+                        keyundertest: display_name
+                    name: autogenerate
+        CreateLP2:
+            TestSwitch: nvpcontroller.[1].logicalswitch.[1]
+            Type: Switch
+            logicalport:
+                '[1]':
+                    attachment:
+                        type: VifAttachment
+                        vifuuid: vm.[2].vnic.[1]
+                    metadata:
+                        expectedresultcode: '201'
+                        expectedvalue: autogenerate
+                        keyundertest: display_name
+                    name: autogenerate
+        CreateLS1:
+            TestNSX: nvpcontroller.[1]
+            Type: NSX
+            logicalswitch:
+                '[1]':
+                    metadata:
+                        expectedresultcode: '201'
+                        expectedvalue: autogenerate
+                        keyundertest: display_name
+                    name: autogenerate
+                    replicationmode: source
+                    transportzones:
+                        - transport_type: stt
+                          zone_uuid: nvpcontroller.[1].transportzone.[1]
+        CreateLS2:
+            TestNSX: nvpcontroller.[1]
+            Type: NSX
+            logicalswitch:
+                '[2]':
+                    metadata:
+                        expectedresultcode: '201'
+                        expectedvalue: autogenerate
+                        keyundertest: display_name
+                    name: autogenerate
+                    replicationmode: source
+                    transportzones:
+                        - transport_type: stt
+                          zone_uuid: nvpcontroller.[1].transportzone.[1]
+        CreateTN1:
+            TestNSX: nvpcontroller.[1]
+            Type: NSX
+            sleepbetweenworkloads: '160'
+            transportnode:
+                '[1]':
+                    credential:
+                        mgmtaddress: esx.[1]
+                        type: MgmtAddrCredential
+                    integration_bridge_id: br-int
+                    name: autogenerate
+                    transport_connectors:
+                        - ip_address: esx.[1].vmnic.[1]
+                          transport_zone_uuid: nvpcontroller.[1].transportzone.[1]
+                          type: STTConnector
+
+        CreateTN2:
+            TestNSX: nvpcontroller.[1]
+            Type: NSX
+            sleepbetweenworkloads: '160'
+            transportnode:
+                '[2]':
+                    credential:
+                        mgmtaddress: esx.[2]
+                        type: MgmtAddrCredential
+                    integration_bridge_id: br-int
+                    name: autogenerate
+                    transport_connectors:
+                        - ip_address: esx.[2].vmnic.[1]
+                          transport_zone_uuid: nvpcontroller.[1].transportzone.[1]
+                          type: STTConnector
+
+        CreateTZ:
+            TestNSX: nvpcontroller.[1]
+            Type: NSX
+            transportzone:
+                '[1]':
+                    metadata:
+                        expectedresultcode: '201'
+                        expectedvalue: autogenerate
+                        keyundertest: display_name
+                    name: autogenerate
+                    transport_zone_type: stt
+        SetController:
+            ConfigureController: set
+            TestSwitch: esx.[1-2].ovs.[1]
+            Type: Switch
+            controller: nvpcontroller.[1]

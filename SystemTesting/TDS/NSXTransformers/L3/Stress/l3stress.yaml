@@ -1,0 +1,221 @@
+---
+DAEMONS:
+    -   name: SWITCH
+        desc: ovs|vswitch???
+        affected: All
+        notaffected: No
+    -   name: L3
+        desc: l3d|???
+        affected: L3
+        notaffected: L2
+    -   name: LCP
+        desc: netcpa
+        notaffected: All
+    -   name: MPA
+        desc: mpa
+        notaffected: All
+    -   name: EDGE
+        desc: edged???
+        affected: NS
+        notaffected: EW
+DAEMON_OPS:
+    -   name: RESTART
+        desc: is restarted
+    -   name: STOP-START
+        desc: is stopped and started back
+    -   name: KILL
+        desc: is killed and restarted
+MPCCP_OPS:
+    -   name: HeadlessCCP
+        desc: all controller services are shutdown with order
+        variations:
+            - all at once
+            - 1-2-3
+            - 1-3-2
+            - 2-1-3
+            - 2-3-1
+            - 3-1-2
+            - 3-2-1
+    -   name: HeadlessMP
+        desc: all manager services are shutdown with order
+        variations:
+            - all at once
+            - 1-2-3
+            - 1-3-2
+            - 2-1-3
+            - 2-3-1
+            - 3-1-2
+            - 3-2-1
+    -   name: DisconnectCCP
+        desc: all controllers are not reachable
+    -   name: DisconnectMP
+        desc: all managers are not reachable
+    -   name: RebootCCP
+        desc: all controllers are rebooted with order
+        variations:
+            - 1-2-3
+            - 1-3-2
+            - 2-1-3
+            - 2-3-1
+            - 3-1-2
+            - 3-2-1
+    -   name: RebootMP
+        desc: all managers are rebooted with order
+        variations:
+            - 1-2-3
+            - 1-3-2
+            - 2-1-3
+            - 2-3-1
+            - 3-1-2
+            - 3-2-1
+    -   name: ParallelRebootCCP
+        desc: all controllers are rebooted simultaneously
+    -   name: ParallelRebootMP
+        desc: all managers are rebooted simultaneously
+    -   name: NetworkPartionCCP
+        desc: Partition the CCP using firewall into majority/minority
+    -   name: NetworkPartionMP
+        desc: Partition the MP using firewall into majority/minority
+    -   name: DeleteReAddClusterMembers
+        desc: all components in the cluster are deleted and re-added with
+different IP addresses (for e.g.: delete 2 & 3 and add 4 & 5)
+        variations:
+            - CCP cluster
+            - MP cluster
+
+TRAFFIC:
+    -   name: NetworkBroadcast
+        desc: pinging to each network's brodcast IP like 10.0.0.255 for 10.0.0.0/24
+        variations:
+            - broadcast pings to connected network
+            - broadcast pings to other l3 networks
+    -   name: ToRouterPort
+        desc: sending Ping/TCP/UDP traffic from all VMs to router port ip
+        variations:
+            - ping with different packet sizes to router port
+            - netperf tcp CRR traffic with short lived connection attempts
+            - netperf with udp
+    -   name: TSOSet
+        desc: sending Ping/TCP/UDP traffic with TSO flag set
+        variations:
+            - TSO Flag set on the tunnel pif/pnic for HVs
+            - TSO Flag set on the tunnel pif/pnic for Edge
+    -   name: JumboFrames
+        desc: sending Ping/TCP/UDP traffic by enabling Jumbo frames on all VMs
+        variations:
+            - send traffic with DF bit set
+            - send traffic with MF bit set
+    -   name: DHCPStorm
+        desc: Send DHCP Storm by trying to renew IP on all VMs test vifs
+        variations:
+            - Run dhclients continuously on downlink VMs
+            - Run dhclients continuous on uplink VMs
+    -   name: PortScan
+        desc: running variations of port scan on all VMs test vifs
+        variations:
+            - Run port scan on EW VMs that span multiple TLRs
+            - Run port scan on NS VMs between uplink/downlink
+    -   name: UnreachableIPStorm
+        desc: after pinging various unreachable IPs on all paths L2, E-W, N-S
+        variations:
+            - Run IP scan using hping on an unreachable network that hit uplink
+            - Run IP scan using hping on an unreachable network that hit downlink
+            - Run IP scan using hping a network with lot of unreachable/reachable IPs on uplink
+            - Run IP scan using hping on a network with lot of unreachable/reachable IPs on downlink
+    -   name: QoSTraffic
+        desc: sending traffic with different values of COS and DSCP
+        variations:
+            - <tbd>
+    -   name: MalformedPackets
+        desc: sending packets which are malformed
+        variations:
+            - <tbd>
+    -   name: PacketSizeVariations
+        desc: sending packets with different sizes ranging from small to jumbo
+        variations:
+            - <tbd>
+    -   name: NMAPTraffic
+        desc: sending packets simulating the NMAP traffic
+
+LOGICALOPS:
+    -   name: AddDelLSPlr
+        desc: LS directly connected to the PLR and VM on one of the existing HVs connected to this new lswitch
+        count: 100
+    -   name: AddDelLSTlr
+        desc: LS directly connected to one of the TLRs and VM on one of the existing HVs
+              with a VIF connected to this new switch
+        count: 100
+    -   name: AddDelHVPlrTlr
+        desc: Transport Node to the topology and VMs on this HV connected to PLR
+              and TLRs
+        count: 100
+    -   name: AddDelVMPlrTlr
+        desc: VM on one of the existing HV and connect it to PLR and TLRs
+        count: 100
+    -   name: AddDelPlrUplinkAA
+        desc: new PLR uplink in active-active mode
+        count: 100
+    -   name: AddDelPlrUplinkAS
+        desc: new PLR uplink in active-standby mode
+        count: 100
+    -   name: AddDelTlrUplink
+        desc: TLR-PLR uplink
+        count: 100
+    -   name: MoodifyUplinkEdge
+        desc: new edge node to the edge cluster and modify one of the PLR uplinks
+              to use the new edge
+        count: 100
+    -   name: AddDelTLR
+        desc: a new TLR connected to the PLR with two downlinks and VMs on
+              existing HV to the TLR
+        count: 100
+    -   name: AddDelEdgeCluster
+        desc: a new EdgeCluster and swap all existing uplinks to this new edge
+              cluster
+        count: 100
+    -   name: AddDelRouteAdvertisements
+        desc: route advertisements for the unadvertised TLR routes
+        count: 100
+    -   name: AddDelLRStaticRoutes
+        desc: static routes on TLR and PLR for new networks
+        count: 100
+
+INFRAOPS:
+    -   name: TunnelDownUp
+        desc: down/up tunnel using the pif/pnic
+        nodes:
+            - HV
+            - Edge
+    -   name: TunnelFlap
+        desc: flap continuously for <tbd> seconds using the pif/pnic
+        nodes:
+            - HV
+            - Edge
+    -   name: CPUHog
+        desc: cpu hog for <tbd>% cpu usage using <tbd> tool
+        nodes:
+            - HV
+            - Edge
+    -   name: MemoryHog
+        desc: memory hog for <tbd>% memory usage using <tbd> tool
+        nodes:
+            - HV
+            - Edge
+    -   name: NetworkSpike
+        desc: network spike on tunnel pif/pnic for <tbd> seconds using netperf
+        nodes:
+            - HV
+            - Edge
+    -   name: VMotionOnHV
+        desc: vmotion of a vm
+        nodes:
+            - HV
+        variations:
+            - vmotion vm to an HV which doesn't have the VNI
+            - vmotion vm to an HV which has the VNI
+            - vmotion vm to an HV which does not have the LR (maybe applicable
+              only for KVM)
+    -   name: MultiComponentFailure
+        desc: failure of multiple components from HV, Controller, Egde, Manager
+        nodes:
+            - NSX system

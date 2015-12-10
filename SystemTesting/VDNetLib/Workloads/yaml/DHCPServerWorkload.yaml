@@ -1,0 +1,258 @@
+configure_dhcp_server:
+  derived_components:
+    - dhcpserver
+  description: "configure dhcp server"
+  preprocess:  PreProcessNestedParametersForAction
+  format:
+     netmask :  'ref: netmask'
+     subnet  :  'ref: subnet'
+     broadcast_addr : 'ref: broadcast_addr'
+     option_routers : 'ref: option_routers'
+     default_lease : 'ref: default_lease'
+     max_lease : 'ref: max_lease'
+     ip_range : 'ref: ip_range'
+     dhcp_type : 'ref: dhcp_type'
+     adapter_mac : 'ref: adapter_mac'
+     host_name: 'ref: host_name'
+     adapter_ip: 'ref: adapter_ip'
+  type: action
+  method: configure_dhcp_server
+  params:
+    - configure_dhcp_server
+  sample_value:
+    netmask : 255.255.0.0
+    subnet  : 172.31.0.0
+    broadcast_addr: 172.31.255.255
+    option_routers: 172.31.1.1
+    default_lease: 255
+    max_lease: 512
+    ip_range: 172.31.1.1-172.31.1.50
+    dhcp_type: static
+    adapter_mac: 'dhcpserver.[1].vnic.[1]'
+    host_name: 'host1'
+    adapter_ip: 'dhcpserver.[1].vnic.[1]'
+
+enable_dhcp_server_on_interfaces:
+  derived_components:
+    - dhcpserver
+  description: "enable/disable dhcp server on interface"
+  preprocess:  PreProcessNestedParametersForAction
+  format:
+    adapter_interface : 'ref: adapter_interface'
+  sample_value:
+    adapter_interface: 'dhcpserver.[1].vnic.[1]'
+  method: enable_dhcp_server_on_interfaces
+  type: action
+  params:
+    - enable_dhcp_server_on_interfaces
+
+install_dhcp_server:
+  derived_components:
+    - dhcpserver
+  description: "install dhcp server"
+  preprocess:  PreProcessNestedParametersForAction
+  sample_value: dhcpserver.[1]
+  method: install_dhcp_server
+  type: action
+  params:
+    - install_dhcp_server
+
+unconfigure_dhcp_server:
+  derived_components:
+    - dhcpserver
+  description: "clear dhcp server configuration"
+  preprocess:  PreProcessNestedParametersForAction
+  format:
+    name: 'ref: name'
+  sample_value: dhcpserver.[1]
+  method: setup_dhcp_server
+  type: action
+  params:
+   - setup_dhcp_server
+
+restart_dhcp_server:
+  derived_components:
+    - dhcpserver
+  description: "restart dhcp server"
+  preprocess:  PreProcessNestedParametersForAction
+  method: restart_dhcp_server
+  sample_value: dhcpserver.[1]
+  type: action
+  params:
+   - setup_dhcp_server
+
+dhcp_type: &dhcp_type
+  derived_components:
+    - dhcpserver
+  description: "dynamic or static binding"
+  allowed_values:
+    - static
+    - dynamic
+  type: parameter
+
+option_routers: &option_routers
+  derived_components:
+    - dhcpserver
+  description: "option routers"
+  format: string
+  sample_value: "10.1.1.1"
+  type: parameter
+  method: ProcessParameters
+
+subnet: &subnet
+  derived_components:
+   - dhcpserver
+  description: "subnet mask"
+  format: string
+  sample_value: "255.255.0.0"
+  type: parameter
+  method: ProcessParameters
+
+netmask: &netmask
+  derived_components:
+   - dhcpserver
+  description: "netmask"
+  format: string
+  sample_value: "255.255.0.0"
+  type: parameter
+  method: ProcessParameters
+
+max_lease: &max_lease
+  derived_components:
+    - dhcpserver
+  description: "max lease time for dhcp server"
+  format: integer
+  sample_value: 255
+  type: parameter
+  method: ProcessParameters
+
+default_lease: &default_lease
+  derived_components:
+    - dhcpserver
+  method: ProcessParameters
+  format: integer
+  sample_value: 128
+  type: parameter
+
+broadcast_addr: &broadcast_addr
+  derived_components:
+    - dhcpserver
+  description: "broadcast address for the given subnet"
+  format: string
+  sample_value: "10.144.139.253"
+  type: parameter
+  method: ProcessParameters
+
+ip_range: &ip_range
+  derived_components:
+    - dhcpserver
+  description: " range of ip addresses in the given subnet"
+  type: parameter
+  format: string
+  sample_value: "10.2.2.2-10.2.2.255"
+  method: ProcessParameters
+
+adapter_interface: &adapter_interface
+  type: parameter
+  description: 'pass vdnet index of vnics'
+  derived_components:
+    - all
+  method: GetComponentAttribute
+  format: vdnet index
+  sample_value: 'vm.[1].vnic.[1-2]'
+vnic:
+  derived_components:
+    - vm
+  description: "Create virtual ethernet adapter using the given spec"
+  format:
+    driver : string
+    portgroup : vdnet index
+  linkedworkload: NetAdapterWorkload
+  method: AddEthernetAdapters
+  params:
+    - vnic
+  postprocess: StoreVnicObjects
+  preprocess: PreProcessCreateVnic
+  sample_value:
+    driver : e1000
+    portgroup : host.[1].portgroup.[1]
+  type: component
+deletevnic:
+  dependency:
+    - vnic
+  derived_components:
+    - vm
+  description: "Remove a vnic on VM"
+  format: vdnet index
+  method: RemoveVirtualAdapters
+  params:
+    - deletevnic
+  postprocess: RemoveSubComponentObjects
+  preprocess: PreProcessDeleteVnic
+  sample_value: "vm.[1].vnic.[1]"
+  type: component
+vmstate:
+  derived_components:
+    - vm
+  description: "Power on/off, suspend/resume specified VM"
+  format: string
+  method: ChangeVMState
+  params:
+    - vmstate
+  postprocess: PostProcessChangeVMState
+  preprocess: PreProcessChangeVMState
+  sample_value: poweron
+  type: action
+vif:
+  type: component
+  description: 'Create virtual ethernet adapter on KVM VMs'
+  preprocess: TransformSubComponentSpec
+  method: AddEthernetAdapters
+  params:
+    - vif
+  postprocess: StoreVnicObjects
+  linkedworkload: NetAdapterWorkload
+  sample_value:
+    driver : e1000
+    network : kvm.[1].bridge.[1]
+  format:
+    driver : string
+    portgroup : vdnet index
+  derived_components:
+    - dhcpserver
+deletevif:
+  dependency:
+    - vif
+  derived_components:
+    - dhcpserver
+  description: "Remove VIF(s) from VM"
+  format: vdnet index
+  method: RemoveVirtualAdapters
+  params:
+    - deletevnic
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: "vm.[1].vnic.[1]"
+  type: component
+
+get_single_adapter_info:
+  derived_components:
+    - dhcpserver
+  description: Returns the information about a specific adapter
+  type: verification
+  method: get_single_adapter_info
+  format:
+      - adapter_ip: string
+        adapter_name: string
+        timeout: integer
+  params:
+    - get_single_adapter_info
+    - execution_type
+    - adapter_ip
+    - adapter_name
+    - timeout
+  preprocess: PreProcessVerification
+  sample_value:
+      - adapter_ip: '192.168.1.1'
+        adapter_name: 'eth1'
+        timeout: 300

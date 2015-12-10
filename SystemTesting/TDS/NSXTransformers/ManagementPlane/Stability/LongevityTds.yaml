@@ -1,0 +1,133 @@
+!include ../CertificateManagement/CommonWorkloads.yaml
+!include ../CertificateManagement/TestbedSpec.yaml
+
+MPClusterLongevityTest:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CertificateMgmt"
+    TestName: "MPClusterLongevityTest"
+    Version: "2"
+    Summary: "Verify MP cluster remains stable after this longevity test"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "dgargote"
+    Procedure: '1. Create CSR-1 on NSXManager node-1
+                2. Create CSR-2 on NSXManager node-2
+                3. Create CSR-3 on NSXManager node-3
+                4. Verify all the CSRs are available on all the NSXManager cluster nodes
+                5. Delete CSR-1 from NSXManager node-2
+                6. Delete CSR-2 from NSXManager node-3
+                7. Delete CSR-3 from NSXManager node-1
+                8. Verify all the CSRs are deleted on all the NSXManager cluster nodes
+                9. Repeat above procedure 500 times'
+    ExpectedResult: 'MP cluster should remain stable after this longevity test'
+    Duration: '10'
+    Tags: 'nsxmanager,management,clustering,stability'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Iterations: 500
+        Sequence:
+            - ["CreateCSR1OnClusterNode1"]
+            - ["CreateCSR2OnClusterNode2"]
+            - ["CreateCSR3OnClusterNode3"]
+            - ["VerifyCSRListOnNode1"]
+            - ["VerifyCSRListOnNode2"]
+            - ["VerifyCSRListOnNode3"]
+            - ["DeleteCSR1FromClusterNode2"]
+            - ["DeleteCSR2FromClusterNode3"]
+            - ["DeleteCSR3FromClusterNode1"]
+            - ["SetCSRId"]
+            - ["VerifyCSRDeletionOnClusterNode1"]
+            - ["VerifyCSRDeletionOnClusterNode2"]
+            - ["VerifyCSRDeletionOnClusterNode3"]
+
+        CreateCSR1OnClusterNode1: *CREATE_CSR
+
+        CreateCSR2OnClusterNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            csr:
+                '[2]':
+                    algorithm: "RSA"
+                    key_size: "2048"
+                    subject:
+                      attributes:
+                        - key: CN
+                          value: NSX
+                        - key: O
+                          value: VMware
+                        - key: OU
+                          value: NSBU
+                        - key: C
+                          value: US
+                        - key: ST
+                          value: CA
+                        - key: L
+                          value: PA
+
+        CreateCSR3OnClusterNode3:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[3]"
+            csr:
+                '[3]':
+                    algorithm: "RSA"
+                    key_size: "2048"
+                    subject:
+                      attributes:
+                        - key: CN
+                          value: NSX
+                        - key: O
+                          value: VMware
+                        - key: OU
+                          value: NSBU
+                        - key: C
+                          value: US
+                        - key: ST
+                          value: CA
+                        - key: L
+                          value: PA
+
+        VerifyCSRListOnNode1: *VERIFY_CSR_LIST
+
+        VerifyCSRListOnNode2:
+            <<: *VERIFY_CSR_LIST
+            Testcertificate: "nsxmanager.[2].csr.[1]"
+
+        VerifyCSRListOnNode3:
+            <<: *VERIFY_CSR_LIST
+            Testcertificate: "nsxmanager.[3].csr.[1]"
+
+        DeleteCSR1FromClusterNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            deletecsr: "nsxmanager.[2].csr.[1]"
+            sleepbetweenworkloads: 900
+
+        DeleteCSR2FromClusterNode3:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[3]"
+            deletecsr: "nsxmanager.[3].csr.[2]"
+
+        DeleteCSR3FromClusterNode1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletecsr: "nsxmanager.[1].csr.[3]"
+
+        SetCSRId: *SET_CSR_ID
+
+        VerifyCSRDeletionOnClusterNode1:
+            <<: *DELETE_CSR_VERIFICATION
+
+        VerifyCSRDeletionOnClusterNode2:
+            <<: *DELETE_CSR_VERIFICATION
+            Testcertificate: "nsxmanager.[2].csr.[1]"
+
+        VerifyCSRDeletionOnClusterNode3:
+            <<: *DELETE_CSR_VERIFICATION
+            Testcertificate: "nsxmanager.[3].csr.[1]"

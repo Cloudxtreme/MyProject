@@ -1,0 +1,1243 @@
+#####################################################################
+# Title : Avalanche IPAM Allocate/Release TDS                       |
+#####################################################################
+
+#####################################################################
+#                 P0 Test Cases                                     |
+#####################################################################
+
+AllocateIPAddressFromIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "AllocateIPAddressFromIPPool"
+    Version: "2"
+    Summary: "To verify IP address is getting allocated from IPPool"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IP from IPPool
+                3. Verify IP address is getting allocated from IPPool'
+    ExpectedResult: 'IP address should get allocated from IPPool'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIP"]
+            - ["VerifyIPAllocation"]
+            - ["ReleaseIP"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        AllocateIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        ReleaseIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+DeleteIPPoolWithAllocatedIPs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "DeleteIPPoolWithAllocatedIPs"
+    Version: "2"
+    Summary: "To verify if IPPool gets deleted with allocated IPs"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IP from IPPool
+                3. Try to delete IPPool with allocated IPs
+                4. Verify IPPool deletion is failing with correct error message'
+    ExpectedResult: 'IPPool deletion should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIP"]
+            - ["VerifyIPAllocation"]
+            - ["DeleteIPPool"]
+        ExitSequence:
+            - ["ReleaseIP"]
+            - ["DeleteIPPoolAfterRelease"]
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        AllocateIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        DeleteIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            deleteippool: "nsxmanager.[1].ippool.[1]"
+
+        ReleaseIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        DeleteIPPoolAfterRelease: *DELETE_ALL_IPPOOLS
+
+GetAllocatedIPAddressesFromIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "GetAllocatedIPAddressesFromIPPool"
+    Version: "2"
+    Summary: "To verify allocated IP addresses from IPPool"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IPs from IPPool
+                3. Try to get list of allocated IP addresses from IPPool
+                4. Verify all the allocated IP addresses are getting listed'
+    ExpectedResult: 'List of allocated IP addresses should be retrieved'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIPOne"]
+            - ["AllocateIPTwo"]
+            - ["VerifyIPAllocation"]
+            - ["ReleaseIPOne"]
+            - ["ReleaseIPTwo"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        AllocateIPOne:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        AllocateIPTwo:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[2]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 2
+
+        ReleaseIPOne:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        ReleaseIPTwo:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[2]':
+                    id_: "nsxmanager.[1].allocateip.[2]"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+ReleaseIPAddressToIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "ReleaseIPAddressToIPPool"
+    Version: "2"
+    Summary: "To verify IP address is getting released to IPPool"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IP from IPPool
+                3. Try to release allocated IP to IPPool
+                3. Verify IP address is getting released to IPPool'
+    ExpectedResult: 'IP address should get released to IPPool'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIP"]
+            - ["VerifyIPAllocation"]
+            - ["ReleaseIP"]
+            - ["VerifyIPAllocationAfterRelease"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        AllocateIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        ReleaseIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        VerifyIPAllocationAfterRelease:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 0
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+#####################################################################
+#                 P1 Test Cases                                     |
+#####################################################################
+
+DeleteRangeFromIPPoolWithIPsAllocated:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'DeleteRangeFromIPPoolWithIPsAllocated'
+    Version: "2"
+    Summary: 'To verify if IPPool range gets deleted from subnet with IPs
+    allocated from that range'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IPs from the subnet range
+                3. Try to delete range from the subnet of newly created IPPool
+                4. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with appropriate error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIPOne"]
+            - ["AllocateIPTwo"]
+            - ["VerifyIPAllocation"]
+            - ["DeleteRangeIPPool"]
+        ExitSequence:
+            - ["ReleaseIPOne"]
+            - ["ReleaseIPTwo"]
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.2
+                            begin: 192.168.1.2
+                          - end: 192.168.1.4
+                            begin: 192.168.1.3
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+
+        AllocateIPOne:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        AllocateIPTwo:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[2]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 2
+
+        DeleteRangeIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "IPPool created through automation"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.2
+                    begin: 192.168.1.2
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        ReleaseIPOne:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        ReleaseIPTwo:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[2]"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+ShrinkRangeFromIPPoolWithAllocatedIPs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'ShrinkRangeFromIPPoolWithAllocatedIPs'
+    Version: "2"
+    Summary: 'To verify if IPPool range gets shrinked with allcated IPs'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IPs from IPPool
+                3. Try to shrink range with IPs allocated from excluded range
+                4. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIPOne"]
+            - ["AllocateIPTwo"]
+            - ["VerifyIPAllocation"]
+            - ["ShrinkIPPool"]
+        ExitSequence:
+            - ["ReleaseIPOne"]
+            - ["ReleaseIPTwo"]
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.4
+                            begin: 192.168.1.2
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+
+        AllocateIPOne:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        AllocateIPTwo:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[2]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 2
+
+        ShrinkIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.2
+                    begin: 192.168.1.2
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        ReleaseIPOne:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        ReleaseIPTwo:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[2]"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+DeleteSubnetFromIPPoolWithAllocatedIPs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'DeleteSubnetFromIPPoolWithAllocatedIPs'
+    Version: "2"
+    Summary: 'To verify if subnet gets deleted from IPPool with allocated IPs'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IPs from IPPool
+                3. Try to delete subnet from which IPs are allocated
+                4. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIPOne"]
+            - ["AllocateIPTwo"]
+            - ["VerifyIPAllocation"]
+            - ["DeleteSubnet"]
+        ExitSequence:
+            - ["ReleaseIPOne"]
+            - ["ReleaseIPTwo"]
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.2
+                            begin: 192.168.1.2
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+                      - allocation_ranges:
+                          - end: 192.168.2.3
+                            begin: 192.168.2.2
+                        cidr: 192.168.2.0/24
+                        gateway_ip: 192.168.2.255
+                        servers:
+                          - 192.1.2.1
+
+        AllocateIPOne:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        AllocateIPTwo:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[2]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 2
+
+        DeleteSubnet:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.2
+                    begin: 192.168.1.2
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        ReleaseIPOne:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        ReleaseIPTwo:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[2]"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+AllocateIPAddressFromIPPoolWhenNoFreeIPs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'AllocateIPAddressFromIPPoolWhenNoFreeIPs'
+    Version: "2"
+    Summary: 'To verify IP address is not getting allocated from IPPool when
+    there are no free IPs'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate all the IPs from IPPool
+                2. Try to allocate IP from IPPool when there are no free IPs
+                3. Verify allocate IP address operation is failing with correct
+                error message'
+    ExpectedResult: 'Allocate IP address operation should fail with correct
+                error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIPOne"]
+            - ["AllocateIPTwo"]
+            - ["VerifyIPAllocation"]
+        ExitSequence:
+            - ["ReleaseIPOne"]
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.2
+                            begin: 192.168.1.2
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+
+        AllocateIPOne:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        AllocateIPTwo:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[2]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        ReleaseIPOne:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithAllocatedIPs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateIPPoolWithAllocatedIPs'
+    Version: "2"
+    Summary: 'To verify if IPPool gets updated when IPs are
+              allocated from this IPPool'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IP from this IPPool
+                2. Try to update created IPPool description
+                3. Verify IPPool description is updated'
+    ExpectedResult: 'IPPool description should get updated'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["AllocateIP"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["ReleaseIP"]
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.10
+                      begin: 192.168.1.2
+                  gateway_ip: 192.168.1.255
+
+        AllocateIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "description updated"
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'summary[?]equal_to': "description updated"
+
+        ReleaseIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+#####################################################################
+#                 P2 Test Cases                                     |
+#####################################################################
+
+GetAllocatedIPAddressesFromIPPoolWithIncorrectIPPoolId:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "GetAllocatedIPAddressesFromIPPoolWithIncorrectIPPoolId"
+    Version: "2"
+    Summary: "To verify if list of allocated IP addresses from IPPool gets
+              retrieved with incorrect pool id"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IPs from IPPool
+                3. Try to get list of allocated IP addresses from IPPool
+                with incorrect IPPool Id
+                4. Verify get allocated IP addresses operation is failing with
+                correct error message'
+    ExpectedResult: 'Get allocated IP addresses operation is failing with
+                     correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetIPPoolId"]
+            - ["GetListOfIPAllocations"]
+
+        SetIPPoolId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    map_object: true
+                    id_: 'incorrect_id'
+
+        GetListOfIPAllocations:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            ExpectedResult:
+                status_code: NOT_FOUND
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+AllocateIPAddressFromIPPoolWithIncorrectIPPoolId:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "AllocateIPAddressFromIPPoolWithIncorrectIPPoolId"
+    Version: "2"
+    Summary: "To verify if IP address is getting allocated from IPPool with
+              incorrect IPPool Id"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to allocate IP from IPPool with incorrect IPPool Id
+                3. Verify allocate IP address operation is failing with correct
+                error message'
+    ExpectedResult: 'Allocate IP address operation should fail with correct
+                error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetIPPoolId"]
+            - ["AllocateIP"]
+
+        SetIPPoolId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    map_object: true
+                    id_: 'incorrect_id'
+
+        AllocateIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: NOT_FOUND
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+ReleaseIPAddressToIPPoolWithIncorrectIPPoolId:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "ReleaseIPAddressToIPPoolWithIncorrectIPPoolId"
+    Version: "2"
+    Summary: "To verify if IP address is getting released to IPPool with
+              incorrect IPPool Id"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IP from IPPool
+                3. Try to release allcated IP to IPPool with incorrect IPPool Id
+                3. Verify IP address release to IPPool is failing with correct
+                error message'
+    ExpectedResult: 'IP address release to IPPool operation should fail with
+                     correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetIPPoolId"]
+            - ["ReleaseIP"]
+
+        SetIPPoolId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    map_object: true
+                    id_: 'incorrect_id'
+
+        ReleaseIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: NOT_FOUND
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "192.168.1.3"
+
+ReleaseIPAddressToIPPoolWithIncorrectIP:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "ReleaseIPAddressToIPPoolWithIncorrectIP"
+    Version: "2"
+    Summary: "To verify if IP address is getting released to IPPool with
+              incorrect allocated IP"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IP from IPPool
+                3. Try to release IP to IPPool with incorrect IP
+                3. Verify IP address release to IPPool is failing with correct
+                error message'
+    ExpectedResult: 'IP address release to IPPool operation should fail with
+                     correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIP"]
+            - ["VerifyIPAllocation"]
+            - ["ReleaseIPwithIncorrectIP"]
+        ExitSequence:
+            - ["ReleaseIP"]
+            - ["DeleteIPPool"]
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        AllocateIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        ReleaseIPwithIncorrectIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "192.168.1.355"
+
+        ReleaseIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+ReleaseIPAddressToIPPoolWithUnallocatedIP:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "ReleaseIPAddressToIPPoolWithUnallocatedIP"
+    Version: "2"
+    Summary: "To verify if unallocated IP address is getting released to IPPool"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IP from IPPool
+                3. Try to release IP to IPPool with unallocated IP
+                3. Verify IP address release to IPPool is failing with correct
+                error message'
+    ExpectedResult: 'IP address release to IPPool operation should fail with
+                     correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIP"]
+            - ["VerifyIPAllocation"]
+            - ["ReleaseIPwithUnallocatedIP"]
+        ExitSequence:
+            - ["ReleaseIP"]
+            - ["DeleteIPPool"]
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        AllocateIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        ReleaseIPwithUnallocatedIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "192.168.1.255"
+
+        ReleaseIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+IPv6AllocateIPAddressFromIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "IPv6AllocateIPAddressFromIPPool"
+    Version: "2"
+    Summary: "To verify IPv6 address is getting allocated from IPPool"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Allocate IP from IPPool
+                3. Verify IPv6 address is getting allocated from IPPool'
+    ExpectedResult: 'IPv6 address should get allocated from IPPool'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AllocateIP"]
+            - ["VerifyIPAllocation"]
+            - ["ReleaseIP"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'IPPool-1'
+                    summary: "IPPool ONE created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 2001:db8:1234:0000:0000:0000:0000:0005
+                            begin: 2001:db8:1234:0000:0000:0000:0000:0001
+                        cidr: 2001:db8:1234::/48
+                        gateway_ip: 2001:db8:1234:ffff:ffff:ffff:ffff:ffff
+                        servers:
+                          - 2001:a70:cbfa:1:1:1:1:1
+
+        AllocateIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        VerifyIPAllocation:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        ReleaseIP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS

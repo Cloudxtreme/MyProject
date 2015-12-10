@@ -1,0 +1,369 @@
+!include L2Workloads.yaml
+!include MPCommonWorkloads.yaml
+!include MPVerticalWorkloads.yaml
+!include DeploymentWorkloads.yaml
+!include TestbedSpec.yaml
+
+MPClusterGatingTestForESX:
+  Product: 'NSXTransformers'
+  Component: 'Clustering'
+  Category: 'ManagementPlatform'
+  TestName: 'MPClusterGatingTest'
+  Version: "2"
+  TCMSId: ''
+  Priority: 'P0'
+  PMT: ''
+  Testcaselevel: 'Functional'
+  Testcasetype: 'Functional'
+  QCPath:  ''
+  Summary: 'To verify end to end L2 configuration flow'
+  Procedure: ' 1. Create a 3 MP and 3 CCP with 2 ESX setup
+               2. Create logical switch-1 from node-1 and do VIF attachment
+               3. Verify on CCP and ESX
+               4. Verify Ping-1 pass
+               5. Shutdown node 1
+               6. Create logical switch-2 from node 2 from node-3 and do VIF attachment
+               7. Verify on CCP and ESX
+               8. Verify Ping-2 pass
+               9. Shutdown node 2
+               10. Verify Ping-1 and Ping-2 both pass
+               11. Check for write quorum by creating logical switch-3 from node 3 and verify the creation fails
+               12. Now Shutdown node 3
+               13. Verify Ping-1 and Ping-2 both pass
+               14. Power On Node 1 and verify cluster status is "INITIALIZING" waiting for node 2 and  node 3 to be UP
+               15. Verify Ping-1 and Ping-2 both pass
+               16. Create logical switch-3 from node 1 and verify the creation fails
+               17. Now Power On Node 2 and verify cluster status from both nodes node 1 and node 2, it should be "INITIALIZING" waiting for node 3 to be UP
+               18. Verify Ping-1 and Ping-2 both pass
+               19. Create logical switch-3 from node 1/2 and verify the creation fails
+               20. Now Power On Node 3
+               21. Verify Ping-1 and Ping-2 both pass
+               22. Verify cluster status from all nodes, it should be STABLE
+               23. Verify logical switch-1 and logical switch-2 from all CCP nodes and ESX
+               24. Delete logical switch-1
+               24. Create logical switch-3 from node-3 and do VIF attachment
+               25. Verify Ping-2 and Ping-3 passes
+               26. Verify logical switch-2 and logical switch-3 from all CCP nodes and ESX'
+  ExpectedResult: '1. After step 3, cluster status should be UNSTABLE
+                   2. After step 5, node n3 is added to the cluster successfully.
+                   3. After step 7, node n2 is removed from the cluster successfully'
+  Duration: '300'
+  Tags: 'nsx,management,clustering,acceptance,gating_test_cat'
+  AutomationLevel: 'Manual'
+  Developer: 'vkarra'
+  FullyAutomatable: 'Y'
+  Status: 'Execution Ready'
+  PartnerFacing: 'Y'
+  TestbedSpec: *3MP_3CCP_4ESX
+  WORKLOADS:
+    <<: *MPClusteringConfigurationWorkloads
+    <<: *MPClusteringL2Workloads
+    <<: *MPClusteringVerificationWorkloads
+    <<: *CCPClusteringConfigurationWorkloads
+    Sequence:
+      - ["InitialVerificationOf3MP3CCPNodeCluster"]
+      - ["CreateLogicalSwitch01FromNode1"]
+      - ["VerifyLogicalSwitch01InfoOnControllers"]
+      - ["VifAttachment01"]
+      - ["VerifyLSReplicationModeOnHostForLS1"]
+      - ["DiscoverLogicalPortsFromNode1"]
+      - ["ConfigureVnicIPForVM1And2"]
+      - ["VerifyLogicalSwitchPort01And02InfoOnCCP"]
+      - ["VerifyLogicalSwitchPort01And02InfoOnCCP2"]
+      - ["VerifyLogicalSwitchPort01And02InfoOnCCP3"]
+      - ["VerifyTrafficBetweenVM1AndVM2"]
+      - ["PowerOffMPNode1"]
+      - ["WaitForClusterStatusStableOnNode2"]
+      - ["VerifyClusterStatusFromNode2"]
+      - ["VerifyClusterStatusFromNode3"]
+      - ["CreateLogicalSwitch02FromNode2"]
+      - ["VerifyLogicalSwitch02InfoOnControllers"]
+      - ["VifAttachment02"]
+      - ["VerifyLS02ReplicationModeOnHostFromNode2"]
+      - ["DiscoverLogicalPortsOfLS02FromNode2"]
+      - ["ConfigureVnicIPForVM3And4"]
+      - ["VerifyLogicalSwitchPort03And04InfoOnCCP"]
+      - ["VerifyTrafficBetweenVM3AndVM4"]
+      - ["PowerOffMPNode2"]
+      - ["VerifyTrafficBetweenVM1AndVM2"]
+      - ["VerifyTrafficBetweenVM3AndVM4"]
+      - ["CreateLogicalSwitch03FromNode3VerifyError"]
+      - ["PowerOffMPNode3"]
+      - ["VerifyTrafficBetweenVM1AndVM2"]
+      - ["VerifyTrafficBetweenVM3AndVM4"]
+      - ["PowerOnMPNode1"]
+      - ["WaitForClusterStatusInitOnNode1WithSleep"]
+      - ["VerifyTrafficBetweenVM1AndVM2"]
+      - ["VerifyTrafficBetweenVM3AndVM4"]
+      - ["CreateLogicalSwitch03FromNode1VerifyError"]
+      - ["PowerOnMPNode2"]
+      - ["WaitForClusterStatusInitOnNode1"]
+      - ["WaitForClusterStatusInitOnNode2WithSleep"]
+      - ["VerifyTrafficBetweenVM1AndVM2"]
+      - ["VerifyTrafficBetweenVM3AndVM4"]
+      - ["CreateLogicalSwitch03FromNode2VerifyError"]
+      - ["PowerOnMPNode3"]
+      - ["VerifyTrafficBetweenVM1AndVM2"]
+      - ["VerifyTrafficBetweenVM3AndVM4"]
+      - ["WaitForClusterStatusStableOnNode1"]
+      - ["VerifyClusterStatusFromNode1"]
+      - ["VerifyClusterStatusFromNode2"]
+      - ["VerifyClusterStatusFromNode3"]
+      - ["VerifyLogicalSwitchPort01And02InfoOnCCP"]
+      - ["VerifyLogicalSwitchPort03And04InfoOnCCP"]
+      - ["VerifyLSReplicationModeOnHostForLS1"]
+      - ["VerifyLS02ReplicationModeOnHostFromNode2"]
+      - ["VifDetachment01"]
+      - ["DeleteVnic1FromVM1"]
+      - ["DeleteVnic1FromVM2"]
+      - ["DeleteLogicalSwitch01FromNode1"]
+      - ["CreateLogicalSwitch03FromNode3"]
+      - ["VerifyLogicalSwitch03InfoOnControllers"]
+      - ["VifAttachment03"]
+      - ["VerifyLS03ReplicationModeOnHostFromNode3"]
+      - ["DiscoverLogicalPortsOfLS03FromNode3"]
+      - ["ReConfigureVnicIPForVM1And2"]
+      - ["ReVerifyLogicalSwitchPort01And02InfoOnCCP"]
+      - ["ReVerifyTrafficBetweenVM1AndVM2WithNic2"]
+      - ["VerifyTrafficBetweenVM3AndVM4"]
+    ExitSequence:
+      - ["ClusterStabilityFor3MP3CCPClusterAfterTestCaseExecution"]
+      - ["VifDetachment02"]
+      - ["VifDetachment03"]
+      - ["DeleteVnic1FromVM3"]
+      - ["DeleteVnic1FromVM4"]
+      - ["DeleteVnic2FromVM1"]
+      - ["DeleteVnic2FromVM2"]
+      - ["DeleteLogicalSwitch02FromNode1"]
+      - ["DeleteLogicalSwitch03FromNode1"]
+
+    CreateLogicalSwitch01FromNode1: *CREATE_LOGICAL_SWITCH_01
+
+    CreateLogicalSwitch03FromNode3: *CREATE_LOGICAL_SWITCH_03_FROM_NODE3
+
+    VerifyClusterMembers3MP: *VERIFY_CLUSTER_MEMBERS_3MP
+
+    WaitForClusterStatusStableOnNode1: *WAIT_STABLE_NODE_1
+
+    CreateLogicalSwitch02FromNode2: *CREATE_LOGICAL_SWITCH_02_FROM_NODE2
+
+    VerifyClusterStatusFromNode3: *VERIFY_CLUSTER_STATUS_FROM_NODE_3
+
+    VerifyClusterStatusFromNode2: *VERIFY_CLUSTER_STATUS_FROM_NODE_2
+
+    VerifyClusterStatusFromNode1: *VERIFY_CLUSTER_STATUS_FROM_NODE_1
+
+    PowerOffMPNode1: *POWER_OFF_MP_NODE_1
+
+    PowerOffMPNode2: *POWER_OFF_MP_NODE_2
+
+    PowerOffMPNode3: *POWER_OFF_MP_NODE_3
+
+    PowerOnMPNode1: *POWER_ON_MP_NODE_1
+
+    PowerOnMPNode2: *POWER_ON_MP_NODE_2
+
+    PowerOnMPNode3: *POWER_ON_MP_NODE_3
+
+    DiscoverLogicalPortsFromNode1: *DISCOVER_LOGICAL_PORTS_FROM_NODE_1
+
+    VerifyClusterMembers3MP3CCP: *VERIFY_CLUSTER_MEMBERS_3MP_3CCP_FROM_NODE_1
+
+    ReadClusterNode1: *READ_CLUSTER_NODE_1
+
+    ReadClusterNode2: *READ_CLUSTER_NODE_2
+
+    ReadClusterNode3: *READ_CLUSTER_NODE_3
+
+    SetProtonServiceIdForNode2: *SET_PROTON_SERVICE_ID_FOR_NODE_2
+
+    StopProtonServiceOnNode2: *STOP_PROTON_SERVICE_ON_NODE_2
+
+    VerifyStopProtonServiceStatusForNode2: *VERFIY_STOP_PROTON_SERVICE_STATUS_FOR_NODE_2
+
+    RemoveMPNode2: *REMOVE_MP_NODE_2
+
+    StopProtonServiceOnNode3: *STOP_PROTON_SERVICE_ON_NODE_3
+
+    VerifyStopProtonServiceStatusForNode3: *VERFIY_STOP_PROTON_SERVICE_STATUS_FOR_NODE_3
+
+    RemoveMPNode3: *REMOVE_MP_NODE_3
+
+    VerifyClusterMembers1MPFromNode1: *VERIFY_CLUSTER_MEMBERS_1MP_FROM_NODE_1
+
+    WaitForClusterStatusStableOnNode2: *WAIT_STABLE_NODE_2
+
+    DeleteLogicalSwitch01FromNode1:
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[1]'
+
+    DeleteLogicalSwitch02FromNode1:
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[2]'
+
+    DeleteLogicalSwitch03FromNode1:
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[3]'
+
+    DeleteLogicalPort01FromNode1:
+      Type: NSX
+      TestNSX: 'nsxmanager.[1]'
+      deletelogicalport: 'nsxmanager.[1].logicalport.[1]'
+
+    DeleteLogicalPort02FromNode1:
+      Type: NSX
+      TestNSX: 'nsxmanager.[1]'
+      deletelogicalport: 'nsxmanager.[1].logicalport.[2]'
+
+    VifAttachment01:
+      <<: *VIF_ATTACHMENT_01--ESX
+      sleepbetweenworkloads: 180
+
+    VifDetachment01: *VIF_DETACHMENT_01--ESX
+
+    ConfigureVnicIPForVM1And2:
+      Type: NetAdapter
+      TestAdapter: vm.[1-2].vnic.[1]
+      IPv4: auto
+
+    ReConfigureVnicIPForVM1And2:
+      Type: NetAdapter
+      TestAdapter: vm.[1-2].vnic.[2]
+      IPv4: auto
+
+    VerifyTrafficBetweenVM1AndVM2:
+      Type          : "Traffic"
+      ToolName      : "ping"
+      TestAdapter   : "vm.[2].vnic.[1]"
+      SupportAdapter: "vm.[1].vnic.[1]"
+      TestDuration  : "10"
+
+    VifAttachment02:
+      <<: *VIF_ATTACHMENT_02--ESX
+      sleepbetweenworkloads: 180
+
+    VifDetachment02: *VIF_DETACHMENT_02--ESX
+
+    VerifyLS02ReplicationModeOnHostFromNode2:
+      Type: "Host"
+      TestHost: "esx.[1-2]"
+      execution_type: 'cli'
+      'get_logical_switch[?]contain_once':
+        table:
+          - switch_vni: "nsxmanager.[2].logicalswitch.[2]"
+            replication_mode: 'mtep'
+
+    DiscoverLogicalPortsOfLS02FromNode2:
+      Type: NSX
+      TestNSX: 'nsxmanager.[2]'
+      logicalport:
+        '[3-4]':
+          discover: 'true'
+          attachment:
+            id_: 'vm.[x=logicalport_index].vnic.[1]->uuid'
+
+    ConfigureVnicIPForVM3And4:
+      Type: NetAdapter
+      TestAdapter: vm.[3-4].vnic.[1]
+      IPv4: auto
+
+    VerifyLogicalSwitchPort03And04InfoOnCCP:
+      Type: "ClusterNode"
+      Testclusternode: *NSXCONTROLLER_CLUSTERNODE1
+      execution_type: 'cli'
+      switch_id: 'nsxmanager.[2].logicalswitch.[2]->switch_id'
+      'get_switch_ports[?]contain_once':
+        table:
+          - switch_id: "nsxmanager.[2].logicalswitch.[2]->switch_id"
+            port_id: "nsxmanager.[2].logicalport.[3]->id_"
+          - switch_id: "nsxmanager.[2].logicalswitch.[2]->switch_id"
+            port_id: "nsxmanager.[2].logicalport.[4]->id_"
+
+    VerifyTrafficBetweenVM3AndVM4:
+      Type          : "Traffic"
+      ToolName      : "ping"
+      TestAdapter   : "vm.[3].vnic.[1]"
+      SupportAdapter: "vm.[4].vnic.[1]"
+      TestDuration  : "10"
+
+    CreateLogicalSwitch03FromNode3VerifyError:
+      <<: *CREATE_LOGICAL_SWITCH_03_FROM_NODE3
+      ExpectedResult:
+        status_code: SERVICE_UNAVAILABLE
+
+    WaitForClusterStatusInitOnNode1: *WAIT_INIT_NODE_1
+
+    WaitForClusterStatusInitOnNode1WithSleep:
+      <<: *WAIT_INIT_NODE_1
+      sleepbetweenworkloads: 200
+
+    CreateLogicalSwitch03FromNode1VerifyError:
+      <<: *CREATE_LOGICAL_SWITCH_03_FROM_NODE1
+      ExpectedResult:
+        status_code: SERVICE_UNAVAILABLE
+
+    WaitForClusterStatusInitOnNode2WithSleep:
+      <<: *WAIT_INIT_NODE_2
+      sleepbetweenworkloads: 200
+
+    CreateLogicalSwitch03FromNode2VerifyError:
+      <<: *CREATE_LOGICAL_SWITCH_03_FROM_NODE2
+      ExpectedResult:
+        status_code: SERVICE_UNAVAILABLE
+
+    VifAttachment03:
+      Type: VM
+      TestVM: 'vm.[1-2]'
+      sleepbetweenworkloads: 180
+      vnic:
+        '[2]':
+          driver: "e1000"
+          portgroup: "nsxmanager.[1].logicalswitch.[3]"
+          connected: 1
+          startconnected: 1
+
+    VifDetachment03:
+      Type: NetAdapter
+      TestAdapter: 'vm.[1-2].vnic.[2]'
+      reconfigure: true
+      connected: 0
+      startconnected: 0
+
+    DiscoverLogicalPortsOfLS03FromNode3:
+      Type: NSX
+      TestNSX: 'nsxmanager.[3]'
+      logicalport:
+        '[1-2]':
+          discover: 'true'
+          attachment:
+            id_: 'vm.[x=logicalport_index].vnic.[2]->uuid'
+
+    ReVerifyLogicalSwitchPort01And02InfoOnCCP:
+      Type: "ClusterNode"
+      Testclusternode: *NSXCONTROLLER_CLUSTERNODE1
+      execution_type: 'cli'
+      switch_id: 'nsxmanager.[3].logicalswitch.[3]->switch_id'
+      'get_switch_ports[?]contain_once':
+        table:
+          - switch_id: "nsxmanager.[3].logicalswitch.[3]->switch_id"
+            port_id: "nsxmanager.[3].logicalport.[1]->id_"
+          - switch_id: "nsxmanager.[3].logicalswitch.[3]->switch_id"
+            port_id: "nsxmanager.[3].logicalport.[2]->id_"
+
+    ReVerifyTrafficBetweenVM1AndVM2WithNic2 :
+      Type          : "Traffic"
+      ToolName      : "ping"
+      TestAdapter   : "vm.[1].vnic.[2]"
+      SupportAdapter: "vm.[2].vnic.[2]"
+      TestDuration  : "10"
+
+    VerifyLogicalSwitchPort01And02InfoOnCCP2:
+      <<: *VERIFY_LP01AND02_ON_CCP
+      Testclusternode: *NSXCONTROLLER_CLUSTERNODE2
+
+    VerifyLogicalSwitchPort01And02InfoOnCCP3:
+      <<: *VERIFY_LP01AND02_ON_CCP
+      Testclusternode: *NSXCONTROLLER_CLUSTERNODE1

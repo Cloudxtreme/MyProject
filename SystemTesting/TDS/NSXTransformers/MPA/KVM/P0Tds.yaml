@@ -1,0 +1,258 @@
+!include MPACommon.yaml
+!include TestbedSpec.yaml
+
+SmokeMPARestartSurvival:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: MPA Restart Survival
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: jfieger
+    Summary: Ensure that MPA survives a reboot
+    Version: 2
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['RestartMPA']
+             - ['SyslogCheckForMessage']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeMPARestartSurvival'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'SmokeMPARestartSurvival'
+                grep_string: 'MPA connection fully established'
+                max_wait: 600
+
+SmokeSampleClientRPC:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: Sample Client RPC
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: jfieger
+    Summary: Sample Client Send RPC Message
+    Version: 2
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient']
+             - ['SyslogWriteIndex']
+             - ['RPC']
+             - ['SyslogCheckForSend']
+             - ['RPCSent']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientRPC'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'SmokeSampleClientRPC'
+                grep_string: 'Sending message:RMQ_CLIENT_RPC_REQUEST to mp'
+                max_wait: 20
+
+SmokeSampleClientGenericMessage:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: Sample Client Generic Message
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: jfieger
+    Summary: Sample Client Send Generic Message
+    Version: 2
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient']
+             - ['SyslogWriteIndex']
+             - ['GenericMessage']
+             - ['SyslogCheckForSend']
+             - ['GenericMessageSent']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientGenericMessage'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'SmokeSampleClientGenericMessage'
+                grep_string: 'Sending message:RMQ_VSM_PAYLOAD to mp'
+                max_wait: 20
+
+
+SmokeSampleClientPublish:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: Sample Client Publish Subscribe
+    Summary: Sample Client Send Publish Subscribe Message
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: jfieger
+    Version: 2
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient']
+             - ['SyslogWriteIndex']
+             - ['PublishSubscribe']
+             - ['SyslogCheckForSend']
+             - ['PublishSubscribeSent']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientPublish'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/messages'
+                grep_after: 'SmokeSampleClientPublish'
+                grep_string: 'Sending message:RMQ_CLIENT_PUBLISH to mp'
+                max_wait: 20
+
+Draft_SmokeConnectSampleClientXMLRPCServer:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: ConnectSampleClientServer
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: mihaid
+    Summary: Testing XMLRPC server
+    Version: 2
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient']
+             - ['ConnectXMLRPCServer']
+             - ['VerticalRegistration']
+             - ['VerticalCloseConnection']
+             - ['KillSampleClient']
+
+Draft_SmokeBrokerRPC:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: jfieger
+    Summary: RPC from MP using the testrpc endpoint
+    Version: 2
+    TestName: Broker RPC
+    Status: Draft
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient']
+             - ['SyslogWriteIndex']
+             - ['ConnectXMLRPCServer']
+             - ['VerticalRegistration']
+             - ['TestRPC']
+             - ['VerticalCloseConnection']
+             - ['KillSampleClient']
+             - ['SyslogCheckForMessage']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeBrokerRPC'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeBrokerRPC'
+                grep_string: 'Msg Received in client queue. message type: com.vmware.nsx.customer.MpRpcRequest'
+                max_wait: 120

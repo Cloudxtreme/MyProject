@@ -1,0 +1,446 @@
+########################################################################################################################
+#   PlrTlr Topology with 2 HVs and 1 Edge                                                                              #
+#                                                                                                                      #
+#            +-LP91--LS91                            +---------------------+                                           #
+#            |                                       |   EDGE CLUSTER      |                                           #
+#      +-VM1-+-LP11--LS1--LP1----LRP1-+              |                     |                                           #
+#      |                              |              |                     |                                           #
+#      |                              +-TLR2--LLRP2--|-LLRP1-+       NSXE1-|----------------------------+              #
+#      |                              |              |       |         |   |                            |              #
+#  HV2-+-VM2---LP12--LS2--LP2----LRP2-+              |       |       GWMC0 |                            |-HV1          #
+#      |                                             |       |         |   |                            |              #
+#      |                                             |       +-PLR1--ULRP1-|--LP100-LS100-LP110-+-VM100-+              #
+#      |                                             |       |             |                    |                      #
+#      +-VM3---LP13--LS3--LP3----LRP3-+              |       |             |        LS191-LP191-+                      #
+#                                     |              |       |             |                                           #
+#                                     +-TLR3--LLRP4--|-LLRP3-+             |                                           #
+#                                     |              |                     |                                           #
+#  HV3---VM4-+-LP14--LS4--LP4----LRP4-+              |                     |                                           #
+#            |                                       |                     |                                           #
+#            +-LP92--LS92                            +---------------------+                                           #
+#                                                                                                                      #
+########################################################################################################################
+
+TopoSR_2Hosts_1Edge_PlrTlr: &TopoSR_2Hosts_1Edge_PlrTlr
+    CreateEdgeCluster:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        edgecluster:
+            '[1]':
+                fabric_profile_bindings:
+                -   fabric_profile_id: nsxmanager.[1].fabricprofile.[1]
+                    resource_type: FabricProfileClusterKeepAlive
+                members:
+                -   edge_node_id: nsxmanager.[1].edgenode.[1]
+                name: Edge_Cluster_1
+                summary: Edge Cluster created through automation
+    EnableRouteAdvertisementOnLR-2:
+        TestRouter: nsxmanager.[1].logicalrouter.[2]
+        Type: Router
+        routeadvertisements:
+            '[1]':
+                advertise_routes:
+                -   name: Advertise routes 192.1.1.0,192.1.2.0,192.1.91.0/24
+                    network:
+                    - 192.1.1.0/24
+                    - 192.1.2.0/24
+                    - 192.1.91.0/24
+                    summary: Advertise routes 192.1.1.0,192.1.2.0,192.1.91.0/24
+                enableadvertisement: 'true'
+    EnableRouteAdvertisementOnLR-3:
+        TestRouter: nsxmanager.[1].logicalrouter.[3]
+        Type: Router
+        routeadvertisements:
+            '[2]':
+                advertise_routes:
+                -   name: Advertise routes 192.2.1.0,192.2.2.0,192.2.92.0/24
+                    network:
+                    - 192.2.1.0/24
+                    - 192.2.2.0/24
+                    - 192.2.92.0/24
+                    summary: Advertise routes 192.2.1.0,192.2.2.0,192.2.92.0/24
+                enableadvertisement: 'true'
+    LogicalSetup:
+    -   - CreateTZ-1
+    -   - CreateUPROF-1_MTU-1600
+    LogicalSwitchSetup:
+    -   - CreateLS-1
+        - CreateLS-2
+        - CreateLS-3
+        - CreateLS-4
+    -   - CreateLS-100
+    -   - CreateLS-91
+        - CreateLS-92
+        - CreateLS-191
+    EdgeSetup--EDGEESX:
+    -   - SetManagerOnESX-1
+    -   - DiscoverHostNode1FromESX1
+    -   - CreateTN-1_HOSTNODE-1_TZ-1_VMNIC-1
+    -   - CreateFPROF-1
+    -   - RegisterEdge-1
+    -   - DiscoverEdgeNode-1_EDGE-1
+    -   - CreateEdgeCluster
+    -   - DiscoverESX1Vtep1FromDevice-vmk10
+    TNSetup--ESX:
+    -   - SetManagerOnESX-2
+    -   - SetManagerOnESX-3
+    -   - DiscoverHostNode2FromESX2
+    -   - DiscoverHostNode3FromESX3
+    -   - CreateTN-2_HOSTNODE-2_TZ-1_VMNIC-1
+    -   - CreateTN-3_HOSTNODE-3_TZ-1_VMNIC-1
+    -   - DiscoverESX2Vtep1FromDevice-vmk10
+    -   - DiscoverESX3Vtep1FromDevice-vmk10
+    VtepConnectivity--ESX--EDGEESX:
+    -   - PingFromESX2Vtep1ToESX3Vtep1
+    -   - PingFromESX1Vtep1ToESX2Vtep1
+    -   - PingFromESX1Vtep1ToESX3Vtep1
+    VtepConnectivity--KVM--EDGEESX:
+    -   - PingFromKVM2Vtep1ToKVM3Vtep1
+    -   - PingFromESX1Vtep1ToKVM2Vtep1
+    -   - PingFromESX1Vtep1ToKVM3Vtep1
+    TNSetup--KVM:
+    -   - SetManagerOnKVM-2
+    -   - SetManagerOnKVM-3
+    -   - DiscoverHostNode2FromKVM2
+    -   - DiscoverHostNode3FromKVM3
+    -   - CreateTN-2_HOSTNODE-2_TZ-1_ETH-1
+    -   - CreateTN-3_HOSTNODE-3_TZ-1_ETH-1
+    -   - DiscoverKVM2Vtep1FromDevice-nsx-vtep0.0
+    -   - DiscoverKVM3Vtep1FromDevice-nsx-vtep0.0
+    -   - PingFromKVM2Vtep1ToKVM3Vtep1
+    VMSetup--ESX:
+    -   - AddVM1Vnic1ToLS1
+        - AddVM2Vnic1ToLS2
+        - AddVM3Vnic1ToLS3
+        - AddVM4Vnic1ToLS4
+    -   - DiscoverLport11FromVM1Vnic1
+        - DiscoverLport12FromVM2Vnic1
+        - DiscoverLport13FromVM3Vnic1
+        - DiscoverLport14FromVM4Vnic1
+    VMIPConfig--ESX:
+    -   - ConfigureVM1Vnic1IP-192.1.1.10
+        - ConfigureVM2Vnic1IP-192.1.2.10
+        - ConfigureVM3Vnic1IP-192.2.1.10
+        - ConfigureVM4Vnic1IP-192.2.2.10
+    VMSetup--KVM:
+    -   - AddVM1Vif1ToKVM2Bridge1
+        - AddVM2Vif1ToKVM3Bridge1
+        - AddVM3Vif1ToKVM2Bridge1
+        - AddVM4Vif1ToKVM3Bridge1
+    -   - CreateLP11OnLS1ForVM1Vif1
+        - CreateLP12OnLS2ForVM2Vif1
+        - CreateLP13OnLS3ForVM3Vif1
+        - CreateLP14OnLS4ForVM4Vif1
+    VMIPConfig--KVM:
+    -   - ConfigureVM1Vif1IP-192.1.1.10
+        - ConfigureVM2Vif1IP-192.1.2.10
+        - ConfigureVM3Vif1IP-192.2.1.10
+        - ConfigureVM4Vif1IP-192.2.2.10
+    SRVMSetup--ESX:
+    -   - AddVM1Vnic2ToLS91
+        - AddVM4Vnic2ToLS92
+    -   - DiscoverLport91FromVM1Vnic2
+        - DiscoverLport92FromVM4Vnic2
+    SRVMIPConfig--ESX:
+    -   - ConfigureVM1Vnic2IP-192.1.91.10
+        - ConfigureVM4Vnic2IP-192.2.92.10
+    SRVMSetup--KVM:
+    -   - AddVM1Vif2ToKVM2Bridge1
+        - AddVM4Vif2ToKVM3Bridge1
+    -   - CreateLP91OnLS91ForVM1Vif2
+        - CreateLP92OnLS92ForVM4Vif2
+    SRVMIPConfig--KVM:
+    -   - ConfigureVM1Vif2IP-192.1.91.10
+        - ConfigureVM4Vif2IP-192.2.92.10
+    UplinkVMSetup--EDGEESX:
+    -   - AddVM100Vnic1ToLS100
+    -   - DiscoverLport110FromVM100Vnic1
+    UplinkVMIPConfig--EDGEESX:
+    -   - ConfigureVM100Vnic1IP-192.200.1.10
+    SRUplinkVMSetup--EDGEESX:
+    -   - AddVM100Vnic2ToLS191
+    -   - DiscoverLport191FromVM100Vnic2
+    SRUplinkVMIPConfig--EDGEESX:
+    -   - ConfigureVM100Vnic2IP-192.200.91.10
+    CreatePlrsTlrs:
+    -   - CreatePLR-1_EDGECLUSTER-1
+    -   - CreateLR-2_TIER-1
+        - CreateLR-3_TIER-1
+    PlrTlrLinkPortsSetup:
+    -   - CreatePlrLLRP-1_PLR-1
+    -   - CreateTlrLLRP-2_TLR-2_PLRP-1
+    -   - CreatePlrLLRP-3_PLR-1
+    -   - CreateTlrLLRP-4_TLR-3_PLRP-3
+    PlrUplinkSetup:
+    -   - CreateLSP-100_LS-100
+    -   - CreateULRP-1_LSP-100_GWMC-0_IP-192.200.1.1
+    TlrDownlinkSetup:
+    -   - CreateLSP-1_LS-1
+        - CreateLSP-2_LS-2
+        - CreateLSP-3_LS-3
+        - CreateLSP-4_LS-4
+    -   - CreateLRP-1_LR-2_IP-192.1.1.1_LSP-1
+    -   - CreateLRP-2_LR-2_IP-192.1.2.1_LSP-2
+    -   - CreateLRP-3_LR-3_IP-192.2.1.1_LSP-3
+    -   - CreateLRP-4_LR-3_IP-192.2.2.1_LSP-4
+    AddStaticRoutesOnVMs--ESX:
+    -   - Add192RouteOnVM1Vnic1viaLRP1
+    -   - Add192RouteOnVM2Vnic1viaLRP2
+    -   - Add192RouteOnVM3Vnic1viaLRP3
+    -   - Add192RouteOnVM4Vnic1viaLRP4
+    AddStaticRoutesOnVMs--KVM:
+    -   - Add192RouteOnVM1Vif1viaLRP1
+    -   - Add192RouteOnVM2Vif1viaLRP2
+    -   - Add192RouteOnVM3Vif1viaLRP3
+    -   - Add192RouteOnVM4Vif1viaLRP4
+    AddStaticRoutesOnUplinkVMs--EDGEESX:
+    -   - Add192RouteOnVM100Vnic1viaULRP1
+    AddStaticRoutesOnTlrs--ESX:
+    -   - AddRouteOnLR-2_VM1Vnic2viaVM1Vnic1
+    -   - AddRouteOnLR-3_VM4Vnic2viaVM4Vnic1
+    -   - EnableRouteAdvertisementOnTlrs
+    AddStaticRoutesOnPlrs--EDGEESX:
+    -   - AddRouteOnLR-1_VM100Vnic2viaVM100Vnic1
+    AddStaticRoutesOnTlrs--KVM:
+    -   - AddRouteOnLR-2_VM1Vif2viaVM1Vif1
+    -   - AddRouteOnLR-3_VM4Vif2viaVM4Vif1
+    -   - EnableRouteAdvertisementOnTlrs
+    EnableRouteAdvertisementOnTlrs:
+    -   - EnableRouteAdvertisementOnLR-2
+        - EnableRouteAdvertisementOnLR-3
+
+    Traffic--ESX:
+    -   - TlrTraffic--ESX
+    -   - PlrTlrTraffic--ESX
+    -   - SRTraffic--ESX
+    Traffic--KVM:
+    -   - TlrTraffic--KVM
+    -   - PlrTlrTraffic--KVM
+    -   - SRTraffic--KVM
+
+    TlrTraffic--ESX:
+    -   - PingFromVM1Vnic1ToVM2Vnic1
+    -   - PingFromVM3Vnic1ToVM4Vnic1
+    PlrTlrTraffic--ESX:
+    -   - PingFromVM1Vnic1ToVM3Vnic1
+    -   - PingFromVM1Vnic1ToVM4Vnic1
+    -   - PingFromVM2Vnic1ToVM3Vnic1
+    -   - PingFromVM2Vnic1ToVM4Vnic1
+    -   - PingFromVM1Vnic1ToVM100Vnic1
+    -   - PingFromVM2Vnic1ToVM100Vnic1
+    -   - PingFromVM3Vnic1ToVM100Vnic1
+    -   - PingFromVM4Vnic1ToVM100Vnic1
+    SRTraffic--ESX:
+    -   - PingFromVM1Vnic1ToVM4Vnic2
+    -   - PingFromVM2Vnic1ToVM4Vnic2
+    -   - PingFromVM3Vnic1ToVM1Vnic2
+    -   - PingFromVM4Vnic1ToVM1Vnic2
+    -   - PingFromVM1Vnic1ToVM100Vnic2
+    -   - PingFromVM2Vnic1ToVM100Vnic2
+    -   - PingFromVM3Vnic1ToVM100Vnic2
+    -   - PingFromVM4Vnic1ToVM100Vnic2
+    -   - PingFromVM100Vnic1ToVM1Vnic2
+    -   - PingFromVM100Vnic1ToVM4Vnic2
+
+    TlrTraffic--KVM:
+    -   - PingFromVM1Vif1ToVM2Vif1
+    -   - PingFromVM3Vif1ToVM4Vif1
+    PlrTlrTraffic--KVM:
+    -   - PingFromVM1Vif1ToVM3Vif1
+    -   - PingFromVM1Vif1ToVM4Vif1
+    -   - PingFromVM2Vif1ToVM3Vif1
+    -   - PingFromVM2Vif1ToVM4Vif1
+    -   - PingFromVM1Vif1ToVM100Vnic1
+    -   - PingFromVM2Vif1ToVM100Vnic1
+    -   - PingFromVM3Vif1ToVM100Vnic1
+    -   - PingFromVM4Vif1ToVM100Vnic1
+    SRTraffic--KVM:
+    -   - PingFromVM1Vif1ToVM4Vif2
+    -   - PingFromVM2Vif1ToVM4Vif2
+    -   - PingFromVM3Vif1ToVM1Vif2
+    -   - PingFromVM4Vif1ToVM1Vif2
+    -   - PingFromVM1Vif1ToVM100Vnic2
+    -   - PingFromVM2Vif1ToVM100Vnic2
+    -   - PingFromVM3Vif1ToVM100Vnic2
+    -   - PingFromVM4Vif1ToVM100Vnic2
+    -   - PingFromVM100Vnic1ToVM1Vif2
+    -   - PingFromVM100Vnic1ToVM4Vif2
+
+    DeleteStaticRoutesOnPlrs:
+    -   - DeleteStaticRoutesOnLR-1
+    DeleteStaticRoutesOnTlrs:
+    -   - DeleteStaticRoutesOnLR-2
+    -   - DeleteStaticRoutesOnLR-3
+
+    DisableRouteAdvertisementOnTlrs:
+    -   - DisableRouteAdvertisementOnLR-2
+        - DisableRouteAdvertisementOnLR-3
+
+    TlrDownlinkCleanup:
+    -   - DisableRouteAdvertisementOnTlrs
+    # FIXME: BUG 1346002, Parallel Deletion of lrport fails
+    -   - DeleteLRP-1
+    -   - DeleteLRP-2
+    -   - DeleteLRP-3
+    -   - DeleteLRP-4
+    -   - DeleteLSP-1
+    -   - DeleteLSP-2
+    -   - DeleteLSP-3
+    -   - DeleteLSP-4
+    PlrUplinkCleanup:
+    -   - DeleteULRP-1
+    -   - DeleteLSP-100
+    PlrTlrLinkPortsCleanup:
+    # FIXME: BUG 1346002, Parallel Deletion of lrport fails
+    -   - DeleteLLRP-1
+    -   - DeleteLLRP-2
+    -   - DeleteLLRP-3
+    -   - DeleteLLRP-4
+    DeletePlrTlrs:
+    -   - DeleteLR-1
+    -   - DeleteLR-2
+    -   - DeleteLR-3
+    UplinkVMCleanup--EDGEESX:
+    -   - DeleteVnic-1_VM-100
+    -   - UndiscoverLSP-110
+    SRUplinkVMCleanup--EDGEESX:
+    -   - DeleteVnic-2_VM-100
+    -   - UndiscoverLSP-191
+    SRVMCleanup--ESX:
+    -   - DeleteVnic-2_VM-1
+    -   - DeleteVnic-2_VM-4
+    -   - UndiscoverLSP-91
+    -   - UndiscoverLSP-92
+    SRVMCleanup--KVM:
+    -   - DeleteVif-2_VM-1
+    -   - DeleteVif-2_VM-4
+    -   - DeleteLSP-91
+    -   - DeleteLSP-92
+    VMCleanup--ESX:
+    -   - DeleteVnic-1_VM-1
+    -   - DeleteVnic-1_VM-2
+    -   - DeleteVnic-1_VM-3
+    -   - DeleteVnic-1_VM-4
+    -   - UndiscoverLSP-11
+    -   - UndiscoverLSP-12
+    -   - UndiscoverLSP-13
+    -   - UndiscoverLSP-14
+    VMCleanup--KVM:
+    -   - DeleteVif-1_VM-1
+    -   - DeleteVif-1_VM-2
+    -   - DeleteVif-1_VM-3
+    -   - DeleteVif-1_VM-4
+    -   - DeleteLSP-11
+    -   - DeleteLSP-12
+    -   - DeleteLSP-13
+    -   - DeleteLSP-14
+    TNCleanup--ESX:
+    -   - DeleteTN-2
+        - DeleteTN-3
+    -   - RemoveManagerOnESX-2
+        - RemoveManagerOnESX-3
+    -   - UndiscoverHostNode-2
+        - UndiscoverHostNode-3
+    TNCleanup--KVM:
+    -   - DeleteTN-2
+        - DeleteTN-3
+    -   - RemoveManagerOnKVM-2
+        - RemoveManagerOnKVM-3
+    -   - UndiscoverHostNode-2
+        - UndiscoverHostNode-3
+    EdgeCleanup--EDGEESX:
+    -   - DeleteEdgeCluster-1
+    -   - DeleteEdgeNode-1
+    -   - DeleteFPROF-1
+    -   - DeleteTN-1
+    -   - RemoveManagerOnESX-1
+    -   - UndiscoverHostNode-1
+    LogicalSwitchCleanup:
+    -   - DeleteLS-1
+        - DeleteLS-2
+        - DeleteLS-3
+        - DeleteLS-4
+    -   - DeleteLS-100
+    -   - DeleteLS-91
+        - DeleteLS-92
+        - DeleteLS-191
+    LogicalCleanup:
+    -   - DeleteUPROF-1
+    -   - DeleteTZ-1
+
+    PlrTlrSetup--ESX:
+    -   - LogicalSetup
+    -   - LogicalSwitchSetup
+    -   - EdgeSetup--EDGEESX
+    -   - TNSetup--ESX
+    -   - VtepConnectivity--ESX--EDGEESX
+    -   - VMSetup--ESX
+    -   - SRVMSetup--ESX
+    -   - UplinkVMSetup--EDGEESX
+    -   - SRUplinkVMSetup--EDGEESX
+    -   - CreatePlrsTlrs
+    -   - TlrDownlinkSetup
+    -   - PlrTlrLinkPortsSetup
+    -   - PlrUplinkSetup
+    -   - VMIPConfig--ESX
+    -   - SRVMIPConfig--ESX
+    -   - UplinkVMIPConfig--EDGEESX
+    -   - SRUplinkVMIPConfig--EDGEESX
+    -   - AddStaticRoutesOnVMs--ESX
+    -   - AddStaticRoutesOnUplinkVMs--EDGEESX
+    -   - AddStaticRoutesOnTlrs--ESX
+    -   - AddStaticRoutesOnPlrs--EDGEESX
+
+    PlrTlrSetup--KVM:
+    -   - LogicalSetup
+    -   - LogicalSwitchSetup
+    -   - EdgeSetup--EDGEESX
+    -   - TNSetup--KVM
+    -   - VtepConnectivity--KVM--EDGEESX
+    -   - VMSetup--KVM
+    -   - SRVMSetup--KVM
+    -   - UplinkVMSetup--EDGEESX
+    -   - SRUplinkVMSetup--EDGEESX
+    -   - CreatePlrsTlrs
+    -   - TlrDownlinkSetup
+    -   - PlrTlrLinkPortsSetup
+    -   - PlrUplinkSetup
+    -   - VMIPConfig--KVM
+    -   - SRVMIPConfig--KVM
+    -   - UplinkVMIPConfig--EDGEESX
+    -   - SRUplinkVMIPConfig--EDGEESX
+    -   - AddStaticRoutesOnVMs--KVM
+    -   - AddStaticRoutesOnUplinkVMs--EDGEESX
+    -   - AddStaticRoutesOnTlrs--KVM
+    -   - AddStaticRoutesOnPlrs--EDGEESX
+
+    PlrTlrCleanup--ESX:
+    -   - DeleteStaticRoutesOnPlrs
+    -   - DeleteStaticRoutesOnTlrs
+    -   - TlrDownlinkCleanup
+    -   - PlrUplinkCleanup
+    -   - PlrTlrLinkPortsCleanup
+    -   - DeletePlrTlrs
+    -   - UplinkVMCleanup--EDGEESX
+    -   - SRVMCleanup--ESX
+    -   - SRUplinkVMCleanup--EDGEESX
+    -   - VMCleanup--ESX
+    -   - TNCleanup--ESX
+    -   - EdgeCleanup--EDGEESX
+    -   - LogicalSwitchCleanup
+    -   - LogicalCleanup
+    PlrTlrCleanup--KVM:
+    -   - DeleteStaticRoutesOnPlrs
+    -   - DeleteStaticRoutesOnTlrs
+    -   - TlrDownlinkCleanup
+    -   - PlrUplinkCleanup
+    -   - PlrTlrLinkPortsCleanup
+    -   - DeletePlrTlrs
+    -   - SRUplinkVMCleanup--EDGEESX
+    -   - SRVMCleanup--KVM
+    -   - UplinkVMCleanup--EDGEESX
+    -   - VMCleanup--KVM
+    -   - TNCleanup--KVM
+    -   - EdgeCleanup--EDGEESX
+    -   - LogicalSwitchCleanup
+    -   - LogicalCleanup

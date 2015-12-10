@@ -1,0 +1,115 @@
+# Toplogies for Replicator tests
+
+Replicator_Topology_01: &REPLICATOR_TOPOLOGY_BASIC
+    vsm:
+        '[1-4]':
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            setuuid: "true"
+    vc:
+        '[1-4]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1-2]':
+            vds:
+                '[1-2]':
+                    datacenter: 'vc.[x=vc_index].datacenter.[1]'
+
+Replicator_Topology_02: &REPLICATOR_TOPOLOGY_L2
+    esx:
+        '[1-2]':
+            # 2 hosts in 1 VC site and 2 hosts in other VC site
+            vmnic:
+                '[1-2]':
+                    driver: 'any'
+
+    vsm:
+        '[1]':
+            # reconfigure action key will register this VSM with
+            # its corresponding VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            setuuid: "true"
+            VDNCluster:
+                '[1]':
+                    cluster     : "vc.[1].datacenter.[1].cluster.[1]"
+                    vibs        : "install"
+                    switch      : "vc.[1].vds.[1]"
+                    mtu         : "1600"
+                    vmkniccount : "1"
+                    teaming     : "FAILOVER_ORDER"
+        '[2]':
+            # Register respective VSM with its VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            setuuid: "true"
+            VDNCluster:
+               '[1]':
+                  cluster     : "vc.[2].datacenter.[1].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[1]"
+                  mtu         : "1600"
+                  vmkniccount : "1"
+                  teaming     : "FAILOVER_ORDER"
+    vc:
+        '[1]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            name: Master-Compute-Cluster
+                            host: 'esx.[1]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[1].datacenter.[1]'
+                    numuplinkports: 1
+                    # Both ESX hosts are in same VDS
+                    configurehosts: add
+                    host: 'esx.[1]'
+                    vmnicadapter: 'esx.[1].vmnic.[1]'
+            dvportgroup:
+                '[1]':
+                    name: master-dvpg-VDS1-mgmt
+                    vds: 'vc.[1].vds.[1]'
+        '[2]':
+            #This site has two data centers
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Compute-Cluster
+                            host: 'esx.[2]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[2].datacenter.[1]'
+                    numuplinkports: 1
+                    configurehosts: add
+                    host: 'esx.[2]'
+                    vmnicadapter: 'esx.[2].vmnic.[1]'
+            dvportgroup:
+                '[1]':
+                    name: slave-dvpg-VDS1-mgmt
+                    vds: 'vc.[2].vds.[1]'
+
+Replicator_Topology_03: &REPLICATOR_TOPOLOGY_BASIC_SCALE
+    vsm:
+        '[1-8]':
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            setuuid: "true"
+    vc:
+        '[1-8]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1-2]':
+            vds:
+                '[1-2]':
+                    datacenter: 'vc.[x=vc_index].datacenter.[1]'

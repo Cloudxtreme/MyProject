@@ -1,0 +1,257 @@
+VerifyCreationOfDisconnectedInterfaceToTier0:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "Edge"
+    TestName: "Test Case to Verify routes on SR and DR on change of downlink ip"
+    Summary: "Test Case to Verify routes on SR and DR on change of downlink ip"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: TBD
+    Priority: "P0"
+    Developer: "prodge"
+    QCPath: "/NSXTransformers/L3/LrBatTestCases"
+    Procedure: '
+                1. Discover the host nodes
+                2. Create Transport Zone
+                3. Create the uplink profile
+                4. Create the transportnodes
+                5. Create the Fabric Profile ID
+                6. Discover the Edge-node id
+                7. Create a Edge Cluster with EdgeNode added to it
+                5. Create Logical Switches for Tier0
+                6. Create Logical Ports for uplink and downlink
+                8. Create Tier0 logical router
+                9. Create Disconnected Downlink LogicalRouterPort For Edge
+                10. Create Disconnected UplinkLogicalRouterPort For Edge
+                11. Verify IpAddress Change On Edge1 and Edge2
+                12. Update DownlinkLogicalRouterPort For Edge
+                13. Update UplinkLogicalRouterPort For Edge1 and Edge2
+                14. Verify IpAddress Change On Edge1 and Edge2 After Update
+                15. Verify Static Route Change On Edge1 and Edge2
+                16. Clean up'
+
+    Duration: '5'
+    Tags: 'cat-01'
+    Partnerfacing: "N"
+    TestbedSpec: *PLR_TLR_TESTBED
+
+
+    WORKLOADS:
+        Sequence:
+             - ['DiscoverHostnodes']
+             - ['CreateTransportZone']
+             - ['CreateUplinkProfile']
+             - ['CreateTransportNodes']
+             - ["CreateFabricProfile"]
+             - ["DiscoverEdgeNodeId"]
+             - ["CreateEdgeClusterWithEdgeNode"]
+             - ["CreateLogicalSwitchForTIER0"]
+             - ["CreateLogicalPortForUplinkForTIER0"]
+             - ["CreateLogicalPortForDownlinkForTIER0"]
+             - ["CreateTIER0LogicalRouterForEdge"]
+             - ["CreateDisconnectedDownlinkLogicalRouterPortForEdge"]
+             - ["CreateDisconnectedUplinkLogicalRouterPortForEdge"]
+             - ["VerifyIpAddressChangeOnEdge1", "VerifyIpAddressChangeOnEdge2"]
+             - ["UpdateDownlinkLogicalRouterPortForEdge"]
+             - ["UpdateUplinkLogicalRouterPortForEdge1"]
+             - ["UpdateUplinkLogicalRouterPortForEdge2"]
+             - ["VerifyIpAddressChangeOnEdge1AfterUpdate"]
+             - ["VerifyIpAddressChangeOnEdge2AfterUpdate"]
+             - ["VerifyStaticRouteChangeOnEdge1", "VerifyStaticRouteChangeOnEdge2"]
+
+
+        ExitSequence:
+             - ["CleanUp"]
+             - ['DeleteTransportNode1']
+             - ['DeleteTransportNode2']
+             - ['DeleteUplinkProfile']
+             - ['DeleteTransportZone']
+
+        CleanUp: *CLEANUP_PLR_TLR_TESTBED
+        DiscoverHostnodes: *PLRTLR_DISCOVER_HOST_NODES
+        CreateTransportZone: *PLRTLR_CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *PLRTLR_CREATE_UPLINK_PROFILE_01--ESX
+        CreateTransportNodes: *PLRTLR_CREATE_TRANSPORT_NODE_01--ESX
+
+        DeleteTransportZone: *PLRTLR_DELETE_TRANSPORT_ZONE_01--ESX
+
+        DeleteUplinkProfile: *PLRTLR_DELETE_UPLINK_PROFILE_01--ESX
+
+        DeleteTransportNode1: *PLRTLR_DELETE_TRANSPORT_NODE_01--ESX
+
+        DeleteTransportNode2: *PLRTLR_DELETE_TRANSPORT_NODE_02--ESX
+
+        CreateFabricProfile: *PLRTLR_CREATE_FABRIC_PROFILE
+
+        DiscoverEdgeNodeId: *PLRTLR_DISCOVER_EDGE_NODE_ID
+
+        CreateEdgeClusterWithEdgeNode: *PLRTLR_CREATE_EDGE_CLUSTER
+
+        CreateLogicalSwitchForTIER0: *PLRTLR_CREATE_LOGICAL_SWITCH_FOR_TIER0
+
+        CreateLogicalPortForUplinkForTIER0: *PLRTLR_CREATE_LP_FOR_UPLINK_TIER0
+
+        CreateLogicalPortForDownlinkForTIER0: *PLRTLR_CREATE_LP_FOR_DOWNLINK_TIER0
+
+        CreateTIER0LogicalRouterForEdge: *PLRTLR_CREATE_TIER0_LR
+
+        CreateDisconnectedDownlinkLogicalRouterPortForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouterport:
+                '[3]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-2-Downlinkport'
+                    summary: "LRPort Downlink Port1 created through automation"
+                    resource_type: "LogicalRouterDownLinkPort"
+
+        CreateDisconnectedUplinkLogicalRouterPortForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouteruplinkport:
+                '[1]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port1 created through automation"
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[1]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.1'
+                '[2]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port1 created through automation"
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[2]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.2'
+
+        UpdateDownlinkLogicalRouterPortForEdge:
+            Type: "Port"
+            reconfigure: true
+            TestPort: "nsxmanager.[1].logicalrouterport.[3]"
+            logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+            name: 'TIER0-LRPort-2-Downlinkport'
+            summary: "LRPort Downlink Port1 created through automation"
+            linked_switch_port_id: nsxmanager.[1].logicalport.[3]->id
+            resource_type: "LogicalRouterDownLinkPort"
+            subnets:
+                - prefixlen: 24
+                  ip_addresses:
+                     - '192.168.60.1'
+
+        VerifyIpAddressChangeOnEdge1:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            adapter_name: 'vNic_2'
+            network_name: '169.0.0'
+            sleepbetweenworkloads: "10"
+            ip_version: 'ip4'
+            get_assigned_interface_ip:
+                'result[?]not_equal_to': 'True'
+
+        VerifyIpAddressChangeOnEdge2:
+            Type: Gateway
+            TestGateway: 'nsxedge.[2]'
+            execution_type: 'cli'
+            adapter_name: 'vNic_2'
+            network_name: '169.0.0'
+            sleepbetweenworkloads: "10"
+            ip_version: 'ip4'
+            get_assigned_interface_ip:
+                'result[?]not_equal_to': 'True'
+
+        UpdateDownlinkLogicalRouterPortForEdge:
+            Type: "Port"
+            reconfigure: true
+            TestPort: "nsxmanager.[1].logicalrouterport.[3]"
+            logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+            name: 'TIER0-LRPort-2-Downlinkport'
+            summary: "LRPort Downlink Port1 created through automation"
+            linked_switch_port_id: nsxmanager.[1].logicalport.[3]->id
+            resource_type: "LogicalRouterDownLinkPort"
+            subnets:
+                - prefixlen: 24
+                  ip_addresses:
+                     - '192.168.60.1'
+
+        UpdateUplinkLogicalRouterPortForEdge1:
+            Type: "Port"
+            reconfigure: true
+            TestPort: "nsxmanager.[1].logicalrouteruplinkport.[1]"
+            logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+            gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[1]->member_index'
+            linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+            resource_type: "LogicalRouterUpLinkPort"
+            subnets:
+               - prefixlen: 24
+                 ip_addresses:
+                     - '192.168.50.1'
+
+        UpdateUplinkLogicalRouterPortForEdge2:
+            Type: "Port"
+            reconfigure: true
+            TestPort: "nsxmanager.[1].logicalrouteruplinkport.[2]"
+            logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+            gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[2]->member_index'
+            linked_switch_port_id: nsxmanager.[1].logicalport.[2]->id
+            resource_type: "LogicalRouterUpLinkPort"
+            subnets:
+               - prefixlen: 24
+                 ip_addresses:
+                     - '192.168.50.2'
+
+        VerifyIpAddressChangeOnEdge1AfterUpdate:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            adapter_name: 'vNic_2'
+            network_name: '169.0.0'
+            sleepbetweenworkloads: "20"
+            ip_version: 'ip4'
+            get_assigned_interface_ip:
+                'result[?]equal_to': 'True'
+
+        VerifyIpAddressChangeOnEdge2AfterUpdate:
+            Type: Gateway
+            TestGateway: 'nsxedge.[2]'
+            execution_type: 'cli'
+            adapter_name: 'vNic_2'
+            network_name: '169.0.0'
+            ip_version: 'ip4'
+            get_assigned_interface_ip:
+                'result[?]equal_to': 'True'
+
+        VerifyStaticRouteChangeOnEdge1:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            sleepbetweenworkloads: "5"
+            execution_type: 'cli'
+            get_ip_route:
+                'table[?]contain_once':
+                    - code: 'S'
+                      network: '192.168.60.0/24'
+                      nexthop: '169.0.0.1'
+                      via: 'via'
+
+        VerifyStaticRouteChangeOnEdge2:
+            Type: Gateway
+            TestGateway: 'nsxedge.[2]'
+            sleepbetweenworkloads: "5"
+            execution_type: 'cli'
+            get_ip_route:
+                'table[?]contain_once':
+                    - code: 'S'
+                      network: '192.168.60.0/24'
+                      nexthop: '169.0.0.1'
+                      via: 'via'

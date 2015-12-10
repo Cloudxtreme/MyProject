@@ -1,0 +1,173 @@
+WORKLOADS:
+    CreateCSROnClusterNode1: &CREATE_CSR
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        csr:
+            '[1]':
+                algorithm: "RSA"
+                key_size: "2048"
+                subject:
+                  attributes:
+                    - key: CN
+                      value: NSX
+                    - key: O
+                      value: VMware
+                    - key: OU
+                      value: NSBU
+                    - key: C
+                      value: US
+                    - key: ST
+                      value: CA
+                    - key: L
+                      value: PA
+
+    VerifyCSROnClusterNode1: &CSR_VERIFICATION_NODE1
+        Type: "Certificate"
+        Testcertificate: "nsxmanager.[1].csr.[1]"
+        read:
+          'resource_type[?]equal_to': 'csr'
+          'algorithm[?]equal_to': 'RSA'
+          'key_size[?]equal_to': '2048'
+
+    VerifyCSROnClusterNode2: &CSR_VERIFICATION_NODE2
+        Type: "Certificate"
+        Testcertificate: "nsxmanager.[2].csr.[1]"
+        read:
+          'resource_type[?]equal_to': 'csr'
+          'algorithm[?]equal_to': 'RSA'
+          'key_size[?]equal_to': '2048'
+
+    VerifyCSROnClusterNode3: &CSR_VERIFICATION_NODE3
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[3].csr.[1]"
+       read:
+          'resource_type[?]equal_to': 'csr'
+          'algorithm[?]equal_to': 'RSA'
+          'key_size[?]equal_to': '2048'
+
+    DeleteCSRFromClusterNode1: &DELETE_CSR
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       deletecsr: "nsxmanager.[1].csr.[1]"
+
+    CreateCertificateOnClusterNode1: &CREATE_CERTIFICATE
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       certificate:
+           '[1]':
+               result_object: 'results'
+               pem_encoded: '-----BEGIN CERTIFICATE-----\nMIIFATCCA+mgAwIBAgIQEIMC/Zn63fVdHaJf/4o1MzANBgkqhkiG9w0BAQUFADCB\nyzELMAkGA1UEBhMCVVMxFzAVBgNVBAoTDlZlcmlTaWduLCBJbmMuMTAwLgYDVQQL\nEydGb3IgVGVzdCBQdXJwb3NlcyBPbmx5LiAgTm8gYXNzdXJhbmNlcy4xQjBABgNV\nBAsTOVRlcm1zIG9mIHVzZSBhdCBodHRwczovL3d3dy52ZXJpc2lnbi5jb20vY3Bz\nL3Rlc3RjYSAoYykwOTEtMCsGA1UEAxMkVmVyaVNpZ24gVHJpYWwgU2VjdXJlIFNl\ncnZlciBDQSAtIEcyMB4XDTE0MDkxMDAwMDAwMFoXDTE0MTAxMDIzNTk1OVowaTEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExEjAQBgNVBAcUCVBhbG8g\nQWx0bzEPMA0GA1UEChQGVk13YXJlMQ0wCwYDVQQLFAROU0JVMREwDwYDVQQDFAhu\nc2J1LmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALgUgbZIKN7N\nN3dpXoW7AfRc8FLmRXKs2ZSb7aK4nXv59CiWNKYdxYjRocKxZjqSjN/NqDX8New0\n2m0+Qo5wUgq5oOOMp51A6KFp/Y8hrIoHlmMSgi28SBKcchCjd97LK1SHKG0hrOqH\n79DX8xrjKjz5TRNTYI7WVjNWrLu2XUuh0qhM4X/oFWB1Lu60ujOQKv5ODVO2Tk6T\nTPhbQaqsZYv04WwSWNkxtVZ+exDccE19Hau5+MNxerDrA1MwOdTy7NzN4XHdazKo\nprNLpMsM8xXS68lKGoO26BJRi5NSqy6c2YQ9MtpFZXCs2D9cqonkq8HMac3FC4zy\nCz93hpJND1kCAwEAAaOCAUAwggE8MBMGA1UdEQQMMAqCCG5zYnUuY29tMAkGA1Ud\nEwQCMAAwDgYDVR0PAQH/BAQDAgWgMCsGA1UdHwQkMCIwIKAeoByGGmh0dHA6Ly9z\ncS5zeW1jYi5jb20vc3EuY3JsMGUGA1UdIAReMFwwWgYKYIZIAYb4RQEHFTBMMCMG\nCCsGAQUFBwIBFhdodHRwczovL2Quc3ltY2IuY29tL2NwczAlBggrBgEFBQcCAjAZ\nFhdodHRwczovL2Quc3ltY2IuY29tL3JwYTAdBgNVHSUEFjAUBggrBgEFBQcDAQYI\nKwYBBQUHAwIwHwYDVR0jBBgwFoAUKBcTir3WorXcBiy3to7aEGZgbuUwNgYIKwYB\nBQUHAQEEKjAoMCYGCCsGAQUFBzAChhpodHRwOi8vc3Euc3ltY2IuY29tL3NxLmNy\ndDANBgkqhkiG9w0BAQUFAAOCAQEAkSwOg1UloYvCV/o3pZ0/aT/AL9FHGZHnwD5M\nmXqFRDImdAoq7yF2p2ByjuJvdESIpHu/7JXK9T97D0tDtIOpynU1VOy56WQLjhUx\n+41Z6ZG25MBH2i44vl5d6qdgbzzG36eAFsLnn6kxpIXxR6KR40kMggLDj1j6Hs9x\nDWi/3c4zRO+F/vxQ14GFy95qWTQzgZ9Sr4lDvPKhZuo5VWzfYwHEVAm5y/6RCObc\n2xZ1CMiu9aTXd1C0bG5x8McIpUXSsDz4vDI165QuP7muqa/JPZs4m6CuiZiuG7ML\nhLpsZoDy5oNMcrX6zYi0M8mh3iE+R/VHRsVdp+KbBbY43/YdMA==\n-----END CERTIFICATE-----\n'
+
+    VerifyCertificateOnClusterNode1: &CERT_VERIFICATION_NODE1
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[1].certificate.[1]"
+       read:
+          'resource_type[?]equal_to': 'certificate_signed'
+
+    VerifyCertificateOnClusterNode2: &CERT_VERIFICATION_NODE2
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[2].certificate.[1]"
+       read:
+          'resource_type[?]equal_to': 'certificate_signed'
+
+    VerifyCertificateOnClusterNode3: &CERT_VERIFICATION_NODE3
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[3].certificate.[1]"
+       read:
+          'resource_type[?]equal_to': 'certificate_signed'
+
+    DeleteCertificateFromClusterNode1: &DELETE_CERTIFICATE
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       deletecertificate: "nsxmanager.[1].certificate.[1]"
+
+    CreateCRLOnClusterNode1: &CREATE_CRL
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       crl:
+           '[1]':
+               result_object: 'results'
+               pem_encoded: '-----BEGIN X509 CRL-----\nMIIBmjCCAQMwDQYJKoZIhvcNAQEEBQAwgb0xCzAJBgNVBAYTAlVTMRMwEQYDVQQI\nEwpDYWxpZm9ybmlhMRAwDgYDVQQHEwdPYWtsYW5kMRYwFAYDVQQKEw1SZWQgSGF0\nLCBJbmMuMSIwIAYDVQQLFBlHbG9iYWwgU2VydmljZXMgJiBTdXBwb3J0MR0wGwYD\nVQQDExRSZWQgSGF0IFRlc3QgUm9vdCBDQTEsMCoGCSqGSIb3DQEJARYdc3Ryb25n\naG9sZC1zdXBwb3J0QHJlZGhhdC5jb20XDTAwMTExMzIwNTcyNVoXDTAwMTIxMzIw\nNTcyNVowFDASAgEBFw0wMDA4MzEyMTE5MTdaMA0GCSqGSIb3DQEBBAUAA4GBAIge\nX5VaOkNOKn8MrbxFiqpOrH/M9Vocu9oDeQ6EMTeA5xIWBGN53BZ/HUJ1NjS32VDG\nwaM3P6DXud4xKXauVgAXyH6D6xEDBt5GIBTFrWKIDKGOkvRChTUvzObmx9ZVSMMg\n5xvAbsaFgJx3RBbznySlqVU4APYE0W2/xL0/8fzM\n-----END X509 CRL-----\n'
+
+    VerifyCRLOnClusterNode1: &CRL_VERIFICATION_NODE1
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[1].crl.[1]"
+       read:
+          'resource_type[?]equal_to': 'crl'
+
+    VerifyCRLOnClusterNode2: &CRL_VERIFICATION_NODE2
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[2].crl.[1]"
+       read:
+          'resource_type[?]equal_to': 'crl'
+
+    VerifyCRLOnClusterNode3: &CRL_VERIFICATION_NODE3
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[3].crl.[1]"
+       read:
+          'resource_type[?]equal_to': 'crl'
+
+    DeleteCRLFromClusterNode1: &DELETE_CRL
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       deletecrl: "nsxmanager.[1].crl.[1]"
+
+    VerifyCSRDeletionOnClusterNode1: &DELETE_CSR_VERIFICATION
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[1].csr.[1]"
+       get_certificate_list:
+          'result_count[?]equal_to': 0
+
+    VerifyCertificateDeletionOnClusterNode1: &DELETE_CERTIFICATE_VERIFICATION
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[1].certificatemob.[1]"
+       get_certificate_list:
+          'result_count[?]equal_to': 0
+
+    VerifyCRLDeletionOnClusterNode1: &DELETE_CRL_VERIFICATION
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[1].crlmob.[1]"
+       get_certificate_list:
+          'result_count[?]equal_to': 0
+
+    SetCSRId: &SET_CSR_ID
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       csr:
+           '[1]':
+              map_object: true
+              id_: 1
+
+    SetCertificateId: &SET_CERTIFICATE_ID
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       certificatemob:
+           '[1]':
+               map_object: true
+               id_: 1
+
+    SetCRLId: &SET_CRL_ID
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       crlmob:
+           '[1]':
+               map_object: true
+               id_: 1
+
+    VerifyCSRList: &VERIFY_CSR_LIST
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[1].csr.[1]"
+       get_certificate_list:
+          'result_count[?]equal_to': 3
+
+    VerifyCertificateList: &VERIFY_CERTIFICATE_LIST
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[1].certificate.[1]"
+       get_certificate_list:
+          'result_count[?]equal_to': 3
+
+    VerifyCRLList: &VERIFY_CRL_LIST
+       Type: "Certificate"
+       Testcertificate: "nsxmanager.[1].crl.[1]"
+       get_certificate_list:
+          'result_count[?]equal_to': 3

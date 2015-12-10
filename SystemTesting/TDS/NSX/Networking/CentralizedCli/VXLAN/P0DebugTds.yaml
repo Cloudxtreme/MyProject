@@ -1,0 +1,970 @@
+VerifyAllClis:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyAllClis"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify all centralzied cli for VXLAN on vsm"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+
+   WORKLOADS:
+      IgnoreFailure: 1
+      Sequence:
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyLogicalSwitchList']
+         - ['VerifyVNIHostList']
+         - ['VerifyVNIListForHost']
+         - ['VerifyVNMacTableOnhost']
+         - ['VerifyVNIMacTableOnController_1']
+         - ['VerifyVNIMacTableOnController_2']
+         - ['VerifyVNIVtepTableOnController']
+         - ['VerifyMacTableForHost']
+         - ['VerifyVtepTableForHost']
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyVNIArpTableOnhost']
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyVNIArpTableOnController']
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyArpTableForHost']
+         - ['VerifyControllerNodesOnHost']
+         - ['VerifyVNIBriefInfoOnHost']
+         - ['VerifyVNIDetails']
+         - ['VerifyVDSStatOnHost']
+         - ['VerifyVNIStatOnhost']
+         - ['VerifyVNIBriefInfoOnController']
+         - ['VerifyVNIStatOnController']
+         - ['VerifyConnectionListForHost']
+         - ['VerifyConnectionListForVNI']
+         - ['VerifyVNVtepTableOnhost']
+         - ['VerifyControllerConfigurationOnHost']
+         - ['VerifyVDSPortStatsOnhost']
+      ExitSequence:
+
+      ArpingVM1ToVM2: *ARPING_VM1_TO_VM2
+      ArpingVM2ToVM1: *ARPING_VM2_TO_VM1
+      VerifyLogicalSwitchList:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         clistring : "show logical-switch list all"
+         verifyclicommand:
+            - 'output[?]match': "NAME   UUID   VNI"
+
+      VerifyControllerNodesOnHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         clistring : "show controller list all"
+         verifyclicommand:
+            - 'output[?]match': "NAME    IP      State"
+
+      VerifyVNIHostList:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         switch    : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         clistring : "show logical-switch list vni <vni-id> host"
+         verifyclicommand:
+            - 'output[?]match': "ID HostName  VdsName"
+
+      VerifyVNIListForHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         clistring : "show logical-switch list host <host-id> vni"
+         verifyclicommand:
+            - 'output[?]match': "NAME UUID  VNI  Trans Zone"
+
+      VerifyVNIBriefInfoOnHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         clistring : "show logical-switch host <host-id> verbose"
+         verifyclicommand:
+            - 'output[?]match': "VXLAN Global States"
+            - 'output[?]match': "Control plane Out-Of-Sync:"
+            - 'output[?]match': "VXLAN VDS:"
+            - 'output[?]match': "VDS ID:"
+            - 'output[?]match': "MTU:"
+            - 'output[?]match': "Segment ID:"
+            - 'output[?]match': "Gateway IP:"
+            - 'output[?]match': "Gateway MAC:"
+            - 'output[?]match': "Vmknic count:"
+            - 'output[?]match': "VXLAN vmknic:"
+            - 'output[?]match': "VDS port ID:"
+            - 'output[?]match': "Switch port ID:"
+            - 'output[?]match': "Endpoint ID:"
+            - 'output[?]match': "VLAN ID:"
+            - 'output[?]match': "IP:"
+            - 'output[?]match': "Netmask:"
+            - 'output[?]match': "IP acquire timeout:"
+            - 'output[?]match': "Multicast group count:"
+
+      VerifyControllerConfigurationOnHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         clistring : "show logical-switch host <host-id> config-by-vsm"
+         verifyclicommand:
+            - 'output[?]match': "ConfigRoot"
+
+      VerifyVNIDetails:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         switch    : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         clistring : "show logical-switch host <host-id> vni <vni-id> verbose"
+         verifyclicommand:
+            - 'output[?]match': "VXLAN Global States:"
+            - 'output[?]match': "Control plane Out-Of-Sync:"
+            - 'output[?]match': "UDP port:"
+            - 'output[?]match': "VXLAN network:"
+            - 'output[?]match': "Multicast IP:"
+            - 'output[?]match': "Control plane:"
+            - 'output[?]match': "Controller:"
+            - 'output[?]match': "MAC entry count:"
+            - 'output[?]match': "Port count:"
+            - 'output[?]match': "VXLAN port:"
+            - 'output[?]match': "Switch port ID:"
+            - 'output[?]match': "vmknic ID:"
+
+      VerifyVNIArpTableOnhost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         switch    : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         clistring : "show logical-switch host <host-ip> vni <vni-id> arp"
+         verifyclicommand:
+            - 'output[?]match': "ARP entry count:"
+
+      VerifyVNMacTableOnhost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         switch    : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         clistring : "show logical-switch host <host-id> vni <vni-id> mac"
+         verifyclicommand:
+            - 'output[?]match': "MAC entry count:"
+
+      VerifyVNVtepTableOnhost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         switch    : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         clistring : "show logical-switch host <host-id> vni <vni-id> vtep"
+         verifyclicommand:
+            - 'output[?]match': "Segment ID:"
+
+      VerifyVDSStatOnHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         clistring : "show logical-switch host <host-id> statistics"
+         verifyclicommand:
+            - 'output[?]match': "tx.passThrough:"
+            - 'output[?]match': "tx.vxlanTotal:"
+            - 'output[?]match': "tx.clone:"
+            - 'output[?]match': "tx.tso:"
+            - 'output[?]match': "tx.csum:"
+            - 'output[?]match': "tx.drop.invalidFrame:"
+            - 'output[?]match': "tx.drop.guestTag:"
+            - 'output[?]match': "tx.drop.noResource:"
+            - 'output[?]match': "tx.drop.invalidState:"
+            - 'output[?]match': "rx.passThrough:"
+            - 'output[?]match': "rx.vxlanTotal:"
+            - 'output[?]match': "rx.clone:"
+            - 'output[?]match': "rx.drop.invalidFrame:"
+            - 'output[?]match': "rx.drop.notExist:"
+            - 'output[?]match': "rx.drop.noResource:"
+            - 'output[?]match': "forward.pass:"
+            - 'output[?]match': "forward.reject:"
+            - 'output[?]match': "forward.rpf:"
+            - 'output[?]match': "arpProxy.reply.total:"
+            - 'output[?]match': "arpProxy.reply.fail:"
+            - 'output[?]match': "arpProxy.request.total:"
+            - 'output[?]match': "arpProxy.request.fail:"
+            - 'output[?]match': "mcastProxy.tx.total:"
+            - 'output[?]match': "mcastProxy.tx.fail:"
+            - 'output[?]match': "mcastProxy.rx.total:"
+            - 'output[?]match': "mcastProxy.rx.fail:"
+
+      VerifyVNIStatOnhost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         switch    : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         clistring : "show logical-switch host <host-id> vni <vni-id> statistics"
+         verifyclicommand:
+            - 'output[?]match': "rx.drop.wrongDest:"
+            - 'output[?]match': "tx.total:"
+            - 'output[?]match': "tx.nonUnicast:"
+            - 'output[?]match': "tx.crossRouter:"
+            - 'output[?]match': "tx.drop.total:"
+            - 'output[?]match': "rx.total:"
+            - 'output[?]match': "rx.mcastEncap:"
+            - 'output[?]match': "rx.crossRouter:"
+            - 'output[?]match': "rx.drop.wrongDest:"
+            - 'output[?]match': "rx.drop.invalidEncap:"
+            - 'output[?]match': "rx.drop.total:"
+            - 'output[?]match': "mac.lookup.found:"
+            - 'output[?]match': "mac.lookup.flood:"
+            - 'output[?]match': "mac.lookup.full:"
+            - 'output[?]match': "mac.update.learn:"
+            - 'output[?]match': "mac.update.extend:"
+            - 'output[?]match': "mac.update.full:"
+            - 'output[?]match': "mac.age:"
+            - 'output[?]match': "mac.renew:"
+            - 'output[?]match': "arp.lookup.found:"
+            - 'output[?]match': "arp.lookup.unknown:"
+            - 'output[?]match': "arp.lookup.full:"
+            - 'output[?]match': "arp.lookup.wait:"
+            - 'output[?]match': "arp.lookup.timeout:"
+            - 'output[?]match': "arp.update.update:"
+            - 'output[?]match': "arp.update.unkown:"
+            - 'output[?]match': "arp.update.notFound:"
+            - 'output[?]match': "arp.age:"
+            - 'output[?]match': "arp.renew:"
+
+      VerifyVDSPortStatsOnhost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         host      : "host.[2]"
+         switch    : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         adapter   : "vm.[1].vnic.[1]"
+         clistring : "show logical-switch host <host-id> vni <vni-id> port <vxlan-port> statistics"
+         verifyclicommand:
+            - 'output[?]match': "tx.total"
+            - 'output[?]match': "rx.total"
+
+      VerifyVNIBriefInfoOnController:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         switch      : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         clistring   : "show logical-switch controller <controller-ip> vni <vni-id> brief"
+         verifyclicommand:
+            - 'output[?]match': "VNI Controller BUM-Replication ARP-Proxy Connections"
+
+      VerifyVNIMacTableOnController_1:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         switch      : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         clistring   : "show logical-switch controller <controller-ip> vni <vni-id> mac"
+         verifyclicommand:
+            - 'output[?]match': "VNI MAC VTEP-IP Connection-ID"
+
+      VerifyVNIMacTableOnController_2:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         switch      : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         clistring   : "show logical-switch controller master vni <vni-id> mac"
+         verifyclicommand:
+            - 'output[?]match': "VNI MAC VTEP-IP Connection-ID"
+
+      VerifyVNIVtepTableOnController:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         switch      : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         clistring   : "show logical-switch controller <controller-ip> vni <vni-id> vtep"
+         verifyclicommand:
+            - 'output[?]match': "VNI IP Segment MAC  Connection-ID"
+
+      VerifyVNIArpTableOnController:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         switch      : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         clistring   : "show logical-switch controller <controller-ip> vni <vni-id> arp"
+         verifyclicommand:
+            - 'output[?]match': "VNI IP MAC  Connection-ID"
+
+      VerifyMacTableForHost:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         host        : "host.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         clistring   : "show logical-switch controller <controller-ip> host <host-ip> mac"
+         verifyclicommand:
+            - 'output[?]match': "VNI MAC VTEP-IP Connection-ID"
+
+      VerifyVtepTableForHost:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         host        : "host.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         clistring   : "show logical-switch controller <controller-ip> host <host-ip> vtep"
+         verifyclicommand:
+            - 'output[?]match': "VNI IP  Segment MAC Connection-ID"
+
+      VerifyArpTableForHost:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         host        : "host.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         clistring   : "show logical-switch controller <controller-ip> host <host-ip> arp"
+         verifyclicommand:
+            - 'output[?]match': "VNI IP MAC  Connection-ID"
+
+      VerifyVNIStatOnController:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         switch      : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         clistring   : "show logical-switch controller <controller-ip> vni <vni-id> statistics"
+         verifyclicommand:
+            - 'output[?]match': "update.member"
+            - 'output[?]match': "update.vtep"
+            - 'output[?]match': "update.mac"
+            - 'output[?]match': "update.mac.invalidate"
+            - 'output[?]match': "update.arp"
+            - 'output[?]match': "update.arp.duplicate"
+            - 'output[?]match': "query.mac"
+            - 'output[?]match': "query.mac.miss"
+            - 'output[?]match': "query.arp"
+            - 'output[?]match': "query.arp.miss"
+
+      VerifyConnectionListForHost:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         host        : "host.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         clistring   : "show logical-switch controller <controller-ip> host <host-id> connection"
+         verifyclicommand:
+            - 'output[?]match': "VNI Controller  BUM-Replication ARP-Proxy Connections"
+
+      VerifyConnectionListForVNI:
+         Type        : 'NSX'
+         TestNSX     : "vsm.[1]"
+         switch      : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         clistring   : "show logical-switch controller <controller-ip> vni <vni-id> joined-vnis"
+         verifyclicommand:
+            - 'output[?]match': "Host-IP         Port  ID"
+
+VerifyLogicalSwitchList:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyLogicalSwitchList"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:[show logical-switch all]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['VerifyLogicalSwitchList']
+      ExitSequence:
+      VerifyLogicalSwitchList:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         'get_logicalswitch_list[?]contain_once':
+            table:
+               - switch_name: "vsm.[1].networkscope.[1].virtualwire.[2]->name"
+                 uuid: "vsm.[1].networkscope.[1].virtualwire.[2]->uuid"
+                 switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 name: "vsm.[1].networkscope.[1]->name"
+                 id: "vsm.[1].networkscope.[1]->id"
+               - switch_name: "vsm.[1].networkscope.[1].virtualwire.[3]->name"
+                 uuid: "vsm.[1].networkscope.[1].virtualwire.[3]->uuid"
+                 switch_vni: "vsm.[1].networkscope.[1].virtualwire.[3]->vxlan_id"
+                 name: "vsm.[1].networkscope.[1]->name"
+                 id: "vsm.[1].networkscope.[1]->id"
+
+VerifyVNIListForHost:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyVNIListForHost"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:[show logical-switch list host <host-69> vni]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['VerifyVNIListForHost']
+      ExitSequence:
+      VerifyVNIListForHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         target  : "host.[2]"
+         'get_logicalswitch_list[?]contain_once':
+            table:
+               - switch_name: "vsm.[1].networkscope.[1].virtualwire.[2]->name"
+                 uuid: "vsm.[1].networkscope.[1].virtualwire.[2]->uuid"
+                 switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 name: "vsm.[1].networkscope.[1]->name"
+                 id: "vsm.[1].networkscope.[1]->id"
+               - switch_name: "vsm.[1].networkscope.[1].virtualwire.[3]->name"
+                 uuid: "vsm.[1].networkscope.[1].virtualwire.[3]->uuid"
+                 switch_vni: "vsm.[1].networkscope.[1].virtualwire.[3]->vxlan_id"
+                 name: "vsm.[1].networkscope.[1]->name"
+                 id: "vsm.[1].networkscope.[1]->id"
+
+VerifyVNIHostList:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyVNIHostList"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:[show logical-switch list vni <vni-id> host]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['VerifyVNIHostList']
+      ExitSequence:
+      VerifyVNIHostList:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         switch    : "vsm.[1].networkscope.[1].virtualwire.[1]"
+         'get_host_list_for_logicalswitch[?]contain_once':
+            table:
+               - id: "host.[2]->MORId"
+                 ipaddress: "host.[2]->mgmt_ip"
+                 switch_name: "vc.[1].vds.[1]->Name"
+               - ipaddress: "host.[3]->mgmt_ip"
+                 id: "host.[3]->MORId"
+                 switch_name: "vc.[1].vds.[1]->Name"
+
+VerifyVNIMacTableOnController:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyVNIMacTableOnController"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch controller <controller-ip> vni <vni-id> mac]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyVNIMacTableOnController']
+      ExitSequence:
+      ArpingVM1ToVM2: *ARPING_VM1_TO_VM2
+      ArpingVM2ToVM1: *ARPING_VM2_TO_VM1
+      VerifyVNIMacTableOnController:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         target: "vsm.[1].networkscope.[1].virtualwire.[2]"
+         'get_mac_table[?]contain_once':
+            table:
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 adapter_mac: "vm.[1].vnic.[1]->MACAddress"
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 adapter_mac: "vm.[2].vnic.[1]->MACAddress"
+
+VerifyMacTableForHost:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyMacTableForHost"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch controller <controller-ip> host <host-ip> mac]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyMacTableForHost']
+      ExitSequence:
+      ArpingVM1ToVM2: *ARPING_VM1_TO_VM2
+      ArpingVM2ToVM1: *ARPING_VM2_TO_VM1
+      VerifyMacTableForHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         target  : "host.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         'get_mac_table[?]contain_once':
+            table:
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 adapter_mac: "vm.[1].vnic.[1]->MACAddress"
+
+VerifyVNIArpTableOnController:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyVNIArpTableOnController"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch controller <controller-ip> vni <vni-id> arp]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyVNIArpTableOnController']
+      ExitSequence:
+      ArpingVM1ToVM2: *ARPING_VM1_TO_VM2
+      ArpingVM2ToVM1: *ARPING_VM2_TO_VM1
+      VerifyVNIArpTableOnController:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         target  : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         'get_arp_table[?]contain_once':
+            table:
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 ipaddress:  "vm.[1].vnic.[1]->IPv4"
+                 adapter_mac: "vm.[1].vnic.[1]->MACAddress"
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 ipaddress:  "vm.[2].vnic.[1]->IPv4"
+                 adapter_mac: "vm.[2].vnic.[1]->MACAddress"
+
+VerifyArpTableForHost:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyArpTableForHost"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch controller <controller-ip> host <host-ip> arp]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyArpTableForHost']
+      ExitSequence:
+      ArpingVM1ToVM2: *ARPING_VM1_TO_VM2
+      ArpingVM2ToVM1: *ARPING_VM2_TO_VM1
+      VerifyArpTableForHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         target  : "host.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         'get_arp_table[?]contain_once':
+            table:
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 ipaddress:  "vm.[1].vnic.[1]->IPv4"
+                 adapter_mac: "vm.[1].vnic.[1]->MACAddress"
+
+VerifyVNIVtepTableOnController:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyVNIVtepTableOnController"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch controller <controller-ip> vni <vni-id> vtep]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyVNIVtepTableOnController']
+      ExitSequence:
+      ArpingVM1ToVM2: *ARPING_VM1_TO_VM2
+      ArpingVM2ToVM1: *ARPING_VM2_TO_VM1
+      VerifyVNIVtepTableOnController:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         target  : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         'get_vtep_table[?]contain_once_reverse':
+            table:
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                 ipaddress:  "host.[2]"
+                 adapter_mac: "host.[2]"
+                 segmentid: "host.[2]"
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                 ipaddress:  "host.[3]"
+                 adapter_mac: "host.[3]"
+                 segmentid: "host.[3]"
+
+VerifyVtepTableForHost:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyVtepTableForHost"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch controller <controller-ip> host <host-ip> vtep]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyVtepTableForHost']
+      ExitSequence:
+      ArpingVM1ToVM2: *ARPING_VM1_TO_VM2
+      ArpingVM2ToVM1: *ARPING_VM2_TO_VM1
+      VerifyVtepTableForHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         target  : "host.[2]"
+         controller  : "vsm.[1].vxlancontroller.[1]"
+         'get_vtep_table[?]contain_once_reverse':
+            table:
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                 ipaddress:  "host.[2]"
+                 adapter_mac: "host.[2]"
+                 segmentid: "host.[2]"
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                 ipaddress:  "host.[3]"
+                 adapter_mac: "host.[3]"
+                 segmentid: "host.[3]"
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[3]"
+                 ipaddress:  "host.[2]"
+                 adapter_mac: "host.[2]"
+                 segmentid: "host.[2]"
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[3]"
+                 ipaddress:  "host.[3]"
+                 adapter_mac: "host.[3]"
+                 segmentid: "host.[3]"
+
+VerifyVNMacTableOnhost:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyVNMacTableOnhost"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch host <host-id> vni <vni-id> mac]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyVNMacTableOnhost']
+      ExitSequence:
+      ArpingVM1ToVM2: *ARPING_VM1_TO_VM2
+      ArpingVM2ToVM1: *ARPING_VM2_TO_VM1
+      VerifyVNMacTableOnhost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         target    : "host.[2]"
+         switch : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         'get_mac_table[?]contain_once':
+            table:
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 adapter_mac: "vm.[2].vnic.[1]->MACAddress"
+                 macentrycount: 1
+
+VerifyVNIArpTableOnhost:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyVNIArpTableOnhost"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch host <host-id> vni <vni-id> arp]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['ArpingVM1ToVM2','ArpingVM2ToVM1']
+         - ['VerifyVNIArpTableOnhost']
+      ExitSequence:
+      ArpingVM1ToVM2: *ARPING_VM1_TO_VM2
+      ArpingVM2ToVM1: *ARPING_VM2_TO_VM1
+      VerifyVNIArpTableOnhost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         target    : "host.[2]"
+         switch : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         'get_arp_table[?]contain_once':
+            table:
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 ipaddress:  "vm.[2].vnic.[1]->IPv4"
+                 adapter_mac: "vm.[2].vnic.[1]->MACAddress"
+                 macentrycount: 1
+
+VerifyControllerNodesOnHost:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyControllerNodesOnHost"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show controller list all]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['VerifyControllerNodesOnHost']
+      ExitSequence:
+      VerifyControllerNodesOnHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         'get_controllers[?]contain_once':
+            table:
+               - name:  "vsm.[1].vxlancontroller.[1]->name"
+                 ipaddress:  "vsm.[1].vxlancontroller.[1]->ip"
+                 state: "RUNNING"
+
+VerifyVNIBriefInfoOnController:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyVNIBriefInfoOnController"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch controller <controller-ip> vni <vni-id> brief]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['VerifyVNIBriefInfoOnController']
+      ExitSequence:
+      VerifyVNIBriefInfoOnController:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         controller: "vsm.[1].vxlancontroller.[1]"
+         target    : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         'get_vni_brief[?]contain_once':
+            table:
+               - switch_vni:  "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 ipaddress:  "vsm.[1].vxlancontroller.[1]->ip"
+                 bum-replication: "Enabled"
+                 arp-proxy: "Enabled"
+                 connections: "2"
+
+VerifyConnectionListForHost:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyConnectionListForHost"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch controller <controller-ip> host <host-id> connection]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['VerifyConnectionListForHost']
+      ExitSequence:
+      VerifyConnectionListForHost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         controller: "vsm.[1].vxlancontroller.[1]"
+         target    : "host.[2]"
+         'get_vni_brief[?]contain_once':
+            table:
+               - switch_vni:  "vsm.[1].networkscope.[1].virtualwire.[2]->vxlan_id"
+                 ipaddress:  "vsm.[1].vxlancontroller.[1]->ip"
+                 bum-replication: "Enabled"
+                 arp-proxy: "Enabled"
+                 connections: "2"
+
+VerifyConnectionListForVNI:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyConnectionListForVNI"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch controller <controller-ip> vni <vni-id> joined-vnis]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['VerifyConnectionListForVNI']
+      ExitSequence:
+      VerifyConnectionListForVNI:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         controller: "vsm.[1].vxlancontroller.[1]"
+         switch    : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         'get_vni_connection[?]contain_once':
+            table:
+               - ipaddress: "host.[2]->mgmt_ip"
+               - ipaddress: "host.[3]->mgmt_ip"
+
+VerifyVNVtepTableOnhost:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyVNVtepTableOnhost"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify command:
+            [show logical-switch host <host-id> vni <vni-id> vtep]"
+   TestbedSpec: *CentralizedCli_VXLAN_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+   WORKLOADS:
+      Sequence:
+         - ['VerifyVNVtepTableOnhost']
+      ExitSequence:
+      VerifyVNVtepTableOnhost:
+         Type      : 'NSX'
+         TestNSX   : "vsm.[1]"
+         target    : "host.[2]"
+         switch    : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         'get_vtep_table[?]contain_once_reverse':
+            table:
+               - switch_vni: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                 ipaddress:  "host.[3]"
+                 segmentid: "host.[3]"

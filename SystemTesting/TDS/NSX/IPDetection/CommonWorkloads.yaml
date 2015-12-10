@@ -1,0 +1,47 @@
+WORKLOADS:
+    CreateVDS:
+        Type: "VC"
+        TestVC: "vc.[1]"
+        vds:
+            '[1]':
+                'datacenter':     "vc.[1].datacenter.[1]"
+                'vmnicadapter':   "esx.[1].vmnic.[1]"
+
+    HostPrep:
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'vdncluster':
+          '[1]':
+           'cluster': "vc.[1].datacenter.[1].cluster.[1]"
+           'vibs':    "install"
+           'switch':  "vc.[1].vds.[1]"
+           'vlan':    "0"
+           'mtu':     "1600"
+           'teaming': "FAILOVER_ORDER"
+
+    CreateSecurityGroupWithVM1:
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        securitygroup:
+            '[1]':
+                name: 'DFW_SG_1'
+                description: 'SecurityGroups'
+                type:
+                    typename: 'SecurityGroup'
+                scope:
+                    id: 'globalroot-0'
+                    objecttypename: 'VirtualMachine'
+                    name: 'Global'
+                member:
+                    - vm_id: 'vm.[1]'
+                      objecttypename: 'VirtualMachine'
+        metadata:
+            expectedresultcode: '201'
+
+    TranslateSecurityGroupForIPSet:
+        Type: "GroupingObject"
+        Testgroupingobject: "vsm.[1].securitygroup.[1]"
+        translation_entity: "ipaddress"
+        compare_translation_list:
+             "ipNode[?]super_set":
+                - ipAddresses: "10.110.24.159"

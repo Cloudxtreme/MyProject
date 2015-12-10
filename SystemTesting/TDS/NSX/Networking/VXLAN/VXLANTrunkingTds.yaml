@@ -1,0 +1,1388 @@
+VXLANTrunkingMulticastMode:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANTrunkingMulticastMode"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify vxlan trunking for vxlan networks in multicast mode"
+   Procedure: "1. Create two vxlan networks and a dvportgroup
+              2. Create two vms connect one vm to vxlan and another two dvportgroup
+              3. Set vxlan trunking on the dvport for both vxlan network
+              4. Make sure ping works"
+   TestbedSpec: *VXLAN_Trunking_Topology1
+   WORKLOADS: &VXLANTrunkingWorkload
+      Sequence:
+         - ["CreateEdge"]
+         - ["CreateVWires"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["CreateSubInterfaces"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM1ToVXLAN2"]
+         - ["SetRouteVM2ToVXLAN1"]
+         - ["SetRouteVM3ToVXLAN2"]
+         - ["SetRouteVM4ToVXLAN1"]
+         - ["TrafficSameHost1"]
+         - ["TrafficDifferentHost1"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteEdge"]
+         - ["DeleteVWires"]
+      CreateEdge: &CREATEEDGE
+         Type: NSX
+         TestNSX: "vsm.[1]"
+         gateway:
+            '[1]':
+               name: "edge-vxlan-trunk-test"
+               resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+               datacenter: "vc.[1].datacenter.[1]"
+               host: "host.[2]"
+               portgroup: "vc.[1].dvportgroup.[1]"
+               primaryaddress: "10.10.1.12"
+               subnetmask: "255.255.255.0"
+               edge_features:
+                  firewall:
+                     defaultpolicy:
+                        action: accept
+      DeleteEdge: &DELETEEDGE
+         Type: "NSX"
+         TestNSX: "vsm.[1]"
+         deletegateway: "vsm.[1].gateway.[1]"
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "MULTICAST_MODE"
+      DeleteVWires: &DELETEVWIRES
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         deletevirtualwire: "vsm.[1].networkscope.[1].virtualwire.[-1]"
+      AddVNIC1: &ADDVNIC1
+         Type: "VM"
+         TestVM: "vm.[1]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC2: &ADDVNIC2
+         Type: "VM"
+         TestVM: "vm.[2]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC3: &ADDVNIC3
+         Type: "VM"
+         TestVM: "vm.[3]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC4: &ADDVNIC4
+         Type: "VM"
+         TestVM: "vm.[4]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      SetIPVM1: &SETIPVM1
+         Type: "NetAdapter"
+         Testadapter: vm.[1].vnic.[1]
+         ipv4: "192.168.1.10"
+         netmask: "255.255.255.0"
+      SetIPVM2: &SETIPVM2
+         Type: "NetAdapter"
+         Testadapter: vm.[2].vnic.[1]
+         ipv4: "192.168.2.10"
+         netmask: "255.255.255.0"
+      SetIPVM3: &SETIPVM3
+         Type: "NetAdapter"
+         Testadapter: vm.[3].vnic.[1]
+         ipv4: "192.168.1.15"
+         netmask: "255.255.255.0"
+      SetIPVM4: &SETIPVM4
+         Type: "NetAdapter"
+         Testadapter: vm.[4].vnic.[1]
+         ipv4: "192.168.2.15"
+         netmask: "255.255.255.0"
+      SetRouteVM1ToVXLAN2: &SETROUTEVM1TOVXLAN2
+         Type: "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.2.0"
+         gateway: "192.168.1.1"
+      SetRouteVM2ToVXLAN1: &SETROUTEVM2TOVXLAN1
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      SetRouteVM3ToVXLAN2: &SETROUTEVM3TOVXLAN2
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.2.0"
+         gateway: "192.168.1.1"
+      SetRouteVM4ToVXLAN1: &SETROUTEVM4TOVXLAN1
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      CreateSubInterfaces: &CREATESUBINTERFACES
+         Type: "VM"
+         TestVM: "vsm.[1].gateway.[1]"
+         interface:
+            '[1]':
+               name: "vnic1"
+               index: "1"
+               type: "Trunk"
+               portgroup: "vc.[1].dvportgroup.[2]"
+               subinterface:
+                  - name: "sub1"
+                    ipv4address: "192.168.1.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "5"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                  - name: "sub2"
+                    ipv4address: "192.168.2.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "6"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+      DeleteVNIC1: &DELETEVNIC1
+         Type: "VM"
+         Testvm: "vm.[1]"
+         deletevnic: "vm.[1].vnic.[1]"
+      DeleteVNIC2: &DELETEVNIC2
+         Type: "VM"
+         Testvm: "vm.[2]"
+         deletevnic: "vm.[2].vnic.[1]"
+      DeleteVNIC3: &DELETEVNIC3
+         Type: "VM"
+         Testvm: "vm.[3]"
+         deletevnic: "vm.[3].vnic.[1]"
+      DeleteVNIC4: &DELETEVNIC4
+         Type: "VM"
+         Testvm: "vm.[4]"
+         deletevnic: "vm.[4].vnic.[1]"
+      TrafficSameHost1: &TRAFFICSAMEHOST1
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[1].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "120"
+      TrafficDifferentHost1: &TRAFFICDIFFERENTHOST1
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[4].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "120"
+
+VXLANTrunkingHybridMode:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANTrunkingHybridMode"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify vxlan trunking for vxlan networks in hybrid mode"
+   Procedure: "1. Create two vxlan networks in hybrid mode and a dvportgroup
+              2. Create two vms connect one vm to vxlan and another two dvportgroup
+              3. Set vxlan trunking on the dvport for both vxlan network
+              4. Make sure Traffic works"
+   TestbedSpec: *VXLAN_Trunking_Topology1
+   WORKLOADS:
+      Sequence:
+         - ["CreateEdge"]
+         - ["CreateVWires"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["CreateSubInterfaces"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM1ToVXLAN2"]
+         - ["SetRouteVM2ToVXLAN1"]
+         - ["SetRouteVM3ToVXLAN2"]
+         - ["SetRouteVM4ToVXLAN1"]
+         - ["TrafficSameHost1"]
+         - ["TrafficDifferentHost1"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteEdge"]
+         - ["DeleteVWires"]
+
+      CreateEdge: *CREATEEDGE
+      DeleteEdge: *DELETEEDGE
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "HYBRID_MODE"
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2: *ADDVNIC2
+      AddVNIC3: *ADDVNIC3
+      AddVNIC4: *ADDVNIC4
+      CreateSubInterfaces: *CREATESUBINTERFACES
+      SetIPVM1: *SETIPVM1
+      SetIPVM2: *SETIPVM2
+      SetIPVM3: *SETIPVM3
+      SetIPVM4: *SETIPVM4
+      SetRouteVM1ToVXLAN2: *SETROUTEVM1TOVXLAN2
+      SetRouteVM2ToVXLAN1: *SETROUTEVM2TOVXLAN1
+      SetRouteVM3ToVXLAN2: *SETROUTEVM3TOVXLAN2
+      SetRouteVM4ToVXLAN1: *SETROUTEVM4TOVXLAN1
+      TrafficSameHost1: *TRAFFICSAMEHOST1
+      TrafficDifferentHost1: *TRAFFICDIFFERENTHOST1
+      DeleteVNIC1: *DELETEVNIC1
+      DeleteVNIC2: *DELETEVNIC2
+      DeleteVNIC3: *DELETEVNIC3
+      DeleteVNIC4: *DELETEVNIC4
+      DeleteVWires: *DELETEVWIRES
+
+VXLANTrunkingUnicastMode:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANTrunkingUnicastMode"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify vxlan trunking for vxlan networks in unicast mode"
+   Procedure: "1. Create two vxlan networks and a dvportgroup
+               2. Create two vms connect one vm to vxlan and another two dvportgroup
+               3. Set vxlan trunking on the dvport for both vxlan network
+               4. Make sure traffic works"
+   TestbedSpec: *VXLAN_Trunking_Topology1
+   WORKLOADS:
+      Sequence:
+         - ["CreateEdge"]
+         - ["CreateVWires"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["CreateSubInterfaces"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM1ToVXLAN2"]
+         - ["SetRouteVM2ToVXLAN1"]
+         - ["SetRouteVM3ToVXLAN2"]
+         - ["SetRouteVM4ToVXLAN1"]
+         - ["TrafficSameHost1"]
+         - ["TrafficDifferentHost1"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteEdge"]
+         - ["DeleteVWires"]
+
+      CreateEdge: *CREATEEDGE
+      DeleteEdge: *DELETEEDGE
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "UNICAST_MODE"
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2: *ADDVNIC2
+      AddVNIC3: *ADDVNIC3
+      AddVNIC4: *ADDVNIC4
+      CreateSubInterfaces: *CREATESUBINTERFACES
+      SetIPVM1: *SETIPVM1
+      SetIPVM2: *SETIPVM2
+      SetIPVM3: *SETIPVM3
+      SetIPVM4: *SETIPVM4
+      SetRouteVM1ToVXLAN2: *SETROUTEVM1TOVXLAN2
+      SetRouteVM2ToVXLAN1: *SETROUTEVM2TOVXLAN1
+      SetRouteVM3ToVXLAN2: *SETROUTEVM3TOVXLAN2
+      SetRouteVM4ToVXLAN1: *SETROUTEVM4TOVXLAN1
+      TrafficSameHost1: *TRAFFICSAMEHOST1
+      TrafficDifferentHost1: *TRAFFICDIFFERENTHOST1
+      DeleteVNIC1: *DELETEVNIC1
+      DeleteVNIC2: *DELETEVNIC2
+      DeleteVNIC3: *DELETEVNIC3
+      DeleteVNIC4: *DELETEVNIC4
+      DeleteVWires: *DELETEVWIRES
+
+VXLANTrunkingWithMixedMode:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANTrunkingWithVLANOnDVPorgroup"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify vxlan trunking when dvportgroup has a non zero vlan id"
+   Procedure: "1. Create two vxlan networks and a dvportgroup with a vlan id set
+               2. Create two vms connect one vm to vxlan and another two dvportgroup
+               3. Set vxlan trunking on the dvport for both vxlan network
+               4. Make sure traffic works"
+   TestbedSpec: *VXLAN_Trunking_Topology1
+   WORKLOADS:
+      Sequence:
+         - ["CreateEdge"]
+         - ["CreateVWires"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["CreateSubInterfaces"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM1ToVXLAN2"]
+         - ["SetRouteVM2ToVXLAN1"]
+         - ["SetRouteVM3ToVXLAN2"]
+         - ["SetRouteVM4ToVXLAN1"]
+         - ["TrafficSameHost1"]
+         - ["TrafficDifferentHost1"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteEdge"]
+         - ["DeleteVWires"]
+
+      CreateEdge: *CREATEEDGE
+      DeleteEdge: *DELETEEDGE
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "MULTICAST_MODE"
+            '[2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "UNICAST_MODE"
+
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2: *ADDVNIC2
+      AddVNIC3: *ADDVNIC3
+      AddVNIC4: *ADDVNIC4
+      CreateSubInterfaces: *CREATESUBINTERFACES
+      SetIPVM1: *SETIPVM1
+      SetIPVM2: *SETIPVM2
+      SetIPVM3: *SETIPVM3
+      SetIPVM4: *SETIPVM4
+      SetRouteVM1ToVXLAN2: *SETROUTEVM1TOVXLAN2
+      SetRouteVM2ToVXLAN1: *SETROUTEVM2TOVXLAN1
+      SetRouteVM3ToVXLAN2: *SETROUTEVM3TOVXLAN2
+      SetRouteVM4ToVXLAN1: *SETROUTEVM4TOVXLAN1
+      TrafficSameHost1: *TRAFFICSAMEHOST1
+      TrafficDifferentHost1: *TRAFFICDIFFERENTHOST1
+      DeleteVNIC1: *DELETEVNIC1
+      DeleteVNIC2: *DELETEVNIC2
+      DeleteVNIC3: *DELETEVNIC3
+      DeleteVNIC4: *DELETEVNIC4
+      DeleteVWires: *DELETEVWIRES
+
+VXLANAndVLANTrunking:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANAndVLANTrunking"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify one dvport can have both vxlan trunking and vlan trunking enabled"
+   Procedure: "1. Create two vxlan networks and a dvportgroup
+               2. Create two vms connect one vm to vxlan and another two dvportgroup
+               3. Set vxlan trunking and vlan trunking  on the dvport for both vxlan network
+               4. Make sure traffic works"
+   TestbedSpec: *VXLAN_Trunking_Topology1
+   WORKLOADS:
+      Sequence:
+         - ["CreateEdge"]
+         - ["CreateVWires"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["CreateSubInterfaces"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM1ToVXLAN2"]
+         - ["SetRouteVM1ToVLAN1"]
+         - ["SetRouteVM1ToVLAN2"]
+         - ["SetRouteVM2ToVXLAN1"]
+         - ["SetRouteVM2ToVXLAN2"]
+         - ["SetRouteVM2ToVLAN2"]
+         - ["SetRouteVM3ToVXLAN1"]
+         - ["SetRouteVM3ToVLAN1"]
+         - ["SetRouteVM3ToVLAN2"]
+         - ["SetRouteVM4ToVXLAN1"]
+         - ["SetRouteVM4ToVXLAN2"]
+         - ["SetRouteVM4ToVLAN1"]
+         - ["VXLANToVLANTraffic1"]
+         - ["VLANToVXLANTraffic2"]
+         - ["VXLANToVXLANTraffic"]
+         - ["VLANToVLANTraffic"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteEdge"]
+         - ["DeleteVWires"]
+
+      CreateEdge: *CREATEEDGE
+      DeleteEdge: *DELETEEDGE
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "MULTICAST_MODE"
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2:
+         Type: "VM"
+         TestVM: "vm.[2]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+
+      AddVNIC3:
+         Type: "VM"
+         TestVM: "vm.[3]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC4:
+         Type: "VM"
+         TestVM: "vm.[4]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[4]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      CreateSubInterfaces:
+         Type: "VM"
+         TestVM: "vsm.[1].gateway.[1]"
+         interface:
+            '[1]':
+               name: "vnic1"
+               index: "1"
+               type: "Trunk"
+               portgroup: "vc.[1].dvportgroup.[2]"
+               subinterface:
+                  - name: "sub1"
+                    ipv4address: "192.168.1.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "5"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                  - name: "sub2"
+                    ipv4address: "192.168.2.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "6"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                  - name: "vlan16"
+                    ipv4address: "192.168.16.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "16"
+                    vlan: "16"
+                  - name: "vlan17"
+                    ipv4address: "192.168.17.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "17"
+                    vlan: "17"
+      SetIPVM1: *SETIPVM1
+      SetIPVM2:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         ipv4: "192.168.16.10"
+         netmask: "255.255.255.0"
+      SetIPVM3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         ipv4: "192.168.2.10"
+         netmask: "255.255.255.0"
+      SetIPVM4:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         ipv4: "192.168.17.10"
+         netmask: "255.255.255.0"
+      SetRouteVM1ToVXLAN2: *SETROUTEVM1TOVXLAN2
+      SetRouteVM1ToVLAN1: &SETROUTEVM1TOVLAN1
+         Type: "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.16.0"
+         gateway: "192.168.1.1"
+      SetRouteVM1ToVLAN2: &SETROUTEVM1TOVLAN2
+         Type: "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.17.0"
+         gateway: "192.168.1.1"
+      SetRouteVM2ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.16.1"
+      SetRouteVM2ToVXLAN2:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.2.0"
+         gateway: "192.168.16.1"
+      SetRouteVM2ToVLAN2:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.17.0"
+         gateway: "192.168.16.1"
+      SetRouteVM3ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      SetRouteVM3ToVLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.16.0"
+         gateway: "192.168.2.1"
+      SetRouteVM3ToVLAN2:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.17.0"
+         gateway: "192.168.2.1"
+      SetRouteVM4ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.17.1"
+      SetRouteVM4ToVXLAN2:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.2.0"
+         gateway: "192.168.17.1"
+      SetRouteVM4ToVLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.16.0"
+         gateway: "192.168.17.1"
+      VXLANToVLANTraffic1: *TRAFFICSAMEHOST1
+      VLANToVXLANTraffic2: *TRAFFICDIFFERENTHOST1
+      VXLANToVXLANTraffic:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[1].vnic.[1]"
+         SupportAdapter: "vm.[3].vnic.[1]"
+         TestDuration: "120"
+      VLANToVLANTraffic:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[2].vnic.[1]"
+         SupportAdapter: "vm.[4].vnic.[1]"
+         TestDuration: "120"
+      DeleteVNIC1: *DELETEVNIC1
+      DeleteVNIC2: *DELETEVNIC2
+      DeleteVNIC3: *DELETEVNIC3
+      DeleteVNIC4: *DELETEVNIC4
+
+VLANTrunking:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VLANTrunking"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify vlan trunking"
+   Procedure: "1. Create two vlan networks and a dvportgroup win vlan trunking enabled
+               2. Connect vms to vlan networks and connect VDR edge nic to vlan trunking dvpg
+               3. Make sure traffic  works"
+   TestbedSpec: *VXLAN_Trunking_Topology1
+   WORKLOADS:
+      Sequence:
+         - ["CreateEdge"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["CreateSubInterfaces"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM1ToVLAN2"]
+         - ["SetRouteVM2ToVLAN1"]
+         - ["SetRouteVM3ToVLAN2"]
+         - ["SetRouteVM4ToVLAN1"]
+         - ["TrafficSameHost1"]
+         - ["TrafficDifferentHost1"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteEdge"]
+
+      CreateEdge: *CREATEEDGE
+      DeleteEdge: *DELETEEDGE
+      AddVNIC1:
+         Type: "VM"
+         TestVM: "vm.[1]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC2:
+         Type: "VM"
+         TestVM: "vm.[2]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[4]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC3:
+         Type: "VM"
+         TestVM: "vm.[3]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC4:
+         Type: "VM"
+         TestVM: "vm.[4]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[4]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      DeleteVNIC1: *DELETEVNIC1
+      DeleteVNIC2: *DELETEVNIC2
+      DeleteVNIC3: *DELETEVNIC3
+      DeleteVNIC4: *DELETEVNIC4
+      CreateSubInterfaces:
+         Type: "VM"
+         TestVM: "vsm.[1].gateway.[1]"
+         interface:
+            '[1]':
+               name: "vnic1"
+               index: "1"
+               type: "Trunk"
+               portgroup: "vc.[1].dvportgroup.[2]"
+               subinterface:
+                  - name: "sub1"
+                    ipv4address: "192.168.1.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "1"
+                    vlan: "16"
+                  - name: "sub2"
+                    ipv4address: "192.168.2.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "2"
+                    vlan: "17"
+      SetIPVM1: *SETIPVM1
+      SetIPVM2: *SETIPVM2
+      SetIPVM3: *SETIPVM3
+      SetIPVM4: *SETIPVM4
+      SetRouteVM1ToVLAN2: *SETROUTEVM1TOVXLAN2
+      SetRouteVM2ToVLAN1: *SETROUTEVM2TOVXLAN1
+      SetRouteVM3ToVLAN2: *SETROUTEVM3TOVXLAN2
+      SetRouteVM4ToVLAN1: *SETROUTEVM4TOVXLAN1
+      TrafficSameHost1: *TRAFFICSAMEHOST1
+      TrafficDifferentHost1: *TRAFFICDIFFERENTHOST1
+
+VXLANTrunkingAddVXLANNetworksToTrunk:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANTrunkingAddVXLANNetworksToTrunk"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify one can add the vxlan network to existing vxlan trunk"
+   Procedure: "1. Create two vlan networks and a dvportgroup win vlan trunking enabled
+               2. Connect vms to vlan networks and connect VDR edge to dvportgroup trunk
+               3. Make sure traffic  works
+               4. add another vxlan network to the trunk and make sure traffic works"
+   TestbedSpec: *VXLAN_Trunking_Topology1
+   WORKLOADS:
+      Sequence:
+         - ["CreateEdge"]
+         - ["CreateVWires"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["CreateSubInterfaces"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM1ToVXLAN2"]
+         - ["SetRouteVM2ToVXLAN1"]
+         - ["SetRouteVM3ToVXLAN2"]
+         - ["SetRouteVM4ToVXLAN1"]
+         - ["TrafficSameHost1"]
+         - ["TrafficDifferentHost1"]
+         - ["DeleteVNIC1"]
+         - ["AddVNIC2VM1"]
+         - ["ChangeSubInterfaces"]
+         - ["SetNewIPVM1"]
+         - ["SetNewRouteVM1ToVXLAN1"]
+         - ["SetNewRouteVM1ToVXLAN2"]
+         - ["SetNewRouteVM2ToVXLAN3"]
+         - ["SetNewRouteVM3ToVXLAN3"]
+         - ["SetNewRouteVM4ToVXLAN3"]
+         - ["TrafficSameHost1"]
+         - ["TrafficDifferentHost1"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteEdge"]
+         - ["DeleteVWires"]
+
+      CreateEdge: *CREATEEDGE
+      DeleteEdge: *DELETEEDGE
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-3]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "MULTICAST_MODE"
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2VM1:
+         Type: "VM"
+         TestVM: "vm.[1]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC2: *ADDVNIC2
+      AddVNIC3: *ADDVNIC3
+      AddVNIC4: *ADDVNIC4
+      CreateSubInterfaces: *CREATESUBINTERFACES
+      ChangeSubInterfaces:
+         Type: "VM"
+         TestVM: "vsm.[1].gateway.[1]"
+         interface:
+            '[1]':
+               name: "vnic1"
+               index: "1"
+               type: "Trunk"
+               portgroup: "vc.[1].dvportgroup.[2]"
+               subinterface:
+                  - name: "sub1"
+                    ipv4address: "192.168.1.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "5"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                  - name: "sub2"
+                    ipv4address: "192.168.2.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "6"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                  - name: "sub3"
+                    ipv4address: "192.168.3.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "10"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+      SetIPVM1: *SETIPVM1
+      SetNewIPVM1: &SETNEWIPVM1
+         Type: "NetAdapter"
+         Testadapter: vm.[1].vnic.[1]
+         ipv4: "192.168.3.10"
+         netmask: "255.255.255.0"
+      SetIPVM2: *SETIPVM2
+      SetIPVM3: *SETIPVM3
+      SetIPVM4: *SETIPVM4
+      SetRouteVM1ToVXLAN2: *SETROUTEVM1TOVXLAN2
+      SetNewRouteVM1ToVXLAN1: &SETNEWROUTEVM1TOVXLAN1
+         Type: "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.3.1"
+      SetNewRouteVM1ToVXLAN2: &SETNEWROUTEVM1TOVXLAN2
+         Type: "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.2.0"
+         gateway: "192.168.3.1"
+      SetNewRouteVM2ToVXLAN3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.3.0"
+         gateway: "192.168.2.1"
+      SetNewRouteVM3ToVXLAN3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.3.0"
+         gateway: "192.168.1.1"
+      SetNewRouteVM4ToVXLAN3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.3.0"
+         gateway: "192.168.2.1"
+      SetRouteVM2ToVXLAN1: *SETROUTEVM2TOVXLAN1
+      SetRouteVM3ToVXLAN2: *SETROUTEVM3TOVXLAN2
+      SetRouteVM4ToVXLAN1: *SETROUTEVM4TOVXLAN1
+      TrafficSameHost1: *TRAFFICSAMEHOST1
+      TrafficDifferentHost1: *TRAFFICDIFFERENTHOST1
+      DeleteVNIC1: *DELETEVNIC1
+      DeleteVNIC2: *DELETEVNIC2
+      DeleteVNIC3: *DELETEVNIC3
+      DeleteVNIC4: *DELETEVNIC4
+      DeleteVWires: *DELETEVWIRES
+
+
+VLANTrunkingAddVLANNetworksToTrunk:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VLANTrunkingAddVLANNetworksToTrunk"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify one can add the vlan network to existing vlan trunk"
+   Procedure: "1. Create two vlan networks and a dvportgroup win vlan trunking enabled
+               2. Connect vms to vlan networks and connect VDR edge to dvporgroup trunk
+               3. Make sure traffic  works
+               4. Add another vlan network to the trunk and make sure traffic works"
+   TestbedSpec: *VXLAN_Trunking_Topology1
+   WORKLOADS:
+      Sequence:
+         - ["CreateEdge"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["CreateSubInterfaces"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM1ToVLAN2"]
+         - ["SetRouteVM2ToVLAN1"]
+         - ["SetRouteVM3ToVLAN2"]
+         - ["SetRouteVM4ToVLAN1"]
+         - ["TrafficSameHost1"]
+         - ["TrafficDifferentHost1"]
+         - ["DeleteVNIC1"]
+         - ["AddNewVNIC1"]
+         - ["ChangeSubInterfaces"]
+         - ["SetNewIPVM1"]
+         - ["SetNewRouteVM1ToVLAN1"]
+         - ["SetNewRouteVM1ToVLAN2"]
+         - ["SetNewRouteVM2ToVLAN3"]
+         - ["SetNewRouteVM3ToVLAN3"]
+         - ["SetNewRouteVM4ToVLAN3"]
+         - ["TrafficSameHost1"]
+         - ["TrafficDifferentHost1"]
+
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteEdge"]
+
+      CreateEdge: *CREATEEDGE
+      DeleteEdge: *DELETEEDGE
+      AddVNIC1:
+         Type: "VM"
+         TestVM: "vm.[1]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddNewVNIC1:
+         Type: "VM"
+         TestVM: "vm.[1]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[5]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC2:
+         Type: "VM"
+         TestVM: "vm.[2]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[4]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC3:
+         Type: "VM"
+         TestVM: "vm.[3]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC4:
+         Type: "VM"
+         TestVM: "vm.[4]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[4]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      DeleteVNIC1: *DELETEVNIC1
+      DeleteVNIC2: *DELETEVNIC2
+      DeleteVNIC3: *DELETEVNIC3
+      DeleteVNIC4: *DELETEVNIC4
+      CreateSubInterfaces:
+         Type: "VM"
+         TestVM: "vsm.[1].gateway.[1]"
+         interface:
+            '[1]':
+               name: "vnic1"
+               index: "1"
+               type: "Trunk"
+               portgroup: "vc.[1].dvportgroup.[2]"
+               subinterface:
+                  - name: "sub1"
+                    ipv4address: "192.168.1.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "1"
+                    vlan: "16"
+                  - name: "sub2"
+                    ipv4address: "192.168.2.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "2"
+                    vlan: "17"
+      ChangeSubInterfaces:
+         Type: "VM"
+         TestVM: "vsm.[1].gateway.[1]"
+         interface:
+            '[1]':
+               name: "vnic1"
+               index: "1"
+               type: "Trunk"
+               portgroup: "vc.[1].dvportgroup.[2]"
+               subinterface:
+                  - name: "sub1"
+                    ipv4address: "192.168.1.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "1"
+                    vlan: "16"
+                  - name: "sub2"
+                    ipv4address: "192.168.2.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "2"
+                    vlan: "17"
+                  - name: "sub3"
+                    ipv4address: "192.168.3.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "18"
+                    vlan: "18"
+
+      SetIPVM1: *SETIPVM1
+      SetNewIPVM1: *SETNEWIPVM1
+      SetIPVM2: *SETIPVM2
+      SetIPVM3: *SETIPVM3
+      SetIPVM4: *SETIPVM4
+      SetRouteVM1ToVLAN2: *SETROUTEVM1TOVXLAN2
+      SetNewRouteVM1ToVLAN1: *SETNEWROUTEVM1TOVXLAN1
+      SetNewRouteVM1ToVLAN2: *SETNEWROUTEVM1TOVXLAN2
+      SetRouteVM2ToVLAN1: *SETROUTEVM2TOVXLAN1
+      SetNewRouteVM2ToVLAN3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.3.0"
+         gateway: "192.168.2.1"
+      SetNewRouteVM3ToVLAN3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.3.0"
+         gateway: "192.168.1.1"
+      SetNewRouteVM4ToVLAN3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.3.0"
+         gateway: "192.168.2.1"
+
+      SetRouteVM3ToVLAN2: *SETROUTEVM3TOVXLAN2
+      SetRouteVM4ToVLAN1: *SETROUTEVM4TOVXLAN1
+      TrafficSameHost1: *TRAFFICSAMEHOST1
+      TrafficDifferentHost1: *TRAFFICDIFFERENTHOST1
+
+
+VXLANTrunkTeaming:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANTrunkTeaming"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify that teaming policy applied to vxlan trunk port is same as vxlan"
+   Procedure: "1. Create two vlan networks and a dvportgroup win vlan trunking enabled
+               2. Connect vms to vlan networks and connect VDR edge to dvportgroup
+               3. Check the teaming policy of the vxlan trunk port it should be same as VTEP
+               4. verify traffic works"
+   TestbedSpec: *VXLAN_Trunking_Topology2
+   WORKLOADS:
+      Sequence:
+         - ["CreateEdge"]
+         - ["CreateVWires"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["CreateSubInterfaces"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM1ToVXLAN2"]
+         - ["SetRouteVM2ToVXLAN1"]
+         - ["SetRouteVM3ToVXLAN2"]
+         - ["SetRouteVM4ToVXLAN1"]
+         - ["TrafficSameHost1"]
+         - ["TrafficDifferentHost1"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteEdge"]
+         - ["DeleteVWires"]
+
+      CreateEdge: *CREATEEDGE
+      DeleteEdge: *DELETEEDGE
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "MULTICAST_MODE"
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2: *ADDVNIC2
+      AddVNIC3: *ADDVNIC3
+      AddVNIC4: *ADDVNIC4
+      CreateSubInterfaces: *CREATESUBINTERFACES
+      SetIPVM1: *SETIPVM1
+      SetIPVM2: *SETIPVM2
+      SetIPVM3: *SETIPVM3
+      SetIPVM4: *SETIPVM4
+      SetRouteVM1ToVXLAN2: *SETROUTEVM1TOVXLAN2
+      SetRouteVM2ToVXLAN1: *SETROUTEVM2TOVXLAN1
+      SetRouteVM3ToVXLAN2: *SETROUTEVM3TOVXLAN2
+      SetRouteVM4ToVXLAN1: *SETROUTEVM4TOVXLAN1
+      TrafficSameHost1: *TRAFFICSAMEHOST1
+      TrafficDifferentHost1: *TRAFFICDIFFERENTHOST1
+      DeleteVNIC1: *DELETEVNIC1
+      DeleteVNIC2: *DELETEVNIC2
+      DeleteVNIC3: *DELETEVNIC3
+      DeleteVNIC4: *DELETEVNIC4
+      DeleteVWires: *DELETEVWIRES
+
+
+VXLANMultipleTrunk:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANMultipleTrunk"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify that multiple vxlan trunking works fine"
+   Procedure: "1. Create two vlan networks and a dvportgroup with vlan trunking enabled
+               2. Add another two vxlan networks and a dvportgroup
+               3. Configuring vxlan trunking and make sure that edge routing works fine
+               4. verify traffic works"
+   TestbedSpec: *VXLAN_Trunking_Topology2
+   WORKLOADS:
+      Sequence:
+         - ["CreateEdge"]
+         - ["CreateVWires"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["CreateTrunk1"]
+         - ["CreateTrunk2"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM1ToVXLAN2"]
+         - ["SetRouteVM2ToVXLAN1"]
+         - ["SetRouteVM3ToVXLAN4"]
+         - ["SetRouteVM4ToVXLAN3"]
+         - ["Traffic1"]
+         - ["Traffic2"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteEdge"]
+         - ["DeleteVWires"]
+
+      CreateEdge: *CREATEEDGE
+      DeleteEdge: *DELETEEDGE
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "HYBRID_MODE"
+            '[3-4]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "HYBRID_MODE"
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2:
+         Type: "VM"
+         TestVM: "vm.[2]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC3:
+         Type: "VM"
+         TestVM: "vm.[3]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC4:
+         Type: "VM"
+         TestVM: "vm.[4]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[4]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      CreateTrunk1:
+         Type: "VM"
+         TestVM: "vsm.[1].gateway.[1]"
+         interface:
+            '[1]':
+               name: "vnic1"
+               index: "1"
+               type: "Trunk"
+               portgroup: "vc.[1].dvportgroup.[2]"
+               subinterface:
+                  - name: "sub1"
+                    ipv4address: "192.168.1.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "5"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                  - name: "sub2"
+                    ipv4address: "192.168.2.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "6"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+      CreateTrunk2:
+         Type: "VM"
+         TestVM: "vsm.[1].gateway.[1]"
+         interface:
+            '[2]':
+               name: "vnic2"
+               index: "2"
+               type: "Trunk"
+               portgroup: "vc.[1].dvportgroup.[5]"
+               subinterface:
+                  - name: "sub3"
+                    ipv4address: "192.168.3.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "10"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+                  - name: "sub4"
+                    ipv4address: "192.168.4.1"
+                    netmask: "255.255.255.0"
+                    tunnelid: "15"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[4]"
+      SetIPVM1: *SETIPVM1
+      SetIPVM2:
+         Type: "NetAdapter"
+         Testadapter: vm.[2].vnic.[1]
+         ipv4: "192.168.2.10"
+         netmask: "255.255.255.0"
+      SetIPVM3:
+         Type: "NetAdapter"
+         Testadapter: vm.[3].vnic.[1]
+         ipv4: "192.168.3.10"
+         netmask: "255.255.255.0"
+      SetIPVM4:
+         Type: "NetAdapter"
+         Testadapter: vm.[4].vnic.[1]
+         ipv4: "192.168.4.10"
+         netmask: "255.255.255.0"
+      SetRouteVM1ToVXLAN2: *SETROUTEVM1TOVXLAN2
+      SetRouteVM2ToVXLAN1: *SETROUTEVM2TOVXLAN1
+      SetRouteVM3ToVXLAN4:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.4.0"
+         gateway: "192.168.3.1"
+      SetRouteVM4ToVXLAN3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.3.0"
+         gateway: "192.168.4.1"
+      Traffic1:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[1].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "120"
+      Traffic2:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[4].vnic.[1]"
+         TestDuration: "120"
+      DeleteVNIC1: *DELETEVNIC1
+      DeleteVNIC2: *DELETEVNIC2
+      DeleteVNIC3: *DELETEVNIC3
+      DeleteVNIC4: *DELETEVNIC4
+      DeleteVWires: *DELETEVWIRES
+
+
+VXLANTrunkWithMultipleClusters:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANTrunkWithMultipleClusters"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify that multiple vxlan trunking works fine"
+   Procedure: "1. Create 2 clusters 1 for compute hosts, 1 for Edge host and span
+                  transport zone across both the clusters
+               2. Create two vxlan networks and a dvportgroup
+               3. Configuring vxlan trunking
+               4. verify traffic works"
+   TestbedSpec: *VXLAN_Trunking_Topology3
+   WORKLOADS: *VXLANTrunkingWorkload

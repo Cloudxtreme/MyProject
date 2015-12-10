@@ -1,0 +1,634 @@
+TOPO_SETUP_COMMON: &TOPO_SETUP_COMMON
+    NSXCleanup: *NSX_CLEANUP--ESX
+    Register4Hosts: *REGISTER_4_HOSTS--ESX
+    Unregister4Hosts: *UNREGISTER_4HOSTS--ESX
+    Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+    Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+    Verify3NodeCCPCluster: *VERIFY_3_NODE_CCP_CLUSTER_STATUS
+    DiscoverHostnodes: *DISCOVER_4_HOST_NODES--ESX
+    CreateTransportZone: *CREATE_1_TRANSPORTZONE
+    CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+    CreateTransportNodes: *CREATE_4_TRANSPORTNODES--ESX
+    CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+    DiscoverVteps: *DISCOVER_VERIFY_VTEPS--ESX
+    CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+    AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--ESX
+    AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--ESX
+    AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--ESX
+    AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--ESX
+    AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--ESX
+    AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--ESX
+    AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--ESX
+    AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--ESX
+    ConfigureVnicIP:  *CONFIGURE_8VMS_IP--ESX
+    DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--ESX
+    DeleteVM2Vnic1FromLSwitch2: *DELETE_VM2_VNIC1_LSWITCH2--ESX
+    DeleteVM3Vnic1FromLSwitch1: *DELETE_VM3_VNIC1_LSWITCH1--ESX
+    DeleteVM4Vnic1FromLSwitch2: *DELETE_VM4_VNIC1_LSWITCH2--ESX
+    DeleteVM5Vnic1FromLSwitch1: *DELETE_VM5_VNIC1_LSWITCH1--ESX
+    DeleteVM6Vnic1FromLSwitch2: *DELETE_VM6_VNIC1_LSWITCH2--ESX
+    DeleteVM7Vnic1FromLSwitch1: *DELETE_VM7_VNIC1_LSWITCH1--ESX
+    DeleteVM8Vnic1FromLSwitch2: *DELETE_VM8_VNIC1_LSWITCH2--ESX
+
+    CreateDvs:
+        Type: VC
+        TestVC: vc.[1]
+        vds:
+           '[1]':
+              name: 'vds-for-vmotion'
+              datacenter: vc.[1].datacenter.[1]
+              vmnicadapter: esx.[1-4].vmnic.[2]
+
+    CreateDvpg:
+        Type: VC
+        TestVC: vc.[1]
+        dvportgroup:
+           '[1]':
+              name: 'dvpg-for-vmotion'
+              vds: vc.[1].vds.[1]
+
+    RemoveDvs:
+        Type: VC
+        TestVC: vc.[1]
+        deletevds: vc.[1].vds.[1]
+
+    AddVmknics:
+        Type: Host
+        TestHost: esx.[1-4]
+        vmknic:
+           '[1]':
+              portgroup: vc.[1].dvportgroup.[1]
+              ipv4address: 'dhcp'
+              configurevmotion: 'enable'
+        SleepBetweenCombos: '60'
+
+    CreateDvsOnVC1:
+        Type: VC
+        TestVC: vc.[1]
+        vds:
+           '[1]':
+              name: 'vds-for-vmotion'
+              datacenter: vc.[1].datacenter.[1]
+              vmnicadapter: esx.[1-2].vmnic.[2]
+
+    CreateDvsOnVC2:
+        Type: VC
+        TestVC: vc.[2]
+        vds:
+           '[1]':
+              name: 'vds-for-vmotion'
+              datacenter: vc.[2].datacenter.[1]
+              vmnicadapter: esx.[3-4].vmnic.[2]
+
+    CreateDvpgOnVC1:
+        Type: VC
+        TestVC: vc.[1]
+        dvportgroup:
+           '[1]':
+              name: 'dvpg-for-vmotion'
+              vds: vc.[1].vds.[1]
+
+    CreateDvpgOnVC2:
+        Type: VC
+        TestVC: vc.[2]
+        dvportgroup:
+           '[1]':
+              name: 'dvpg-for-vmotion'
+              vds: vc.[2].vds.[1]
+
+    RemoveDvsOnVC1:
+        Type: VC
+        TestVC: vc.[1]
+        deletevds: vc.[1].vds.[1]
+
+    RemoveDvsOnVC2:
+        Type: VC
+        TestVC: vc.[2]
+        deletevds: vc.[2].vds.[1]
+
+    AddVmknicsToVC1:
+        Type: Host
+        TestHost: esx.[1-2]
+        vmknic:
+           '[1]':
+              portgroup: vc.[1].dvportgroup.[1]
+              ipv4address: 'dhcp'
+              configurevmotion: 'enable'
+        SleepBetweenCombos: '60'
+
+    AddVmknicsToVC2:
+        Type: Host
+        TestHost: esx.[3-4]
+        vmknic:
+           '[1]':
+              portgroup: vc.[2].dvportgroup.[1]
+              ipv4address: 'dhcp'
+              configurevmotion: 'enable'
+        SleepBetweenCombos: '60'
+
+    network1:
+        ESX: &NETWORK1--ESX
+            #isolated-06 network
+             '172.21.0.0'
+        KVM: &NETWORK1--KVM
+            #isolated-01 network
+             '172.16.0.0'
+    network2:
+        ESX: &NETWORK2--ESX
+            #isolated-07 network
+             '172.22.0.0'
+        KVM: &NETWORK2--KVM
+            #isolated-02 network
+             '172.17.0.0'
+
+    network1_gateway:
+        ESX: &NETWORK1_GATEWAY--ESX
+            #isolated-06 network
+             '172.21.0.1'
+        KVM: &NETWORK1_GATEWAY--KVM
+            #isolated-01 network
+             '172.16.0.1'
+
+    network2_gateway:
+        ESX: &NETWORK2_GATEWAY--ESX
+            #isolated-07 network
+             '172.22.0.1'
+        KVM: &NETWORK2_GATEWAY--KVM
+            #isolated-02 network
+             '172.17.0.1'
+
+    NETMASK_CLASS_B: &NETMASK_CLASS_B
+        '255.255.0.0'
+
+    AddVmkRouteOnHost1: &ADD_VMK_ROUTE_ON_HOST1--ESX
+        Type: NetAdapter
+        TestAdapter: esx.[1].vmknic.[1]
+        route: add
+        network: *NETWORK2--ESX
+        gateway: *NETWORK1_GATEWAY--ESX
+        netmask: *NETMASK_CLASS_B
+
+    AddVmkRouteOnHost2:
+        <<: *ADD_VMK_ROUTE_ON_HOST1--ESX
+        TestAdapter: esx.[2].vmknic.[1]
+
+    AddVmkRouteOnHost3: &ADD_VMK_ROUTE_ON_HOST3--ESX
+        Type: NetAdapter
+        TestAdapter: esx.[3].vmknic.[1]
+        route: add
+        network: *NETWORK1--ESX
+        gateway: *NETWORK2_GATEWAY--ESX
+        netmask: *NETMASK_CLASS_B
+
+    AddVmkRouteOnHost4:
+        <<: *ADD_VMK_ROUTE_ON_HOST3--ESX
+        TestAdapter: esx.[4].vmknic.[1]
+
+    RemoveVmknicHost1:
+        Type: Host
+        TestHost: esx.[1]
+        removevmknic: esx.[1].vmknic.[1]
+
+    RemoveVmknicHost2:
+        Type: Host
+        TestHost: esx.[2]
+        removevmknic: esx.[2].vmknic.[1]
+
+    RemoveVmknicHost3:
+        Type: Host
+        TestHost: esx.[3]
+        removevmknic: esx.[3].vmknic.[1]
+
+    RemoveVmknicHost4:
+        Type: Host
+        TestHost: esx.[4]
+        removevmknic: esx.[4].vmknic.[1]
+
+    Vm1VmotionToHost2AndBack:
+        Type: VM
+        TestVM: vm.[1]
+        Iterations: '3'
+        vmotion: 'roundtrip'
+        dsthost: esx.[2]
+        staytime: '10'
+        priority:   'high'
+
+    TrafficVm5ToVm1:
+        Type          : "Traffic"
+        ToolName      : "netperf"
+        L3Protocol    : "ipv4"
+        L4Protocol    : "tcp"
+        sendmessagesize : "1000"
+        TestAdapter   : "vm.[5].vnic.[1]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        NoofOutbound  : "1"
+        NoofInbound   : "1"
+        TestDuration  : "100"
+        parallelsession: 'yes'
+
+    TrafficVm5ToVm3:
+        Type          : "Traffic"
+        ToolName      : "netperf"
+        L3Protocol    : "ipv4"
+        L4Protocol    : "tcp"
+        sendmessagesize : "1000"
+        TestAdapter   : "vm.[5].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        NoofOutbound  : "1"
+        NoofInbound   : "1"
+        TestDuration  : "100"
+        parallelsession: 'yes'
+
+    Vm4VmotionToHost1AndBack:
+        Type: VM
+        TestVM: vm.[4]
+        Iterations: '3'
+        vmotion: 'roundtrip'
+        dsthost: esx.[1]
+        staytime: '10'
+        priority:   'high'
+
+    TrafficVm6ToVm4:
+        Type          : "Traffic"
+        ToolName      : "netperf"
+        L3Protocol    : "ipv4"
+        L4Protocol    : "tcp"
+        sendmessagesize : "1000"
+        TestAdapter   : "vm.[6].vnic.[1]"
+        SupportAdapter: "vm.[4].vnic.[1]"
+        NoofOutbound  : "1"
+        NoofInbound   : "1"
+        TestDuration  : "100"
+        parallelsession: 'yes'
+
+    Vm1VmotionToHost4AndBack:
+        Type: VM
+        TestVM: vm.[1]
+        Iterations: '3'
+        vmotion: 'roundtrip'
+        dsthost: esx.[4]
+        staytime: '10'
+        priority:   'high'
+
+    Vm4VmotionToHost4AndBack:
+        Type: VM
+        TestVM: vm.[4]
+        Iterations: '3'
+        vmotion: 'roundtrip'
+        dsthost: esx.[4]
+        staytime: '10'
+        priority:   'high'
+
+    Vm1VmotionToHost2LS2:
+        Type: VM
+        TestVM: vm.[1]
+        dsthost: esx.[2]
+        staytime: '10'
+        vmotion: 'xvmotion'
+        portgroup: 'nsxmanager.[1].logicalswitch.[2]'
+        priority:   'high'
+
+    TrafficVm6ToVm1:
+        Type          : "Traffic"
+        ToolName      : "netperf"
+        L3Protocol    : "ipv4"
+        L4Protocol    : "tcp"
+        sendmessagesize : "1000"
+        TestAdapter   : "vm.[6].vnic.[1]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        NoofOutbound  : "1"
+        NoofInbound   : "1"
+        TestDuration  : "100"
+        parallelsession: 'yes'
+
+    Vm1VmotionToHost1LS1:
+        Type: VM
+        TestVM: vm.[1]
+        dsthost: esx.[1]
+        staytime: '10'
+        portgroup: 'nsxmanager.[1].logicalswitch.[1]'
+        vmotion: 'xvmotion'
+        priority:   'high'
+
+    Vm2VmotionToHost1LS1:
+        Type: VM
+        TestVM: vm.[2]
+        dsthost: esx.[1]
+        staytime: '10'
+        vmotion: 'xvmotion'
+        portgroup: 'nsxmanager.[1].logicalswitch.[1]'
+        priority:   'high'
+
+    TrafficVm5ToVm2:
+        Type          : "Traffic"
+        ToolName      : "netperf"
+        L3Protocol    : "ipv4"
+        L4Protocol    : "tcp"
+        sendmessagesize : "1000"
+        TestAdapter   : "vm.[5].vnic.[1]"
+        SupportAdapter: "vm.[2].vnic.[1]"
+        NoofOutbound  : "1"
+        NoofInbound   : "1"
+        TestDuration  : "100"
+        parallelsession: 'yes'
+
+    Vm2VmotionToHost1LS2:
+        Type: VM
+        TestVM: vm.[2]
+        dsthost: esx.[1]
+        staytime: '10'
+        portgroup: 'nsxmanager.[1].logicalswitch.[2]'
+        vmotion: 'xvmotion'
+        priority:   'high'
+
+    CreateDatastoreObjHost1:
+        Type: Host
+        TestHost: esx.[1]
+        datastore:
+               '[1]':
+                    name: 'vm.[2]->DatastoreName'
+               '[2]':
+                    name: 'vdnetSharedStorage'
+
+    CreateDatastoreObjHost2:
+        Type: Host
+        TestHost: esx.[2]
+        datastore:
+               '[1]':
+                    name: 'vm.[3]->DatastoreName'
+               '[2]':
+                    name: 'vdnetSharedStorage'
+
+    CreateDatastoreObjHost3:
+        Type: Host
+        TestHost: esx.[3]
+        datastore:
+               '[1]':
+                    name: 'vm.[6]->DatastoreName'
+               '[2]':
+                    name: 'vdnetSharedStorage'
+
+    CreateDatastoreObjHost4:
+        Type: Host
+        TestHost: esx.[4]
+        datastore:
+               '[1]':
+                    name: 'vm.[7]->DatastoreName'
+               '[2]':
+                    name: 'vdnetSharedStorage'
+
+    TrafficVm6ToVm2:
+        Type          : "Traffic"
+        ToolName      : "netperf"
+        L3Protocol    : "ipv4"
+        L4Protocol    : "tcp"
+        sendmessagesize : "1000"
+        TestAdapter   : "vm.[6].vnic.[1]"
+        SupportAdapter: "vm.[2].vnic.[1]"
+        NoofOutbound  : "1"
+        NoofInbound   : "1"
+        TestDuration  : "100"
+        parallelsession: 'yes'
+
+    TrafficVm7ToVm3:
+        Type          : "Traffic"
+        ToolName      : "netperf"
+        L3Protocol    : "ipv4"
+        L4Protocol    : "tcp"
+        sendmessagesize : "1000"
+        TestAdapter   : "vm.[7].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        NoofOutbound  : "1"
+        NoofInbound   : "1"
+        TestDuration  : "100"
+        parallelsession: 'yes'
+
+    TrafficVm2ToVm6:
+        Type          : "Traffic"
+        ToolName      : "netperf"
+        L3Protocol    : "ipv4"
+        L4Protocol    : "tcp"
+        sendmessagesize : "1000"
+        TestAdapter   : "vm.[2].vnic.[1]"
+        SupportAdapter: "vm.[6].vnic.[1]"
+        NoofOutbound  : "1"
+        NoofInbound   : "1"
+        TestDuration  : "100"
+        parallelsession: 'yes'
+
+    TrafficVm3ToVm7:
+        Type          : "Traffic"
+        ToolName      : "netperf"
+        L3Protocol    : "ipv4"
+        L4Protocol    : "tcp"
+        sendmessagesize : "1000"
+        TestAdapter   : "vm.[3].vnic.[1]"
+        SupportAdapter: "vm.[7].vnic.[1]"
+        NoofOutbound  : "1"
+        NoofInbound   : "1"
+        TestDuration  : "100"
+        parallelsession: 'yes'
+
+    Vm2StorageVmotion:
+        Type: VM
+        TestVM: vm.[2]
+        vmotion: 'storage'
+        maxtimeout: '7200'
+        datastore:  'esx.[1].datastore.[2]'
+        priority: 'high'
+
+    Vm2StorageVmotionBack:
+        Type: VM
+        TestVM: vm.[2]
+        vmotion: 'storage'
+        maxtimeout: '7200'
+        datastore:  'esx.[1].datastore.[1]'
+        priority: 'high'
+
+    Vm3StorageVmotion:
+        Type: VM
+        TestVM: vm.[3]
+        vmotion: 'storage'
+        maxtimeout: '7200'
+        datastore:  'esx.[2].datastore.[2]'
+        priority: 'high'
+
+    Vm3StorageVmotionBack:
+        Type: VM
+        TestVM: vm.[3]
+        vmotion: 'storage'
+        maxtimeout: '7200'
+        datastore:  'esx.[2].datastore.[1]'
+        priority: 'high'
+
+    Vm2XVmotion:
+        Type: VM
+        TestVM: vm.[2]
+        vmotion: 'storage'
+        maxtimeout: '7200'
+        datastore:  'esx.[2].datastore.[2]'
+        dsthost: 'esx.[2]'
+        priority: 'high'
+
+    Vm2XVmotionBack:
+        Type: VM
+        TestVM: vm.[2]
+        vmotion: 'storage'
+        maxtimeout: '7200'
+        datastore:  'esx.[1].datastore.[1]'
+        dsthost: 'esx.[1]'
+        priority: 'high'
+
+    Vm3XVmotion:
+        Type: VM
+        TestVM: vm.[3]
+        vmotion: 'storage'
+        maxtimeout: '7200'
+        datastore:  'esx.[1].datastore.[2]'
+        dsthost: 'esx.[1]'
+        priority: 'high'
+
+    Vm3XVmotionBack:
+        Type: VM
+        TestVM: vm.[3]
+        vmotion: 'storage'
+        maxtimeout: '7200'
+        datastore:  'esx.[2].datastore.[1]'
+        dsthost: 'esx.[2]'
+        priority: 'high'
+
+    CreateLogicalSwitchForVmk:
+        <<: *CREATE_LOGICALSWITCH_1
+        logicalswitch:
+            '[3]':
+                <<: *LOGICAL_SWITCH_1
+                replication_mode: SOURCE
+
+    AddVmknicsToLS:
+        Type: Host
+        TestHost: esx.[1-4]
+        vmknic:
+           '[1]':
+              portgroup: "nsxmanager.[1].logicalswitch.[3]"
+              ipv4address: 'x=192.168.6.esx_index'
+              netmask: "255.255.255.0"
+              configurevmotion: 'enable'
+        SleepBetweenCombos: '60'
+
+    Vm1VmotionToVC2Host3:
+        Type: VM
+        TestVM: vm.[1]
+        vmotion: 'xvmotion'
+        dsthost: 'esx.[3]'
+        priority:   'high'
+        vc: 'vc.[1]'
+        staytime: '10'
+
+    Vm1VmotionBackToVC1Host1:
+        Type: VM
+        TestVM: vm.[1]
+        vmotion: 'xvmotion'
+        dsthost: 'esx.[1]'
+        priority:   'high'
+        vc: 'vc.[2]'
+        staytime: '10'
+
+    Vm4VmotionToVC2Host3:
+        Type: VM
+        TestVM: vm.[4]
+        vmotion: 'xvmotion'
+        dsthost: 'esx.[3]'
+        priority:   'high'
+        vc: 'vc.[1]'
+        staytime: '10'
+
+    Vm4VmotionBackToVC1Host2:
+        Type: VM
+        TestVM: vm.[4]
+        vmotion: 'xvmotion'
+        dsthost: 'esx.[2]'
+        priority:   'high'
+        vc: 'vc.[2]'
+        staytime: '10'
+
+    TopoSetup_3MP_3CCP:
+        - - Create3NodeMPAnd3NodeCCPCluster
+        - - Verify3NodeMPAnd3NodeCCPCluster
+        - - Verify3NodeCCPCluster
+
+    TopoSetup_LS--ESX:
+        - - Register4Hosts
+        - - DiscoverHostnodes
+        - - CreateTransportZone
+        - - CreateUplinkProfile
+        - - CreateTransportNodes
+        - - DiscoverVteps
+        - - CreateIPDiscoveryProfile
+        - - CreateLogicalSwitch
+        - - AttachVM1toSwitch1
+          - AttachVM3toSwitch1
+          - AttachVM5toSwitch1
+          - AttachVM7toSwitch1
+        - - AttachVM2toSwitch2
+          - AttachVM4toSwitch2
+          - AttachVM6toSwitch2
+          - AttachVM8toSwitch2
+        - - ConfigureVnicIP
+
+    TopoSetup_Vmotion--ESX:
+        - - CreateDvs
+        - - CreateDvpg
+        - - AddVmknics
+        - - AddVmkRouteOnHost1
+          - AddVmkRouteOnHost2
+          - AddVmkRouteOnHost3
+          - AddVmkRouteOnHost4
+
+    TopoCleanup_Vmotion--ESX:
+        - - RemoveVmknicHost1
+          - RemoveVmknicHost2
+          - RemoveVmknicHost3
+          - RemoveVmknicHost4
+        - - RemoveDvs
+
+    TopoSetup_Vmotion_OverLS--ESX:
+        - - CreateLogicalSwitchForVmk
+        - - AddVmknicsToLS
+
+    TopoCleanup_Vmotion_OverLS--ESX:
+        - - RemoveVmknicHost1
+          - RemoveVmknicHost2
+          - RemoveVmknicHost3
+          - RemoveVmknicHost4
+
+    TopoSetup_VmotionCrossVC--ESX:
+        - - CreateDvsOnVC1
+          - CreateDvsOnVC2
+        - - CreateDvpgOnVC1
+          - CreateDvpgOnVC2
+        - - AddVmknicsToVC1
+          - AddVmknicsToVC2
+        - - AddVmkRouteOnHost1
+          - AddVmkRouteOnHost2
+          - AddVmkRouteOnHost3
+          - AddVmkRouteOnHost4
+
+    TopoCleanup_VmotionCrossVC--ESX:
+        - - RemoveVmknicHost1
+          - RemoveVmknicHost2
+          - RemoveVmknicHost3
+          - RemoveVmknicHost4
+        - - RemoveDvsOnVC1
+          - RemoveDvsOnVC2
+
+    TopoCleanup_LS--ESX:
+        - - DeleteVM1Vnic1FromLSwitch1
+          - DeleteVM3Vnic1FromLSwitch1
+          - DeleteVM5Vnic1FromLSwitch1
+          - DeleteVM7Vnic1FromLSwitch1
+        - - DeleteVM2Vnic1FromLSwitch2
+          - DeleteVM4Vnic1FromLSwitch2
+          - DeleteVM6Vnic1FromLSwitch2
+          - DeleteVM8Vnic1FromLSwitch2
+        - - NSXCleanup
+        - - Unregister4Hosts

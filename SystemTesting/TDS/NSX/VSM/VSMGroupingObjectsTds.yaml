@@ -1,0 +1,68 @@
+SecurityGroupSanity:
+    Component: "Grouping Objects"
+    Category: "vSM-Core"
+    Product: "VSM"
+    TestName: "SecurityGroup Sanity"
+    Version: "2"
+    Tags: "vsm"
+    Summary: "This is sanity test case of SecurityGroup on VSM"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "dgargote"
+    Partnerfacing: "Y"
+    TestbedSpec: "OneVSM_OneVC_OneDC_OneVDS_TwoHost_TwoCluster"
+    WORKLOADS:
+        Sequence:
+            - ["SecurityGroupCreation"]
+            - ["SecurityGroupUpdation"]
+        ExitSequence:
+            - ["SecurityGroupDeletion"]
+        SecurityGroupCreation:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            securitygroup:
+                '[1]':
+                    name: "SG-2"
+                    sg_description: "Service Group - 2"
+                    objecttypename: "SecurityGroup"
+                    type:
+                        typename: "SecurityGroup"
+                    scope:
+                        id: "globalroot-0"
+                        objecttypename: "GlobalRoot"
+                        name: "Global"
+                    member:
+                        - datacenter_id: "vc.[1].datacenter.[1]"
+                          objecttypename: "Datacenter"
+                    excludemember:
+                        - cluster_id: "vc.[1].datacenter.[1].cluster.[1]"
+                          objecttypename: "ClusterComputeResource"
+                    dynamicmemberdefinition:
+                        dynamicset:
+                            - operator: "OR"
+                              dynamiccriteria:
+                                  - operator: "OR"
+                                    key: "VM.GUEST_HOST_NAME"
+                                    criteria: "contains"
+                                    value: "Ubuntu"
+                                    isvalid: "true"
+                    metadata:
+                        expectedresultcode: "201"
+        SecurityGroupUpdation:
+            Type: "GroupingObject"
+            Testgroupingobject: "vsm.[1].securitygroup.[1]"
+            sleepbetweenworkloads: "60"
+            updatesecuritygroup: "True"
+            name: "SG - 2u"
+            metadata:
+               expectedresultcode: "200"
+        SecurityGroupDeletion:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            sleepbetweenworkloads: "60"
+            deletesecuritygroup: "vsm.[1].securitygroup.[1]"

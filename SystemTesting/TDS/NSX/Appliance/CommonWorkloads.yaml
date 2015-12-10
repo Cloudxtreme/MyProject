@@ -1,0 +1,283 @@
+WORKLOADS:
+#    VDR_DEPLOY_WORKLOADS:
+        EditCluster: &EDIT_CLUSTER
+            Type: "Cluster"
+            TestCluster: "vc.[1].datacenter.[1].cluster.[2]"
+            EditCluster: "edit"
+            DRS: 1
+        SetSegmentIDRange: &SET_SEGMENT_ID_RANGE
+            Type: 'NSX'
+            TestNSX: "vsm.[1]"
+            segmentidrange:
+                '[1]':
+                    name: "AutoGenerate"
+                    begin: "5001-10001"
+                    end: "99000"
+        SetMulticastRange: &SET_MULTICAST_RANGE
+            Type: 'NSX'
+            TestNSX: "vsm.[1]"
+            Multicastiprange:
+                '[1]':
+                    name: "AutoGenerate"
+                    begin: "239.0.0.101"
+                    end: "239.254.254.254"
+        DeployFirstController: &DEPLOY_FIRST_CONTROLLER
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vxlancontroller:
+                '[1]':
+                    name: "AutoGenerate"
+                    firstnodeofcluster: "true"
+                    ippool: "vsm.[1].ippool.[1]"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+                    host: "host.[1]"
+        InstallVIBs_And_ConfigureVXLAN: &INSTALL_VIBS_AND_CONFIGURE_VXLAN
+            Type: 'NSX'
+            TestNSX: "vsm.[1]"
+            VDNCluster:
+                '[1]':
+                    cluster: "vc.[1].datacenter.[1].cluster.[2]"
+                    vibs: "install"
+                    switch: "vc.[1].vds.[1]"
+                    vlan: "20"
+                    mtu: "1600"
+                    vmkniccount: "1"
+                    teaming:
+                        - "LOADBALANCE_SRCMAC"
+                        - "LOADBALANCE_SRCID"
+                        - "LOADBALANCE_LOADBASED"
+                        - "FAILOVER_ORDER"
+                        - "ETHER_CHANNEL"
+#    VDR_SETUP_WORKLOADS:
+        DeployEdge: &DEPLOY_EDGE
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            vse:
+                '[1]':
+                    name: "AutoGenerate"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[2]"
+                    portgroup: "vc.[1].dvportgroup.[1]"
+                    primaryaddress: "10.10.10.40"
+                    subnetmask: "255.255.255.0"
+        CreateVDNScope: &CREATE_VDN_SCOPE
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            networkscope:
+                '[1]':
+                    name: "network-scope-1-$$"
+                    clusters: "vc.[1].datacenter.[1].cluster.[2]"
+        CreateVirtualWires: &CREATE_VIRTUAL_WIRES
+            Type: "TransportZone"
+            TestTransportZone: "vsm.[1].networkscope.[1]"
+            VirtualWire:
+                '[1]':
+                    name: "AutoGenerate"
+                    tenantid: "AutoGenerate"
+                '[2]':
+                    name: "AutoGenerate"
+                    tenantid: "AutoGenerate"
+        CreateVXLANLIF1: &CREATE_VXLAN_LIF_1
+            Type: "VM"
+            TestVM: "vsm.[1].vse.[1]"
+            lif:
+                '[1]':
+                    name: "AutoGenerate"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                    type: "internal"
+                    connected: 1
+                    addressgroup:
+                        - addresstype: "primary"
+                          ipv4address: "192.168.1.1"
+                          netmask: "255.255.255.0"
+        CreateVXLANLIF2: &CREATE_VXLAN_LIF_2
+            Type: "VM"
+            TestVM: "vsm.[1].vse.[1]"
+            lif:
+                '[2]':
+                    name: "AutoGenerate"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                    type: "internal"
+                    connected: 1
+                    addressgroup:
+                        - addresstype: "primary"
+                          ipv4address: "192.168.5.1"
+                          netmask: "255.255.255.0"
+        PlaceVMsOnVirtualWire1: &PLACE_VMS_ON_VIRTUAL_WIRE_1
+            Type: "VM"
+            TestVM: "vm.[1],vm.[3]"
+            vnic:
+                '[1]':
+                    driver: "e1000"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                    connected: 1
+                    startconnected: 1
+                    allowguestcontrol: 1
+        PlaceVMsOnVirtualWire2: &PLACE_VMS_ON_VIRTUAL_WIRE_2
+            Type: "VM"
+            TestVM: "vm.[2],vm.[4]"
+            vnic:
+                '[1]':
+                    driver: "e1000"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                    connected: 1
+                    startconnected: 1
+                    allowguestcontrol: 1
+        PowerOnVM1: &POWER_ON_VM_1
+            Type: "VM"
+            TestVM: "vm.[1]"
+            vmstate: "poweron"
+        PowerOnVM2: &POWER_ON_VM_2
+            Type: "VM"
+            TestVM: "vm.[2]"
+            vmstate: "poweron"
+        PowerOnVM3: &POWER_ON_VM_3
+            Type: "VM"
+            TestVM: "vm.[3]"
+            vmstate: "poweron"
+        PowerOnVM4: &POWER_ON_VM_4
+            Type: "VM"
+            TestVM: "vm.[4]"
+            vmstate: "poweron"
+        SetVXLANIPVM1: &SET_VXLAN_IP_VM_1
+            Type: "NetAdapter"
+            Testadapter: "vm.[1].vnic.[1]"
+            ipv4: '192.168.1.5'
+            netmask: "255.255.255.0"
+        SetVXLANIPVM2: &SET_VXLAN_IP_VM_2
+            Type: "NetAdapter"
+            Testadapter: "vm.[2].vnic.[1]"
+            ipv4: '192.168.5.5'
+            netmask: "255.255.255.0"
+        SetVXLANIPVM3: &SET_VXLAN_IP_VM_3
+            Type: "NetAdapter"
+            Testadapter: "vm.[3].vnic.[1]"
+            ipv4: '192.168.1.10'
+            netmask: "255.255.255.0"
+        SetVXLANIPVM4: &SET_VXLAN_IP_VM_4
+            Type: "NetAdapter"
+            Testadapter: "vm.[4].vnic.[1]"
+            ipv4: '192.168.5.10'
+            netmask: "255.255.255.0"
+        AddVXLANRouteVM1: &ADD_VXLAN_ROUTE_VM_1
+            Type: "NetAdapter"
+            Testadapter: "vm.[1].vnic.[1]"
+            netmask: "255.255.255.0"
+            route: "add"
+            network: "192.168.5.0"
+            gateway: "192.168.1.1"
+        AddVXLANRouteVM2: &ADD_VXLAN_ROUTE_VM_2
+            Type: "NetAdapter"
+            Testadapter: "vm.[2].vnic.[1]"
+            netmask: "255.255.255.0"
+            route: "add"
+            network: "192.168.1.0"
+            gateway: "192.168.5.1"
+        AddVXLANRouteVM3: &ADD_VXLAN_ROUTE_VM_3
+            Type: "NetAdapter"
+            Testadapter: "vm.[3].vnic.[1]"
+            netmask: "255.255.255.0"
+            route: "add"
+            network: "192.168.5.0"
+            gateway: "192.168.1.1"
+        AddVXLANRouteVM4: &ADD_VXLAN_ROUTE_VM_4
+            Type: "NetAdapter"
+            Testadapter: "vm.[4].vnic.[1]"
+            netmask: "255.255.255.0"
+            route: "add"
+            network: "192.168.1.0"
+            gateway: "192.168.5.1"
+#    VDR_DATAPATH_WORKLOADS:
+        PingTest1: &PING_TEST_1
+            Type: "Traffic"
+            ToolName: "Ping"
+            TestAdapter: "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+            NoofOutbound: "1"
+            NoofInbound: "1"
+            TestDuration: "120"
+        PingTest2: &PING_TEST_2
+            Type: "Traffic"
+            ToolName: "Ping"
+            TestAdapter: "vm.[3].vnic.[1]"
+            SupportAdapter: "vm.[4].vnic.[1]"
+            NoofOutbound: "1"
+            NoofInbound: "1"
+            TestDuration: "120"
+        PingTest3: &PING_TEST_3
+            Type: "Traffic"
+            ToolName: "Ping"
+            TestAdapter: "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[4].vnic.[1]"
+            NoofOutbound: "1"
+            NoofInbound: "1"
+            TestDuration: "120"
+        PingTest4: &PING_TEST_4
+            Type: "Traffic"
+            ToolName: "Ping"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            NoofOutbound: "1"
+            NoofInbound: "1"
+            TestDuration: "120"
+        NetperfTest1: &NETPERF_TEST_1
+            Type: "Traffic"
+            ToolName: "netperf"
+            TestAdapter: "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+            L3Protocol: "ipv4"
+            L4Protocol: "tcp,udp"
+            parallelsession: "yes"
+            SendMessageSize: "63488"
+            NoofOutbound: "1"
+            NoofInbound: "1"
+            LocalSendSocketSize: "131072"
+            RemoteSendSocketSize: "131072"
+            TestDuration: "180"
+            ExpectedResult: "ignore"
+        NetperfTest2: &NETPERF_TEST_2
+            Type: "Traffic"
+            ToolName: "netperf"
+            TestAdapter: "vm.[3].vnic.[1]"
+            SupportAdapter: "vm.[4].vnic.[1]"
+            L3Protocol: "ipv4"
+            L4Protocol: "tcp,udp"
+            parallelsession: "yes"
+            SendMessageSize: "63488"
+            NoofOutbound: "1"
+            NoofInbound: "1"
+            LocalSendSocketSize: "131072"
+            RemoteSendSocketSize: "131072"
+            TestDuration: "180"
+            ExpectedResult: "ignore"
+        NetperfTest3: &NETPERF_TEST_3
+            Type: "Traffic"
+            ToolName: "netperf"
+            TestAdapter: "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[4].vnic.[1]"
+            L3Protocol: "ipv4"
+            L4Protocol: "tcp,udp"
+            parallelsession: "yes"
+            SendMessageSize: "63488"
+            NoofOutbound: "1"
+            NoofInbound: "1"
+            LocalSendSocketSize: "131072"
+            RemoteSendSocketSize: "131072"
+            TestDuration: "180"
+            ExpectedResult: "ignore"
+        NetperfTest4: &NETPERF_TEST_4
+            Type: "Traffic"
+            ToolName: "netperf"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            L3Protocol: "ipv4"
+            L4Protocol: "tcp,udp"
+            parallelsession: "yes"
+            SendMessageSize: "63488"
+            NoofOutbound: "1"
+            NoofInbound: "1"
+            LocalSendSocketSize: "131072"
+            RemoteSendSocketSize: "131072"
+            TestDuration: "180"
+            ExpectedResult: "ignore"

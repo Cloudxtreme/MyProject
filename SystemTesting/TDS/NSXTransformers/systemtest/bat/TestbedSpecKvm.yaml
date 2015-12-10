@@ -1,0 +1,134 @@
+# 2nd in YAML file merge
+
+#---------------------------------------
+# KVM TESTBED SPEC
+#---------------------------------------
+
+# 12/8/2014 9:08:33 AM
+# copied from bat L2/TestbedSpec.yaml
+# L2KvmTestbedSpec01: &L2_KVM_TOPOLOGY_01
+
+BatTestbedSpecKvm: &BAT_TESTBED_SPEC_KVM
+   'kvm':
+        '[1-10]':
+            pif:
+                '[1]':
+                    persist_configuration:
+                        bootproto: "dhcp"
+                        onboot: "yes"
+            framework_setup:
+                - disablefirewall
+                - createanchor
+                - copysshkey
+            configure_package:
+               execution_type: 'cmd'
+               operation: install
+            bridge:
+                '[1]':
+                    name: nsxvswitch
+                    switch_fail_mode: secure
+                    # XXX(salmanm): The product expects a hard coded bridge-id
+                    # in external-ids column of the integration bridge to be
+                    # set to "nsx-managed". Bugzilla #1314847.
+                    external_id: nsx-managed
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+            start_service:
+               # XXX(salmanm): Workaround for #1374177
+               execution_type: 'cmd'
+               service_name: 'nsx-agent'
+
+# ESX host for Edge in KVM deployment
+   'esx':
+        '[1]':  # last host is dedicated for Edge
+            configure_package:
+                execution_type: 'cli'
+                operation: install
+                maintenance: true
+                signaturecheck: false
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+            vmnic:
+                '[1]':
+                    driver: 'any'
+
+# ESX host for Edge in KVM deployment
+   'nsxmanager':
+        '[1]':
+            ip: none
+            fabrichost:
+                '[1]':  # last host is dedicated for Edge
+                    discover: 'true'
+                    hypervisor_info:
+                        ip_addresses: 'esx.[x=fabrichost_index]'
+
+   'nsxcontroller':
+        '[1]':
+            'ip': none
+            set_nsx_registration:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+
+#   'nsxedge':
+#        '[1-2]':
+#            ip: none
+
+   'vm':
+        '[1]':
+            host: 'kvm.[1]'
+            template: template_kvm_debian
+            installtype: fullclone
+            vmstate: poweron
+        '[2]':
+            host: 'kvm.[2]'
+            template: template_kvm_debian
+            installtype: fullclone
+            vmstate: poweron
+        '[3]':
+            host: 'kvm.[3]'
+            template: template_kvm_debian
+            installtype: fullclone
+            vmstate: poweron
+        '[4-5]':
+            host: 'kvm.[4]'
+            template: template_kvm_debian
+            installtype: fullclone
+            vmstate: poweron
+        '[6]':
+            host: 'kvm.[5]'
+            template: template_kvm_debian
+            installtype: fullclone
+            vmstate: poweron
+        '[7-9]':
+            host: 'kvm.[6]'
+            template: template_kvm_debian
+            installtype: fullclone
+            vmstate: poweron
+        '[10-12]':
+            host: 'kvm.[7]'
+            template: template_kvm_debian
+            installtype: fullclone
+            vmstate: poweron
+#        '[13]':
+#            host: 'kvm.[8]'
+#            template: template_kvm_debian
+#            installtype: fullclone
+#            vmstate: poweron
+#        '[14-15]':
+#            host: 'kvm.[9]'
+#            template: template_kvm_debian
+#            installtype: fullclone
+#            vmstate: poweron
+#        '[16]':
+#            host: 'kvm.[10]'
+#            template: template_kvm_debian
+#            installtype: fullclone
+#            vmstate: poweron
+
+# //++/++//////////////////////////////
+# last line is empty no spaces, nada, so yaml files join happens correctly

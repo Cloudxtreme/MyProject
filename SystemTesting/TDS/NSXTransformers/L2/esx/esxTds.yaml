@@ -1,0 +1,57 @@
+VerifyArpTest:
+    Product: "NSX"
+    Category: L2
+    Component: Firewall
+    ExpectedResult: PASS
+    Summary: Test runs a verification workload for ARP table.
+    Tags: L2, ESX, ARPTable, UnitTest
+    TestName: VerifyArpTest
+    tcmsid: ''
+    Version: '2'
+    pmt: ''
+    Testcaselevel: "Product"
+    Testcasetype: "Sanity"
+    qcpath: ''
+
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               ip: none
+        esx:
+            '[1]':
+               ip: none
+
+    WORKLOADS:
+        Sequence:
+            - [CreateTransportZone]
+            - [CreateLogicalSwitch]
+            - [VerifyArpEntries]
+
+        CreateTransportZone:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportzone:
+                '[1]':
+                    name: autogenerate
+                    transport_zone_type: 'overlay'
+
+        CreateLogicalSwitch:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalswitch:
+                '[1]':
+                    name: autogenerate
+                    transport_zone_id: nsxmanager.[1].transportzone.[1]
+                    admin_state: up
+                    replication_mode: mtep
+
+        VerifyArpEntries:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            get_arp_table[?]contain_once:
+                table:
+                    - adapter_ip: "vm.[1].vnic.[1]"
+                      adapter_mac: "vm.[1].vnic.[1]"

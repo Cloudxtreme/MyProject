@@ -1,0 +1,327 @@
+!include MPACommon.yaml
+!include TestbedSpec.yaml
+
+SmokeMPADiscoveryProcess:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: SmokeMPADiscoveryProcess
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p1
+    Developer: smanikarnike
+    Summary: Test MPA discovery process
+    Version: 2
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['RestartMPA']
+             - ['SyslogCheckForDiscoveryQueue']
+             - ['SyslogCheckForHeartbeatInterval']
+             - ['SyslogCheckForProductVersion']
+             - ['SyslogCheckForMasterBroker']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeMPADiscoveryProcess'
+
+        SyslogCheckForDiscoveryQueue:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeMPADiscoveryProcess'
+                grep_string: 'Dispatching discovery msg. Exiting listener for reconnect'
+                max_wait: 600
+
+        SyslogCheckForHeartbeatInterval:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeMPADiscoveryProcess'
+                grep_string: 'new_heartbeat_interval:'
+                max_wait: 600
+
+        SyslogCheckForProductVersion:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeMPADiscoveryProcess'
+                grep_string: 'product version : buildnumber'
+                max_wait: 600
+
+        SyslogCheckForMasterBroker:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeMPADiscoveryProcess'
+                grep_string: 'Adding master broker to cluster'
+                max_wait: 600
+
+SmokeMPAMessagingConfig:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: SmokeMPAMessagingConfig
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p1
+    Developer: smanikarnike
+    Summary: Verify MPA heartbeat through REST API
+    Version: 2
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['RestartMPA']
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['SyslogCheckForHeartbeat']
+
+        SyslogWriteIndex:
+           Type: Host
+           TestHost: *TEST_HOST
+           syslog_append:
+              execution_type: 'cmd'
+              syslog_message: 'SmokeMPAMessagingConfig'
+
+        GetClients: &GET_CLIENTS
+           Type: 'NSX'
+           TestNSX: 'nsxmanager.[1]'
+           messagingclient:
+              '[1]':
+                  result_object: 'results'
+
+        VerifyClientList: &VERIFY_CLIENT_LIST
+           Type: 'Messaging'
+           TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+           get_clients_list:
+              'result_count[?]equal_to': '1'
+
+        VerifyHeartbeatStatusOfClient1: &VERIFY_HEARTBEAT_STATUS_OF_CLIENT_1
+           Type: 'Messaging'
+           TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+           noofretries: 3
+           sleepbetweenretry: 60
+           heartbeat_status:
+              'client_status[?]equal_to': 'UP'
+
+        SyslogCheckForHeartbeat:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeMPAMessagingConfig'
+                grep_string: 'Entering Heartbeat Msg Handler'
+                max_wait: 600
+
+SmokeVerticalCloseConnect:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: SmokeVerticalCloseConnect
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p1
+    Developer: smanikarnike
+    Summary: Testing sample client close connection
+    Version: 2
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             # cleanup
+             - ['KillSampleClient']
+             # test workloads
+             - ['SyslogWriteIndex']
+             - ['ConnectXMLRPCServer']
+             - ['VerticalRegistration']
+             - ['VerticalCloseConnection']
+             - ['SyslogCheckForMessage']
+             - ['VerticalSendGenericMsgFail']
+             - ['KillSampleClient']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeVerticalCloseConnect'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeVerticalCloseConnect'
+                grep_string: 'removed from registry'
+                max_wait: 600
+
+SmokeVerticalReregister:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: SmokeVerticalReregister
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p1
+    Developer: smanikarnike
+    Summary: Testing sample client reregistration
+    Version: 2
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             # cleanup
+             - ['KillSampleClient']
+             # test workloads
+             - ['SyslogWriteIndex1']
+             - ['ConnectXMLRPCServer']
+             - ['VerticalRegistration']
+             - ['RestartMPA']
+             - ['SyslogCheckForFullyEstablished']
+             - ['VerticalCloseConnection']
+             - ['SyslogWriteIndex2']
+             - ['ConnectXMLRPCServer']
+             - ['VerticalRegistration']
+             - ['SyslogCheckForMessage']
+             - ['VerticalCloseConnection']
+             - ['KillSampleClient']
+
+        SyslogWriteIndex1:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeVerticalReregister1'
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeVerticalReregister1'
+                grep_string: 'MPA connection fully established'
+                max_wait: 600
+
+        SyslogWriteIndex2:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeVerticalReregister2'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeVerticalReregister2'
+                grep_string: 'Forwarding message to mp for app: CustomerVertical'
+                max_wait: 600
+
+Draft_SmokeVerticalSendMessages:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: SmokeVerticalSendMessages
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p1
+    Developer: smanikarnike
+    Summary: Testing if sample client can send twenty messages
+    Version: 2
+    TestbedSpec: *MPA_KVM_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+           # cleanup
+           - ['KillSampleClient']
+           # test workloads
+           - ['ConnectXMLRPCServer']
+           - ['VerticalRegistration']
+           - ['SyslogWriteIndexBefore']
+           - ['VerticalSendTwentyRpcMsg']
+           - ['SyslogWriteIndexAfter']
+           - ['SyslogCheckFor20Message']
+           - ['VerticalCloseConnection']
+           - ['KillSampleClient']
+
+        SyslogWriteIndexBefore:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeVerticalSendMessagesBefore'
+
+        SyslogWriteIndexAfter:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeVerticalSendMessagesAfter'
+
+        SyslogCheckFor20Message:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'SmokeVerticalSendMessagesBefore'
+                grep_string: 'SmokeVerticalSendMessagesAfter'
+                max_wait: 600
+                pattern: 'Msg Received in client queue. message type: com.vmware.nsx.customer.ClientRpcResponse'
+                count: 20

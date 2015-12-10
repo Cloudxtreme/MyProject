@@ -1,0 +1,74 @@
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+L3Basic:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Summary: This test case verifies L3 East West connectivity works between 2 VC
+             sites
+    Tags: 'TBD'
+    Version: 2
+    TestName: L3Basic
+    TestbedSpec: *L3_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            # TODO: We can group this and launch controller deployment
+            # + vib installation in parallel
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['AllVMsPowerOn']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['VIBInstallVxlanConfigMasterSite',
+               'VIBInstallVxlanConfigAllSlaveSite']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify4GlobalLogicalSwitches']
+            # Check L2 connecitivity first, same site and different site
+            # Even though its verified in L2 P0 tests, this is the first
+            # thing we check when L3 fails
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            # Check L3 connecitivity same site and different site
+            - ['CreateVerifyGlobalDistributedLogicalRouter']
+            - ['CreateVerifyLIFs']
+            - ['VM2OnFirstGlobalLogicalSwitch']
+            - ['VM3OnSecondGlobalLogicalSwitch']
+            - ['VM4OnThirdGlobalLogicalSwitch']
+            - ['VM5OnForthGlobalLogicalSwitch']
+            - ['ConfigureVM2Vnic1IP']
+            - ['ConfigureVM3Vnic1IP']
+            - ['ConfigureVM4Vnic1IP']
+            - ['ConfigureVM5Vnic1IP']
+            - ['AddRouteVM2']
+            - ['AddRouteVM3']
+            - ['AddRouteVM4']
+            - ['AddRouteVM5']
+            - ['AllVMsPingEachOther']
+
+        ExitSequence:
+            - ['AllVMsPowerOff']
+            ## This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['Delete_All_Universal_Edges']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigMasterSite']
+            - ['UnconfigureVxlanConfigSlaveSite']
+            - ['Delete_All_Controllers']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+
+        CreateVerify4GlobalLogicalSwitches:
+            Type: TransportZone
+            TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+            globallogicalswitch:
+                '[1-4]':
+                    controlplanemode: UNICAST_MODE
+                    name: AutoGenerate
+                    tenantid: AutoGenerate
+
+

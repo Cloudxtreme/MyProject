@@ -1,0 +1,267 @@
+CheckSNMPServiceStatus :
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SNMP"
+    TestName: "CheckSNMPServiceStatus"
+    Version: "2"
+    Summary: "Verify that SNMP service is running on NSX MP node"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check SNMP process status'
+    ExpectedResult: 'SNMP process should be in runnign state'
+    Duration: '5'
+    Tags: 'nsxmanager,management,snmp,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["SnmpServiceId"]
+        - ["VerifySnmpServiceStatus"]
+      SnmpServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[1]':
+                  map_object: true
+                  id_: 'snmp'
+      VerifySnmpServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            get_service_state:
+               service_name:  'snmp'
+               'runtime_state[?]equal_to': 'running'
+
+VerifySNMPService :
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SNMP"
+    TestName: "VerifySNMPService"
+    Version: "2"
+    Summary: "Verify that SNMP service is stopped and started again"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check SNMP process is stopped and then started again'
+    ExpectedResult: 'SNMP process should be in stopped state and then starts'
+    Duration: '5'
+    Tags: 'nsxmanager,management,snmp,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["SnmpServiceId"]
+        - ["StopSNMPService"]
+        - ["VerifySNMPServiceStopped"]
+        - ["StartSNMPService"]
+        - ["VerifySNMPServiceStarted"]
+      SnmpServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[1]':
+                  map_object: true
+                  id_: 'snmp'
+      StopSNMPService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+                state: 'stop'
+                service_name: 'snmp'
+      VerifySNMPServiceStopped:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            get_service_state:
+               service_name:  'snmp'
+               'runtime_state[?]equal_to': 'stopped'
+      StartSNMPService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+                state: 'start'
+                service_name: 'snmp'
+      VerifySNMPServiceStarted:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            get_service_state:
+               service_name:  'snmp'
+               'runtime_state[?]equal_to': 'running'
+
+GetSystemMIBForNSXMP :
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SNMP"
+    TestName: "GetSystemMIBForNSXMP"
+    Version: "2"
+    Summary: "Verify that SNMP system MIB can be fetched"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Fetch SNMP system MIB'
+    ExpectedResult: 'SNMP system MIB should be returned successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,snmp,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+          - ["SetSNMPKey"]
+          - ['FetchNSXStatus']
+          - ["FetchSNMPSystemMIB"]
+      SetSNMPKey:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            snmpmanager:
+              '[1]':
+                  map_object: true
+                  id_: 'snmp'
+
+      FetchNSXStatus:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            read_status:
+                'uptime[?]defined': ''
+
+      FetchSNMPSystemMIB:
+          Type: "SnmpManager"
+          TestSnmpManager : "nsxmanager.[1].snmpmanager.[1]"
+          manager_ip: 'nsxmanager.[1]'
+          systemmib:
+              'snmp_response':
+                  'SNMPv2-MIB::sysUpTime."0"[?]defined' : ''
+
+GetHostResourcesMIBForNSXMP :
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SNMP"
+    TestName: "GetHostResourceMIBForNSXMP"
+    Version: "2"
+    Summary: "Verify that SNMP host resources MIBs can be fetched"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Fetch NSX manager status
+                2. Fetch Host resources MIB
+                3. Verify against read_status key for mem_total field'
+    ExpectedResult: 'SNMP Host resources MIb should be fetched and verified'
+    Duration: '5'
+    Tags: 'nsxmanager,management,snmp,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ['SetSNMPKey']
+        - ['FetchNSXStatus']
+        - ['FetchSNMPHostResourcesMIB']
+
+      SetSNMPKey:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            snmpmanager:
+              '[1]':
+                  map_object: true
+                  id_: 'snmp'
+
+      FetchNSXStatus:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            PersistData: "Yes"
+            read_status:
+                'mem_total[?]defined': ''
+
+      FetchSNMPHostResourcesMIB:
+          Type: "SnmpManager"
+          TestSnmpManager : "nsxmanager.[1].snmpmanager.[1]"
+          manager_ip: 'nsxmanager.[1]'
+          hostresourcesmib:
+              'snmp_response':
+                  'HOST-RESOURCES-MIB::hrMemorySize."0"[?]equal_to' : 'nsxmanager.[1]->read_status->mem_total'
+
+GetInterfacesMIBForNSXMP :
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SNMP"
+    TestName: "GetInterfacesMIBForNSXMP"
+    Version: "2"
+    Summary: "Verify that SNMP interfaces MIBs can be fetched"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Semi-Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Fetch NSX manager status
+                2. Fetch Interfaces MIB
+                3. Verify against read_status key'
+    ExpectedResult: 'SNMP Host resources MIb should be fetched and verified'
+    Duration: '5'
+    Tags: 'nsxmanager,management,snmp,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ['SetSNMPKey']
+        - ['FetchNSXStatus']
+        - ['FetchSNMPInterfacesMIB']
+
+      SetSNMPKey:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            snmpmanager:
+              '[1]':
+                  map_object: true
+                  id_: 'snmp'
+
+      FetchNSXStatus:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            PersistData: "Yes"
+            read_status:
+                #ToDo : aghaisas : fetching of required values
+
+
+      FetchSNMPInterfacesMIB:
+          Type: "SnmpManager"
+          TestSnmpManager : "nsxmanager.[1].snmpmanager.[1]"
+          manager_ip: 'nsxmanager.[1]'
+          interfacesmib:
+              'snmp_response':
+                   #TODO : aghaisas : verification of fetched data
+                  'IF-MIB::ifPhysAddress."3"[?]equal_to' : ''

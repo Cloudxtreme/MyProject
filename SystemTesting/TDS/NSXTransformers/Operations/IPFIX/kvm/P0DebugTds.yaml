@@ -1,0 +1,1001 @@
+!include ../../../L2/Kvm/TestbedSpec.yaml
+!include CommonWorkloads.yaml
+!include TopoIPFIX_4Hosts.yaml
+!include ../MetaDataTemplates.yaml
+
+IPFIXBasicAPI:
+    <<: *P0_KVM_Template
+    TestName: "IPFIXBasicAPI"
+    Summary: "Test basic IPFIX API by doing Create, Read and Update API calls."
+    Procedure:
+        - Setup L2 topology.
+        - Enable IPFIX.
+        - Update the IPFIX configuration with the 1st set of values.
+        - Verify the IPFIX configuration from READ API call to nsx-manager.
+        - Verify this configuration on the hosts using cli.
+        - Disable IPFIX.
+        - Cleanup L2 setup.
+    Developer: "gangarm"
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - ['L2Setup--KVM']
+            - ['L2Verification--KVM']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['ReadIPFIXConfig']
+            - ['VerifyIPFIXConfigOnHosts1to4--KVM']
+        ExitSequence:
+            - ['DisableIPFIX']
+            - ['L2Cleanup--KVM']
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            domain_id: '10'
+            port: 9999
+            idle_timeout: '100'
+            flow_timeout: '200'
+            packet_sample_probability: '0.1'
+            max_flows: '1000'
+
+        ReadIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            read:
+              'domain_id[?]equal_to': '10'
+              'port[?]equal_to': 9999
+              'idle_timeout[?]equal_to': '100'
+              'flow_timeout[?]equal_to': '200'
+              'max_flows[?]equal_to': '1000'
+              'ip_address[?]equal_to': 'vm.[8]->ip'
+              'packet_sample_probability[?]equal_to': '0.1'
+
+IPFIXBasicTraffic:
+    <<: *P0_KVM_Template
+    TestName: "IPFIXBasicTraffic"
+    Summary: "Test basic functionality for different traffic types."
+    Procedure:
+        - Setup L2 topology.
+        - Start the capture process on the collector so that we dont miss the
+          template sent when IPFIX is enabled.
+        - Enable IPFIX.
+        - Update the IPFIX configuration to have active timeout of 60 seconds
+          and 100% sampling.
+        - Start different types of traffic.
+        - Verify the captured data.
+        - Disable IPFIX.
+        - Cleanup L2 setup.
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - ['L2Setup--KVM']
+            - ['L2Verification--KVM']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['ReadIPFIXConfig']
+            # TODO: Add VLAN and SCTP (BZ 1314823) traffic as well.
+
+            # IPv4 ICMP traffic over MTEP based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv4ICMPTrafficVM1toVM3']
+            - ['GetIPv4ICMPIPFIXCapturedDataVM1toVM3']
+
+            # IPv4 ICMP traffic over SOURCE based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv4ICMPTrafficVM2toVM4']
+            - ['GetIPv4ICMPIPFIXCapturedDataVM2toVM4']
+
+            # IPv4 TCP traffic over MTEP based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv4TCPTrafficVM1toVM3']
+            - ['GetIPv4TCPIPFIXCapturedDataVM1toVM3']
+
+            # IPv4 TCP traffic over SOURCE based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv4TCPTrafficVM2toVM4']
+            - ['GetIPv4TCPIPFIXCapturedDataVM2toVM4']
+
+            # IPv4 UDP traffic over MTEP based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv4UDPTrafficVM5toVM7']
+            - ['GetIPv4UDPIPFIXCapturedDataVM5toVM7']
+
+            # IPv4 UDP traffic over SOURCE based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv4UDPTrafficVM4toVM6']
+            - ['GetIPv4UDPIPFIXCapturedDataVM4toVM6']
+
+            # IPv6 ICMP traffic over MTEP based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv6ICMPTrafficVM1toVM3']
+            - ['GetIPv6ICMPIPFIXCapturedDataVM1toVM3']
+
+            # IPv6 ICMP traffic over SOURCE based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv6ICMPTrafficVM2toVM4']
+            - ['GetIPv6ICMPIPFIXCapturedDataVM2toVM4']
+
+            # IPv6 TCP traffic over MTEP based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv6TCPTrafficVM1toVM3']
+            - ['GetIPv6TCPIPFIXCapturedDataVM1toVM3']
+
+            # IPv6 TCP traffic over SOURCE based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv6TCPTrafficVM2toVM4']
+            - ['GetIPv6TCPIPFIXCapturedDataVM2toVM4']
+
+            # IPv6 UDP traffic over MTEP based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv6UDPTrafficVM5toVM7']
+            - ['GetIPv6UDPIPFIXCapturedDataVM5toVM7']
+
+            # IPv6 UDP traffic over SOURCE based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv6UDPTrafficVM4toVM6']
+            - ['GetIPv6UDPIPFIXCapturedDataVM4toVM6']
+        ExitSequence:
+            - ['DisableIPFIX']
+            - ['L2Cleanup--KVM']
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            domain_id: '10'
+            port: 9999
+            flow_timeout: '60'
+            idle_timeout: '60'
+            packet_sample_probability: '1'
+
+        ReadIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            read:
+              'domain_id[?]equal_to': '10'
+              'port[?]equal_to': 9999
+              'flow_timeout[?]equal_to': '60'
+              'idle_timeout[?]equal_to': '60'
+              'ip_address[?]equal_to': 'vm.[8]->ip'
+              'packet_sample_probability[?]equal_to': '1.0'
+
+        StartTShark:
+            Type: VM
+            TestVM: 'vm.[8]'
+            capture:
+                tool: 'tshark'
+                file_name: '/tmp/tshark123.cap'
+                capture_filter: '-s 1500 -f "dst port 9999"'
+                adapter_name: 'eth0'
+                execution_type: 'cmd'
+
+        IPv4ICMPTrafficVM1toVM3: &IPV4_ICMP_TRAFFIC_VM1_TO_VM3
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[3].vif.[1]"
+            TestDuration  : "10"
+            sleepbetweenworkloads: "10"
+            Connectivitytest: 0
+
+        IPv4ICMPTrafficVM2toVM4: &IPV4_ICMP_TRAFFIC_VM2_TO_VM4
+            <<: *IPV4_ICMP_TRAFFIC_VM1_TO_VM3
+            TestAdapter   : "vm.[2].vif.[1]"
+            SupportAdapter: "vm.[4].vif.[1]"
+
+        IPv4TCPTrafficVM1toVM3: &IPV4_TCP_TRAFFIC_VM1_TO_VM3
+            Type          : "Traffic"
+            ToolName      : "scapy"
+            L3Protocol    : "ipv4"
+            Protocol      : "tcp"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[3].vif.[1]"
+            sourceport    : 1234
+            destport      : 4321
+            PktCount      : "10"
+            sleepbetweenworkloads: "10"
+            Connectivitytest: 0
+
+        IPv4TCPTrafficVM2toVM4: &IPV4_TCP_TRAFFIC_VM2_TO_VM4
+            <<: *IPV4_TCP_TRAFFIC_VM1_TO_VM3
+            TestAdapter   : "vm.[2].vif.[1]"
+            SupportAdapter: "vm.[4].vif.[1]"
+
+        IPv4UDPTrafficVM5toVM7: &IPV4_UDP_TRAFFIC_VM5_TO_VM7
+            <<: *IPV4_TCP_TRAFFIC_VM1_TO_VM3
+            Protocol      : "udp"
+            TestAdapter   : "vm.[5].vif.[1]"
+            SupportAdapter: "vm.[7].vif.[1]"
+
+        IPv4UDPTrafficVM4toVM6: &IPV4_UDP_TRAFFIC_VM4_TO_VM6
+            <<: *IPV4_UDP_TRAFFIC_VM5_TO_VM7
+            TestAdapter   : "vm.[4].vif.[1]"
+            SupportAdapter: "vm.[6].vif.[1]"
+
+        IPv6ICMPTrafficVM1toVM3:
+            <<: *IPV4_ICMP_TRAFFIC_VM1_TO_VM3
+            L3protocol: 'ipv6'
+
+        IPv6ICMPTrafficVM2toVM4:
+            <<: *IPV4_ICMP_TRAFFIC_VM2_TO_VM4
+            L3protocol: 'ipv6'
+
+        IPv6TCPTrafficVM1toVM3:
+            <<: *IPV4_TCP_TRAFFIC_VM1_TO_VM3
+            L3Protocol: 'ipv6'
+            DestinationMAC: vm.[3].vif.[1]
+
+        IPv6TCPTrafficVM2toVM4:
+            <<: *IPV4_TCP_TRAFFIC_VM2_TO_VM4
+            L3Protocol: 'ipv6'
+            DestinationMAC: vm.[4].vif.[1]
+
+        IPv6UDPTrafficVM5toVM7:
+            <<: *IPV4_UDP_TRAFFIC_VM5_TO_VM7
+            L3Protocol: 'ipv6'
+            DestinationMAC: vm.[7].vif.[1]
+            # XXX(gangrm): There is a limitation in IPFIX on ESX5.5, a packet
+            # whose header is less than 20 bytes will be ignored by IPFIX.
+            # Plain UDP packet generated by this workload would be just 8 bytes.
+            # Hence add payload to make it larger than 20 bytes.
+            Payload: "Buffer_payload"
+
+        IPv6UDPTrafficVM4toVM6:
+            <<: *IPV4_UDP_TRAFFIC_VM4_TO_VM6
+            L3Protocol: 'ipv6'
+            DestinationMAC: vm.[6].vif.[1]
+            # XXX(gangrm): There is a limitation in IPFIX on ESX5.5, a packet
+            # whose header is less than 20 bytes will be ignored by IPFIX.
+            # Plain UDP packet generated by this workload would be just 8 bytes.
+            # Hence add payload to make it larger than 20 bytes.
+            Payload: "Buffer_payload"
+
+        GetIPv4ICMPIPFIXCapturedDataVM1toVM3: &GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            Type: VM
+            TestVM: 'vm.[8]'
+            sleepbetweenworkloads: "60"
+            tool: 'tshark'
+            execution_type: 'cmd'
+            file_name: '/tmp/tshark123.cap'
+            port: 9999
+            stop_capture: true
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddr==vm.[1].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[3].vif.[1]->GetIPv4 " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv4ICMPIPFIXCapturedDataVM2toVM4:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddr==vm.[2].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[4].vif.[1]->GetIPv4 " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv4TCPIPFIXCapturedDataVM1toVM3:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddr==vm.[1].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[3].vif.[1]->GetIPv4 " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv4TCPIPFIXCapturedDataVM2toVM4:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddr==vm.[2].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[4].vif.[1]->GetIPv4 " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      src_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv4UDPIPFIXCapturedDataVM5toVM7:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddr==vm.[5].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[7].vif.[1]->GetIPv4 " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ip: 'vm.[5].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[5].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[7].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[7].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[3]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ip: 'vm.[5].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[5].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[7].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[7].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[3]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      src_ip: 'vm.[5].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[5].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[7].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[7].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[4]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ip: 'vm.[5].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[5].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[7].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[7].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[4]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv4UDPIPFIXCapturedDataVM4toVM6:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddr==vm.[4].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[6].vif.[1]->GetIPv4 " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[6].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[6].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[6].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[6].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      src_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[6].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[6].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[3]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[6].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[6].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '04'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[3]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv6ICMPIPFIXCapturedDataVM1toVM3:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddrv6 -e cflow.dstaddrv6 -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddrv6==vm.[1].vif.[1]->GetSingleIPv6Global && cflow.dstaddrv6==vm.[3].vif.[1]->GetSingleIPv6Global " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[1].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[3].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '58'  # ICMP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[1].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[3].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '58'  # ICMP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[1].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[3].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '58'  # ICMP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[1].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[3].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '58'  # ICMP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv6ICMPIPFIXCapturedDataVM2toVM4:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddrv6 -e cflow.dstaddrv6 -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddrv6==vm.[2].vif.[1]->GetSingleIPv6Global && cflow.dstaddrv6==vm.[4].vif.[1]->GetSingleIPv6Global " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[2].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '58'  # ICMP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[2].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '58'  # ICMP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[2].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '58'  # ICMP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[2].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '58'  # ICMP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv6TCPIPFIXCapturedDataVM1toVM3:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddrv6 -e cflow.dstaddrv6 -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddrv6==vm.[1].vif.[1]->GetSingleIPv6Global && cflow.dstaddrv6==vm.[3].vif.[1]->GetSingleIPv6Global " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[1].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[3].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[1].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[3].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[1].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[3].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[1].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[3].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv6TCPIPFIXCapturedDataVM2toVM4:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddrv6 -e cflow.dstaddrv6 -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddrv6==vm.[2].vif.[1]->GetSingleIPv6Global && cflow.dstaddrv6==vm.[4].vif.[1]->GetSingleIPv6Global " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[2].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[2].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[2].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[2].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '6'  # TCP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv6UDPIPFIXCapturedDataVM5toVM7:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddrv6 -e cflow.dstaddrv6 -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddrv6==vm.[5].vif.[1]->GetSingleIPv6Global && cflow.dstaddrv6==vm.[7].vif.[1]->GetSingleIPv6Global " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[5].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[5].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[7].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[7].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[3]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[5].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[5].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[7].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[7].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[3]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[5].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[5].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[7].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[7].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[4]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[5].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[5].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[7].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[7].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[4]->mgmt_ip'
+                      flowset_id: 267
+
+        GetIPv6UDPIPFIXCapturedDataVM4toVM6:
+            <<: *GetIPv4ICMPIPFIXCaptureDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddrv6 -e cflow.dstaddrv6 -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddrv6==vm.[4].vif.[1]->GetSingleIPv6Global && cflow.dstaddrv6==vm.[6].vif.[1]->GetSingleIPv6Global " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[6].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[6].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[6].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[6].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[6].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[6].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[3]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      src_ipv6: 'vm.[4].vif.[1]->SingleIPv6Global'
+                      src_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      dst_ipv6: 'vm.[6].vif.[1]->SingleIPv6Global'
+                      dst_mac: 'vm.[6].vif.[1]->adapter_mac'
+                      protocol: '17'  # UDP
+                      ip_version: '06'
+                      pktcount: '10'
+                      exporter_ip: 'kvm.[3]->mgmt_ip'
+                      flowset_id: 267
+
+IPFIXVerifySampleProbability:
+    <<: *P0_KVM_Template
+    TestName: "IPFIXVerifySampleProbability"
+    Summary: "Test basic functionality for different traffic types."
+    Procedure:
+        - Setup L2 topology.
+        - Start the capture process on the collector so that we dont miss the
+          template sent when IPFIX is enabled.
+        - Enable IPFIX.
+        - Update the IPFIX configuration to have 100%/50%/10% sampling.
+        - Start traffic between VMs for each of the above three cases.
+        - Verify the captured data has correct number of sampled packets.
+          +/- 2 packets margin is allowed since sampling is not expected to be exact.
+        - Disable IPFIX.
+        - Cleanup L2 setup.
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - ['L2Setup--KVM']
+            - ['L2Verification--KVM']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['ReadIPFIXConfig']
+
+            # 100% Sampling.
+            # IPv4 ICMP traffic over MTEP based LS.
+            - ['StartTSharkOnVM-8']
+            - ['DisableIPFIX']
+            - ['Set100PercentSampleProbability']
+            - ['Verify100PercentSampleProbabilityOnMP']
+            - ['Verify100PercentSampleProbabilityOnHosts--KVM']
+            - ['PingVM1toVM3For100s']
+            - ['Verify100VM1-VM3PacketsSampled']
+
+            # IPv4 ICMP traffic over SOURCE based LS.
+            - ['StartTSharkOnVM-8']
+            - ['DisableIPFIX']
+            - ['Set100PercentSampleProbability']
+            - ['Verify100PercentSampleProbabilityOnMP']
+            - ['Verify100PercentSampleProbabilityOnHosts--KVM']
+            - ['PingVM2toVM4For100s']
+            - ['Verify100VM2-VM4PacketsSampled']
+
+            # 50% Sampling.
+            # IPv4 ICMP traffic over MTEP based LS.
+            - ['StartTSharkOnVM-8']
+            - ['DisableIPFIX']
+            - ['Set50PercentSampleProbability']
+            - ['Verify50PercentSampleProbabilityOnMP']
+            - ['Verify50PercentSampleProbabilityOnHosts--KVM']
+            - ['PingVM1toVM3For100s']
+            - ['Verify50VM1-VM3PacketsSampled']
+
+            # IPv4 ICMP traffic over SOURCE based LS.
+            - ['StartTSharkOnVM-8']
+            - ['DisableIPFIX']
+            - ['Set50PercentSampleProbability']
+            - ['Verify50PercentSampleProbabilityOnMP']
+            - ['Verify50PercentSampleProbabilityOnHosts--KVM']
+            - ['PingVM2toVM4For100s']
+            - ['Verify50VM2-VM4PacketsSampled']
+
+            # 10% Sampling.
+            # IPv4 ICMP traffic over MTEP based LS.
+            - ['StartTSharkOnVM-8']
+            - ['DisableIPFIX']
+            - ['Set10PercentSampleProbability']
+            - ['Verify10PercentSampleProbabilityOnMP']
+            - ['Verify10PercentSampleProbabilityOnHosts--KVM']
+            - ['PingVM1toVM3For100s']
+            - ['Verify10VM1-VM3PacketsSampled']
+
+            # IPv4 ICMP traffic over SOURCE based LS.
+            - ['StartTSharkOnVM-8']
+            - ['DisableIPFIX']
+            - ['Set10PercentSampleProbability']
+            - ['Verify10PercentSampleProbabilityOnMP']
+            - ['Verify10PercentSampleProbabilityOnHosts--KVM']
+            - ['PingVM2toVM4For100s']
+            - ['Verify10VM2-VM4PacketsSampled']
+        ExitSequence:
+            - ['DisableIPFIX']
+            - ['L2Cleanup--KVM']
+
+        UpdateIPFIXConfig: &UpdateIPFIXConfig
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            domain_id: '10'
+            port: 9999
+            flow_timeout: '60'
+            idle_timeout: '60'
+            enabled: "true"
+            ip_address: 'vm.[8]->ip'
+
+        Set100PercentSampleProbability:
+            <<: *UpdateIPFIXConfig
+            packet_sample_probability: '1'
+
+        Set50PercentSampleProbability:
+            <<: *UpdateIPFIXConfig
+            packet_sample_probability: '0.5'
+
+        Set10PercentSampleProbability:
+            <<: *UpdateIPFIXConfig
+            packet_sample_probability: '0.1'
+
+        ReadIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            read:
+              'domain_id[?]equal_to': '10'
+              'port[?]equal_to': 9999
+              'flow_timeout[?]equal_to': '60'
+              'idle_timeout[?]equal_to': '60'
+              'ip_address[?]equal_to': 'vm.[8]->ip'
+
+        PingVM1toVM3For100s: &PingVM1toVM3For100s
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[3].vif.[1]"
+            TestDuration  : "100"
+            sleepbetweenworkloads: "10"
+            Connectivitytest: 0
+
+        PingVM2toVM4For100s: &PingVM2toVM4For100s
+            <<: *PingVM1toVM3For100s
+            TestAdapter   : "vm.[2].vif.[1]"
+            SupportAdapter: "vm.[4].vif.[1]"
+
+        Verify100VM1-VM3PacketsSampled: &Verify100PercentVM1-VM3PacketsSampled
+            Type: VM
+            TestVM: 'vm.[8]'
+            sleepbetweenworkloads: "65"  # idle timeout + 5 (margin)
+            tool: 'tshark'
+            execution_type: 'cmd'
+            file_name: '/tmp/tshark123.cap'
+            stop_capture: true
+            read_filter: '-R "cflow.srcaddr==vm.[1].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[3].vif.[1]->GetIPv4 && cflow.protocol==1 && cflow.packets64==100" -2 -d udp.port==9999,cflow'
+            get_captured_packet_count[?]contains:
+                pktcount: '1'
+
+        Verify100VM2-VM4PacketsSampled:
+            <<: *Verify100PercentVM1-VM3PacketsSampled
+            read_filter: '-R "cflow.srcaddr==vm.[2].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[4].vif.[1]->GetIPv4 && cflow.protocol==1 && cflow.packets64==100" -2 -d udp.port==9999,cflow'
+
+        Verify50VM1-VM3PacketsSampled:
+            <<: *Verify100PercentVM1-VM3PacketsSampled
+            read_filter: '-R "cflow.srcaddr==vm.[1].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[3].vif.[1]->GetIPv4 && cflow.protocol==1 && (cflow.packets64==48 || cflow.packets64==49 || cflow.packets64==50 || cflow.packets64==51 || cflow.packets64==52)" -2 -d udp.port==9999,cflow'
+
+        Verify50VM2-VM4PacketsSampled:
+            <<: *Verify100PercentVM1-VM3PacketsSampled
+            read_filter: '-R "cflow.srcaddr==vm.[2].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[4].vif.[1]->GetIPv4 && cflow.protocol==1 && (cflow.packets64==48 || cflow.packets64==49 || cflow.packets64==50 || cflow.packets64==51 || cflow.packets64==52)" -2 -d udp.port==9999,cflow'
+
+        Verify10VM1-VM3PacketsSampled:
+            <<: *Verify100PercentVM1-VM3PacketsSampled
+            read_filter: '-R "cflow.srcaddr==vm.[1].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[3].vif.[1]->GetIPv4 && cflow.protocol==1 && (cflow.packets64==8 || cflow.packets64==9 || cflow.packets64==10 || cflow.packets64==11 || cflow.packets64==12)" -2 -d udp.port==9999,cflow'
+
+        Verify10VM2-VM4PacketsSampled:
+            <<: *Verify100PercentVM1-VM3PacketsSampled
+            read_filter: '-R "cflow.srcaddr==vm.[2].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[4].vif.[1]->GetIPv4 && cflow.protocol==1 && (cflow.packets64==8 || cflow.packets64==9 || cflow.packets64==10 || cflow.packets64==11 || cflow.packets64==12)" -2 -d udp.port==9999,cflow'
+
+IPFIXVerifyTunnelHeaders:
+    <<: *P0_KVM_Template
+    TestName: "IPFIXVerifyTunnelHeaders"
+    Summary: "Verify if tunnel headers are exported correctly in IPFIX exported data."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}

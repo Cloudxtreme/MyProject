@@ -1,0 +1,2666 @@
+WORKLOADS:
+    TDSCommonFieldsCase: &TDS_COMMON_FIELDS_P0_CASE
+        Product: "NSX6.2"
+        Component: "SampleComponent"
+        Category: "TOR"
+        TestName:  "SampleCaseName"
+        Version: "2"
+        Tags: "tor"
+        QCPath: "ESX"
+        ExpectedResult: "PASS"
+        Status: "Execution Ready"
+        AutomationLevel: "Not Automated"
+        FullyAutomatable: "Y"
+        TestcaseLevel: "Functional"
+        TestcaseType: "Functional"
+        Priority: "P0"
+        Developer: "SampleDeveloper"
+        Partnerfacing: "N"
+
+    TDSCommonFieldsCase: &TDS_COMMON_FIELDS_P1_CASE
+       <<: *TDS_COMMON_FIELDS_P0_CASE
+       Priority: "P1"
+
+    TDSCommonFieldsCase: &TDS_COMMON_FIELDS_P2_CASE
+       <<: *TDS_COMMON_FIELDS_P0_CASE
+       Priority: "P2"
+
+    TDSCommonFieldsCase: &TDS_COMMON_FIELDS_P3_CASE
+       <<: *TDS_COMMON_FIELDS_P0_CASE
+       Priority: "P3"
+
+########### multiVC ###########
+    SetMasterNSXReplicatorAsPrimary: &SET_MASTER_NSX_REPLICATOR_AS_PRIMARY
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_role: primary
+#        metadata:
+#            expectedresultcode: '200'
+
+    RegisterAllSlaveNSXManager: &REGISTER_NSX_MANAGER_WITH_REPLICATOR
+        Type: NSX
+        TestNSX: vsm.[1]
+        ##################
+        # PR 1396374. Remove the hack when its fixed
+        sleepbetweenworkloads: 30
+        ##################
+        nsxslave:
+            '[1]':
+                ipaddress: 'vsm.[2]'
+                username: 'vsm.[2]'
+                password: 'vsm.[2]'
+                cert_thumbprint: 'vsm.[2]'
+                isPrimary: 'False'
+#        metadata:
+#            expectedresultcode: '201'
+
+    CheckController1SyncAllHost: &CHECK_CONTROLLER_1_SYNC_ALL_HOST
+        Type: Host
+        testhost: 'host.[4]'
+        # PR xxxxx. Remove the hack when its fixed
+        sleepbetweenworkloads: 120
+        'verifycontrollerinfoonhost[?]contain_once':
+          - port: 1234
+            server: 'vsm.[1].vxlancontroller.[1]'
+            sslenabled: 'true'
+
+    CreateGlobalVNIPool: &CREATE_GLOBAL_VNI_POOL
+        Type: NSX
+        TestNSX: vsm.[1]
+        globalvnipool:
+            '[1]':
+                name: AutoGenerate
+                begin: 10000
+                end: 19000
+
+    CreateLocalVNIPoolA: &CREATE_LOCAL_VNI_POOL_A
+        Type: NSX
+        TestNSX: vsm.[1]
+        segmentidrange:
+            '[1]':
+                name: 'local_A'
+                begin: 20000
+                end: 29000
+
+    CreateLocalVNIPoolB: &CREATE_LOCAL_VNI_POOL_B
+        Type: NSX
+        TestNSX: vsm.[2]
+        segmentidrange:
+            '[1]':
+                name: 'local_B'
+                begin: 30000
+                end: 35000
+
+    CreateLocalVNIPoolC: &CREATE_LOCAL_VNI_POOL_C
+        Type: NSX
+        TestNSX: vsm.[3]
+        segmentidrange:
+            '[1]':
+                name: 'local_C'
+                begin: 36000
+                end: 40000
+
+    CreateGlobalTransportZone: &CREATE_GLOBAL_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        globaltransportzone:
+            '[1]':
+                name: AutoGenerate
+                clusters: 'vc.[1].datacenter.[1].cluster.[2-3]'
+#        metadata:
+#            expectedresultcode: '201'
+
+    CreateLocalTransportZoneA: &CREATE_LOCAL_TRANSPORT_ZONE_A
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        networkscope:
+            '[1]':
+                name: 'LTZ-A'
+                clusters: 'vc.[1].datacenter.[1].cluster.[2-3]'
+
+    CreateLocalTransportZoneB: &CREATE_LOCAL_TRANSPORT_ZONE_B
+        Type: NSX
+        TestNSX: 'vsm.[2]'
+        networkscope:
+            '[1]':
+                name: 'LTZ-B'
+                clusters: 'vc.[2].datacenter.[1].cluster.[1]'
+
+    CreateLocalTransportZoneC: &CREATE_LOCAL_TRANSPORT_ZONE_C
+        Type: NSX
+        TestNSX: 'vsm.[3]'
+        networkscope:
+            '[1]':
+                name: 'LTZ-C'
+                clusters: 'vc.[3].datacenter.[1].cluster.[1-2]'
+
+    AddClustersToGTZSlaveB: &ADD_CLUSTERS_GTZ_SLAVE_B
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+        transportzoneaction: expand
+        clusters: 'vc.[2].datacenter.[1].cluster.[1-2]'
+#        metadata:
+#            expectedresultcode: '201'
+
+    AddClustersToGTZSlaveC: &ADD_CLUSTERS_GTZ_SLAVE_C
+        Type: TransportZone
+        TestTransportZone: 'vsm.[3].globaltransportzone.[1]'
+        transportzoneaction: expand
+        clusters: 'vc.[3].datacenter.[1].cluster.[1-2]'
+
+    AddClustersToGTZSlaveSites_B: &ADD_CLUSTERS_GTZ_SLAVE_SITES_B
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].networkscope.[1]'
+        transportzoneaction: expand
+        clusters: 'vc.[2].datacenter.[1].cluster.[2]'
+
+    CreateGlobalLogicalSwitches: &CREATE_GLOBAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        globallogicalswitch:
+            '[1-18]':
+                controlplanemode: UNICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+
+    CreateLocalLogicalSwitches: &CREATE_LOCAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].networkscope.[1]'
+        virtualwire:
+            '[1-10]':
+                controlplanemode: UNICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+
+    CreateLocalLogicalSwitchesB: &CREATE_LOCAL_LOGICAL_SWITCHES_B
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].networkscope.[1]'
+        virtualwire:
+            '[1-10]':
+                controlplanemode: UNICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+
+    CreateLocalLogicalSwitchesC: &CREATE_LOCAL_LOGICAL_SWITCHES_C
+        Type: TransportZone
+        TestTransportZone: 'vsm.[3].networkscope.[1]'
+        virtualwire:
+            '[1-10':
+                controlplanemode: UNICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+
+    CreateVerify2MulticastGlobalLogicalSwitches: &CREATE_MULTICAST_GLOBAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        globallogicalswitch:
+            '[3-4]':
+                controlplanemode: MULTICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+
+    CreateGlobalDLREgressEnabled: &CREATE_GLOBAL_DLR_EGRESS_ENABLED
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        globaldistributedlogicalrouter:
+            '[1]':
+                name: AutoGenerate
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'host.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.64
+                subnetmask: 255.255.255.0
+            '[2]':
+                name: AutoGenerate
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'host.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.65
+                subnetmask: 255.255.255.0
+            '[3]':
+                name: AutoGenerate
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'host.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.66
+                subnetmask: 255.255.255.0
+
+    CreateGlobalDLREgressDisabled: &CREATE_GLOBAL_DLR_EGRESS_DISABLED
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        globaldistributedlogicalrouter:
+            '[1]':
+                name: AutoGenerate
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'host.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.61
+                subnetmask: 255.255.255.0
+                localegressenabled: 'false'
+            '[2]':
+                name: AutoGenerate
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'host.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.62
+                subnetmask: 255.255.255.0
+                localegressenabled: 'false'
+            '[3]':
+                name: AutoGenerate
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'host.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.63
+                subnetmask: 255.255.255.0
+                localegressenabled: 'false'
+
+    CreateLifOnUDLR1: &CREATE_LIF_ON_UDLR1
+        Type: VM
+        TestVM: 'vsm.[1].globaldistributedlogicalrouter.[1]'
+        lif:
+            '[1]':
+                name: "lif-UDLR1-up"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.0.1.3"
+                    netmask: "255.255.255.0"
+            '[2]':
+                name: "lif-UDLR1-1"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[4]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "60.1.1.1"
+                    netmask: "255.255.255.0"
+            '[3]':
+                name: "lif-UDLR1-2"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[5]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "60.1.2.1"
+                    netmask: "255.255.255.0"
+            '[4]':
+                name: "lif-UDLR1-3"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[6]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "60.1.3.1"
+                    netmask: "255.255.255.0"
+
+    CreateLifOnUDLR2: &CREATE_LIF_ON_UDLR2
+        Type: VM
+        TestVM: 'vsm.[1].globaldistributedlogicalrouter.[2]'
+        lif:
+            '[1]':
+                name: "lif-UDLR2-up"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.0.2.3"
+                    netmask: "255.255.255.0"
+            '[2]':
+                name: "lif-UDLR2-1"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[7]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "60.2.1.1"
+                    netmask: "255.255.255.0"
+            '[3]':
+                name: "lif-UDLR2-2"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[8]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "60.2.2.1"
+                    netmask: "255.255.255.0"
+            '[4]':
+                name: "lif-UDLR2-3"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[9]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "60.2.3.1"
+                    netmask: "255.255.255.0"
+
+    CreateLifOnUDLR3: &CREATE_LIF_ON_UDLR3
+        Type: VM
+        TestVM: 'vsm.[1].globaldistributedlogicalrouter.[3]'
+        lif:
+            '[1]':
+                name: "lif-UDLR3-up"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[3]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.0.3.3"
+                    netmask: "255.255.255.0"
+            '[2]':
+                name: "lif-UDLR1-1"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[10]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "60.3.1.1"
+                    netmask: "255.255.255.0"
+            '[3]':
+                name: "lif-UDLR1-2"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[11]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "60.3.2.1"
+                    netmask: "255.255.255.0"
+            '[4]':
+                name: "lif-UDLR1-3"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[12]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "60.3.3.1"
+                    netmask: "255.255.255.0"
+
+    AddLifOnUDLR1VCB: &CREATE_LIF_ON_UDLR1_VCB
+        Type: VM
+        TestVM: 'vsm.[1].globaldistributedlogicalrouter.[1]'
+        lif:
+            '[5]':
+                name: "lif-UDLR1-up-vcb"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[13]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.0.13.3"
+                    netmask: "255.255.255.0"
+
+    AddLifOnUDLR2VCB: &CREATE_LIF_ON_UDLR2_VCB
+        Type: VM
+        TestVM: 'vsm.[1].globaldistributedlogicalrouter.[2]'
+        lif:
+            '[5]':
+                name: "lif-UDLR2-up-vcb"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[14]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.0.14.3"
+                    netmask: "255.255.255.0"
+
+    AddLifOnUDLR3VCB: &CREATE_LIF_ON_UDLR3_VCB
+        Type: VM
+        TestVM: 'vsm.[1].globaldistributedlogicalrouter.[3]'
+        lif:
+            '[5]':
+                name: "lif-UDLR3-up-vcb"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[16]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.0.15.3"
+                    netmask: "255.255.255.0"
+
+    CreateVcAEdges: &CREATE_VC_A_EDGES
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        gateway:
+            '[1]':
+                name: "Edge_A_1"
+                resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                datacenter: "vc.[1].datacenter.[1]"
+                host: "host.[2]"
+                portgroup: "vc.[1].dvportgroup.[1]"
+                primaryaddress: "21.0.0.11"
+                subnetmask: "255.255.255.0"
+            '[2]':
+                name: "Edge_A_2"
+                resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                datacenter: "vc.[1].datacenter.[1]"
+                host: "host.[2]"
+                portgroup: "vc.[1].dvportgroup.[1]"
+                primaryaddress: "21.0.0.12"
+                subnetmask: "255.255.255.0"
+
+    CreateVcBEdges: &CREATE_VC_B_EDGES
+        Type: "NSX"
+        TestNSX: "vsm.[2]"
+        gateway:
+            '[1]':
+                name: "Edge_B_1"
+                resourcepool: "vc.[2].datacenter.[1].cluster.[1]"
+                datacenter: "vc.[2].datacenter.[1]"
+                host: "host.[4]"
+                portgroup: "vc.[2].dvportgroup.[1]"
+                primaryaddress: "21.0.0.13"
+                subnetmask: "255.255.255.0"
+            '[2]':
+                name: "Edge_B_2"
+                resourcepool: "vc.[2].datacenter.[1].cluster.[1]"
+                datacenter: "vc.[2].datacenter.[1]"
+                host: "host.[4]"
+                portgroup: "vc.[2].dvportgroup.[1]"
+                primaryaddress: "21.0.0.14"
+                subnetmask: "255.255.255.0"
+
+    CreateVcCEdges: &CREATE_VC_C_EDGES
+        Type: "NSX"
+        TestNSX: "vsm.[3]"
+        gateway:
+            '[1]':
+                name: "Edge_C_1"
+                resourcepool: "vc.[3].datacenter.[1].cluster.[1]"
+                datacenter: "vc.[3].datacenter.[1]"
+                host: "host.[6]"
+                portgroup: "vc.[3].dvportgroup.[1]"
+                primaryaddress: "21.0.0.15"
+                subnetmask: "255.255.255.0"
+            '[2]':
+                name: "Edge_C_2"
+                resourcepool: "vc.[3].datacenter.[1].cluster.[1]"
+                datacenter: "vc.[3].datacenter.[1]"
+                host: "host.[6]"
+                portgroup: "vc.[2].dvportgroup.[1]"
+                primaryaddress: "21.0.0.16"
+                subnetmask: "255.255.255.0"
+
+    CreateGatewayInterface1Edge1: &CREATE_GATEWAY_INTERFACE_1_EDGE_1
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[1]'
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vc.[1].dvportgroup.[2]"
+                ipv4address: "22.0.0.11"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface2Edge1: &CREATE_GATEWAY_INTERFACE_2_EDGE_1
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[1]'
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]"
+                ipv4address: "50.0.1.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface3Edge1: &CREATE_GATEWAY_INTERFACE_3_EDGE_1
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[1]'
+        interface:
+            '[3]':
+                name: "vnic3"
+                index: "3"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]"
+                ipv4address: "50.0.2.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface4Edge1: &CREATE_GATEWAY_INTERFACE_4_EDGE_1
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[1]'
+        interface:
+            '[4]':
+                name: "vnic4"
+                index: "4"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[3]"
+                ipv4address: "50.0.3.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface5Edge1: &CREATE_GATEWAY_INTERFACE_5_EDGE_1
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[1]'
+        interface:
+            '[5]':
+                name: "vnic5"
+                index: "5"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                ipv4address: "50.1.1.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface6Edge1: &CREATE_GATEWAY_INTERFACE_6_EDGE_1
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[1]'
+        interface:
+            '[6]':
+                name: "vnic6"
+                index: "6"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "50.1.2.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+
+    CreateGatewayInterface1Edge2: &CREATE_GATEWAY_INTERFACE_1_EDGE_2
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[2]'
+        interface:
+            '[1]':
+                name: "vnic1_2"
+                index: "1"
+                portgroup: "vc.[1].dvportgroup.[2]"
+                ipv4address: "22.0.0.12"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface2Edge2: &CREATE_GATEWAY_INTERFACE_2_EDGE_2
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[2]'
+        interface:
+            '[2]':
+                name: "vnic2_2"
+                index: "2"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]"
+                ipv4address: "50.0.1.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface3Edge2: &CREATE_GATEWAY_INTERFACE_3_EDGE_2
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[2]'
+        interface:
+            '[3]':
+                name: "vnic3_2"
+                index: "3"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]"
+                ipv4address: "50.0.2.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface4Edge2: &CREATE_GATEWAY_INTERFACE_4_EDGE_2
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[2]'
+        interface:
+            '[4]':
+                name: "vnic4_2"
+                index: "4"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[3]"
+                ipv4address: "50.0.3.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface5Edge2: &CREATE_GATEWAY_INTERFACE_5_EDGE_2
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[2]'
+        interface:
+            '[5]':
+                name: "vnic5_2"
+                index: "5"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                ipv4address: "50.1.1.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface6Edge2: &CREATE_GATEWAY_INTERFACE_6_EDGE_2
+        Type: 'VM'
+        TestVM: 'vsm.[1].gateway.[2]'
+        interface:
+            '[6]':
+                name: "vnic6_2"
+                index: "6"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "50.1.2.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+
+    CreateGatewayInterface1Edge1_B: &CREATE_GATEWAY_INTERFACE_1_EDGE_1_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[1]'
+        interface:
+            '[1]':
+                name: "vnic1_B"
+                index: "1"
+                portgroup: "vc.[2].dvportgroup.[2]"
+                ipv4address: "42.0.0.11"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface2Edge1_B: &CREATE_GATEWAY_INTERFACE_2_EDGE_1_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[1]'
+        interface:
+            '[2]':
+                name: "vnic2_B"
+                index: "2"
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[1]"
+                ipv4address: "50.2.1.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface3Edge1_B: &CREATE_GATEWAY_INTERFACE_3_EDGE_1_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[1]'
+        interface:
+            '[3]':
+                name: "vnic3_B"
+                index: "3"
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[2]"
+                ipv4address: "50.2.2.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface4Edge1_B: &CREATE_GATEWAY_INTERFACE_4_EDGE_1_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[1]'
+        interface:
+            '[4]':
+                name: "vnic4_B"
+                index: "4"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[13]"
+                ipv4address: "50.0.13.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface5Edge1_B: &CREATE_GATEWAY_INTERFACE_5_EDGE_1_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[1]'
+        interface:
+            '[5]':
+                name: "vnic5_B"
+                index: "5"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[14]"
+                ipv4address: "50.0.14.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface6Edge1_B: &CREATE_GATEWAY_INTERFACE_6_EDGE_1_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[1]'
+        interface:
+            '[6]':
+                name: "vnic6_B"
+                index: "6"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[15]"
+                ipv4address: "50.0.15.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+
+    CreateGatewayInterface1Edge2_B: &CREATE_GATEWAY_INTERFACE_1_EDGE_2_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[2]'
+        interface:
+            '[1]':
+                name: "vnic1_2_B"
+                index: "1"
+                portgroup: "vc.[2].dvportgroup.[2]"
+                ipv4address: "42.0.0.12"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface2Edge2_B: &CREATE_GATEWAY_INTERFACE_2_EDGE_2_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[2]'
+        interface:
+            '[2]':
+                name: "vnic2_2_B"
+                index: "2"
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[1]"
+                ipv4address: "50.2.1.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface3Edge2_B: &CREATE_GATEWAY_INTERFACE_3_EDGE_2_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[2]'
+        interface:
+            '[3]':
+                name: "vnic3_2_B"
+                index: "3"
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[2]"
+                ipv4address: "50.2.2.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface4Edge2_B: &CREATE_GATEWAY_INTERFACE_4_EDGE_2_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[2]'
+        interface:
+            '[4]':
+                name: "vnic4_2_B"
+                index: "4"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[13]"
+                ipv4address: "50.0.13.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface5Edge2_B: &CREATE_GATEWAY_INTERFACE_5_EDGE_2_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[2]'
+        interface:
+            '[5]':
+                name: "vnic5_2_B"
+                index: "5"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[14]"
+                ipv4address: "50.0.14.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface6Edge2_B: &CREATE_GATEWAY_INTERFACE_6_EDGE_2_B
+        Type: 'VM'
+        TestVM: 'vsm.[2].gateway.[1]'
+        interface:
+            '[6]':
+                name: "vnic6_2_B"
+                index: "6"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[15]"
+                ipv4address: "50.0.15.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+
+    CreateGatewayInterface1Edge1_C: &CREATE_GATEWAY_INTERFACE_1_EDGE_1_C
+        Type: 'VM'
+        TestVM: 'vsm.[3].gateway.[1]'
+        interface:
+            '[1]':
+                name: "vnic1_C"
+                index: "1"
+                portgroup: "vc.[3].dvportgroup.[2]"
+                ipv4address: "72.0.0.11"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface2Edge1_C: &CREATE_GATEWAY_INTERFACE_2_EDGE_1_C
+        Type: 'VM'
+        TestVM: 'vsm.[3].gateway.[1]'
+        interface:
+            '[2]':
+                name: "vnic2_C"
+                index: "2"
+                portgroup: "vsm.[3].networkscope.[1].virtualwire.[1]"
+                ipv4address: "50.3.1.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface3Edge1_C: &CREATE_GATEWAY_INTERFACE_3_EDGE_1_C
+        Type: 'VM'
+        TestVM: 'vsm.[3].gateway.[1]'
+        interface:
+            '[3]':
+                name: "vnic3_C"
+                index: "3"
+                portgroup: "vsm.[3].networkscope.[1].virtualwire.[2]"
+                ipv4address: "50.3.2.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+
+    CreateGatewayInterface1Edge2_C: &CREATE_GATEWAY_INTERFACE_1_EDGE_2_C
+        Type: 'VM'
+        TestVM: 'vsm.[3].gateway.[2]'
+        interface:
+            '[1]':
+                name: "vnic1_2_C"
+                index: "1"
+                portgroup: "vc.[2].dvportgroup.[2]"
+                ipv4address: "72.0.0.12"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface2Edge2_C: &CREATE_GATEWAY_INTERFACE_2_EDGE_2_C
+        Type: 'VM'
+        TestVM: 'vsm.[3].gateway.[2]'
+        interface:
+            '[2]':
+                name: "vnic2_2_C"
+                index: "2"
+                portgroup: "vsm.[3].networkscope.[1].virtualwire.[1]"
+                ipv4address: "50.3.1.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface3Edge2_C: &CREATE_GATEWAY_INTERFACE_3_EDGE_2_C
+        Type: 'VM'
+        TestVM: 'vsm.[3].gateway.[2]'
+        interface:
+            '[3]':
+                name: "vnic3_2_C"
+                index: "2"
+                portgroup: "vsm.[3].networkscope.[1].virtualwire.[2]"
+                ipv4address: "50.3.2.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+
+    DeleteAllEdgesVCA: &DELETE_EDGES_VC_A
+        Type:     "NSX"
+        TestNSX: "vsm.[1]"
+        deletegateway: "vsm.[1].gateway.[-1]"
+
+    CreateLocalDLRsVCA: &CREATE_LOCAL_DLRS_VC_A
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        vse:
+            '[1]':
+                name: 'LDLR-1-VC-A'
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'host.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.91
+                subnetmask: 255.255.255.0
+            '[2]':
+                name: 'LDLR-2-VC-A'
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'host.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.92
+                subnetmask: 255.255.255.0
+            '[3]':
+                name: 'LDLR-3-VC-A'
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'host.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.93
+                subnetmask: 255.255.255.0
+
+    CreateLocalDLRsVCB: &CREATE_LOCAL_DLRS_VC_B
+        Type: "NSX"
+        TestNSX: "vsm.[2]"
+        vse:
+            '[1]':
+                name: 'LDLR-1-VC-B'
+                datacenter: 'vc.[2].datacenter.[1]'
+                host: 'host.[*]'
+                portgroup: 'vc.[2].dvportgroup.[1]'
+                resourcepool: 'vc.[2].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.94
+                subnetmask: 255.255.255.0
+            '[2]':
+                name: 'LDLR-2-VC-B'
+                datacenter: 'vc.[2].datacenter.[1]'
+                host: 'host.[*]'
+                portgroup: 'vc.[2].dvportgroup.[1]'
+                resourcepool: 'vc.[2].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.95
+                subnetmask: 255.255.255.0
+
+    CreateLocalDLRsVCC: &CREATE_LOCAL_DLRS_VC_C
+        Type: "NSX"
+        TestNSX: "vsm.[3]"
+        vse:
+            '[1]':
+                name: 'LDLR-1-VC-C'
+                datacenter: 'vc.[3].datacenter.[1]'
+                host: 'host.[*]'
+                portgroup: 'vc.[3].dvportgroup.[1]'
+                resourcepool: 'vc.[3].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.96
+                subnetmask: 255.255.255.0
+            '[2]':
+                name: 'LDLR-2-VC-C'
+                datacenter: 'vc.[3].datacenter.[1]'
+                host: 'host.[*]'
+                portgroup: 'vc.[3].dvportgroup.[1]'
+                resourcepool: 'vc.[3].datacenter.[1].cluster.[2]'
+                primaryaddress: 21.0.0.97
+                subnetmask: 255.255.255.0
+
+    DeleteAllLDLRVCA: &DELETE_LDLR_VC_A
+        Type:     "NSX"
+        TestNSX: "vsm.[1]"
+        deletegateway: "vsm.[1].vse.[-1]"
+
+    CreateLifOnLDLR1VCA: &CREATE_LIF_ON_LDLR1_VC_A
+        Type: VM
+        TestVM: 'vsm.[1].vse.[1]'
+        lif:
+            '[1]':
+                name: "lif-LDLR1-VCA-up"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.1.1.3"
+                    netmask: "255.255.255.0"
+            '[2]':
+                name: "lif-LDLR1-2-bridge"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "81.1.1.1"
+                    netmask: "255.255.255.0"
+            '[3]':
+                name: "lif-LDLR1-3"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[4]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "81.1.2.1"
+                    netmask: "255.255.255.0"
+            '[4]':
+                name: "lif-LDLR1-vlan"
+                portgroup: "vc.[1].dvportgroup.[3]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "23.0.0.21"
+                    netmask: "255.255.255.0"
+
+    CreateLifOnLDLR1VCB: &CREATE_LIF_ON_LDLR1_VC_B
+        Type: VM
+        TestVM: 'vsm.[2].vse.[1]'
+        lif:
+            '[1]':
+                name: "lif-LDLR1-VCB-up"
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[1]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.2.1.3"
+                    netmask: "255.255.255.0"
+            '[2]':
+                name: "lif-LDLR1-2-bridge_B"
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[3]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "82.1.1.1"
+                    netmask: "255.255.255.0"
+            '[3]':
+                name: "lif-LDLR1-3_B"
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[4]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "82.1.2.1"
+                    netmask: "255.255.255.0"
+            '[4]':
+                name: "lif-LDLR1-vlan_B"
+                portgroup: "vc.[2].dvportgroup.[3]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "43.0.0.21"
+                    netmask: "255.255.255.0"
+
+    CreateLifOnLDLR1VCC: &CREATE_LIF_ON_LDLR1_VC_C
+        Type: VM
+        TestVM: 'vsm.[3].vse.[1]'
+        lif:
+            '[1]':
+                name: "lif-LDLR1-VCC-up"
+                portgroup: "vsm.[3].networkscope.[1].virtualwire.[1]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.3.1.3"
+                    netmask: "255.255.255.0"
+            '[2]':
+                name: "lif-LDLR1-2-bridge_C"
+                portgroup: "vsm.[3].networkscope.[1].virtualwire.[3]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "83.1.1.1"
+                    netmask: "255.255.255.0"
+            '[3]':
+                name: "lif-LDLR1-3_C"
+                portgroup: "vsm.[3].networkscope.[1].virtualwire.[4]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "83.1.2.1"
+                    netmask: "255.255.255.0"
+            '[4]':
+                name: "lif-LDLR1-vlan_C"
+                portgroup: "vc.[3].dvportgroup.[3]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "73.0.0.21"
+                    netmask: "255.255.255.0"
+
+    CreateLifOnLDLR2VCA: &CREATE_LIF_ON_LDLR2_VC_A
+        Type: VM
+        TestVM: 'vsm.[1].vse.[2]'
+        lif:
+            '[1]':
+                name: "lif-LDLR2-VCA-up"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.1.2.3"
+                    netmask: "255.255.255.0"
+            '[2]':
+                name: "lif-LDLR2-2"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[5]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "81.2.1.1"
+                    netmask: "255.255.255.0"
+            '[3]':
+                name: "lif-LDLR2-3"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[6]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "81.2.2.1"
+                    netmask: "255.255.255.0"
+            '[4]':
+                name: "lif-LDLR2-vlan"
+                portgroup: "vc.[1].dvportgroup.[5]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "25.0.0.21"
+                    netmask: "255.255.255.0"
+
+    CreateLifOnLDLR2VCB: &CREATE_LIF_ON_LDLR2_VC_B
+        Type: VM
+        TestVM: 'vsm.[2].vse.[2]'
+        lif:
+            '[1]':
+                name: "lif-LDLR2-VCB-up"
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[2]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "50.2.2.3"
+                    netmask: "255.255.255.0"
+            '[2]':
+                name: "lif-LDLR2-2-B"
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[5]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "82.2.1.1"
+                    netmask: "255.255.255.0"
+            '[3]':
+                name: "lif-LDLR2-3-B"
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[6]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "82.2.2.1"
+                    netmask: "255.255.255.0"
+            '[4]':
+                name: "lif-LDLR2-vlan-B"
+                portgroup: "vc.[2].dvportgroup.[5]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "45.0.0.21"
+                    netmask: "255.255.255.0"
+
+    CreateLifOnLDLR3VCA: &CREATE_LIF_ON_LDLR3_VC_A
+        Type: VM
+        TestVM: 'vsm.[1].vse.[3]'
+        lif:
+            '[1]':
+                name: "lif-LDLR3-VCA-up"
+                portgroup: "vc.[1].dvportgroup.[2]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "22.0.0.21"
+                    netmask: "255.255.255.0"
+            '[2]':
+                name: "lif-LDLR3-2-bridge"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[8]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "81.3.1.1"
+                    netmask: "255.255.255.0"
+            '[3]':
+                name: "lif-LDLR3-3"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[9]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "81.3.2.1"
+                    netmask: "255.255.255.0"
+            '[4]':
+                name: "lif-LDLR3-vlan"
+                portgroup: "vc.[1].dvportgroup.[7]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "27.0.0.21"
+                    netmask: "255.255.255.0"
+
+    CreateLifOnLDLR2VCC: &CREATE_LIF_ON_LDLR2_VC_C
+        Type: VM
+        TestVM: 'vsm.[3].vse.[2]'
+        lif:
+            '[1]':
+                name: "lif-LDLR2-VCC-up"
+                portgroup: "vc.[3].dvportgroup.[2]"
+                type: "uplink"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "72.0.0.21"
+                    netmask: "255.255.255.0"
+            '[2]':
+                name: "lif-LDLR2-2-bridge-C"
+                portgroup: "vsm.[3].networkscope.[1].virtualwire.[5]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "83.2.1.1"
+                    netmask: "255.255.255.0"
+            '[3]':
+                name: "lif-LDLR2-3-C"
+                portgroup: "vsm.[3].networkscope.[1].virtualwire.[6]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "83.2.2.1"
+                    netmask: "255.255.255.0"
+            '[4]':
+                name: "lif-LDLR2-vlan-C"
+                portgroup: "vc.[3].dvportgroup.[5]"
+                type: "internal"
+                connected: 1
+                addressgroup:
+                  - addresstype: "primary"
+                    ipv4address: "75.0.0.21"
+                    netmask: "255.255.255.0"
+
+    DeleteLif: &DELETE_LIF
+        Type: VM
+        TestVM: 'vsm.[1].vse.[1]'
+        deletelif: 'vsm.[1].vse.[1].lif.[4]'
+
+    ConfigBridgeOnLDLR1VCA: &CONFIG_BRIDGE_ON_LDLR_1_VC_A
+        Type: "VM"
+        TestVM: "vsm.[1].vse.[1]"
+        bridge:
+            '[1]':
+                name: "vc-a-bridge-1"
+                virtualwire: "vsm.[1].networkscope.[1].virtualwire.[3]"
+                portgroup: "vc.[1].dvportgroup.[4]"
+
+    ConfigBridgeOnLDLR1VCB: &CONFIG_BRIDGE_ON_LDLR_1_VC_B
+        Type: "VM"
+        TestVM: "vsm.[2].vse.[1]"
+        bridge:
+            '[1]':
+                name: "vc-b-bridge-1"
+                virtualwire: "vsm.[2].networkscope.[1].virtualwire.[3]"
+                portgroup: "vc.[2].dvportgroup.[4]"
+
+    ConfigBridgeOnLDLR1VCC: &CONFIG_BRIDGE_ON_LDLR_1_VC_C
+        Type: "VM"
+        TestVM: "vsm.[3].vse.[1]"
+        bridge:
+            '[1]':
+                name: "vc-c-bridge-1"
+                virtualwire: "vsm.[3].networkscope.[1].virtualwire.[3]"
+                portgroup: "vc.[3].dvportgroup.[4]"
+
+    ConfigBridgeOnLDLR2VCA: &CONFIG_BRIDGE_ON_LDLR_2_VC_A
+        Type: "VM"
+        TestVM: "vsm.[1].vse.[2]"
+        bridge:
+            '[1]':
+                name: "vc-a-bridge-2"
+                virtualwire: "vsm.[1].networkscope.[1].virtualwire.[7]"
+                portgroup: "vc.[1].dvportgroup.[6]"
+
+    ConfigBridgeOnLDLR2VCB: &CONFIG_BRIDGE_ON_LDLR_2_VC_B
+        Type: "VM"
+        TestVM: "vsm.[2].vse.[2]"
+        bridge:
+            '[1]':
+                name: "vc-b-bridge-2"
+                virtualwire: "vsm.[2].networkscope.[1].virtualwire.[7]"
+                portgroup: "vc.[2].dvportgroup.[6]"
+
+    ConfigBridgeOnLDLR3VCA: &CONFIG_BRIDGE_ON_LDLR_3_VC_A
+        Type: "VM"
+        TestVM: "vsm.[1].vse.[3]"
+        bridge:
+            '[1]':
+                name: "vc-a-bridge-3"
+                virtualwire: "vsm.[1].networkscope.[1].virtualwire.[8]"
+                portgroup: "vc.[1].dvportgroup.[8]"
+            '[2]':
+                name: "vc-a-bridge-4"
+                virtualwire: "vsm.[1].networkscope.[1].virtualwire.[10]"
+                portgroup: "vc.[1].dvportgroup.[9]"
+
+    ConfigBridgeOnLDLR2VCC: &CONFIG_BRIDGE_ON_LDLR_2_VC_C
+        Type: "VM"
+        TestVM: "vsm.[3].vse.[2]"
+        bridge:
+            '[1]':
+                name: "vc-c-bridge-2"
+                virtualwire: "vsm.[3].networkscope.[1].virtualwire.[5]"
+                portgroup: "vc.[3].dvportgroup.[6]"
+            '[2]':
+                name: "vc-c-bridge-3"
+                virtualwire: "vsm.[3].networkscope.[1].virtualwire.[7]"
+                portgroup: "vc.[3].dvportgroup.[7]"
+
+    ConfigGlobalRouteOnEdgeVCA: &CONFIG_GLOBAL_ROUTE_ID_EDGE_VC_A
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1-2]'
+        globalrouteconfig:
+            '[1]':
+                routerid: "1.1.1.<x=gateway_index>"
+
+    ConfigGlobalRouteOnEdgeVCB: &CONFIG_GLOBAL_ROUTE_ID_EDGE_VC_B
+        Type: 'Router'
+        TestRouter: 'vsm.[2].gateway.[1-2]'
+        globalrouteconfig:
+            '[1]':
+                routerid: "2.1.1.<x=gateway_index>"
+
+    ConfigGlobalRouteOnEdgeVCC: &CONFIG_GLOBAL_ROUTE_ID_EDGE_VC_C
+        Type: 'Router'
+        TestRouter: 'vsm.[3].gateway.[1-2]'
+        globalrouteconfig:
+            '[1]':
+                routerid: "3.1.1.<x=gateway_index>"
+
+    ConfigBGPOnEdgeVCA: &CONFIG_EBGP_EDGE_VC_A
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1-2]'
+        bgp:
+            '[1]':
+                localas: '<x=1000+gateway_index>'
+                gracefulrestart: 'disabled'
+                bgpneighbours:
+                  - remoteas: '2000'
+                    ipaddress: '***.***.***.***'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                      - id: '0'
+                        action: 'permit'
+                        fromprotocol:
+                            connected: 'true'
+                            static: 'true'
+    ConfigBGPOnEdgeVCB: &CONFIG_EBGP_EDGE_VC_B
+        Type: 'Router'
+        TestRouter: 'vsm.[2].gateway.[1-2]'
+        bgp:
+            '[1]':
+                localas: '<x=1000+gateway_index>'
+                gracefulrestart: 'disabled'
+                bgpneighbours:
+                  - remoteas: '2000'
+                    ipaddress: '***.***.***.***'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                      - id: '0'
+                        action: 'permit'
+                        fromprotocol:
+                            connected: 'true'
+                            static: 'true'
+    ConfigBGPOnEdgeVCC: &CONFIG_EBGP_EDGE_VC_C
+        Type: 'Router'
+        TestRouter: 'vsm.[3].gateway.[1-2]'
+        bgp:
+            '[1]':
+                localas: '<x=1000+gateway_index>'
+                gracefulrestart: 'disabled'
+                bgpneighbours:
+                  - remoteas: '2000'
+                    ipaddress: '***.***.***.***'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                      - id: '0'
+                        action: 'permit'
+                        fromprotocol:
+                            connected: 'true'
+                            static: 'true'
+
+    ConfigureEdgeOSPF_VCA: &CONFIG_OSPF_EDGES_VC_A
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1-2]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                ospfinterfaces:
+                    - vnic: '2'
+                      areaid: '0'
+                    - vnic: '3'
+                      areaid: '0'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    ConfigureEdgeOSPF_VCB: &CONFIG_OSPF_EDGES_VC_B
+        Type: 'Router'
+        TestRouter: 'vsm.[2].gateway.[1-2]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                ospfinterfaces:
+                    - vnic: '2'
+                      areaid: '0'
+                    - vnic: '3'
+                      areaid: '0'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    ConfigureEdgeOSPF_VCC: &CONFIG_OSPF_EDGES_VC_C
+        Type: 'Router'
+        TestRouter: 'vsm.[3].gateway.[1-2]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                ospfinterfaces:
+                    - vnic: '2'
+                      areaid: '0'
+                    - vnic: '3'
+                      areaid: '0'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+
+    ConfigGlobalRouteOnLDLRVCA: &CONFIG_GLOBAL_ROUTE_ID_LDLR_VC_A
+        Type: 'Router'
+        TestRouter: 'vsm.[1].vse.[1-3]'
+        globalrouteconfig:
+            '[1]':
+                routerid: "1.2.1.<x=gateway_index>"
+    ConfigGlobalRouteOnLDLRVCB: &CONFIG_GLOBAL_ROUTE_ID_LDLR_VC_B
+        Type: 'Router'
+        TestRouter: 'vsm.[2].vse.[1-2]'
+        globalrouteconfig:
+            '[1]':
+                routerid: "2.2.1.<x=gateway_index>"
+    ConfigGlobalRouteOnLDLRVCC: &CONFIG_GLOBAL_ROUTE_ID_LDLR_VC_C
+        Type: 'Router'
+        TestRouter: 'vsm.[3].vse.[1-2]'
+        globalrouteconfig:
+            '[1]':
+                routerid: "3.2.1.<x=gateway_index>"
+
+    ConfigureLDLR_OSPF_VCA: &CONFIG_OSPF_LDLR_VC_A
+        Type: 'Router'
+        TestRouter: 'vsm.[1].vse.[1-3]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                protocoladdress: '***.***.<x=vse_index>.***'
+                forwardingaddress: '***.***.<x=vse_index>.***'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                ospfinterfaces:
+                    - vnic: '2'
+                      areaid: '0'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    ConfigureLDLR_OSPF_VCB: &CONFIG_OSPF_LDLR_VC_B
+        Type: 'Router'
+        TestRouter: 'vsm.[2].vse.[1-2]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                protocoladdress: '***.***.<x=vse_index>.***'
+                forwardingaddress: '***.***.<x=vse_index>.***'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                ospfinterfaces:
+                    - vnic: '2'
+                      areaid: '0'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    ConfigureLDLR_OSPF_VCC: &CONFIG_OSPF_LDLR_VC_C
+        Type: 'Router'
+        TestRouter: 'vsm.[3].vse.[1-2]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                protocoladdress: '***.***.<x=vse_index>.***'
+                forwardingaddress: '***.***.<x=vse_index>.***'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                ospfinterfaces:
+                    - vnic: '2'
+                      areaid: '0'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+
+    ConfigureDHCP: &CONFIG_DHCP_EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        dhcp:
+            '[1]':
+                enabled: "true"
+                logging:
+                    loglevel: "info"
+                    enable: "false"
+                ippools:
+                    - autoconfiguredns: "true"
+                      defaultgateway: "*.*.*.*"
+                      iprange: "*.*.*.*-*.*.*.*"
+                      domainname: "***.vmware.com"
+                      primarynameserver: "*.*.*.*"
+                      secondarynameserver: "*.*.*.*"
+                      leasetime: 360000
+                    - autoconfiguredns: "true"
+                      defaultgateway: "*.*.*.*"
+                      iprange: "*.*.*.*-*.*.*.*"
+                      domainname: "***.vmware.com"
+#                      primarynameserver: "10.112.0.1"
+#                      secondarynameserver: "10.112.0.2"
+                      leasetime: 360000
+    ConfigureDHCPVCB: &CONFIG_DHCP_EDGE1_B
+        Type: "VM"
+        TestVM: "vsm.[2].gateway.[1]"
+        dhcp:
+            '[1]':
+                enabled: "true"
+                logging:
+                    loglevel: "info"
+                    enable: "false"
+                ippools:
+                    - autoconfiguredns: "true"
+                      defaultgateway: "*.*.*.*"
+                      iprange: "*.*.*.*-*.*.*.*"
+                      domainname: "eng.vmware.com"
+                      primarynameserver: "*.*.*.*"
+                      secondarynameserver: "*.*.*.*"
+                      leasetime: 360000
+                    - autoconfiguredns: "true"
+                      defaultgateway: "*.*.*.*"
+                      iprange: "*.*.*.*-*.*.*.*"
+                      domainname: "***.vmware.com"
+#                      primarynameserver: "10.112.0.1"
+#                      secondarynameserver: "10.112.0.2"
+                      leasetime: 360000
+    ConfigureDHCPVCC: &CONFIG_DHCP_EDGE1_C
+        Type: "VM"
+        TestVM: "vsm.[3].gateway.[1]"
+        dhcp:
+            '[1]':
+                enabled: "true"
+                logging:
+                    loglevel: "info"
+                    enable: "false"
+                ippools:
+                    - autoconfiguredns: "true"
+                      defaultgateway: "*.*.*.*"
+                      iprange: "*.*.*.*-*.*.*.*"
+                      domainname: "eng.vmware.com"
+                      primarynameserver: "*.*.*.*"
+                      secondarynameserver: "*.*.*.*"
+                      leasetime: 360000
+                    - autoconfiguredns: "true"
+                      defaultgateway: "*.*.*.*"
+                      iprange: "*.*.*.*-*.*.*.*"
+                      domainname: "***.vmware.com"
+#                      primarynameserver: "10.112.0.1"
+#                      secondarynameserver: "10.112.0.2"
+                      leasetime: 360000
+
+    ConfigureDHCPRelayLDLR1VCA: &CONFIG_DHCPRELAY_LDLR_1_VC_A
+        Type: "VM"
+        TestVM: "vsm.[1].vse.[1]"
+        dhcprelay:
+            '[1]':
+                ip_addresses:
+                    - "50.1.0.1"
+                relayagent: 'vsm.[1].vse.[1].lif.[3]'
+
+    UdpTrafficBandwidth: &UDP_TRAFFIC_BANDWIDTH
+        '10M'
+
+    iperfTest1: &TRAFFIC_IPERF_TEST_1
+        Type:            "Traffic"
+        toolName:        "iperf"
+        L4Protocol:      "tcp"
+        TestAdapter:     "vm.[1].vnic.[1]"
+        SupportAdapter:  "vm.[2].vnic.[1]"
+        TestDuration:    "30"
+
+    IperfTest2: &TRAFFIC_IPERF_TEST_2
+        Type:            "Traffic"
+        toolName:        "iperf"
+        L4Protocol:      "udp"
+        udpbandwidth:    *UDP_TRAFFIC_BANDWIDTH
+        TestAdapter:     "vm.[1].vnic.[1]"
+        SupportAdapter:  "vm.[2].vnic.[1]"
+        TestDuration:    "30"
+
+    NetperfTest1: &TRAFFIC_NETPERF_TEST_1
+        Type:            "Traffic"
+        toolName:        "netperf"
+        TestAdapter:     "vm.[1].vnic.[1]"
+        SupportAdapter:  "vm.[2].vnic.[1]"
+        TestDuration:    "30"
+
+    PingTest1: &TRAFFIC_PING_TEST_1
+        Type:            "Traffic"
+        toolName:        "Ping"
+        TestAdapter:     "vm.[1].vnic.[1]"
+        SupportAdapter:  "vm.[2].vnic.[1]"
+        TestDuration:    "30"
+        NoofOutbound:    "1"
+
+    PlaceVMsOnGLS1: &PLACE_VMS_ON_GLS_1
+        Type: "VM"
+        TestVM: "vm.[1], vm[34]" #at least one VM on each host in VM clusters
+        vnic:
+            '[1]': &ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                driver: "vmxnet3"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[4]"
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+    SetIPVM1: &SET_IP_VM1
+        Type:        "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        ipv4:        '60.1.1.11'
+        netmask:     "255.255.255.0"
+    SetIPVM34: &SET_IP_VM34
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[34].vnic.[1]"
+        ipv4:        '60.1.1.12'
+
+    PlaceVMsOnGLS2: &PLACE_VMS_ON_GLS_2
+        Type: "VM"
+        TestVM: "vm.[2],vm.[35]"
+        vnic:
+            '[1]': &ATTACH_VM_TO_VIRTUAL_WIRE_E1000
+                driver: "E1000"
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[5]"
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+    SetIPVM2: &SET_IP_VM2
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[2].vnic.[1]"
+        ipv4:        '60.1.2.11'
+    SetIPVM35: &SET_IP_VM35
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[35].vnic.[1]"
+        ipv4:        '60.1.2.12'
+
+    PlaceVMsOnGLS3: &PLACE_VMS_ON_GLS_3
+        Type: "VM"
+        TestVM: "vm.[3],vm.[36]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[6]"
+    SetIPVM3: &SET_IP_VM3
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[1].vnic.[1]"
+        ipv4:        '60.1.3.11'
+    SetIPVM36: &SET_IP_VM36
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[36].vnic.[1]"
+        ipv4:        '60.1.3.12'
+
+    PlaceVMsOnGLS4: &PLACE_VMS_ON_GLS_4
+        Type: "VM"
+        TestVM: "vm.[4],vm.[37]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[7]"
+    SetIPVM4: &SET_IP_VM4
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[4].vnic.[1]"
+        ipv4:        '60.2.1.11'
+    SetIPVM37: &SET_IP_VM37
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[37].vnic.[1]"
+        ipv4:        '60.2.1.12'
+
+    PlaceVMsOnGLS5: &PLACE_VMS_ON_GLS_5
+        Type: "VM"
+        TestVM: "vm.[5],vm.[38]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[8]"
+    SetIPVM5: &SET_IP_VM5
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[5].vnic.[1]"
+        ipv4:        '60.2.2.11'
+    SetIPVM38: &SET_IP_VM38
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[38].vnic.[1]"
+        ipv4:        '60.2.2.12'
+
+    PlaceVMsOnGLS6: &PLACE_VMS_ON_GLS_6
+        Type: "VM"
+        TestVM: "vm.[6],vm.[39]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[9]"
+    SetIPVM6: &SET_IP_VM6
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[6].vnic.[1]"
+        ipv4:        '60.2.3.11'
+    SetIPVM39: &SET_IP_VM39
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[39].vnic.[1]"
+        ipv4:        '60.2.3.12'
+
+    PlaceVMsOnGLS7: &PLACE_VMS_ON_GLS_7
+        Type: "VM"
+        TestVM: "vm.[7],vm.[40]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[10]"
+    SetIPVM7: &SET_IP_VM7
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[7].vnic.[1]"
+        ipv4:        '60.3.1.11'
+    SetIPVM40: &SET_IP_VM40
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[40].vnic.[1]"
+        ipv4:        '60.3.1.12'
+
+    PlaceVMsOnGLS8: &PLACE_VMS_ON_GLS_8
+        Type: "VM"
+        TestVM: "vm.[8],vm.[41]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[11]"
+    SetIPVM8: &SET_IP_VM8
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[8].vnic.[1]"
+        ipv4:        '60.3.2.11'
+    SetIPVM41: &SET_IP_VM41
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[41].vnic.[1]"
+        ipv4:        '60.3.2.12'
+
+    PlaceVMsOnGLS9: &PLACE_VMS_ON_GLS_9
+        Type: "VM"
+        TestVM: "vm.[9],vm.[42]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].globaltransportzone.[1].globallogicalswitch.[12]"
+    SetIPVM9: &SET_IP_VM9
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[9].vnic.[1]"
+        ipv4:        '60.3.3.11'
+    SetIPVM42: &SET_IP_VM42
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[42].vnic.[1]"
+        ipv4:        '60.3.3.12'
+
+    PlaceVMsOnLLS3-VC-A: &PLACE_VMS_ON_LLS_3_VC_A
+        Type: "VM"
+        TestVM: "vm.[10],vm.[43]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+    SetIPVM10: &SET_IP_VM10
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[10].vnic.[1]"
+        ipv4:        '81.1.1.11'
+    SetIPVM43: &SET_IP_VM43
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[43].vnic.[1]"
+        ipv4:        '81.1.1.12'
+
+    PlaceVMsOnLLS4-VC-A: &PLACE_VMS_ON_LLS_4_VC_A
+        Type: "VM"
+        TestVM: "vm.[11],vm.[44]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[4]"
+    SetIPVM11: &SET_IP_VM11
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[11].vnic.[1]"
+        ipv4:        '81.1.2.11'
+    SetIPVM44: &SET_IP_VM44
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[44].vnic.[1]"
+        ipv4:        '81.1.2.12'
+
+    PlaceVMsOnLLS5-VC-A: &PLACE_VMS_ON_LLS_5_VC_A
+        Type: "VM"
+        TestVM: "vm.[12],vm.[45]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[5]"
+    SetIPVM12: &SET_IP_VM12
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[12].vnic.[1]"
+        ipv4:        '81.2.1.11'
+    SetIPVM45: &SET_IP_VM45
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[45].vnic.[1]"
+        ipv4:        '81.2.1.12'
+
+    PlaceVMsOnLLS6-VC-A: &PLACE_VMS_ON_LLS_6_VC_A
+        Type: "VM"
+        TestVM: "vm.[13],vm.[46]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[6]"
+    SetIPVM13: &SET_IP_VM13
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[13].vnic.[1]"
+        ipv4:        '81.2.2.11'
+    SetIPVM46: &SET_IP_VM46
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[46].vnic.[1]"
+        ipv4:        '81.2.2.12'
+
+    PlaceVMsOnLLS7-VC-A: &PLACE_VMS_ON_LLS_7_VC_A
+        Type: "VM"
+        TestVM: "vm.[14],vm.[47]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[7]"
+    SetIPVM14: &SET_IP_VM14
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[14].vnic.[1]"
+        ipv4:        '81.2.3.11'
+    SetIPVM47: &SET_IP_VM47
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[47].vnic.[1]"
+        ipv4:        '81.2.3.12'
+
+    PlaceVMsOnLLS8-VC-A: &PLACE_VMS_ON_LLS_8_VC_A
+        Type: "VM"
+        TestVM: "vm.[15],vm.[58]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[8]"
+    SetIPVM15: &SET_IP_VM15
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[15].vnic.[1]"
+        ipv4:        '81.3.1.11'
+    SetIPVM48: &SET_IP_VM48
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[48].vnic.[1]"
+        ipv4:        '81.3.1.12'
+
+    PlaceVMsOnLLS9-VC-A: &PLACE_VMS_ON_LLS_9_VC_A
+        Type: "VM"
+        TestVM: "vm.[16],vm.[49]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[9]"
+    SetIPVM16: &SET_IP_VM16
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[16].vnic.[1]"
+        ipv4:        '81.3.2.11'
+    SetIPVM49: &SET_IP_VM49
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[49].vnic.[1]"
+        ipv4:        '81.3.2.12'
+
+    PlaceVMsOnLLS10-VC-A: &PLACE_VMS_ON_LLS_10_VC_A
+        Type: "VM"
+        TestVM: "vm.[17],vm.[50]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[10]"
+    SetIPVM17: &SET_IP_VM17
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[17].vnic.[1]"
+        ipv4:        '81.3.3.11'
+    SetIPVM50: &SET_IP_VM50
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[50].vnic.[1]"
+        ipv4:        '81.3.3.12'
+
+    PlaceVMsOnVLan23: &PLACE_VMS_ON_VLAN_23
+        Type: "VM"
+        TestVM: "vm.[18],vm.[51]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[1].dvportgroup.[3]"
+    SetIPVM18: &SET_IP_VM18
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[18].vnic.[1]"
+        ipv4:        '23.0.0.31'
+    SetIPVM51: &SET_IP_VM51
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[51].vnic.[1]"
+        ipv4:        '23.0.0.32'
+
+    PlaceVMsOnVLan24: &PLACE_VMS_ON_VLAN_24
+        Type: "VM"
+        TestVM: "vm.[19],vm.[52]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[1].dvportgroup.[4]"
+    SetIPVM19: &SET_IP_VM19
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[19].vnic.[1]"
+        ipv4:        '24.0.0.31'
+    SetIPVM52: &SET_IP_VM52
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[52].vnic.[1]"
+        ipv4:        '24.0.0.32'
+
+    PlaceVMsOnVLan25: &PLACE_VMS_ON_VLAN_25
+        Type: "VM"
+        TestVM: "vm.[20],vm.[53]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[1].dvportgroup.[5]"
+    SetIPVM20: &SET_IP_VM20
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[20].vnic.[1]"
+        ipv4:        '25.0.0.31'
+    SetIPVM53: &SET_IP_VM53
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[53].vnic.[1]"
+        ipv4:        '25.0.0.32'
+
+    PlaceVMsOnVLan26: &PLACE_VMS_ON_VLAN_26
+        Type: "VM"
+        TestVM: "vm.[21],vm.[54]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[1].dvportgroup.[6]"
+    SetIPVM21: &SET_IP_VM21
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[21].vnic.[1]"
+        ipv4:        '26.0.0.31'
+    SetIPVM54: &SET_IP_VM54
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[54].vnic.[1]"
+        ipv4:        '26.0.0.32'
+
+    PlaceVMsOnVLan27: &PLACE_VMS_ON_VLAN_27
+        Type: "VM"
+        TestVM: "vm.[22],vm.[55]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[1].dvportgroup.[7]"
+    SetIPVM22: &SET_IP_VM22
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[22].vnic.[1]"
+        ipv4:        '27.0.0.31'
+    SetIPVM55: &SET_IP_VM55
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[55].vnic.[1]"
+        ipv4:        '27.0.0.32'
+
+    PlaceVMsOnVLan28: &PLACE_VMS_ON_VLAN_28
+        Type: "VM"
+        TestVM: "vm.[23],vm.[56]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[1].dvportgroup.[8]"
+    SetIPVM23: &SET_IP_VM23
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[23].vnic.[1]"
+        ipv4:        '28.0.0.31'
+    SetIPVM56: &SET_IP_VM56
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[56].vnic.[1]"
+        ipv4:        '28.0.0.32'
+
+    PlaceVMsOnVLan29: &PLACE_VMS_ON_VLAN_29
+        Type: "VM"
+        TestVM: "vm.[24],vm.[57]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[1].dvportgroup.[9]"
+    SetIPVM24: &SET_IP_VM24
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[24].vnic.[1]"
+        ipv4:        '29.0.0.31'
+    SetIPVM57: &SET_IP_VM57
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[57].vnic.[1]"
+        ipv4:        '29.0.0.32'
+
+    PlaceVMsOnLLS3-VC-B: &PLACE_VMS_ON_LLS_3_VC_B
+        Type: "VM"
+        TestVM: "vm.[25],vm.[58]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[3]"
+    SetIPVM25: &SET_IP_VM25
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[25].vnic.[1]"
+        ipv4:        '82.1.1.11'
+    SetIPVM58: &SET_IP_VM58
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[58].vnic.[1]"
+        ipv4:        '82.1.1.12'
+
+    PlaceVMsOnLLS4-VC-B: &PLACE_VMS_ON_LLS_4_VC_B
+        Type: "VM"
+        TestVM: "vm.[26],vm.[59]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[4]"
+    SetIPVM26: &SET_IP_VM26
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[26].vnic.[1]"
+        ipv4:        '82.1.2.11'
+    SetIPVM59: &SET_IP_VM59
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[59].vnic.[1]"
+        ipv4:        '82.1.2.12'
+
+    PlaceVMsOnLLS5-VC-B: &PLACE_VMS_ON_LLS_5_VC_B
+        Type: "VM"
+        TestVM: "vm.[27],vm.[60]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[5]"
+    SetIPVM27: &SET_IP_VM27
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[27].vnic.[1]"
+        ipv4:        '82.2.1.11'
+    SetIPVM60: &SET_IP_VM60
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[60].vnic.[1]"
+        ipv4:        '82.2.1.12'
+
+    PlaceVMsOnLLS6-VC-B: &PLACE_VMS_ON_LLS_6_VC_B
+        Type: "VM"
+        TestVM: "vm.[28],vm.[61]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[6]"
+    SetIPVM28: &SET_IP_VM28
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[28].vnic.[1]"
+        ipv4:        '82.2.2.11'
+    SetIPVM61: &SET_IP_VM61
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[61].vnic.[1]"
+        ipv4:        '82.2.2.12'
+
+    PlaceVMsOnLLS7-VC-B: &PLACE_VMS_ON_LLS_7_VC_B
+        Type: "VM"
+        TestVM: "vm.[29],vm.[62]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vsm.[2].networkscope.[1].virtualwire.[7]"
+    SetIPVM29: &SET_IP_VM29
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[29].vnic.[1]"
+        ipv4:        '82.2.3.11'
+    SetIPVM62: &SET_IP_VM62
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[62].vnic.[1]"
+        ipv4:        '82.2.3.12'
+
+    PlaceVMsOnVLan43: &PLACE_VMS_ON_VLAN_43
+        Type: "VM"
+        TestVM: "vm.[30],vm.[63]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[2].dvportgroup.[3]"
+    SetIPVM30: &SET_IP_VM30
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[30].vnic.[1]"
+        ipv4:        '43.0.0.31'
+    SetIPVM63: &SET_IP_VM63
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[63].vnic.[1]"
+        ipv4:        '43.0.0.32'
+
+    PlaceVMsOnVLan44: &PLACE_VMS_ON_VLAN_44
+        Type: "VM"
+        TestVM: "vm.[31],vm.[64]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[2].dvportgroup.[4]"
+    SetIPVM31: &SET_IP_VM31
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[31].vnic.[1]"
+        ipv4:        '44.0.0.31'
+    SetIPVM64: &SET_IP_VM64
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[64].vnic.[1]"
+        ipv4:        '44.0.0.32'
+
+    PlaceVMsOnVLan45: &PLACE_VMS_ON_VLAN_45
+        Type: "VM"
+        TestVM: "vm.[32],vm.[65]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[2].dvportgroup.[5]"
+    SetIPVM32: &SET_IP_VM32
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[32].vnic.[1]"
+        ipv4:        '45.0.0.31'
+    SetIPVM65: &SET_IP_VM65
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[65].vnic.[1]"
+        ipv4:        '45.0.0.32'
+
+    PlaceVMsOnVLan46: &PLACE_VMS_ON_VLAN_46
+        Type: "VM"
+        TestVM: "vm.[33],vm.[66]"
+        vnic:
+            '[1]':
+                <<: *ATTACH_VM_TO_VIRTUAL_WIRE_VMXNET3
+                portgroup: "vc.[2].dvportgroup.[6]"
+    SetIPVM33: &SET_IP_VM33
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[33].vnic.[1]"
+        ipv4:        '46.0.0.31'
+    SetIPVM66: &SET_IP_VM66
+        <<: *SET_IP_VM1
+        Testadapter: "vm.[66].vnic.[1]"
+        ipv4:        '46.0.0.32'
+
+    OperationVMotion: &VMOTION
+        Type: "VM"
+        TestVM: "vm.[1]"
+        priority: "high"
+        vmotion: "roundtrip"
+        sleepbetweenworkloads: "30"
+        dsthost: "host.[2]"
+        iterations: "1"
+        staytime: "30"
+
+    DeleteGlobalTransportZone: &DELETE_GLOBAL_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: vsm.[1]
+        deleteglobaltransportzone: vsm.[1].globaltransportzone.[1]
+
+    CreateHostProfile3: &CREATE_HOST_PROFILE_3
+        Type: "VC"
+        TestVC: "vc.[1]"
+        createprofile: "profile"
+        SrcHost: "host.[3]"
+        targetprofile: "hostprofile3"
+    CreateHostProfile4: &CREATE_HOST_PROFILE_4
+        Type: "VC"
+        TestVC: "vc.[2]"
+        createprofile: "profile"
+        SrcHost: "host.[4]"
+        targetprofile: "hostprofile4"
+    ApplyHostProfile3: &APPLY_HOST_PROFILE_3
+        Type: "VC"
+        TestVC: "vc.[1]"
+        applyprofile: "hostprofile3"
+        SrcHost: "host.[3]"
+    ApplyHostProfile4: &APPLY_HOST_PROFILE_4
+        Type: "VC"
+        TestVC: "vc.[2]"
+        applyprofile: "hostprofile3"
+        SrcHost: "host.[4]"
+
+    PoweronVM1: &POWER_ON_VM1
+      Type: "VM"
+      TestVM: "vm.[1]"
+      vmstate: "poweron"
+    PoweronVM2: &POWER_ON_VM2
+      Type: "VM"
+      TestVM: "vm.[2]"
+      vmstate: "poweron"
+    PoweronVM3: &POWER_ON_VM3
+      Type: "VM"
+      TestVM: "vm.[3]"
+      vmstate: "poweron"
+    PoweronVM4: &POWER_ON_VM4
+      Type: "VM"
+      TestVM: "vm.[4]"
+      vmstate: "poweron"
+    PoweronVM5: &POWER_ON_VM5
+      Type: "VM"
+      TestVM: "vm.[5]"
+      vmstate: "poweron"
+    PoweronVM6: &POWER_ON_VM6
+      Type: "VM"
+      TestVM: "vm.[6]"
+      vmstate: "poweron"
+    PoweronVM7: &POWER_ON_VM7
+      Type: "VM"
+      TestVM: "vm.[7]"
+      vmstate: "poweron"
+    PoweronVM8: &POWER_ON_VM8
+      Type: "VM"
+      TestVM: "vm.[8]"
+      vmstate: "poweron"
+    PoweronVM9: &POWER_ON_VM9
+      Type: "VM"
+      TestVM: "vm.[9]"
+      vmstate: "poweron"
+    PoweronVM10: &POWER_ON_VM10
+      Type: "VM"
+      TestVM: "vm.[10]"
+      vmstate: "poweron"
+    PoweronVM11: &POWER_ON_VM11
+      Type: "VM"
+      TestVM: "vm.[11]"
+      vmstate: "poweron"
+    PoweronVM12: &POWER_ON_VM12
+      Type: "VM"
+      TestVM: "vm.[12]"
+      vmstate: "poweron"
+    PoweronVM13: &POWER_ON_VM13
+      Type: "VM"
+      TestVM: "vm.[13]"
+      vmstate: "poweron"
+    PoweronVM14: &POWER_ON_VM14
+      Type: "VM"
+      TestVM: "vm.[14]"
+      vmstate: "poweron"
+    PoweronVM15: &POWER_ON_VM15
+      Type: "VM"
+      TestVM: "vm.[15]"
+      vmstate: "poweron"
+    PoweronVM16: &POWER_ON_VM16
+      Type: "VM"
+      TestVM: "vm.[16]"
+      vmstate: "poweron"
+    PoweronVM17: &POWER_ON_VM17
+      Type: "VM"
+      TestVM: "vm.[17]"
+      vmstate: "poweron"
+    PoweronVM18: &POWER_ON_VM18
+      Type: "VM"
+      TestVM: "vm.[18]"
+      vmstate: "poweron"
+    PoweronVM19: &POWER_ON_VM19
+      Type: "VM"
+      TestVM: "vm.[19]"
+      vmstate: "poweron"
+    PoweronVM20: &POWER_ON_VM20
+      Type: "VM"
+      TestVM: "vm.[20]"
+      vmstate: "poweron"
+    PoweronVM21: &POWER_ON_VM21
+      Type: "VM"
+      TestVM: "vm.[21]"
+      vmstate: "poweron"
+    PoweronVM22: &POWER_ON_VM22
+      Type: "VM"
+      TestVM: "vm.[22]"
+      vmstate: "poweron"
+    PoweronVM23: &POWER_ON_VM23
+      Type: "VM"
+      TestVM: "vm.[23]"
+      vmstate: "poweron"
+    PoweronVM24: &POWER_ON_VM24
+      Type: "VM"
+      TestVM: "vm.[24]"
+      vmstate: "poweron"
+    PoweronVM25: &POWER_ON_VM25
+      Type: "VM"
+      TestVM: "vm.[25]"
+      vmstate: "poweron"
+    PoweronVM26: &POWER_ON_VM26
+      Type: "VM"
+      TestVM: "vm.[26]"
+      vmstate: "poweron"
+    PoweronVM27: &POWER_ON_VM27
+      Type: "VM"
+      TestVM: "vm.[27]"
+      vmstate: "poweron"
+    PoweronVM28: &POWER_ON_VM28
+      Type: "VM"
+      TestVM: "vm.[28]"
+      vmstate: "poweron"
+    PoweronVM29: &POWER_ON_VM29
+      Type: "VM"
+      TestVM: "vm.[29]"
+      vmstate: "poweron"
+    PoweronVM30: &POWER_ON_VM30
+      Type: "VM"
+      TestVM: "vm.[30]"
+      vmstate: "poweron"
+    PoweronVM31: &POWER_ON_VM31
+      Type: "VM"
+      TestVM: "vm.[31]"
+      vmstate: "poweron"
+    PoweronVM32: &POWER_ON_VM32
+      Type: "VM"
+      TestVM: "vm.[32]"
+      vmstate: "poweron"
+    PoweronVM33: &POWER_ON_VM33
+      Type: "VM"
+      TestVM: "vm.[33]"
+      vmstate: "poweron"
+    PoweronVM34: &POWER_ON_VM34
+      Type: "VM"
+      TestVM: "vm.[34]"
+      vmstate: "poweron"
+    PoweronVM35: &POWER_ON_VM35
+      Type: "VM"
+      TestVM: "vm.[35]"
+      vmstate: "poweron"
+    PoweronVM36: &POWER_ON_VM36
+      Type: "VM"
+      TestVM: "vm.[36]"
+      vmstate: "poweron"
+    PoweronVM37: &POWER_ON_VM37
+      Type: "VM"
+      TestVM: "vm.[37]"
+      vmstate: "poweron"
+    PoweronVM38: &POWER_ON_VM38
+      Type: "VM"
+      TestVM: "vm.[38]"
+      vmstate: "poweron"
+    PoweronVM39: &POWER_ON_VM39
+      Type: "VM"
+      TestVM: "vm.[39]"
+      vmstate: "poweron"
+    PoweronVM40: &POWER_ON_VM40
+      Type: "VM"
+      TestVM: "vm.[40]"
+      vmstate: "poweron"
+    PoweronVM41: &POWER_ON_VM41
+      Type: "VM"
+      TestVM: "vm.[41]"
+      vmstate: "poweron"
+    PoweronVM42: &POWER_ON_VM42
+      Type: "VM"
+      TestVM: "vm.[42]"
+      vmstate: "poweron"
+    PoweronVM43: &POWER_ON_VM43
+      Type: "VM"
+      TestVM: "vm.[43]"
+      vmstate: "poweron"
+    PoweronVM44: &POWER_ON_VM44
+      Type: "VM"
+      TestVM: "vm.[44]"
+      vmstate: "poweron"
+    PoweronVM45: &POWER_ON_VM45
+      Type: "VM"
+      TestVM: "vm.[45]"
+      vmstate: "poweron"
+    PoweronVM46: &POWER_ON_VM46
+      Type: "VM"
+      TestVM: "vm.[46]"
+      vmstate: "poweron"
+    PoweronVM47: &POWER_ON_VM47
+      Type: "VM"
+      TestVM: "vm.[47]"
+      vmstate: "poweron"
+    PoweronVM48: &POWER_ON_VM48
+      Type: "VM"
+      TestVM: "vm.[48]"
+      vmstate: "poweron"
+    PoweronVM49: &POWER_ON_VM49
+      Type: "VM"
+      TestVM: "vm.[49]"
+      vmstate: "poweron"
+    PoweronVM50: &POWER_ON_VM50
+      Type: "VM"
+      TestVM: "vm.[50]"
+      vmstate: "poweron"
+    PoweronVM51: &POWER_ON_VM51
+      Type: "VM"
+      TestVM: "vm.[51]"
+      vmstate: "poweron"
+    PoweronVM52: &POWER_ON_VM52
+      Type: "VM"
+      TestVM: "vm.[52]"
+      vmstate: "poweron"
+    PoweronVM53: &POWER_ON_VM53
+      Type: "VM"
+      TestVM: "vm.[53]"
+      vmstate: "poweron"
+    PoweronVM54: &POWER_ON_VM54
+      Type: "VM"
+      TestVM: "vm.[54]"
+      vmstate: "poweron"
+    PoweronVM55: &POWER_ON_VM55
+      Type: "VM"
+      TestVM: "vm.[55]"
+      vmstate: "poweron"
+    PoweronVM56: &POWER_ON_VM56
+      Type: "VM"
+      TestVM: "vm.[56]"
+      vmstate: "poweron"
+    PoweronVM57: &POWER_ON_VM57
+      Type: "VM"
+      TestVM: "vm.[57]"
+      vmstate: "poweron"
+    PoweronVM58: &POWER_ON_VM58
+      Type: "VM"
+      TestVM: "vm.[58]"
+      vmstate: "poweron"
+    PoweronVM59: &POWER_ON_VM59
+      Type: "VM"
+      TestVM: "vm.[59]"
+      vmstate: "poweron"
+    PoweronVM60: &POWER_ON_VM60
+      Type: "VM"
+      TestVM: "vm.[60]"
+      vmstate: "poweron"
+    PoweronVM61: &POWER_ON_VM61
+      Type: "VM"
+      TestVM: "vm.[61]"
+      vmstate: "poweron"
+    PoweronVM62: &POWER_ON_VM62
+      Type: "VM"
+      TestVM: "vm.[62]"
+      vmstate: "poweron"
+    PoweronVM63: &POWER_ON_VM63
+      Type: "VM"
+      TestVM: "vm.[63]"
+      vmstate: "poweron"
+    PoweronVM64: &POWER_ON_VM64
+      Type: "VM"
+      TestVM: "vm.[64]"
+      vmstate: "poweron"
+    PoweronVM65: &POWER_ON_VM65
+      Type: "VM"
+      TestVM: "vm.[65]"
+      vmstate: "poweron"
+    PoweronVM66: &POWER_ON_VM66
+      Type: "VM"
+      TestVM: "vm.[66]"
+      vmstate: "poweron"
+
+            # Setup Universal configuration on VC-A
+    ConfigUniversalEgressDisabled: &CONFIG_UNIVERSAL_EGRESS_DISABLED
+        - ['SetMasterNSXReplicatorAsPrimary']
+        - ['RegisterAllSlaveNSXManager']
+        - ['CreateGlobalVNIPool']
+        - ['CreateGlobalTransportZone']
+        - ['CreateGlobalLogicalSwitches']
+        - ['CreateGlobalDLREgressDisabled']
+        - ['CreateLifOnUDLR1']
+        - ['CreateLifOnUDLR2']
+        - ['CreateLifOnUDLR3']
+        - ['CreateVcAEdges']
+        - ['CreateGatewayInterface1Edge1']
+        - ['CreateGatewayInterface2Edge1']
+        - ['CreateGatewayInterface3Edge1']
+        - ['CreateGatewayInterface4Edge1']
+        - ['CreateGatewayInterface1Edge2']
+        - ['CreateGatewayInterface2Edge2']
+        - ['CreateGatewayInterface3Edge2']
+        - ['CreateGatewayInterface4Edge2']
+
+    ConfigUniversalEgressEnabled: &CONFIG_UNIVERSAL_EGRESS_ENABLED
+        - ['SetMasterNSXReplicatorAsPrimary']
+        - ['RegisterAllSlaveNSXManager']
+        - ['CreateGlobalVNIPool']
+        - ['CreateGlobalTransportZone']
+        - ['CreateGlobalLogicalSwitches']
+        - ['CreateGlobalDLREgressEnabled']
+        - ['CreateLifOnUDLR1']
+        - ['CreateLifOnUDLR2']
+        - ['CreateLifOnUDLR3']
+        - ['CreateVcAEdges']
+        - ['CreateGatewayInterface1Edge1']
+        - ['CreateGatewayInterface2Edge1']
+        - ['CreateGatewayInterface3Edge1']
+        - ['CreateGatewayInterface4Edge1']
+        - ['CreateGatewayInterface1Edge2']
+        - ['CreateGatewayInterface2Edge2']
+        - ['CreateGatewayInterface3Edge2']
+        - ['CreateGatewayInterface4Edge2']
+
+            # Setup Local configuration on VC-A
+    ConfigLocalOnVCA: &CONFIG_LOCAL_ON_VC_A
+        - ['CreateLocalTransportZoneA']
+        - ['CreateLocalVNIPoolA']
+        - ['CreateLocalLogicalSwitches']
+        - ['CreateGatewayInterface5Edge1']
+        - ['CreateGatewayInterface6Edge1']
+        - ['CreateGatewayInterface5Edge2']
+        - ['CreateGatewayInterface6Edge2']
+        - ['CreateLocalDLRsVCA']
+        - ['CreateLifOnLDLR1VCA']
+        - ['CreateLifOnLDLR2VCA']
+        - ['CreateLifOnLDLR3VCA']
+        - ['ConfigBridgeOnLDLR1VCA']
+        - ['ConfigBridgeOnLDLR2VCA']
+        - ['ConfigBridgeOnLDLR3VCA']
+
+            # Configure route on VC-A
+    ConfigRouteOnVCA: &CONFIG_ROUTE_ON_VC_A
+        - ['ConfigGlobalRouteOnEdgeVCA']
+        - ['ConfigBGPOnEdgeVCA']
+        - ['ConfigureEdgeOSPF_VCA']
+        - ['ConfigGlobalRouteOnLDLRVCA']
+        - ['ConfigureLDLR_OSPF_VCA']
+#        - ['ConfigureDHCP']
+#        - ['ConfigureDHCPRelayLDLR1VCA'] #bug
+
+            # Setup VC-B universal config
+    ConfigUniversalOnVCB: &CONFIG_UNIVERSAL_ON_VC_B
+        - ['AddClustersToGTZSlaveB']
+        - ['CreateVcBEdges']
+        - ['CreateGatewayInterface1Edge1_B']
+        - ['CreateGatewayInterface1Edge2_B']
+
+    ConfigEgressEnabledOnVCB: &CONFIG_EGRESS_ENABLED_ON_VC_B
+        - ['CreateGatewayInterface4Edge1_B']
+        - ['CreateGatewayInterface5Edge1_B']
+        - ['CreateGatewayInterface6Edge1_B']
+        - ['CreateGatewayInterface4Edge2_B']
+        - ['CreateGatewayInterface5Edge2_B']
+        - ['CreateGatewayInterface6Edge2_B']
+        - ['AddLifOnUDLR1VCB']
+        - ['AddLifOnUDLR2VCB']
+        - ['AddLifOnUDLR3VCB']
+
+            # Setup Local configuration on VC-B
+    ConfigLocalOnVCB: &CONFIG_LOCAL_ON_VC_B
+        - ['CreateLocalTransportZoneB']
+        - ['CreateLocalVNIPoolB']
+        - ['CreateLocalLogicalSwitchesB']
+        - ['CreateGatewayInterface2Edge1_B']
+        - ['CreateGatewayInterface3Edge1_B']
+        - ['CreateGatewayInterface2Edge2_B']
+        - ['CreateGatewayInterface3Edge2_B']
+        - ['CreateLocalDLRsVCB']
+        - ['CreateLifOnLDLR1VCB']
+        - ['CreateLifOnLDLR2VCB']
+        - ['ConfigBridgeOnLDLR1VCB']
+        - ['ConfigBridgeOnLDLR2VCB']
+
+            # Configure route on VC-B
+    ConfigRouteOnVCB: &CONFIG_ROUTE_ON_VC_B
+        - ['ConfigGlobalRouteOnEdgeVCB']
+        - ['ConfigBGPOnEdgeVCB']
+        - ['ConfigureEdgeOSPF_VCB']
+        - ['ConfigGlobalRouteOnLDLRVCB']
+        - ['ConfigureLDLR_OSPF_VCB']
+#        - ['ConfigureDHCPVCB']
+#        - ['ConfigureDHCPRelayLDLR1VCA'] #bug
+
+
+            # Setup VC-B universal config
+    ConfigUniversalOnVCC: &CONFIG_UNIVERSAL_ON_VC_C
+#        - ['AddClustersToGTZSlaveC']
+#        - ['CreateVcCEdges']
+#        - ['CreateGatewayInterface1Edge1_C']
+#        - ['CreateGatewayInterface1Edge2_C']
+            # Setup Local configuration on VC-C
+    ConfigLocalOnVCC: &CONFIG_LOCAL_ON_VC_C
+#        - ['CreateLocalTransportZoneC']
+#        - ['CreateLocalVNIPoolC']
+#        - ['CreateLocalLogicalSwitchesC']
+#        - ['CreateGatewayInterface2Edge1_C']
+#        - ['CreateGatewayInterface3Edge1_C']
+#        - ['CreateGatewayInterface2Edge2_C']
+#        - ['CreateGatewayInterface3Edge2_C']
+#        - ['CreateLocalDLRsVCC']
+#        - ['CreateLifOnLDLR1VCC']
+#        - ['CreateLifOnLDLR2VCC']
+#        - ['ConfigBridgeOnLDLR1VCC']
+#        - ['ConfigBridgeOnLDLR2VCC']
+            # Configure route on VC-C
+    ConfigRouteOnVCC: &CONFIG_ROUTE_ON_VC_C
+#        - ['ConfigGlobalRouteOnEdgeVCC']
+#        - ['ConfigBGPOnEdgeVCC']
+#        - ['ConfigureEdgeOSPF_VCC']
+#        - ['ConfigGlobalRouteOnLDLRVCC']
+#        - ['ConfigureLDLR_OSPF_VCC']
+#        - ['ConfigureDHCPVCC']
+#        - ['ConfigureDHCPRelayLDLR1VCA'] #bug
+
+    CreateApplyProfile: &CREATE_APPLY_PROFILE
+        - ['CreateHostProfile3']
+        - ['ApplyHostProfile3']
+        - ['CreateHostProfile4']
+        - ['ApplyHostProfile4']
+
+    PlaceVMInNetwork: &PLACE_VM_IN_NETWORK
+        - ['PlaceVMsOnGLS1']
+        - ['PlaceVMsOnGLS2']
+        - ['PlaceVMsOnGLS3']
+        - ['PlaceVMsOnGLS4']
+        - ['PlaceVMsOnGLS5']
+        - ['PlaceVMsOnGLS6']
+        - ['PlaceVMsOnGLS7']
+        - ['PlaceVMsOnGLS8']
+        - ['PlaceVMsOnGLS9']
+        - ['PlaceVMsOnLLS3-VC-A']
+        - ['PlaceVMsOnLLS4-VC-A']
+        - ['PlaceVMsOnLLS5-VC-A']
+        - ['PlaceVMsOnLLS6-VC-A']
+        - ['PlaceVMsOnLLS7-VC-A']
+        - ['PlaceVMsOnLLS8-VC-A']
+        - ['PlaceVMsOnLLS9-VC-A']
+        - ['PlaceVMsOnLLS10-VC-A']
+        - ['PlaceVMsOnVLan23']
+        - ['PlaceVMsOnVLan24']
+        - ['PlaceVMsOnVLan25']
+        - ['PlaceVMsOnVLan26']
+        - ['PlaceVMsOnVLan27']
+        - ['PlaceVMsOnVLan28']
+        - ['PlaceVMsOnVLan29']
+        - ['PlaceVMsOnLLS3-VC-B']
+        - ['PlaceVMsOnLLS4-VC-B']
+        - ['PlaceVMsOnLLS5-VC-B']
+        - ['PlaceVMsOnLLS6-VC-B']
+        - ['PlaceVMsOnLLS7-VC-B']
+        - ['PlaceVMsOnVLan43']
+        - ['PlaceVMsOnVLan44']
+        - ['PlaceVMsOnVLan45']
+        - ['PlaceVMsOnVLan46']
+
+    SetVMIP: &SET_VM_IP
+        - ['SetIPVM1','SetIPVM2','SetIPVM3','SetIPVM4','SetIPVM5']
+        - ['SetIPVM6','SetIPVM7','SetIPVM8','SetIPVM9','SetIPVM10']
+        - ['SetIPVM11','SetIPVM12','SetIPVM13','SetIPVM14','SetIPVM15']
+        - ['SetIPVM16','SetIPVM17','SetIPVM18','SetIPVM19','SetIPVM20']
+        - ['SetIPVM21','SetIPVM22','SetIPVM23','SetIPVM24','SetIPVM25']
+        - ['SetIPVM26','SetIPVM27','SetIPVM28','SetIPVM29','SetIPVM30']
+        - ['SetIPVM31','SetIPVM32','SetIPVM33','SetIPVM34','SetIPVM35']
+        - ['SetIPVM36','SetIPVM37','SetIPVM38','SetIPVM39','SetIPVM40']
+        - ['SetIPVM41','SetIPVM42','SetIPVM43','SetIPVM44','SetIPVM45']
+        - ['SetIPVM46','SetIPVM47','SetIPVM48','SetIPVM49','SetIPVM50']
+        - ['SetIPVM51','SetIPVM52','SetIPVM53','SetIPVM54','SetIPVM55']
+        - ['SetIPVM56','SetIPVM57','SetIPVM58','SetIPVM59','SetIPVM60']
+        - ['SetIPVM61','SetIPVM62','SetIPVM63','SetIPVM64','SetIPVM65','SetIPVM66']
+
+    PowerOnVM: &POWER_ON_VM
+        - ['PoweronVM1','PoweronVM2','PoweronVM3','PoweronVM4','PoweronVM5']
+        - ['PoweronVM6','PoweronVM7','PoweronVM8','PoweronVM9','PoweronVM10']
+        - ['PoweronVM11','PoweronVM12','PoweronVM13','PoweronVM14','PoweronVM15']
+        - ['PoweronVM16','PoweronVM17','PoweronVM18','PoweronVM19','PoweronVM20']
+        - ['PoweronVM21','PoweronVM22','PoweronVM23','PoweronVM24','PoweronVM25']
+        - ['PoweronVM26','PoweronVM27','PoweronVM28','PoweronVM29','PoweronVM30']
+        - ['PoweronVM31','PoweronVM32','PoweronVM33','PoweronVM34','PoweronVM35']
+        - ['PoweronVM36','PoweronVM37','PoweronVM38','PoweronVM39','PoweronVM40']
+        - ['PoweronVM41','PoweronVM42','PoweronVM43','PoweronVM44','PoweronVM45']
+        - ['PoweronVM46','PoweronVM47','PoweronVM48','PoweronVM49','PoweronVM50']
+        - ['PoweronVM51','PoweronVM52','PoweronVM53','PoweronVM54','PoweronVM55']
+        - ['PoweronVM56','PoweronVM57','PoweronVM58','PoweronVM59','PoweronVM60']
+        - ['PoweronVM61','PoweronVM62','PoweronVM63','PoweronVM64','PoweronVM65','PoweronVM66']

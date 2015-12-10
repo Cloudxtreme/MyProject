@@ -1,0 +1,571 @@
+{% include 'TDS/NSXTransformers/L3/TestbedSpec.yaml' %}
+{% include 'TDS/NSXTransformers/L3/CommonWorkloads.yaml' %}
+{% include 'TDS/NSXTransformers/Common/Topo_Clusters.yaml' %}
+
+L3ESXBasic:
+    Category: L3
+    Component: Basic Routing
+    Summary: This test case verifies that connectivity works between 2 ESX
+             VMs on 2 logical switches
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: L3ESXBasic
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+
+    WORKLOADS:
+        <<: *Topo_3MP_3CCP
+        Sequence:
+             - ['ClusterSetup']
+             - ['ClusterVerification']
+             - ['SetManagerOnHost']
+             - ['DiscoverHostnodes']
+             - ['CreateTransportZone']
+             - ['CreateUplinkProfile']
+             - ['CreateTransportNodes']
+             - ['Create2LogicalSwitches']
+             - ['VifAttachmentVM1']
+             - ['VifAttachmentVM2']
+             - ['PowerOnVM1', 'PowerOnVM2']
+             - ["CreateLogicalPorts"]
+             - ["CreateLogicalRouter"]
+             - ["Create2LRPorts"]
+             - ['ConfigureVM1Vnic1IP']
+             - ['ConfigureVM2Vnic1IP']
+             - ['AddRouteVM1']
+             - ['AddRouteVM2']
+             - ['VerifyDRs']
+             - ['VerifyLIFs']
+             - ['Traffic']
+             - ['VerifyRoutes']
+             - ['VerifyDRArpTable']
+             - ['VerifyDRLif1ArpTable', 'VerifyDRLif2ArpTable']
+        ExitSequence:
+             - ['PoweroffVM1', 'PoweroffVM2']
+             - ['DeleteVnic1', 'DeleteVnic2']
+             - ['DeleteLogicalRouterPort']
+             - ['DeleteLogicalRouter']
+             - ['DeleteLogicalPort']
+             - ['DeleteLogicalSwitch']
+             - ['DeleteTransportNode']
+             - ['DeleteUplinkProfile']
+             - ['DeleteTransportZone']
+             - ['UnregisterHost']
+             # WORKAROUND (dbadiani) - PR1434458
+             # Remove CCP cleanup to fix CAT failure
+             # - ['ClusterCleanup']
+
+        UnregisterHost:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            deletehostnode: 'nsxmanager.[1].hostnode.[1-2]'
+
+        ConfigureVM1Vnic1IP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[1].vnic.[1]'
+            ipv4:       '192.168.1.10'
+            netmask:    "255.255.255.0"
+
+        ConfigureVM2Vnic1IP:
+            Type: NetAdapter
+            TestAdapter: 'vm.[2].vnic.[1]'
+            ipv4:       '192.168.2.10'
+            netmask:    "255.255.255.0"
+        AddRouteVM1:
+            Type:        "NetAdapter"
+            Testadapter: "vm.[1].vnic.[1]"
+            netmask:     "255.255.255.0"
+            route:       "add"
+            network:     "192.168.2.0"
+            gateway:     "192.168.1.1"
+
+        AddRouteVM2:
+            Type:        "NetAdapter"
+            Testadapter: "vm.[2].vnic.[1]"
+            netmask:     "255.255.255.0"
+            route:       "add"
+            network:     "192.168.1.0"
+            gateway:     "192.168.2.1"
+
+        PowerOnVM1:
+           Type: VM
+           TestVM: 'vm.[1]'
+           vmstate: poweron
+
+        PowerOnVM2:
+           Type: VM
+           TestVM: 'vm.[2]'
+           vmstate: poweron
+
+        PoweroffVM1:
+           Type: VM
+           TestVM: 'vm.[1]'
+           vmstate: poweroff
+
+        PoweroffVM2:
+           Type: VM
+           TestVM: 'vm.[2]'
+           vmstate: poweroff
+
+        Traffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration  : "20"
+
+        DeleteVnic1:
+            Type: VM
+            TestVM: 'vm.[1]'
+            deletevnic: 'vm.[1].vnic.[1]'
+
+        DeleteVnic2:
+            Type: VM
+            TestVM: 'vm.[2]'
+            deletevnic: 'vm.[2].vnic.[1]'
+
+        VerifyDRs:
+            Type: 'Host'
+            TestHost: "esx.[1-2]"
+            execution_type: 'cli'
+            get_logical_routers[?]contain_once:
+                table:
+                    - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+
+        VerifyLIFs:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: "esx.[1-2]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: nsxmanager.[1].logicalrouterport.[1]->lr_port_id
+                    - lrport_uuid: nsxmanager.[1].logicalrouterport.[2]->lr_port_id
+
+        VerifyRoutes:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: "esx.[1-2]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: '192.168.1.0'
+                      mask: '255.255.255.0'
+                      next_hop: '0.0.0.0'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+                    - destination: '192.168.2.0'
+                      mask: '255.255.255.0'
+                      next_hop: '0.0.0.0'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+
+        VerifyDRArpTable:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: "esx.[1-2]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            'get_dr_arp_table[?]contain_once':
+                table:
+                    - ip: vm.[1].vnic.[1]->adapter_ip
+                      mac: vm.[1].vnic.[1]->adapter_mac
+                    - ip: vm.[2].vnic.[1]->adapter_ip
+                      mac: vm.[2].vnic.[1]->adapter_mac
+
+        VerifyDRLif1ArpTable:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: "esx.[1-2]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            lr_port_id: nsxmanager.[1].logicalrouterport.[1]
+            execution_type: 'cli'
+            'get_dr_arp_table[?]contain_once':
+                table:
+                    - ip: vm.[1].vnic.[1]->adapter_ip
+                      mac: vm.[1].vnic.[1]->adapter_mac
+
+        VerifyDRLif2ArpTable:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: "esx.[1-2]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            lr_port_id: nsxmanager.[1].logicalrouterport.[2]
+            execution_type: 'cli'
+            'get_dr_arp_table[?]contain_once':
+                table:
+                    - ip: vm.[2].vnic.[1]->adapter_ip
+                      mac: vm.[2].vnic.[1]->adapter_mac
+
+L3ESXNSBasic:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Verify that a ping from logical to physical (N-S) VM works in a
+    single tier (PLR only) topology'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'dbadiani'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        <<: *Topo_3MP_3CCP
+        Sequence:
+             - - 'ClusterSetup'
+             - - 'ClusterVerification'
+             # Host preparation steps
+             - - 'SetManagerOnHost'
+             - - 'DiscoverHostnodes'
+             - - 'CreateUplinkProfile'
+             - - 'CreateOverlayTransportZone'
+             - - 'CreateOverlayTransportNodes'
+             - - 'CreateUplinkLogicalSwitches'
+             - - 'CreateDownlinkLogicalSwitches'
+             - - 'CreateUplinkLogicalPorts'
+             - - 'CreateDownlinkLogicalPortsPLR'
+             - - 'RegisterAllEdgeNodes'
+             - - 'DiscoverEdgeNodeIds'
+             - - 'CreateFabricProfile'
+             - - 'CreateEdgeCluster'
+             - - 'CreateProviderLogicalRouter1'
+             - - 'CreateUplinksPLR1'
+             - - 'CreateDownlinksPLR1'
+             - - 'VifAttachmentAllVMsESX'
+             - - 'PowerOnAllVMs'
+             - - 'ConfigureIPAllVMVNics'
+             - - 'AddRouteAllVMs'
+             - - 'L3DPVerificationBeforeTraffic'
+             - - 'PingFromLogicalToPhysical'
+             - - 'L3DPVerificationAfterTraffic'
+        ExitSequence:
+             - - 'PowerOffAllVMs'
+             - - 'DeleteTestVnicsAllVMs'
+             - - 'CleanupNSX'
+             - - 'UnregisterHosts'
+             - - 'ClusterCleanup'
+
+L3ESXNS2Tier:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNS2Tier'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Verify that a ping from logical to physical (N-S) VM works in a
+    two tier (PLR - TLR) topology'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'dbadiani'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        <<: *Topo_3MP_3CCP
+        Sequence:
+             - - 'ClusterSetup'
+             - - 'ClusterVerification'
+             # Host preparation steps
+             - - 'SetManagerOnHost'
+             - - 'DiscoverHostnodes'
+             - - 'CreateUplinkProfile'
+             - - 'CreateOverlayTransportZone'
+             - - 'CreateOverlayTransportNodes'
+             - - 'CreateUplinkLogicalSwitches'
+             - - 'CreateDownlinkLogicalSwitchesTLR'
+             - - 'CreateUplinkLogicalPorts'
+             - - 'CreateDownlinkLogicalPortsTLR'
+             - - 'RegisterAllEdgeNodes'
+             - - 'DiscoverEdgeNodeIds'
+             - - 'CreateFabricProfile'
+             - - 'CreateEdgeCluster'
+             - - 'CreateProviderLogicalRouter1'
+             - - 'CreateUplinksPLR1'
+             - - 'CreateRouterLinkPLR1'
+             - - 'CreateTenantLogicalRouter1'
+             - - 'CreateRouterLinkTLR1'
+             - - 'CreateDownlinksTLR1'
+             - - 'SetTLR1RouteAdvertisement'
+             - - 'VifAttachmentAllVMsESX2Tier'
+             - - 'PowerOnAllVMsNS2'
+             - - 'ConfigureIPAllVMVNicsNS2'
+             - - 'AddRouteAllVMsNS2'
+             - - 'L3DPVerificationBeforeTraffic2Tier'
+             - - 'PingFromLogicalToLogical'
+             - - 'L3DPVerificationAfterTraffic2Tier'
+             - - 'PingFromLogicalToPhysical'
+        ExitSequence:
+             - - 'PowerOffAllVMs'
+             - - 'DeleteTestVnicsAllVMs2Tier'
+             - - 'CleanupNSX2Tier'
+             - - 'UnregisterHosts'
+             - - 'ClusterCleanup'
+
+L3UIBasic:
+    Category: L3
+    Component: Basic Routing
+    Summary: This test case verifies LR CRUD functionalities through UI
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: L3UIBasic
+    TestbedSpec: *L3_UI_TESTBEDSPEC
+
+    WORKLOADS:
+        Sequence:
+             - ['InitializeBrowserSession']
+             - ['CreateLogicalRouterT0']
+             - ['CreateLogicalRouterT1']
+             - ['UpdateLogicalRouterT0']
+             - ['UpdateLogicalRouterT1']
+             - ['DeleteLogicalRouterT0']
+             - ['DeleteLogicalRouterT1']
+        ExitSequence:
+             - ['QuitBrowserSession']
+
+        InitializeBrowserSession:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            uidriver:
+                '[1]':
+                    nsxmanager_url: 'nsxmanager.[1]->base_url'
+                    username: 'admin'
+                    password: 'vmware'
+                    browser_name: 'chrome'
+                    client_id: 'client-id'
+
+        QuitBrowserSession:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            quituidriver: "nsxmanager.[1].uidriver.[1]"
+
+        CreateLogicalRouterT0:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            logicalrouter:
+                '[1]':
+                    name: 'LogicalRouterT0'
+                    router_type: 'TIER0'
+                    summary: 'Logical router T0'
+                    edge_cluster_id: 'test Cluster'
+                    config:
+                       internal_transit_network: '168.1.1.1/24'
+                       external_transit_networks: ['168.1.1.0/24']
+
+        CreateLogicalRouterT1:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            logicalrouter:
+                '[2]':
+                    name: 'LogicalRouterT1'
+                    router_type: 'TIER1'
+                    summary: 'Logical router T1'
+
+        UpdateLogicalRouterT0:
+            Type: Router
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            reconfigure:
+                summary: 'Logical router T0 updated'
+
+        UpdateLogicalRouterT1:
+            Type: Router
+            TestRouter: 'nsxmanager.[1].logicalrouter.[2]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            reconfigure:
+                summary: 'Logical router T1 updated'
+
+        DeleteLogicalRouterT0:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            deletelogicalrouter: 'nsxmanager.[1].logicalrouter.[1]'
+
+        DeleteLogicalRouterT1:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            deletelogicalrouter: 'nsxmanager.[1].logicalrouter.[2]'
+
+CreateDelete2LRPs100Times:
+    Category: L3
+    Component: Basic Routing
+    Summary: 'Create delete 2 LR Ports 100 times'
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: CreateDelete2LRPs100Times
+    TestcaseType: Stress
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+
+    WORKLOADS:
+        <<: *Topo_3MP_3CCP
+        Sequence:
+             - - 'ClusterSetup'
+             - - 'ClusterVerification'
+             - - 'SetManagerOnHost'
+             - - 'DiscoverHostnodes'
+             - - 'CreateTransportZone'
+             - - 'CreateUplinkProfile'
+             - - 'CreateTransportNodes'
+             - - 'Create2LogicalSwitches'
+             - - "CreateLogicalPorts"
+             - - "CreateLogicalRouter"
+             - - 'CreateDeleteLRPort1_100'
+               - 'CreateDeleteLRPort2_100'
+        ExitSequence:
+             - - 'DeleteLogicalRouter'
+             - - 'DeleteLogicalPort'
+             - - 'DeleteLogicalSwitch'
+             - - 'DeleteTransportNode'
+             - - 'DeleteUplinkProfile'
+             - - 'DeleteTransportZone'
+             - - 'UnregisterHosts'
+             - - 'ClusterCleanup'
+
+L3ESXScaleLimits:
+    Category: L3
+    Component: Basic Routing
+    Summary: 'Create delete <max> LRs and one LR with <max> LRPorts'
+    Tags: nsx, bumblebee
+    Version: 2
+    TestName: L3ESXScaleLimits
+    TestcaseType: Stress
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+
+    WORKLOADS:
+        <<: *Topo_3MP_3CCP
+        CreateLogicalSwitchScaleLimits:
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalswitch:
+{% for ls in range(1, 101) %}
+                '[{{ ls }}]':
+                    admin_state: UP
+                    name: lswitch{{ ls }}
+                    replication_mode: MTEP
+                    summary: lswitch{{ ls }} created through automation
+                    transport_zone_id: nsxmanager.[1].transportzone.[1]
+{% endfor %}
+
+        CreateLogicalPortScaleLimits:
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+{% for lp in range(1, 101) %}
+                '[{{ lp }}]':
+                    admin_state: UP
+                    name: logicalport-{{lp}}
+                    summary: logicalport{{ lp }} created through automation
+                    switch_id: nsxmanager.[1].logicalswitch.[{{ lp }}]->id
+{% endfor %}
+        CreateLogicalRouterScaleLimits:
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalrouter:
+{% for lr in range(1, 101) %}
+                '[{{ lr }}]':
+                    name: lrouter-{{lr}}
+                    router_type: TIER1
+                    summary: LRouter{{ lr }} created through automation
+{% endfor %}
+        CreateLogicalRouterPortScaleLimits:
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalrouterport:
+{% for lrp in range(1, 101) %}
+                '[{{ lrp }}]':
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[{{ lrp }}]->id
+                    logical_router_id: nsxmanager.[1].logicalrouter.[1]
+                    name: lrouterport-{{ lrp }}
+                    resource_type: LogicalRouterDownLinkPort
+                    subnets:
+                    -   ip_addresses:
+                        - 192.{{ int(lrp/100)%10 }}.{{ lrp%100 }}.1
+                        prefixlen: 24
+                    summary: LRPort{{ lrp }} created through automation
+{% endfor %}
+        DeleteLogicalRouterPortScaleLimits:
+            -   -   DeleteLRP-1-100
+        DeleteLogicalRouterScaleLimits:
+            -   -   DeleteLR-1-100
+        DeleteLogicalPortScaleLimits:
+            -   -   DeleteLSP-1-100
+        DeleteLogicalSwitchScaleLimits:
+            -   -   DeleteLS-1-100
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - CreateTZ-1
+            - - CreateUPROF-1_MTU-1600
+            - - SetManagerOnESX-1
+              - SetManagerOnESX-2
+            - - DiscoverHostNode1FromESX1
+              - DiscoverHostNode2FromESX2
+            - - CreateTN-1_HOSTNODE-1_TZ-1_VMNIC-1
+              - CreateTN-2_HOSTNODE-2_TZ-1_VMNIC-1
+            - - CreateLogicalSwitchScaleLimits
+            - - CreateLogicalPortScaleLimits
+            - - CreateLogicalRouterScaleLimits
+            - - CreateLogicalRouterPortScaleLimits
+        ExitSequence:
+            - - DeleteLogicalRouterPortScaleLimits
+            - - DeleteLogicalRouterScaleLimits
+            - - DeleteLogicalPortScaleLimits
+            - - DeleteLogicalSwitchScaleLimits
+            - - DeleteTN-1
+              - DeleteTN-2
+            - - RemoveManagerOnESX-1
+              - RemoveManagerOnESX-2
+            - - UndiscoverHostNode-1
+              - UndiscoverHostNode-2
+            - - DeleteUPROF-1
+            - - DeleteTZ-1
+            - - ClusterCleanup
+
+LinuxRouterSample:
+    Category: L3
+    Component: Basic Routing
+    Summary: 'Create an external router and enable routing on it'
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: LinuxRouterSample
+    TestcaseType: Stress
+    TestbedSpec: *L3TopologyLinuxRtr
+
+    WORKLOADS:
+        Sequence:
+             - - 'PowerOnLinuxRouter'
+             - - 'EnableRouting'
+        ExitSequence:
+             - - 'DisableRouting'
+             - - 'PowerOffLinuxRouter'

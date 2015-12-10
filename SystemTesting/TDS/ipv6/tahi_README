@@ -1,0 +1,31 @@
+
+Understanding and Running the TAHI test suites from vdNet
+
+TAHI is a series of third-party test suites used to determine conformance with the IPv6 RFCs.  There are suites for Core portocols, IPsec, IKEv2, DHCPv6, MIPv2 and others.  VMware does not support MIPv2 and IKEv2 is disabled at MN (5.0) release.  Each suite can contain a number of test cases.
+
+TAHI is supported only on freeBSD, where the test suites are installed and configured.  It operates by injecting packets into the test link and watching the response from the Node Under Test (NUT), so there must be a test link between the TAHI freeBSD machine and the NUT on which there are no other devices.
+
+TAHI has its own 'framework', actually two of them, v6eval and koi.  The individual test suites use the services of the framework.  There are vendor-furnished scripts and tools which provide for control of the NUT by the freeBSD Test Node (TN) and conversion of generic TAHI commands into product-specific commands.
+
+vdNet is just a wrapper in the case of TAHI.  TAHI can be setup, configured and run from the shell prompt using the vendor-supplied scripts on the TN, the vdNet TDS just uses CommandWorkload to execute these scritps  and provide a common interface.
+
+In order to run the vdNet IPv6 TDS scripts, you must have a freeBSD machine with the TAHI tests installed and configured, and have a dedicated link between the two machines.  The freeBSD machine can be a dedicated machine or a VM.  If it is a VM, the VM can be hosted on the NUT or another ESX machine.  If the freeBSD TN is a dedicated machine or a VM on a host other than the NUT, it must have 'back-to-back' cable between the two machines.
+
+Setup instructions for the VM in either topology are available in a separate document along with the VM.
+
+vdNet need only communicate with the freeBSD TN, vdNet does not communicate directly with the ESX NUT, the freeBSD TN does that.  So using vdNet.pl may be a bit odd compared to the normal testing.
+
+The tahiTds.pm vdnet TDS file has four workloads, nopwSSH, preflight, setupTahi, runTahi.  Each of these workloads executes a script on the TN, these scripts may be executed directly on the TN as well.  The four workloads could have been combined into one however, there will be times when it is desirable to rerun one of the workloads, for example after a configuratin change, you would rerun setupTahi.  Initially, the scripts should be run in this order:
+
+nopwSSH
+setupTahi
+preflight (this step is optional)
+runTahi
+
+If any of the first three fail, you should stop, fix the problem and rerun that script.
+
+runTahi executes the run_tahi.pl scripts on the TN which, in turn, executes the results processing script.  The results are summarized by suite and written to /usr/local/resultsfile and /usr/local/tcmsfile on the TN.  The results scripts returns and overall pass/fail for the test run.  runTahi will return pass or fail based on what the results scripts return.  TAHI results are provided in html, point your browser at the TN to see them.  They also contain a very detailed log and packet capture for each test case.
+
+Once the VM is set up, the esx NUT is expected to have an IP address and TSM enabled.  
+
+

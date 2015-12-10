@@ -1,0 +1,168 @@
+CreatePlrTlr:
+    Product: 'NSX'
+    Component: 'DistributedRouting'
+    Category: 'L3'
+    TestName: 'CreatePlrTlr'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Product'
+    Testcasetype: 'Functional'
+    Testbed: *L3_ESX_TOPOLOGY_01
+    Procedure: '1. Create  PLR & TLR and interconnect
+                2. Verify PLR is created successfully'
+    ExpectedResult:
+    Duration:
+    Tags: 'nsxmanager,management,logicalrouter'
+    AutomationLevel:
+    Developer:
+    FullyAutomatable:
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+    
+    #TestbedSpec:
+    #    nsxmanager:
+    #        '[1]':
+    #           'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateLR-1_TIER-0
+            - - CreateLR-2_TIER-1
+            - - CreateLR-3_TIER-1
+            - - CreateLS-1
+              - CreateLS-2
+              - CreateLS-3
+              - CreateLS-4
+            - - CreateLS-10
+            - ['CreateInterfacesTLR']
+            - ['CreateInterfacesPLR']
+            - ['ReadPLR']
+            - ['ReadTLR']
+        ExitSequence:
+            - ['DeletePLR']
+            - ['DeleteTLR']
+        CreateInterfacesTLR: *CREATE_TLR_PORTS
+        CreateInterfacesPLR: *CREATE_PLR_PORTS
+
+
+        ReadPLR:
+            Type: 'GroupingObject'
+            TestGroupingObject: 'nsxmanager.[1].logicalrouter.[1]'
+            read:
+               'name[?]equal_to': 'plr-1'
+               'router_type[?]equal_to': tier0
+
+        ReadTLR:
+            Type: 'GroupingObject'
+            TestGroupingObject: 'nsxmanager.[1].logicalrouter.[2]'
+            read:
+               'name[?]equal_to': 'tlr-1'
+               'router_type[?]equal_to': tier1
+
+        DeletePLR:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            deleteLogicalRouter: 'nsxmanager.[1].logicalrouter.[1]'
+
+        DeleteTLR:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            deleteLogicalRouter: 'nsxmanager.[1].logicalrouter.[2]'
+
+PLRTLRConfig:
+    Product: 'NSX'
+    Component: 'DistributedRouting'
+    Category: 'L3'
+    TestName: 'ExternalTransitNetwork'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Product'
+    Testcasetype: 'Functional'
+    QCPath:
+    Testbed: *L3_ESX_TOPOLOGY_01
+    Procedure: '1. Create  PLR
+                2. Update external and internal transit network on PLR
+                3. Check router config'
+    ExpectedResult:
+    Duration:
+    Tags: 'nsxmanager,management,logicalrouter'
+    AutomationLevel:
+    Developer:
+    FullyAutomatable:
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateLR-1_TIER-0
+            - - CreateLR-2_TIER-1
+            - - CreateLR-3_TIER-1
+            - - CreateLS-1
+              - CreateLS-2
+              - CreateLS-3
+              - CreateLS-4
+            - - CreateLS-10
+            - ['CreateInterfacesTLR']
+            - ['CreateInterfacesPLR']
+            - ['UpdatePLRConfig']
+            - ['ReadPLR']
+            - ['UpdateTLRConfig']
+        ExitSequence:
+            - ['DeletePLR']
+            - ['DeleteTLR']
+        CreateInterfacesTLR: *CREATE_TLR_PORTS
+        CreateInterfacesPLR: *CREATE_PLR_PORTS
+
+
+        UpdatePLRConfig:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1].logicalrouter.[1]'
+            config:
+                external_transit_network: '192.168.1.0/24'
+                internal_transit_network: '169.0.0.1/27'
+
+        ReadPLR:
+            Type: 'GroupingObject'
+            TestGroupingObject: 'nsxmanager.[1].logicalrouter.[2]'
+            read:
+               'name[?]equal_to': 'plr-1'
+               'router_type[?]equal_to': tier0
+               'config[?]equal_to':
+                   # Todo: check this format
+                   'external_transit_network: 192.168.1.0/24
+                    internal_transit_network: 169.0.0.1/27'
+
+
+        UpdateTLRConfig:
+            Type: NSX
+            TestNSX: nsxmanager.[1].logicalrouter.[2].
+            config:
+                external_transit_network: '192.168.2.0/24'
+                internal_transit_network: '169.0.0.2/27'
+
+        ReadTLR:
+            Type: 'GroupingObject'
+            TestGroupingObject: 'nsxmanager.[1].logicalrouter.[2]'
+            read:
+               'name[?]equal_to': 'tlr-1'
+               'router_type[?]equal_to': tier1
+               'config[?]equal_to':
+                   # Todo: check this format
+                   'external_transit_network: 192.168.2.0/24
+                    internal_transit_network: 169.0.0.2/27'
+
+        DeletePLR:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            deleteLogicalRouter: 'nsxmanager.[1].logicalrouter.[1]'
+
+        DeleteTLR:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            deleteLogicalRouter: 'nsxmanager.[1].logicalrouter.[2]'

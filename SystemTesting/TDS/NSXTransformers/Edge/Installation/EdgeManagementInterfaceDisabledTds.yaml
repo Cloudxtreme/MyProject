@@ -1,0 +1,87 @@
+EdgeManagementInterfaceDisabled:
+    Product: "NSXTransformers"
+    Category: "Edge"
+    Component: "NSXEdgeInstallation"
+    Developer: "sureshkoli"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat-01'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: "/NSXTransformers/EDGE/Install"
+    TestName: "Disabled Management interface of Edge "
+    Summary: "Disabled Management Interface of Edge"
+    Procedure: "1.Installed Edge.
+                2. Connect to Esxi Server .
+                3. Go to Edge console.
+                4. Disabled the Management interface."
+
+    ExpectedResult: "Verify after disabling Management Interface of Edge, no impact on configured services"
+
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+
+
+    WORKLOADS:
+        Sequence:
+             - ['DiscoverEdgeVnics']
+             - ['VerifyEdgeClusterStatus']
+             - ['DisableManagementInterface']
+             - ['VerifyManagementInterfaceStatusAfterDisconnect']
+             - ['EnableManagementInterface']
+             - ['VerifyManagementInterfaceStatusAfterReconnect']
+             - ['VerifyEdgeClusterStatus']
+
+        DiscoverEdgeVnics:
+            Type:  VM
+            TestVM: 'nsxedge.[1]'
+            vnic:
+               '[1-3]':
+                  discover: 'true'
+
+        DisableManagementInterface:
+            Type:  NetAdapter
+            TestAdapter: 'nsxedge.[1].vnic.[1]'
+            reconfigure: 'true'
+            connected:         0
+            startconnected:    0
+            allowguestcontrol: 0
+
+        EnableManagementInterface:
+            Type:  NetAdapter
+            TestAdapter: 'nsxedge.[1].vnic.[1]'
+            reconfigure: 'true'
+            connected:         1
+            startconnected:    1
+            allowguestcontrol: 1
+
+        VerifyManagementInterfaceStatusAfterReconnect:
+            Type: VM
+            TestVM: 'nsxedge.[1]'
+            vnic_index: '1'
+            execution_type: 'cli'
+            nic_status:
+                'expected_nic_status[?]equal_to': True
+
+        VerifyManagementInterfaceStatusAfterDisconnect:
+            Type: VM
+            TestVM: 'nsxedge.[1]'
+            vnic_index: '1'
+            execution_type: 'cli'
+            nic_status:
+                'expected_nic_status[?]equal_to': False
+
+        VerifyEdgeClusterStatus:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            sleepbetweenworkloads: 60
+            get_cluster_status:
+                ha_status[?]equal_to: 'Disabled'
+                ha_admin_state[?]equal_to: 'Up'
+                routing_status[?]equal_to: 'Down'

@@ -1,0 +1,415 @@
+CCPClusterGatingTest:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ControlPlatform'
+    Version: 2
+    TestName: 'CCPClusterGatingTest'
+    TestbedSpec: *CCP_Clustering_TOPOLOGY_02--KVM
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    Testbed: 'Deploy a setup with 3 NSX managers, 3 Control Plane node,
+              2 KVM host, 2 VM'
+    Summary: 'Join 3 MP nodes to form a MP cluster, while Join 3 CCP nodes
+              to form a CCP cluster. then tearing the MP nodes down via
+              NSX Manager API'
+    Procedure:  '1. Join all MP node to cluster
+                 2. Join all CCP node to cluster
+                 3. Do related config for logical switch and run traffics,
+                    do following check both on controller and host side:
+                    1)Traffics should works well
+                    2)Related information should be correct on controller side
+                      a)cluster running state/membership/vtep/mac info should be correct
+                      b)all the managers should exist in managers list
+                    3)Related information should be correct on host side:
+                      a)Lcp connnection should be correct
+                      b)mac/vtep info shouldbe correct
+                    4)can create and delelte logical switch
+                 4. Do CCP cluster degrade testing:
+                    Shutdown master CCP node and do similar check above
+                 5. Do CCP cluster restore (from above degraded state) testing:
+                    Poweron master CCP node and do similar check above
+                 6. Do CCP cluster below/normal quorum testing:
+                    First shutdown MP node 2 and 3 from cluster and do similar check above,
+                    then poweron MP node 2 and 3 from cluster, and do similar check above.
+                 7. Do CCP cluster restart testing:
+                    Restart all ccp node and run traffics,do similar check as above.'
+    ExpectedResult: 'PASS'
+    Duration: '300'
+    Tags: 'nsx,control'
+    AutomationLevel: 'Automated'
+    Developer: 'Jason'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    WORKLOADS:
+        Sequence:
+            - ['NSXManagerClusterSetup']
+            - ['RegisterAllControllers']
+            - ['DiscoverFabricHosts']
+            - ['SetSecurityOnController1']
+            - ['InitializeController1']
+            - ['JoinController1ToCluster']
+            - ['SetSecurityOnController2']
+            - ['JoinController2ToCluster']
+            - ['SetSecurityOnController3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController2']
+            - ['ActivateController3']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfileOverlay']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1']
+            - ['AttachVM2toSwitch1']
+            - ['ConfigureVnicIP']
+            - ['DiscoverVteps']
+            - ['VerifyCCPCluster']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyLogicalSwithEntryCountOnControllers_1']
+            - ['ArpPingLS1_1_To_2','ArpPingLS1_2_To_1']
+            - ['VerifyLSMacEntryOnHost1','VerifyLSMacEntryOnHost2']
+            - ['VerifyLS1VtepEntryOnHost1','VerifyLS1VtepEntryOnHost2']
+            - ['VerifyLS1VtepEntryOnControllers']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['VerifyNsxControllerOnHost']
+            - ['PowerOffLS1MasterCCP']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyLSControllerStatusOnHostUp_unkonwIP']
+            - ['PowerOnLS1MasterCCP']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyLogicalSwitchInfoOnControllers']
+            - ['VerifyCCPCluster']
+            - ['VerifyLogicalSwithEntryCountOnControllers_1']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['CreateLogicalSwitch2']
+            - ['AttachVM1toSwitch2']
+            - ['AttachVM2toSwitch2']
+            - ['ConfigVM1Vnic2IpAddress','ConfigVM2Vnic2IpAddress']
+            - ['LogicalSwitch2Traffic']
+            - ['PowerOffCCPNode23']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyLSControllerStatusOnHost_down']
+            - ['PowerOnCCPNode23']
+            - ['VerifyLogicalSwitchInfoOnControllers']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyCCPCluster']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['VerifyLogicalSwithEntryCountOnControllers_2']
+            - ['RestartServiceOnAllControllers']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyLogicalSwitchInfoOnControllers']
+            - ['VerifyCCPCluster']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['DeleteVM1Vnic2']
+            - ['DeleteVM2Vnic2']
+            - ['DeleteLogicalSwitch2']
+            - ['CreateLogicalSwitch2']
+            - ['AttachVM1toSwitch2']
+            - ['AttachVM2toSwitch2']
+            - ['ConfigVM1Vnic2IpAddress','ConfigVM2Vnic2IpAddress']
+            - ['LogicalSwitch2Traffic']
+            - ['VerifyLogicalSwithEntryCountOnControllers_2']
+        ExitSequence:
+            - ['Deletevif1', 'Deletevif2']
+            - ['DeleteVM1Vnic2', 'DeleteVM2Vnic2']
+            - ['NSXCleanup']
+            - ['Cleanup3NodesMPClusterAndCCPCluster']
+
+        NSXManagerClusterSetup: *NSX_MANAGERCLUSTER_SETUP
+        RegisterAllControllers: *REGISTER_ALL_CONTROLLERS
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_TRANSPORT_NODE_01--KVM
+        CreateIPDiscoveryProfileOverlay: *CREATE_IP_DISCOVERY_PROFILE_OVERLAY
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01--KVM
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--KVM
+        AttachVM2toSwitch1: *ATTACH_VM2_TO_SWITCH_1--KVM
+        AttachVM1toSwitch2: *ATTACH_VM1_TO_SWITCH_2--KVM
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--KVM
+        Deletevif1: *DELETE_VM1_VIF1_LSWITCH1--KVM
+        Deletevif2: *DELETE_VM2_VIF1_LSWITCH1--KVM
+        DeleteVM1Vnic2: *DELETE_VM1_VNIC2_LSWITCH2--KVM
+        DeleteVM2Vnic2: *DELETE_VM2_VNIC2_LSWITCH2--KVM
+        DiscoverVteps: *DISCOVER_VTEPS--KVM
+        DiscoverFabricHosts: *DISCOVER_2_HOST_NODES--KVM
+        NSXCleanup: *NSX_CLEANUP--KVM
+        Cleanup3NodesMPClusterAndCCPCluster: *CLEANUP_3_NODES_MP_CLUSTER_AND_CCP_CLUSTER
+        JoinController1ToCluster: *JOIN_CONTROLLER_1_TO_CLUSTER
+        JoinController2ToCluster: *JOIN_CONTROLLER_2_TO_CLUSTER
+        JoinController3ToCluster: *JOIN_CONTROLLER_3_TO_CLUSTER
+        ActivateController2: *ACTIVATE_CONTROLLER_2
+        ActivateController3: *ACTIVATE_CONTROLLER_3
+        SetSecurityOnController1: *SET_SECURITY_ON_CONTROLLER_1
+        SetSecurityOnController2: *SET_SECURITY_ON_CONTROLLER_2
+        SetSecurityOnController3: *SET_SECURITY_ON_CONTROLLER_3
+        InitializeController1: *INITIALIZE_CONTROLLER_1
+        VerifyNsxControllerOnHost: *VERIFY_NSX_CONTROLLER_ON_HOST--ESX
+
+        ConfigureVnicIP:
+            Type: NetAdapter
+            TestAdapter: vm.[1-2].vif.[1]
+            IPv4: auto
+
+        PowerOffLS1MasterCCP:
+            Type: Switch
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            controllers: "nsxcontroller.[-1]"
+            switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->master_ccp_ip"
+            controllervmstate: poweroff
+            sleepbetweenworkloads:  "30"
+
+        PowerOnLS1MasterCCP:
+            Type: Switch
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            controllers: "nsxcontroller.[-1]"
+            switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->master_ccp_ip"
+            controllervmstate: poweron
+            sleepbetweenworkloads:  "30"
+
+        RestartServiceOnAllControllers:
+            Type: Controller
+            TestController: 'nsxcontroller.[1-3]'
+            configure_service_state:
+                state: 'restart'
+                service_name: 'controller'
+
+        PowerOffCCPNode23:
+            Type: VM
+            TestVM: nsxcontroller.[2-3]
+            vmstate: poweroff
+
+        PowerOnCCPNode23:
+            Type: VM
+            TestVM: nsxcontroller.[2-3]
+            vmstate: poweron
+
+        ArpPingLS1_1_To_2:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[2].vif.[1]'
+            TestDuration: '20'
+            connectivitytest: '0'
+
+        ArpPingLS1_2_To_1:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[2].vif.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            TestDuration: '20'
+            connectivitytest: '0'
+
+        VerifyLSMacEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[2].vif.[1]"
+
+        VerifyLSMacEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+
+        VerifyLS1MacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vif.[1]"
+                      adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_mac: "vm.[2].vif.[1]"
+                      adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+
+        VerifyLS1VtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyCCPCluster:
+            Type: "ClusterNode"
+            Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+            execution_type: 'cli'
+            'get_cluster_node':
+                'in_majority[?]equal_to': "true"
+                'cluster_nodes[?]contain_once':
+                    - controller_ip: "nsxcontroller.[1]"
+                      id_: "nsxcontroller.[1].clusternode.[1]"
+                      status: "active"
+                    - controller_ip: "nsxcontroller.[2]"
+                      id_: "nsxcontroller.[1].clusternode.[2]"
+                      status: "active"
+                    - controller_ip: "nsxcontroller.[3]"
+                      id_: "nsxcontroller.[1].clusternode.[3]"
+                      status: "active"
+
+        ReadLS1VniMasterCCP:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            controllers: "nsxcontroller.[-1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            PersistData: "Yes"
+            read_switch_ccp_mapping:
+                'master_ccp_ip[?]defined': ''
+
+        VerifyLSControllerStatusOnHost_up:
+            Type: "Host"
+            testHost: "kvm.[1-2]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      controller_status: 'up'
+                      controller_ip: 'nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->master_ccp_ip'
+
+        VerifyLSControllerStatusOnHost_down:
+            Type: "Host"
+            testHost: "kvm.[1-2]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      controller_status: 'down'
+
+        VerifyLSControllerStatusOnHostUp_unkonwIP:
+            Type: "Host"
+            testHost: "kvm.[1-2]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      controller_status: 'up'
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp,udp"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[2].vif.[1]"
+            TestDuration  : "120"
+
+        CreateLogicalSwitch2:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalswitch:
+                '[2]':
+                    name: autogenerate
+                    transport_zone_id: nsxmanager.[1].transportzone.[1]
+                    admin_state: UP
+                    replication_mode: MTEP
+                    switching_profile_ids:
+                        - switching_profile_value: nsxmanager.[1].ipdiscovery_profile.[1]->id
+                          switching_profile_key: *IPDISCOVERY_RPOFILE_RESOURCE
+
+        DeleteLogicalSwitch2:
+            Type: NSX
+            TestNSX: nsxmanager.[2]
+            deletelogicalswitch: 'nsxmanager.[2].logicalswitch.[2]'
+
+        ConfigVM1Vnic2IpAddress:
+            Type: "NetAdapter"
+            TestAdapter: "vm.[1].vif.[2]"
+            IPv4: 172.22.1.10
+            netmask: "255.255.0.0"
+
+        ConfigVM2Vnic2IpAddress:
+            Type: "NetAdapter"
+            TestAdapter: "vm.[2].vif.[2]"
+            IPv4: 172.22.1.20
+            netmask: "255.255.0.0"
+
+        LogicalSwitch2Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp,udp"
+            TestAdapter   : "vm.[1].vif.[2]"
+            SupportAdapter: "vm.[2].vif.[2]"
+            TestDuration  : "120"
+
+        VerifyLogicalSwitchInfoOnControllers:
+            Type: "Controller"
+            TestController: 'nsxcontroller.[-1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            noofretries: "15"
+            sleepbetweenworkloads: "10"
+            switches: 'nsxmanager.[1].logicalswitch.[-1]'
+            'get_logical_switches[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      binding_type: 'vxstt'
+
+        VerifyLogicalSwithEntryCountOnControllers_1:
+            Type: "Controller"
+            TestController: 'nsxcontroller.[-1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            'get_entry_count':
+                logical_switch[?]equal_to: 1
+                transport_node[?]equal_to: 2
+                logical_switch_port[?]equal_to: 2
+
+        VerifyLogicalSwithEntryCountOnControllers_2:
+            Type: "Controller"
+            TestController: 'nsxcontroller.[-1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            'get_entry_count':
+                logical_switch[?]equal_to: 2
+                transport_node[?]equal_to: 2
+                logical_switch_port[?]equal_to: 4

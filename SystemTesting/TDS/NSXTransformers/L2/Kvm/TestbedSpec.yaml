@@ -1,0 +1,565 @@
+FUNCTIONAL_TOPOLOGY_1:
+    ESX: &FUNCTIONAL_TOPOLOGY_1--ESX
+        esx:
+            '[1-2]':
+                vmnic:
+                    '[1]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-2]':
+                host: 'esx.[1]'
+                vmstate: poweron
+            '[3-4]':
+                host: 'esx.[2]'
+                vmstate: poweron
+
+    KVM: &FUNCTIONAL_TOPOLOGY_1--KVM
+        kvm:
+            '[1-2]':
+                pif:
+                    '[1]':
+                        persist_configuration:
+                            bootproto: "none"
+                            onboot: "yes"
+                framework_setup:
+                    - disablefirewall
+                    - createanchor
+                    - copysshkey
+                configure_package:
+                   execution_type: 'cmd'
+                   operation: install
+                bridge:
+                    '[1]':
+                        name: nsxvswitch
+                        switch_fail_mode: secure
+                        external_id:
+                            bridge-id: nsx-managed
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-4]':
+                host: "kvm.[x=(int(vm_index/2 + 1/2))]"
+                template: template_kvm_debian
+                vmstate: poweron
+                installtype: fullclone
+
+FUNCTIONAL_TOPOLOGY_2:
+    ESX: &FUNCTIONAL_TOPOLOGY_2--ESX
+        esx:
+            '[1-4]':
+                vmnic:
+                    '[1-2]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-2]':
+                host: 'esx.[1]'
+            '[3-4]':
+                host: 'esx.[2]'
+            '[5-6]':
+                host: 'esx.[3]'
+            '[7-8]':
+                host: 'esx.[4]'
+
+
+    KVM: &FUNCTIONAL_TOPOLOGY_2--KVM
+        kvm:
+            '[1-4]':
+                pif:
+                    '[1-2]':
+                        persist_configuration:
+                            bootproto: "none"
+                            onboot: "yes"
+                framework_setup:
+                    - disablefirewall
+                    - createanchor
+                    - copysshkey
+                start_service:
+               # XXX(salmanm): Workaround for #1374177
+                    execution_type: 'cmd'
+                    service_name: 'nsx-agent'
+                configure_package:
+                   execution_type: 'cmd'
+                   operation: install
+                bridge:
+                    '[1]':
+                        name: nsxvswitch
+                        switch_fail_mode: secure
+                        external_id:
+                            bridge-id: nsx-managed
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-8]':
+                host: "kvm.[x=(int(vm_index/2 + 1/2))]"
+                template: template_kvm_debian
+                vmstate: poweron
+                installtype: fullclone
+
+FUNCTIONAL_TOPOLOGY_3:
+# 1 node nested CCP , 1 node nested MP
+    ESX: &FUNCTIONAL_TOPOLOGY_3--ESX
+        esx:
+            '[1-4]':
+                vmnic:
+                    '[1-2]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+            '[5-6]':
+                vmnic:
+                    '[1]':
+                        driver: 'any'
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+        vm:
+            '[1-2]':
+                host: 'esx.[1]'
+            '[3-4]':
+                host: 'esx.[2]'
+            '[5-6]':
+                host: 'esx.[3]'
+            '[7-8]':
+                host: 'esx.[4]'
+
+
+    KVM: &FUNCTIONAL_TOPOLOGY_3--KVM
+        esx:
+            '[5-6]':
+                vmnic:
+                    '[1]':
+                        driver: 'any'
+
+        kvm:
+            '[1-4]':
+                pif:
+                    '[1-2]':
+                        persist_configuration:
+                            bootproto: "none"
+                            onboot: "yes"
+                framework_setup:
+                    - disablefirewall
+                    - createanchor
+                    - copysshkey
+                configure_package:
+                   execution_type: 'cmd'
+                   operation: install
+                bridge:
+                    '[1]':
+                        name: nsxvswitch
+                        switch_fail_mode: secure
+                        external_id:
+                            bridge-id: nsx-managed
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-8]':
+                host: "kvm.[x=(int(vm_index/2 + 1/2))]"
+                template: template_kvm_debian
+                vmstate: poweron
+                installtype: fullclone
+
+FUNCTIONAL_TOPOLOGY_4:
+# same topo with TOPOLOGY_2, but with one dhcp server
+    ESX: &FUNCTIONAL_TOPOLOGY_4--ESX
+        esx:
+            '[1-4]':
+                vmnic:
+                    '[1]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+        vm:
+            '[1-2]':
+                host: 'esx.[1]'
+            '[3-4]':
+                host: 'esx.[2]'
+            '[5-6]':
+                host: 'esx.[3]'
+            '[7-8]':
+                host: 'esx.[4]'
+
+        dhcpserver:
+            '[9]':
+                host: 'esx.[4]'
+                datastoreType: 'shared'
+                # put in user yaml -> template: 'ubuntu_1404_srv_64'
+
+    KVM: &FUNCTIONAL_TOPOLOGY_4--KVM
+        kvm:
+            '[1-4]':
+                pif:
+                    '[1]':
+                        persist_configuration:
+                            bootproto: "none"
+                            onboot: "yes"
+                framework_setup:
+                    - disablefirewall
+                    - createanchor
+                    - copysshkey
+                configure_package:
+                   execution_type: 'cmd'
+                   operation: install
+                bridge:
+                    '[1]':
+                        name: nsxvswitch
+                        switch_fail_mode: secure
+                        external_id:
+                            bridge-id: nsx-managed
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-8]':
+                host: "kvm.[x=(int(vm_index/2 + 1/2))]"
+                template: template_kvm_debian
+                vmstate: poweron
+                installtype: fullclone
+
+        dhcpserver:
+            '[9]':
+                host: 'kvm.[4]'
+                datastoreType: 'shared'
+                # put in user yaml -> template: 'template_kvm_debian'
+
+VMOTION_TOPOLOGY_1:
+    ESX: &VMOTION_TOPOLOGY_1--ESX
+        vc:
+            '[1]':
+                datacenter:
+                    '[1]':
+                        name: 'dc-for-vmotion'
+                        cluster:
+                            '[1]':
+                                host: 'esx.[1-4]'
+                                name: 'cluster-for-vmotion'
+        esx:
+            '[1-4]':
+                vmnic:
+                    '[1-2]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1]':
+                host: 'esx.[1]'
+                datastoreType: shared
+            '[2]':
+                host: 'esx.[1]'
+                datastoreType: shared
+            '[3]':
+                host: 'esx.[2]'
+                datastoreType: shared
+            '[4]':
+                host: 'esx.[2]'
+                datastoreType: shared
+            '[5]':
+                host: 'esx.[3]'
+                datastoreType: shared
+            '[6]':
+                host: 'esx.[3]'
+                datastoreType: shared
+            '[7]':
+                host: 'esx.[4]'
+                datastoreType: shared
+            '[8]':
+                host: 'esx.[4]'
+                datastoreType: shared
+
+    KVM: &VMOTION_TOPOLOGY_1--KVM
+        kvm:
+            '[1-4]':
+                pif:
+                    '[1-2]':
+                        persist_configuration:
+                            bootproto: "none"
+                            onboot: "yes"
+                framework_setup:
+                    - disablefirewall
+                    - createanchor
+                    - copysshkey
+                start_service:
+               # XXX(salmanm): Workaround for #1374177
+                    execution_type: 'cmd'
+                    service_name: 'nsx-agent'
+                configure_package:
+                   execution_type: 'cmd'
+                   operation: install
+                bridge:
+                    '[1]':
+                        name: nsxvswitch
+                        switch_fail_mode: secure
+                        external_id:
+                            bridge-id: nsx-managed
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-8]':
+                host: "kvm.[x=(int(vm_index/2 + 1/2))]"
+                template: template_kvm_debian
+                vmstate: poweron
+                installtype: fullclone
+                datastoreType: shared
+
+LIMIT_TOPOLOGY_1:
+    ESX: &LIMIT_TOPOLOGY_1--ESX
+        esx:
+            '[1-4]':
+                vmnic:
+                    '[1-2]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-2]':
+                host: 'esx.[1]'
+            '[3-4]':
+                host: 'esx.[2]'
+            '[5-6]':
+                host: 'esx.[3]'
+            '[7-8]':
+                host: 'esx.[4]'
+
+
+    KVM: &LIMIT_TOPOLOGY_1--KVM
+        kvm:
+            '[1-4]':
+                pif:
+                    '[1-2]':
+                        persist_configuration:
+                            bootproto: "none"
+                            onboot: "yes"
+                framework_setup:
+                    - disablefirewall
+                    - createanchor
+                    - copysshkey
+                start_service:
+               # XXX(salmanm): Workaround for #1374177
+                    execution_type: 'cmd'
+                    service_name: 'nsx-agent'
+                configure_package:
+                   execution_type: 'cmd'
+                   operation: install
+                bridge:
+                    '[1]':
+                        name: nsxvswitch
+                        switch_fail_mode: secure
+                        external_id:
+                            bridge-id: nsx-managed
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-8]':
+                host: "kvm.[x=(int(vm_index/2 + 1/2))]"
+                template: template_kvm_debian
+                vmstate: poweron
+                installtype: fullclone
+
+VMOTION_TOPOLOGY_2:
+    ESX: &VMOTION_TOPOLOGY_2--ESX
+        vc:
+            '[1]':
+                datacenter:
+                    '[1]':
+                        name: 'dc-for-vmotion'
+                        cluster:
+                            '[1]':
+                                host: 'esx.[1-4]'
+                                name: 'cluster-for-vmotion'
+        esx:
+            '[1-4]':
+                vmnic:
+                    '[1-2]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1]':
+                host: 'esx.[1]'
+                datastoreType: shared
+            '[2]':
+                host: 'esx.[1]'
+            '[3]':
+                host: 'esx.[2]'
+            '[4]':
+                host: 'esx.[2]'
+                datastoreType: shared
+            '[5]':
+                host: 'esx.[3]'
+                datastoreType: shared
+            '[6]':
+                host: 'esx.[3]'
+            '[7]':
+                host: 'esx.[4]'
+            '[8]':
+                host: 'esx.[4]'
+                datastoreType: shared
+
+VMOTION_TOPOLOGY_3:
+    ESX: &VMOTION_TOPOLOGY_3--ESX
+        vc:
+            '[1]':
+                datacenter:
+                    '[1]':
+                        name: 'dc-for-vmotion'
+                        cluster:
+                            '[1]':
+                                host: 'esx.[1-2]'
+                                name: 'cluster-for-vmotion'
+            '[2]':
+                datacenter:
+                    '[1]':
+                        name: 'dc-for-vmotion'
+                        cluster:
+                            '[1]':
+                                host: 'esx.[3-4]'
+                                name: 'cluster-for-vmotion'
+        esx:
+            '[1-4]':
+                vmnic:
+                    '[1-2]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1]':
+                host: 'esx.[1]'
+                datastoreType: shared
+            '[2]':
+                host: 'esx.[1]'
+            '[3]':
+                host: 'esx.[2]'
+            '[4]':
+                host: 'esx.[2]'
+                datastoreType: shared
+            '[5]':
+                host: 'esx.[3]'
+                datastoreType: shared
+            '[6]':
+                host: 'esx.[3]'
+            '[7]':
+                host: 'esx.[4]'
+            '[8]':
+                host: 'esx.[4]'
+                datastoreType: shared

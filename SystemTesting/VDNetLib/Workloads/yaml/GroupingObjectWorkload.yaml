@@ -1,0 +1,553 @@
+---
+application_protocol:
+  derived_components:
+    - applicationservice
+  description: Application protocol of a service
+  format: string
+  sample_value: udp
+  type: parameter
+applicationservicegroupmember:
+  derived_components:
+    - applicationservicegroup
+  description: Adds member to ServiceGroup on Neutron
+  linkedworkload: ServiceGroupMemberWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - applicationservicegroupmember
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+deleteallocateip:
+  derived_components:
+    - ippool
+  description: Delete allocated IP from pool
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'neutron.[1].ippool.[1].allocateip.[1]'
+  type: component
+deleteapplicationservicegroupmember:
+  dependancy:
+    - applicationservicegroupmember
+  derived_components:
+    - applicationservicegroup
+  description: Deletes member from ServiceGroup on Neutron
+  method: DeleteComponent
+  params:
+    - deleteapplicationservicegroupmember
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  type: component
+source_ports:
+  derived_components:
+    - nsservice
+  description: source ports to be used while creating a L4PortSetNSService
+  format: integer
+  sample_value: 33000
+  type: parameter
+destination_ports:
+  derived_components:
+    -nsservice
+  description: destination ports to be used while creating a L4PortSetNSService
+  format: integer
+  sample_value: 5500
+  type: parameter
+protocol: &protocol
+  derived_components:
+    - nsservice
+  description: Type of L2/L3/L4 protocol name
+  format: string
+  sample_value: ICMP
+  type: parameter
+l4_protocol: *protocol
+l3_protocol: *protocol
+protocol_number:
+  derived_components:
+    - nsservice
+  description: protocolnumber in IPV4 header
+  format: integer
+  sample_value: 6
+  type: parameter
+ip_version:
+  derived_components:
+    - nsservice
+  description: Version of IP like IPV4/IPV6
+  format: integer
+  sample_value: IPV4
+  type: parameter
+icmp_code:
+  derived_components:
+    - nsservice
+  description: ICMP codes for specific ICMP types
+  format: integer
+  sample_value: 1
+  type: parameter
+icmp_type:
+  derived_components:
+    - nsservice
+  description: ICMP types for different ICMP messages
+  format: integer
+  sample_value: 14
+  type: parameter
+alg:
+  derived_components:
+    - nsservice
+  description: Application level gateway type
+  format: integer
+  sample_value: FTP
+  type: parameter
+element:
+  derived_components:
+    - applicationservice
+  description: 'specifies protocoltype,src and dest ports for creating an applicationset/service in vsm'
+  format:
+    applicationprotocol: string
+    sourceport: integer
+    value: integer
+  method: ProcessParameters
+  sample_value:
+    applicationprotocol: TCP
+    sourceport: 33000
+    value: '1024,1025-1029'
+  type: parameter
+gateway: &GATEWAY
+  derived_components:
+    - ippool
+  description: Gateway address
+  format: ip address
+  sample_value: 10.1.1.2
+  type: parameter
+groupingobject_desc:
+  derived_components:
+    - applicationservicegroup
+    - vnipool
+  description: Grouping object description
+  format: string
+  sample_value: Detailed description of object getting created or updated
+  type: parameter
+ipranges:
+  derived_components:
+    - ippool
+  description: IP ranges
+  format: ip address
+  sample_value: '[10.1.1.100-10.2.2.255]'
+  type: parameter
+objectid:
+  derived_components:
+    - serviceprofile
+    - servicemanager
+    - serviceinstance
+  description: object id/moref
+  format: vdnet index
+  sample_value: 'vsm.[1].servicemanager.[1]'
+  type: parameter
+prefixlength:
+  derived_components:
+    - ippool
+  description: classless interdomain routing for IPPool
+  format: integer
+  sample_value: 16
+  type: parameter
+reconfigure:
+  allowed_values:
+    - true
+  derived_components:
+    - nsx
+  description: Reconfigures the range managed object
+  format: boolean
+  method: UpdateComponent
+  params:
+    - name
+    - gateway
+    - ipranges
+    - prefixlength
+    - begin
+    - end
+    - groupingobject_desc
+    - subnets
+    - metadata
+    - description
+    - value
+    - inheritanceallowed
+    - element
+    - summary
+    - ranges
+    - runtime_params
+    - merge
+    - reconfigure
+    - ipaddresses
+    - tags
+    - target_property
+    - target_value
+  preprocess: PreProcessHashRefTypeAPI
+  sample_value: true
+  type: action
+revision:
+  derived_components:
+    - servicemanager
+  description: revision
+  format: integer
+  sample_value: 4
+  type: parameter
+target_property:
+  derived_components:
+    - all
+  description: Type of property
+  format: string
+  method: GetComponentAttribute
+  sample_value:
+    - 'id'
+    - 'name'
+  type: parameter
+target_value:
+  derived_components:
+    - all
+  description: Value of a property
+  format: string
+  method: GetComponentAttribute
+  sample_value:
+    - vm.[1].vnic.[1]->id
+    - 'logicalgroup1'
+  type: parameter
+source_port:
+  derived_components:
+    - applicationservice
+  description: Source port of a service
+  format: Integer
+  sample_value: 12001
+  type: parameter
+subnets:
+  derived_components:
+    - ippool
+  description: Subnets to be specified for Neutron-ippools
+  format:
+    - allocation_ranges:
+        - end: ip address
+          start: ip address
+        - end: ip address
+          start: ip address
+      cidr: ip address/cidr
+      gateway_ip: ip address
+      ip_version: integer
+      static_routes:
+        - destination_cidr: ip address/cidr
+          next_hop: ip address
+  sample_value:
+    - allocation_ranges:
+        - end: 192.168.1.9
+          start: 192.168.1.2
+        - end: 192.168.1.150
+          start: 192.168.1.15
+      cidr: 192.168.1.0/24
+      gateway_ip: 192.168.1.1
+      ip_version: 4
+      static_routes:
+        - destination_cidr: 192.168.10.0/24
+          next_hop: 192.168.10.5
+  type: parameter
+updateipset:
+  derived_components:
+    - nsx
+  description: Updates IPSet on Neutron
+  format: boolean
+  method: UpdateComponent
+  params:
+    - name
+    - value
+  preprocess: PreProcessHashRefTypeAPI
+  sample_value: true
+  type: action
+iprange:
+  derived_components:
+    - dhcpippool
+  description: DHCP IP range
+  format: IP range
+  sample_value: '10.1.1.10-10.1.1.100'
+  type: parameter
+defaultgateway:
+  derived_components:
+    - dhcpippool
+  description: Default gateway IP address
+  format: ip address
+  sample_value: 10.1.1.2
+  type: parameter
+uppdateservice:
+  derived_components:
+    - nsx
+  description: Updates Service on Neutron
+  format: boolean
+  method: UpdateComponent
+  params:
+    - name
+    - value
+    - source_port
+    - application_protocol
+  preprocess: PreProcessHashRefTypeAPI
+  sample_value: true
+  type: action
+sg_description:
+  derived_components:
+    - securitygroup
+  description: Security Group Description
+  format: string
+  sample_value: 'Security Group'
+  type: parameter
+objecttypename:
+  derived_components:
+    - securitygroup
+  description: Object Type
+  format: string
+  sample_value: 'GlobalRoot'
+  type: parameter
+vsmuuid:
+  derived_components:
+    - securitygroup
+  description: VSM UUID with which we are working on
+  format: string
+  sample_value: '42306419-6A21-2E0B-B736-7BFD0B57D1BD'
+  type: parameter
+clienthandle:
+  derived_components:
+    - securitygroup
+  description: Client Handle
+  format: String
+  sample_value: ''
+  type: parameter
+extendedattributes:
+  derived_components:
+    - securitygroup
+  description: Extended attributes of object
+  format: object
+  type: parameter
+type:
+  derived_components:
+    - securitygroup
+  description: Type of object
+  format: object
+  type: parameter
+scope:
+  derived_components:
+    - securitygroup
+  description: Scope of object
+  format: object
+  type: parameter
+inheritanceallowed:
+  derived_components:
+    - securitygroup
+  description: Inheritance attribute of object
+  format: boolean
+  sample_value: true
+  type: parameter
+member: &member
+  derived_components:
+    - securitygroup
+  description: Member of SecurityGroup
+  format: array
+  method: ProcessParameters
+  type: parameter
+members:
+  <<: *member
+  method: PreProcessNestedParameters
+excludemember:
+  derived_components:
+    - securitygroup
+  description: Excluded member of SecurityGroup
+  format: array
+  method: ProcessParameters
+  type: parameter
+dynamicmemberdefinition:
+  derived_components:
+    - securitygroup
+  description: Dynamic member of SecurityGroup
+  format: array
+  method: ProcessParameters
+  type: parameter
+updatesecuritygroup:
+  derived_components:
+    - nsx
+  description: Updates SecurityGroup on VSM
+  format: boolean
+  method: UpdateComponent
+  params:
+    - name
+    - description
+    - inheritanceallowed
+    - member
+    - excludemember
+    - dynamicmemberdefinition
+  preprocess: PreProcessHashRefTypeAPI
+  sample_value: true
+  type: action
+cluster_id:
+  derived_components:
+    - securitygroup
+  description: MOB id of Cluster
+  format: string
+  method: ProcessParameters
+  sample_value: domain-c49
+  type: parameter
+datacenter_id:
+  derived_components:
+    - securitygroup
+  description: id of VC datacenter
+  format: string
+  method: ProcessParameters
+  sample_value: 1-datacenter-1708
+  type: parameter
+is_system_generated:
+  derived_components:
+    - vniPool
+  description: Indicates the type of vni pool(backplane LIFs or logical switches)
+  format: boolean
+  type: parameter
+
+cidr:
+  derived_components:
+    - ippool
+  description: CIDR of IPPool subnet
+  format: string
+  sample_value: 192.168.0.1/27
+  type: parameter
+
+servers:
+  derived_components:
+    - ippool
+  description: IP addresses of DNS name servers for IPPool subnet
+  format: array
+  method: ProcessParameters
+  type: parameter
+  sample_value:
+    servers:
+      - 10.0.0.1
+      - 10.0.0.2
+
+allocation_ranges:
+  derived_components:
+    - ippool
+  description: Allocation ranges for IPPool subnet
+  format: array
+  method: ProcessParameters
+  type: parameter
+  sample_value:
+    allocation_ranges:
+      - end: 192.168.1.9
+        begin: 192.168.1.2
+      - end: 192.168.1.150
+        begin: 192.168.1.15
+
+gateway_ip: *GATEWAY
+
+ranges:
+  derived_components:
+    - vnipool
+  description: Allocation ranges for VNIPool
+  format: array
+  method: ProcessParameters
+  type: parameter
+  sample_value:
+    ranges:
+      - end: 150000
+        begin: 100000
+
+get_pool_list:
+  derived_components:
+    - nsxmanager
+  description: Get list of IPPools or VNIPools for verification
+  method: query
+  params:
+    - get_pool_list
+  preprocess: PreProcessVerification
+  type: verification
+  format:
+    result_count: 2
+    results:
+      - name: LSwitchVniPool
+      - name: BackplaneLifVniPool
+
+get_ip_allocations:
+  type: verification
+  derived_components:
+    - nsxmanager
+  description: Get list of IP Allocations for verification
+  method: get_allocations
+  params:
+    - get_ip_allocations
+  preprocess: PreProcessVerification
+  format:
+    result_count: 2
+
+read:
+  type: verification
+  derived_components:
+    - all
+  method: ReadComponent
+  preprocess: PreProcessVerificationAndParameters
+  description: 'Used for reading Grouping Object attributes'
+  format:
+     'name': 'string'
+  samplevalue:
+     'name': 'test'
+  params:
+    - read
+    - runtime_params
+
+translation_entity:
+  derived_components:
+    - securitygroup
+  description: Grouping object name
+  format: string
+  sample_value: ipaddresses/macaddresses
+  type: parameter
+
+compare_translation_list:
+  type: verification
+  derived_components:
+    - securitygroup
+    - globalsecuritygroup
+  method: CompareTranslationList
+  preprocess: PreProcessVerificationAndParameters
+  description: Gives translation call on security group object
+  format:
+     ipNode:
+      - ipAddresses: vdnet index -> value
+      - ipAddresses: vdnet index -> value
+  samplevalue:
+    "ipNode[?]super_set":
+      - ipAddresses: "vsm.[1].globalipset.[1]->value"
+      - ipAddresses: "vsm.[1].globalipset.[2]->value"
+  params:
+    - compare_translation_list
+    - translation_entity
+
+lookup_entity:
+  description: Object for whom the lookup is done
+  format: string
+  sample_value: ipaddress
+  type: parameter
+
+lookup_value:
+  description: Value to be used for lookup
+  format: string or vdnet index
+  sample_value: 192.168.1.1 or vsm.[1].globalipset.[1]->value
+  type: parameter
+  method: GetComponentAttribute
+
+compare_lookup_list:
+  type: verification
+  derived_components:
+    - securitygroup
+    - globalsecuritygroup
+  method: compare_lookup_list
+  preprocess: PreProcessVerificationAndParameters
+  description: Gives lookup call for security groups
+  format:
+     securityGroups:
+      - objectId: vdnet index
+  samplevalue:
+    securityGroups:
+      - objectId: "vsm.[1].globalsecuritygroup.[1]->id"
+  params:
+    - compare_lookup_list
+    - lookup_entity
+    - lookup_value

@@ -1,0 +1,200 @@
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/VMWorkload.yaml' %}
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/CommonWorkloads.yaml' %}
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/TestbedSpec.yaml' %}
+
+DHCPRelayKVMEastWestinternalDHCPServer:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "Disable DHCP Relay KVM internal DHCP Server"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    QCPath:  'KVM'
+    Summary: "Test client not getting an IP from a DHCP server on the same logical network when DHCP relay is
+              disabled in a KVM only hypervisor based set up"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_KVM_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonKVMTestSteps
+        <<: *KVMDHCPServerVMConfig1
+        Sequence:
+            - ['TransportZoneSetup']
+            - ['L2SetupAndWiringTopo1']
+            - ['DHCPServerConfigTopo1']
+            - ['L3SetupandWiringTopo1']
+            - ['DHCPRelayconfigTopo1']
+            - ['VerifyDHCPRelayEnabledLRPort12cli']
+            - ['ConfigureVM1Vif1IP', 'ConfigureVM2Vif1IP']
+            - ['VerifyVM1Vif1IP', 'VerifyVM2Vif1IP']
+            - ['DeleteLRPort1DHCPRelayServiceBinding']
+            - ['VerifyDHCPRelayDisabledLRPort1cli']
+            - ['ConfigureVM1Vif1IP']
+            - ['VerifyNoVM1Vif1IP']
+            - ['DeleteLRPort2DHCPRelayServiceBinding']
+            - ['VerifyDHCPRelayDisabledLRPort2cli']
+            - ['ConfigureVM2Vif1IP']
+            - ['VerifyNoVM2Vif1IP']
+        ExitSequence:
+            - ['CleanupTopo1']
+        ConfigureDHCPserverVif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[1].vif.[1]'
+            ipv4:       '192.168.9.4'
+            netmask:    '255.255.255.0'
+        AddRouteDHCPserver:
+            Type:        "NetAdapter"
+            Testadapter: "dhcpserver.[1].vif.[1]"
+            route:       "add"
+            gateway:     "192.168.9.1"
+
+DHCPRelayKVMNorthSouthExternalDHCPServer:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "Disable DHCP Relay KVM external DHCP Server"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    QCPath:  'KVM'
+    Summary: "Test client not getting an IP from a DHCP server on an external network when DHCP relay is
+              disabled in a KVM only hypervisor based set up"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_KVM_TOPOLOGY_04
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonKVMTestSteps
+        <<: *KVMDHCPServerVMConfig1
+        Sequence:
+            - ['TransportZoneHybridSetup']
+            - ['EdgeSetup']
+            - ['L2SetupAndWiringTopo1Hybrid']
+            - ['DHCPServerConfigTopo1']
+            - ['L3SetupandWiringTopoNorthSouth1']
+            - ['DHCPRelayconfigTopo1']
+            - ['VerifyDHCPRelayEnabledLRPort12cli']
+            - ['VerifyVM1Vif1IP', 'VerifyVM2Vif1IP']
+            - ['DeleteLRPort1DHCPRelayServiceBinding']
+            - ['VerifyDHCPRelayDisabledLRPort1cli']
+            - ['ConfigureVM1Vif1IP']
+            - ['VerifyNoVM1Vif1IP']
+            - ['DeleteLRPort2DHCPRelayServiceBinding']
+            - ['VerifyDHCPRelayDisabledLRPort2cli']
+            - ['ConfigureVM2Vif1IP']
+            - ['VerifyNoVM2Vif1IP']
+        ExitSequence:
+            - ['CleanupTopoNorthSouth1']
+        ConfigureDHCPserverVif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[1].vnic.[1]'
+            ipv4:       '192.168.9.4'
+            netmask:    '255.255.255.0'
+        AddRouteDHCPserver:
+            Type:        "NetAdapter"
+            Testadapter: "dhcpserver.[1].vnic.[1]"
+            route:       "add"
+            gateway:     "192.168.9.1"
+
+DHCPRelayESXEastWestinternalDHCPServer:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "Disable DHCP Relay ESX internal DHCP Server"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    QCPath:  'ESX'
+    Summary: "Test client not getting an IP from a DHCP server on the same logical network when DHCP relay is
+              disabled in a ESX only hypervisor based set up"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_ESX_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonESXTestSteps
+        <<: *DHCPServerVMConfig1
+        Sequence:
+            - ['TransportZoneSetup']
+            - ['L2SetupAndWiringTopo1']
+            - ['DHCPServerConfigTopo1']
+            - ['L3SetupandWiringTopo1']
+            - ['DHCPRelayconfigTopo1']
+            - ['VerifyDHCPRelayEnabledLRPort12cli']
+            - ['ConfigureVM1Vif1IP', 'ConfigureVM2Vif1IP']
+            - ['VerifyVM1Vif1IP', 'VerifyVM2Vif1IP']
+            - ['DeleteLRPort1DHCPRelayServiceBinding']
+            - ['VerifyDHCPRelayDisabledLRPort1cli']
+            - ['ConfigureVM1Vif1IP']
+            - ['VerifyNoVM1Vif1IP']
+            - ['DeleteLRPort2DHCPRelayServiceBinding']
+            - ['VerifyDHCPRelayDisabledLRPort2cli']
+            - ['ConfigureVM2Vif1IP']
+            - ['VerifyNoVM2Vif1IP']
+        ExitSequence:
+            - ['CleanupTopo1']
+
+DHCPRelayESXNorthSouthexternalDHCPServer:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "Disable DHCP Relay ESX external DHCP Server"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    QCPath:  'ESX'
+    Summary: "Test client not getting an IP from a DHCP server on an external network when DHCP relay is
+              disabled in a ESX only hypervisor based set up"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_ESX_TOPOLOGY_05
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonESXTestSteps
+        <<: *DHCPServerVMConfig1
+        Sequence:
+            - ['TransportZoneSetup']
+            - ['EdgeSetup']
+            - ['L2SetupAndWiringTopo1']
+            - ['L3SetupandWiringTopoNorthSouth1']
+            - ['DHCPServerConfigTopo1']
+            - ['DHCPRelayconfigTopo1']
+            - ['VerifyDHCPRelayEnabledLRPort12cli']
+            - ['ConfigureVM1Vif1IP', 'ConfigureVM2Vif1IP']
+            - ['VerifyVM1Vif1IP', 'VerifyVM2Vif1IP']
+            - ['DeleteLRPort1DHCPRelayServiceBinding']
+            - ['VerifyDHCPRelayDisabledLRPort1cli']
+            - ['ConfigureVM1Vif1IP']
+            - ['VerifyNoVM1Vif1IP']
+            - ['DeleteLRPort2DHCPRelayServiceBinding']
+            - ['VerifyDHCPRelayDisabledLRPort2cli']
+            - ['ConfigureVM2Vif1IP']
+            - ['VerifyNoVM2Vif1IP']
+        ExitSequence:
+            - ['CleanupTopoNorthSouth1']

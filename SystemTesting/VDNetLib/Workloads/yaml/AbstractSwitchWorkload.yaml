@@ -1,0 +1,377 @@
+---
+deletefilter:
+  dependency: ~
+  derived_components:
+    - port
+    - portgroup
+  description: delete filter based on input tuple
+  format: vdnet index
+  method: DeleteFilter
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vc.[1].dvportgroup.[1].filter.[1]'
+  type: component
+filter:
+  derived_components:
+    - port
+    - portgroup
+  format:
+    - filtername: string
+      rule:
+        - action: string
+          dstip: ip4 address
+          srcip: ip4 address
+    - filtername: dvfilter-generic-vmware1
+  linkedworkload: FilterWorkload
+  method: TransformSubComponentSpecOfParameter
+  sample_value:
+    - filtername: dvfilter-generic-vmware
+      rule:
+        - action: accet
+          dstip: 172.16.1.2
+          srcip: 172.16.1.2
+    - filtername: dvfilter-generic-vmware1
+  subcomponent:
+    rule: RulesWorkload
+  type: component
+lldp:
+  derived_components:
+    - vds
+  description: Set lldp on pswitch
+  format: vdnet index
+  method: EnableLLDP
+  params:
+    - lldp
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 'host.[1]'
+  type: action
+migratemgmtnettovss:
+  derived_components:
+    - vds
+  description: Migrates required vmknic from VDS to VSS
+  format: vdnet index
+  method: MigrateManagementNetToVSS
+  params:
+    - migratemgmtnettovss
+    - vmknictuple
+    - vss
+  postprocess: PostProcessMigrateManagementNetKey
+  preprocess: PreProcessMigrateManagementNetKey
+  sample_value: 'host.[1]'
+  type: action
+reconfigure:
+  derived_components:
+    - dvport
+    - dvportgroup
+  description: configures filter in the/portgroup/port
+  format:
+    - filtername: string
+      rule:
+        - action: string
+          dstip: ip4 address
+          srcip: ip4 address
+    - filtername: dvfilter-generic-vmware1
+  method: AddFilter
+  params:
+    - filter
+  postprocess: StoreNestedObjects
+  preprocess: PreProcessShiftTypeAPI
+  sample_value:
+    - filtername: dvfilter-generic-vmware
+      rule:
+        - action: accet
+          dstip: 172.16.1.2
+          srcip: 172.16.1.2
+    - filtername: dvfilter-generic-vmware1
+  subcomponent:
+    - filter
+  type: action
+vmknictuple:
+  derived_components:
+    - vds
+  description: Paramater to return vmknic obj from vmknic tuple
+  format: vdnet index
+  method: PreProcessVmknicId
+  sample_value: 'host.[1].vmknic.[1]'
+  type: parameter
+vss:
+  derived_components:
+    - vss
+  description: Paramater to return vss obj from vss tuple
+  format: vdnet index
+  method: PreProcessVssName
+  sample_value: 'host.[1].vss.[1]'
+  type: parameter
+
+setpromiscuous:
+  derived_components:
+    - switch
+  description: Set promiscuous on vswitch or dvpg of dvswitch
+  format: string
+  method: SetPromiscuous
+  params:
+    - setpromiscuous
+    - portgroup
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 'enable,disable'
+  type: action
+
+active:
+  derived_components:
+    - switch
+  type: parameter
+  description: get active vmnic list of vss/get active uplink list of vds
+  format: vdnet index
+  sample_value: 'host.[1].vmnic.[1], host.[1].vmnic.[2]'
+  method: GetMultipleComponentAttributeFromArray
+
+standby:
+  derived_components:
+    - switch
+  type: parameter
+  description: get standby vmnic list of vss/get standby uplink list of vds
+  format: vdnet index
+  sample_value: 'host.[1].vmnic.[1]'
+  method: GetMultipleComponentAttributeFromArray
+
+get_teaming_info:
+  type: verification
+  derived_components:
+    - vss
+    - vds
+  description: List of switch teaming configuration information.
+  preprocess: PreProcessVerification
+  method: get_teaming_info
+  format:
+    active: 'ref: active'
+    standby: 'ref: standy'
+  params:
+    - active
+    - standby
+  sample_value:
+    active: 'host.[1].vmnic.[1]->vmnic for vss/host.[1].vmnic.[1]->uplink for vds'
+    standby: 'host.[1].vmnic.[1]->vmnic for vss/host.[1].vmnic.[1]->uplink for vds'
+
+setforgedtransmit:
+  derived_components:
+    - switch
+  description: Set forged transmit policy on vswitch or dvpg of dvswitch
+  format: string
+  method: SetForgedTransmit
+  params:
+    - setforgedtransmit
+    - portgroup
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 'enable'
+  type: action
+
+setmacaddresschange:
+  derived_components:
+    - switch
+  description: Set mac address change policy on vswitch or dvpg of dvswitch
+  format: string
+  method: SetMACAddressChange
+  params:
+    - setmacaddresschange
+    - portgroup
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 'enable'
+  type: action
+
+addpvlanmap:
+  derived_components:
+    - switch
+  description: 'Add Private VLAN'
+  type: action
+  preprocess: PreProcessShiftTypeAPI
+  method: AddPVLANMap
+  params:
+    - addpvlanmap
+    - primaryvlan
+    - secondaryvlan
+  format:
+    addpvlanmap: string
+    primaryvlan: 'ref: primaryvlan'
+    secondaryvlan: 'ref: secondaryvlan'
+  sample_value:
+    addpvlanmap: 'isolated'
+    primaryvlan: '18'
+    secondaryvlan: '19'
+primaryvlan:
+  derived_components:
+    - switch
+  description: 'Primary vlan id in PVLAN configuration'
+  format: integer
+  sample_value: '18'
+  type: parameter
+secondaryvlan:
+  derived_components:
+    - switch
+  description: 'Secondary vlan id in PVLAN configuration'
+  format: integer
+  sample_value: '19'
+  type: parameter
+
+configure_vlan:
+  derived_components:
+    - switch
+  description: 'Configure VLAN on switch or portgroup'
+  type: action
+  preprocess: PreProcessShiftTypeAPI
+  method: SetVLAN
+  params:
+    - configure_vlan
+    - vlan
+  format:
+    configure_vlan: string
+    vlan: 'ref: vlan'
+  sample_value:
+    configure_vlan: add
+    vlan: '8'
+
+configureprotectedvm:
+  derived_components:
+    - vds
+  description: configure filter on vm
+  format: Boolean
+  method: ConfigureProtectedVM
+  params:
+    - dvfilteroperation
+    - filters
+    - adapter
+    - dvfilterparams
+    - onfailure
+    - slotdetails
+  preprocess: PreProcessHashRefTypeAPI
+  sample_value:
+  type: action
+
+configureportrules:
+  derived_components:
+    - vds
+  description: configure filter in dvport
+  format: Boolean
+  method: ConfigurePortRules
+  params:
+    - dvfilteroperation
+    - filters
+    - adapter
+  preprocess: PreProcessHashRefTypeAPI
+  sample_value:
+  type: action
+
+dvfilteroperation:
+  derived_components:
+    - vds
+  description: add or remove filter
+  format: String
+  sample_value: 'qw(add),qw(remove)'
+  type: parameter
+
+filters:
+  derived_components:
+    - vds
+  description: filter name
+  format: String
+  sample_value: 'qw(dvfilter-generic-hp)'
+  type: parameter
+
+dvfilterparams:
+  derived_components:
+    - vds
+  description: dvfilter's params
+  format: String
+  sample_value: 'qw(10:foobar)'
+  type: parameter
+
+slotdetails:
+  derived_components:
+    - vds
+  description: dvfilter's slot details
+  format: String
+  sample_value: 'qw(0:1)'
+  type: parameter
+
+onfailure:
+  derived_components:
+    - vds
+  description: dvfilter's onfailure process
+  format: String
+  sample_value: 'qw(failOpen)'
+  type: parameter
+
+confignicteaming:
+  derived_components:
+    - vds
+    - vss
+  description: Configures teaming policy of vds and vss
+  format: vdnet index
+  method: SetTeaming
+  params:
+    - failback
+    - lbpolicy
+    - notifyswitch
+    - standbynics
+    - failover
+  preprocess: PreProcessActionKey
+  sample_value: vc.[1].dvportgroup.[1]
+  type: action
+
+failback:
+  allowed_value:
+    - yes
+    - no
+  derived_components:
+    - vds
+    - vss
+  description: 'Indicate failback options for the team of nics'
+  format: boolean
+  sample_value: yes
+  type: parameter
+
+notifyswitch:
+  allowed_value:
+    - yes
+    - no
+  derived_components:
+    - vds
+    - vss
+  description: 'Enable/Disable notification to the switch.'
+  format: boolean
+  sample_value: yes
+  type: parameter
+
+lbpolicy:
+  allowed_values:
+    - portid
+    - iphash
+    - mac
+    - explicit
+  derived_components:
+    - vds
+    - vss
+  description: Indicate the load balancing policy for the team of nics
+  format: string
+  sample_value: explicit
+  type: parameter
+
+failover:
+  allowed_values:
+    - beaconprobing
+    - linkstatusonly
+  derived_components:
+    - vds
+    - vss
+  description: type of failover
+  format: string
+  sample_value: linkstatusonly
+  type: parameter
+
+standbynics:
+  derived_components:
+    - all
+  description: ;; separated list of vmnic tuples
+  format: vdnet index
+  method: GetMultipleComponentObjects
+  sample_value: 'host.[1].vmnic.[2];;host.[1].vmnic.[3]'
+  type: parameter

@@ -1,0 +1,59 @@
+CreateSelfSignedCertificate:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CertificateMgmt"
+    TestName: "CreateSelfSignedCertificate"
+    Version: "2"
+    Summary: "Verify self signed certificate gets created"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "dgargote"
+    Procedure: '1. Create one CSR
+                2. Verify CSR gets created successfully
+                3. Try to create self signed certificate from CSR
+                4. Verify self signed certificate gets created'
+    ExpectedResult: 'Self signed certificate should get created successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,certmgmt,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateCSR"]
+            - ["VerifyCSR"]
+            - ["CreateSelfSignedCertificate"]
+        ExitSequence:
+            - ["DeleteSelfSignedCertificate"]
+            - ["DeleteCSR"]
+
+        CreateCSR: *CREATE_CSR
+
+        VerifyCSR:
+            Type: "Certificate"
+            Testcertificate: "nsxmanager.[1].csr.[1]"
+            read:
+              'resource_type[?]equal_to': 'csr'
+              'algorithm[?]equal_to': 'RSA'
+              'key_size[?]equal_to': '2048'
+
+        CreateSelfSignedCertificate:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            selfsignedcertificate:
+                '[1]':
+                    csr_id: "nsxmanager.[1].csr.[1]"
+
+        DeleteSelfSignedCertificate:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteselfsignedcertificate: "nsxmanager.[1].selfsignedcertificate.[-1]"
+
+        DeleteCSR: *DELETE_ALL_CSR

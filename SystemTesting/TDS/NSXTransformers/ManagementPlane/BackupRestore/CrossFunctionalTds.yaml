@@ -1,0 +1,307 @@
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+!include ../Clustering/MPCommonWorkloads.yaml
+
+###############################################################################
+#                           IDAS BACKUP RESTORE TESTS                         #
+###############################################################################
+
+IDASBackupRestoreCase:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    Developer: "kchougule"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,BackupRestore'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "IDASBackupRestoreCase"
+    Summary: "To verify IDAS CRUD operations after restore on fresh node"
+    Procedure: '1. Create IP Pool on node 1
+                2. Allocate one IP from IPPool1
+                3. Update VNI Pool range
+                4. Take Cluster Level Backup on node 1
+                5. Download backup file on linux host
+                6. Upload backup file on NSXManager node 2
+                7. Restore cluster level backup file on node 2
+                8. Verify IPPool1 is restored on node 2
+                9. Verify IP allocation from IPPool1 is restored on node 2
+                10. Verify VNIPool range is updated on node 2
+                11. Perform update, allocate, release and delete operation
+                on IPPool1
+                12. Create new IPPool2 on node 2
+                13. Perform update, allocate, release and delete operation
+                on IPPool2
+                14. Delete Cluster Level Backup'
+
+    ExpectedResult: 'Restore on fresh MP node should be successful and all
+                     IDAS crud operations should be successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+            '[2]':
+    WORKLOADS:
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *OTHER_WORKLOADS
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringVerificationWorkloads
+        Sequence:
+            - - CreateIPPool1
+            - - VerifyIPPool1
+            - - AllocateIP1FromIPPool1
+            - - GetVNIPoolId
+            - - UpdateVNIPool
+            - - VerifyVNIPoolAfterUpdate
+            - - CreateClusterLevelBackup1
+            - - GetClusterLevelBackup1
+            - - DownloadClusterLevelBackup1
+            - - UploadClusterLevelBackupOnNode2
+            - - CopyToRestoreFolderBackupOnNode2
+            - - SetClusterBackupRestoreIdOnNode2
+            - - RestoreClusterLevelBackupOnNode2
+            - - MapNSXManager2ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node2
+            ## verify previous data from node 1 is restored on node 2
+            - - SetIPPoolIdOnNode2
+            - - SetAllocationIdOnNode2
+            - - VerifyIPPoolOnNode2AfterRestore
+            - - VerifyOneIPAllocationForIPPool1AfterRestore
+            - - GetVNIPoolIdOnNode2
+            - - VerifyVNIPoolAfterRestore
+            ## perform CRUD operations on node 2 after restore
+            - - UpdateIPPool1OnNode2
+            - - VerifyIPPool1AfterUpdateOnNode2
+            - - AllocateIP2FromIPPool1OnNode2
+            - - VerifyTwoIPAllocationsForIPPool1OnNode2
+            - - ReleaseIP1ToIPPool1OnNode2
+            - - ReleaseIP2ToIPPool1OnNode2
+            - - CreateIPPool2OnNode2
+            - - UpdateIPPool2OnNode2
+            - - VerifyIPPool2AfterUpdateOnNode2
+            - - AllocateIP1FromIPPool2OnNode2
+            - - VerifyOneIPAllocationForIPPool2OnNode2
+            - - ReleaseIP1ToIPPool2OnNode2
+
+        ExitSequence:
+            - - ResetVNIPoolOnNode1
+            - - ResetVNIPoolOnNode2
+            - - ReleaseIP1ToIPPool1OnNode1
+            - - DeleteAllIPPoolOnNode1
+            - - DeleteAllIPPoolOnNode2
+            - - DeleteAllClusterBackups
+            - - DeleteClusterBackupFileOnNode2
+
+        UploadClusterLevelBackupOnNode2:
+            <<: *UPLOAD_CLUSTER_BACKUP1
+            TestNSX: 'nsxmanager.[2]'
+
+        CopyToRestoreFolderBackupOnNode2:
+            <<: *COPY_TO_RESTORE_FOLDER_BACKUP1
+            TestNSX: 'nsxmanager.[2]'
+
+        SetClusterBackupRestoreIdOnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            clusterbackuprestore:
+              '[1]':
+                  map_object: true
+                  id_: 1
+
+        RestoreClusterLevelBackupOnNode2:
+            <<: *RESTORE_CLUSTER_BACKUP
+            TestSnapshot: "nsxmanager.[2].clusterbackuprestore.[1]"
+
+        DeleteClusterBackupFileOnNode2:
+            <<: *DELETE_CLUSTER_BACKUP_FILE
+            TestNSX: 'nsxmanager.[2]'
+
+        AllocateIP1FromIPPool1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            allocateip:
+                '[1]':
+                    id_:
+
+        GetVNIPoolId: &GET_VNIPOOL_ID_NODE1
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            vnipool:
+                '[1]':
+                    discover: 'true'
+                    name: 'DefaultVniPool'
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            name: 'DefaultVniPool'
+            summary: "Default VNI Pool Updated summary"
+            ranges:
+                - begin: 100000
+                  end: 160000
+
+        VerifyVNIPoolAfterUpdate: &VERIFY_VNIPOOL
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'DefaultVniPool'
+               'summary[?]equal_to': "Default VNI Pool Updated summary"
+               'ranges[?]contain_once':
+                - begin: 100000
+                  end: 160000
+
+        SetIPPoolIdOnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            sleepbetweenworkloads: 10
+            ippool:
+              '[1]':
+                  map_object: true
+                  id_: "nsxmanager.[1].ippool.[1]"
+
+        SetAllocationIdOnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            sleepbetweenworkloads: 10
+            allocateip:
+              '[1]':
+                  map_object: true
+                  id_: "nsxmanager.[1].allocateip.[1]"
+
+        VerifyIPPoolOnNode2AfterRestore:
+            <<: *VERIFY_IPPOOL1
+            TestGroupingObject: "nsxmanager.[2].ippool.[1]"
+
+        VerifyOneIPAllocationForIPPool1AfterRestore: &VERIFY_IP_ALLOCATION
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 1
+
+        GetVNIPoolIdOnNode2:
+            <<: *GET_VNIPOOL_ID_NODE1
+            TestNSX: "nsxmanager.[2]"
+
+        VerifyVNIPoolAfterRestore:
+            <<: *VERIFY_VNIPOOL
+            TestGroupingObject: "nsxmanager.[2].vnipool.[1]"
+
+        UpdateIPPool1OnNode2: &UPDATE_IPPOOL1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+
+        VerifyIPPool1AfterUpdateOnNode2: &VERIFY_IPPOOL1_AFTER_UPDATE
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'summary[?]equal_to': "Updated summary"
+
+        AllocateIP2FromIPPool1OnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[2].ippool.[1]"
+            allocateip:
+                '[2]':
+                    id_:
+
+        VerifyTwoIPAllocationsForIPPool1OnNode2:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+            get_ip_allocations:
+                'result_count[?]equal_to': 2
+
+        ReleaseIP2ToIPPool1OnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[2].ippool.[1]"
+            releaseip:
+                '[2]':
+                    id_: "nsxmanager.[2].allocateip.[2]"
+
+        ReleaseIP1ToIPPool1OnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[2].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[2].allocateip.[1]"
+
+        CreateIPPool2OnNode2:
+            <<: *CREATE_IPPOOL2
+            TestNSX: "nsxmanager.[2]"
+
+        UpdateIPPool2OnNode2:
+            <<: *UPDATE_IPPOOL1
+            Testgroupingobject: "nsxmanager.[2].ippool.[2]"
+
+        VerifyIPPool2AfterUpdateOnNode2:
+            <<: *VERIFY_IPPOOL1_AFTER_UPDATE
+            Testgroupingobject: "nsxmanager.[2].ippool.[2]"
+
+        AllocateIP1FromIPPool2OnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            allocation_action: 'ALLOCATE'
+            ippool_id: "nsxmanager.[2].ippool.[2]"
+            allocateip:
+                '[3]':
+                    id_:
+
+        VerifyOneIPAllocationForIPPool2OnNode2:
+            <<: *VERIFY_IP_ALLOCATION
+            Testgroupingobject: "nsxmanager.[2].ippool.[2]"
+
+        ReleaseIP1ToIPPool2OnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[2].ippool.[2]"
+            releaseip:
+                '[3]':
+                    id_: "nsxmanager.[2].allocateip.[3]"
+
+        ReleaseIP1ToIPPool1OnNode1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            allocation_action: 'RELEASE'
+            ippool_id: "nsxmanager.[1].ippool.[1]"
+            releaseip:
+                '[1]':
+                    id_: "nsxmanager.[1].allocateip.[1]"
+
+        ResetVNIPoolOnNode1: &RESET_VNIPOOL_ON_NODE1
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+            ranges:
+                - begin: 5000
+                  end: 65535
+
+        ResetVNIPoolOnNode2:
+            <<: *RESET_VNIPOOL_ON_NODE1
+            Testgroupingobject: "nsxmanager.[2].vnipool.[1]"
+
+        DeleteAllIPPoolOnNode1: *DELETE_IPPOOLS
+
+        DeleteAllIPPoolOnNode2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[2]"
+            deleteippool: "nsxmanager.[2].ippool.[-1]"

@@ -1,0 +1,273 @@
+GatewayServicesEdgeSanity:
+    Component: "Install"
+    Category: "vShield-Edge"
+    Product: "vShield"
+    TestName: "Gateway Services Edge Sanity"
+    Version: "2"
+    Tags: "vsm"
+    Summary: "This is sanity test case of Gateway Services Edge"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "dgargote"
+    Partnerfacing: "y"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHost_TwoCluster
+    WORKLOADS:
+        Sequence:
+            - ["DeployGatewayServicesEdge"]
+            - ["CreateGatewayInterface"]
+            - ["DeleteGatewayIterface"]
+        ExitSequence:
+            - ["DeleteGatewayServicesEdge"]
+
+        DeployGatewayServicesEdge:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            gateway:
+                '[1]':
+                    name: "Edge-1001"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[1]"
+                    portgroup: "vc.[1].dvportgroup.[1]"
+                    primaryaddress: "10.10.1.10"
+                    subnetmask: "255.255.255.0"
+        CreateGatewayInterface:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1]"
+            interface:
+                '[1]':
+                    name: "vnic1"
+                    index: "1"
+                    portgroup: "vc.[1].dvportgroup.[2]"
+                    ipv4address: "10.10.2.10"
+                    netmask: "255.255.255.0"
+
+        DeleteGatewayIterface:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1]"
+            vnic_index: "1"
+            deleteinterface: "vsm.[1].gateway.[1].interface.[1]"
+
+        DeleteGatewayServicesEdge:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            sleepbetweenworkloads: "60"
+            deletegateway: "vsm.[1].gateway.[1]"
+
+GatewayServicesEdgeDeployment:
+    Component: "Install"
+    Category: "vShield-Edge"
+    Product: "vShield"
+    TestName: "Gateway Services Edge Deployment"
+    Version: "2"
+    Tags: "vsm"
+    Summary: "This is sanity test case of Gateway Services Edge Deployment"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "agujar"
+    Partnerfacing: "y"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_OneHost_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["DeployGatewayServicesEdge"]
+        DeployGatewayServicesEdge:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            gateway:
+                '[1]':
+                    name: "Edge-105"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[1]"
+                    portgroup: "vc.[1].dvportgroup.[1]"
+                    primaryaddress: "10.112.243.47"
+                    subnetmask: "255.255.255.0"
+ExecuteEdgeCLI:
+    Component: "CLI"
+    Category: "vShield-Edge"
+    Product: "vShield"
+    TestName: "Gateway Services Edge Sanity"
+    Version: "2"
+    Tags: "vsm"
+    Summary: "Execute the CLI on edge"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "agujar"
+    Partnerfacing: "y"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_OneHost_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["VerifyOSPFStatus"]
+            - ["VerifyDHCPStatus"]
+        VerifyOSPFStatus:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1]"
+            edge_command: "show configuration ospf"
+            edge_schema_key: "ospf"
+            'executeedgecli[?]contain_once':
+                - gracefulRestart: "True"
+                - defaultOriginate: "False"
+        VerifyDHCPStatus:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1]"
+            edge_command: "show configuration dhcp"
+            edge_schema_key: "dhcp"
+            'executeedgecli[?]contain_once':
+                - leaseRotateTime: 900
+                - leaseRotateThreshold: 10000
+                - enable: "False"
+
+
+EdgeCentralizedAPISample:
+    Component: "API"
+    Category: "vShield-Edge"
+    Product: "vShield"
+    TestName: "CentralApiEdge"
+    Version: "2"
+    Tags: "vsm"
+    Summary: "Execute the Central API for edge"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "agujar"
+    Partnerfacing: "y"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_OneHost_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["ShowEdgeVersion"]
+            - ['ShowIPForwarding']
+            - ['ShowIPRoute']
+            - ['ShowIPOSPFNeighbor']
+            - ['ShowIPOSPFDatabase']
+            - ['ShowIPBGPNeighbor']
+            - ['ShowIPBGP']
+
+        ShowEdgeVersion:
+            Type: Gateway
+            TestGateway: 'vsm.[1].gateway.[1]'
+            gateway_command: 'show version'
+            edge_ha_index: '1'
+            get_edge_version:
+                name[?]equal_to: 'vShield Edge'
+                version[?]equal_to: '6.2.0'
+                kernel[?]equal_to: '3.2.62'
+
+        ShowIPForwarding:
+            Type: Gateway
+            TestGateway: 'vsm.[1].gateway.[1]'
+            edge_ha_index: '0'
+            get_ip_forwarding:
+                'table[?]contain_once':
+                    - code: 'C>*'
+                      network: '10.110.60.0/22'
+                      nexthop: 'NULL'
+                      via: 'isdirectlyconnected'
+                      vnicname: 'vNic_0'
+
+        ShowIPRoute:
+            Type: Gateway
+            TestGateway: 'vsm.[1].gateway.[1]'
+            edge_ha_index: '0'
+            get_ip_route:
+                'table[?]contain_once':
+                    - code: 'C'
+                      network: '3.3.3.0/24'
+                      nexthop: '3.3.3.1'
+                    - code: 'C'
+                      network: '10.10.10.0/24'
+                      nexthop: '10.10.10.1'
+                    - code: 'O'
+                      network: '4.4.4.0/24'
+                      nexthop: '10.10.10.2'
+                      ospf_externaltype: 'E2'
+
+        ShowIPOSPFNeighbor:
+            Type: Gateway
+            TestGateway: 'vsm.[1].gateway.[1]'
+            edge_ha_index: '0'
+            get_ip_ospf_neighbor:
+                'table[?]contain_once':
+                    - neigbhor_id: '2.2.2.2'
+                      priority: '128'
+                      address: '10.10.10.2'
+                      state: 'Full/BDR'
+
+        ShowIPOSPFDatabase:
+            Type: Gateway
+            TestGateway: 'vsm.[1].gateway.[1]'
+            edge_ha_index: '0'
+            area_id: '0'
+            search_filter: 'RLS'
+            get_ip_ospf_database:
+                'table[?]contain_once':
+                    - link_id: '1.1.1.1'
+                      adv_router: '1.1.1.1'
+
+        ShowIPBGPNeighbor:
+            Type: Gateway
+            TestGateway: 'vsm.[1].gateway.[1]'
+            edge_ha_index: '0'
+            get_ip_bgp_neighbors:
+                'table[?]contain_once':
+                    - local_host: '192.168.1.51'
+                      bgp_state: 'established'
+                      remote_host: '192.168.1.50'
+                      bgp_neighbor: '192.168.1.50'
+                      keep_alive_interval: '60'
+                      hold_time: '180'
+                      bgp_status: 'up'
+
+        ShowIPBGP:
+            Type: Gateway
+            TestGateway: 'vsm.[1].gateway.[1]'
+            edge_ha_index: '0'
+            get_ip_bgp:
+                'table[?]contains':
+                    - locprf: '100'
+                      metric: '0'
+                      network: '10.10.10.0/24'
+                      nexthop: '192.168.1.50'
+                      origin: '?'
+                      scode: '>'
+                      weight: '60'
+                    - locprf: '100'
+                      metric: '0'
+                      network: '10.110.60.0/22'
+                      nexthop: '192.168.1.50'
+                      origin: '?'
+                      scode: '>'
+                      weight: '32768'
+                    - locprf: '100'
+                      metric: '0'
+                      network: '172.168.1.0/24'
+                      nexthop: '192.168.1.50'
+                      origin: '?'
+                      scode: '>'
+                      weight: '32768'
+                    - locprf: '100'
+                      metric: '0'
+                      network: '192.168.1.0/24'
+                      nexthop: '192.168.1.50'
+                      origin: '?'
+                      scode: '>'
+                      weight: '32768'
+

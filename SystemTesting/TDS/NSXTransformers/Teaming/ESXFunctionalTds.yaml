@@ -1,0 +1,840 @@
+!include TestbedSpec.yaml
+!include CommonWorkloads.yaml
+!include TeamingWorkloads.yaml
+
+StaticTeamingExplicitFailOver:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "StaticTeamingExplicitFailOver"
+    Tags: "sanity"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile FO teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P0
+    version: "2"
+    Summary: "teaming policy set to explicit_failover, verifying traffic works
+              the test should check the overlay traffic as well vlan traffic
+              works"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeSetup']
+             - ['UplinkProfileWithTeamingFailOverOrder']
+             - ['CreateTransportNodes']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['VerifyFailOverTeamingOnVTEP']
+             - ['RunTrafficAndVerify']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+
+StaticTeamingPortIDBased:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "StaticTeamingPortIDBased"
+    Tags: "sanity"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile PortID teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P0
+    version: "2"
+    Summary: "teaming policy set to src_port id, verifying traffic works
+              the test should check the overlay traffic as well vlan traffic
+              works"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeSetup']
+             - ['UplinkProfileWithTeamingSRCPortID']
+             - ['CreateTransportNodes']
+             - ['DiscoverVtepsSRCPortID']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['VerifyPortIDTeamingOnVTEP']
+             - ['RunTrafficAndVerify']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+
+LACPActiveWithSrcMAC:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPActiveWithSrcMAC"
+    Tags: "lacp"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create a lag.
+        - Set LACP mode to active.
+        - Set load_balancing policy to SRCMAC.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPActiveWithSrcMAC']
+             - ['CreateTransportNodesSingleLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+LACPPassiveWithSrcMAC:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPPassiveWithSrcMAC"
+    Tags: "lacp"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create a lag.
+        - Set LACP mode to passive.
+        - Set load_balancing policy to SRCMAC.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPPassiveWithSrcMAC']
+             - ['CreateTransportNodesSingleLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+LACPActiveWithDestMAC:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPActiveWithDestMAC"
+    Tags: "lacp"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create a lag.
+        - Set LACP mode to active.
+        - Set load_balancing policy to DESTMAC.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPActiveWithDestMAC']
+             - ['CreateTransportNodesSingleLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+LACPPassiveWithDestMAC:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPActiveWithSrcMAC"
+    Tags: "sanity"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create a lag.
+        - Set LACP mode to passive.
+        - Set load_balancing policy to DESTMAC.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPPassiveWithDestMAC']
+             - ['CreateTransportNodesSingleLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+LACPActiveWithSrcDestMAC:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPActiveWithSrcDestMAC"
+    Tags: "lacp"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create a lag.
+        - Set LACP mode to active.
+        - Set load_balancing policy to SRCDESTMAC.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPActiveWithSrcDestMAC']
+             - ['CreateTransportNodesSingleLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+LACPPassiveWithSrcDestMAC:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPPassiveWithSrcDestMAC"
+    Tags: "lacp"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create a lag.
+        - Set LACP mode to passive.
+        - Set load_balancing policy to SRCDESTMAC.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPPassiveWithSrcDestMAC']
+             - ['CreateTransportNodesSingleLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+LACPActiveWithSrcDestIPVLAN:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPActiveWithDestIPVLAN"
+    Tags: "lacp"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create a lag.
+        - Set LACP mode to active.
+        - Set load_balancing policy to DESTIPVLAN.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPActiveWithSrcDestIPVLAN']
+             - ['CreateTransportNodesSingleLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+LACPPassiveWithSrcDestIPVLAN:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPPassiveWithSrcDestIPVLAN"
+    Tags: "lacp"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create a lag.
+        - Set LACP mode to passive.
+        - Set load_balancing policy to SRCDESTIPVLAN.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPPassiveWithSrcDestIPVLAN']
+             - ['CreateTransportNodesSingleLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+LACPActiveWithMultipleLAGS:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPActiveWithMultipleLAGS"
+    Tags: "lacp"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create 3 LAGS.
+        - Set LACP mode to active for each LAGS.
+        - Set load_balancing policy to DESTMAC.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPActiveWithMultipleLAGS']
+             - ['CreateTransportNodesMultiLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+LACPPassiveWithMultipleLAGS:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPActiveWithMultipleLAGS"
+    Tags: "lacp"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create 3 LAGS.
+        - Set LACP mode to Passive for each LAGS.
+        - Set load_balancing policy to DESTMAC.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPPassiveWithMultipleLAGS']
+             - ['CreateTransportNodesMultiLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+LACPWithMultipleLAGSMixedMode:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "LACPWithMultipleLAGSMixedMode"
+    Tags: "lacp"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Create Transport Zone.
+        - Create Uplink Profile with LACP teaming.
+        - Create 3 LAGS.
+        - Set LACP mode for lag1 as ACTIVE.
+        - Set LACP mode for lag2 as PASSIVE.
+        - Set LACP mode for lag3 as ACTIVE.
+        - Set load_balancing policy to DESTMAC.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to LACP in active mode and ip hash,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_LACP
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['LACPPhysicalSwitchSetup']
+             - ['TransportZoneAndHostNodeSetup']
+             - ['LACPWithMultipleLAGSMixedMode']
+             - ['CreateTransportNodesMultiLAG']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerifyLACP']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetup']
+             - ['ClearPhysicalSwitchSetup']
+
+ChangeTeamingAndVTEPConfiguration:
+    Product: "NSX Transformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "ChangeTeamingAndVTEPConfiguration"
+    Tags: "sanity"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile PortID teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "Teaming policy set to port based and multiple pnics conected to VDS,
+              in this case after NSX deployment is done change the teaming configuration
+              and make sure that after changing the teaming configuration vlan and
+              overlay traffic works"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeSetup']
+             - ['UplinkProfileWithTeamingFailOverOrder']
+             - ['CreateTransportNodes']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerify']
+             - ['ChangeUplinkProfileToPortID']
+             - ['RunTrafficAndVerify']
+        ExitSequence:
+             - ['ClearSetup']
+
+TeamingLinkFlap:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "TeamingLinkFlap"
+    Tags: "sanity"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile PortID teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "When an uplink goes down the VTEP should start using another uplink
+              to send traffic to and this should be reported to management plane,
+              This should happen with all teaming policies"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeSetup']
+             - ['UplinkProfileWithTeamingFailOverOrder']
+             - ['CreateTransportNodes']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerify']
+             - ['RunTrafficAndLinkFlap']
+        ExitSequence:
+             - ['ClearSetup']
+
+TeamingUplinkLimit:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "TeamingUplinkLimit"
+    Tags: "sanity"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile PortID teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify max uplink are created.
+    Priority: P2
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Semi-Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "Test for checking the max number of uplinks in a team. For ESX it is
+              32 and for KVM there is no hard limit so for uniformity both should
+              support at least 32 "
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeSetup']
+             - ['UplinkProfileWithMaxUplink']
+             - ['CreateTransportNodes']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerify']
+             - ['ChangeUplinkProfileToPortID']
+             - ['RunTrafficAndVerify']
+        ExitSequence:
+             - ['ClearSetup']
+
+TeamingUplinkSaturation:
+    Product: "NSXTransformers"
+    Component: "ESX"
+    Category: "Teaming"
+    TestName: "TeamingUplinkSaturation"
+    Tags: "sanity"
+    QCPath: ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Priority: P2
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile PortID teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify uplink saturation.
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "When an uplink gets saturated (75% +) use then a syslog should be
+              generated and sent to the management plane so that admin can take
+              appropriate action"
+    TestbedSpec: *TEAMING_ESX_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeSetup']
+             - ['UplinkProfileWithTeamingFailOverOrder']
+             - ['CreateTransportNodes']
+             - ['DiscoverVtepsFailoverOrder']
+             - ['ControllerAndLogicalSwitchSetup']
+             - ['RunTrafficAndVerify']
+        ExitSequence:
+             - ['ClearSetup']

@@ -1,0 +1,75 @@
+---
+active_nodes:
+  type: parameter
+  description: 'list of active nodes for bridge endoint'
+  format: array
+  derived_components:
+    - bridgeendpoint
+  sample_value:
+    - nsxmanager.transportnode.[1]->id
+    - nsxmanager.transportnode.[2]->id
+
+ha:
+  allowed_values:
+    - 1
+    - 0
+  description: Change HA configuration for a bridgeendpoint.
+  format: boolean
+  sample_value: 1
+  type: parameter
+
+guest_vlan:
+  type: parameter
+  description: 'flag to indicate if guest vlan tag needs to be enabled'
+  format: boolean
+  sample_value: 1
+
+get_bridge_endpoint_status:
+  type: verification
+  preprocess: PreProcessVerification
+  method: get_bridge_endpoint_status
+  derived_components:
+    - bridgeendpoint
+  format:
+    -'get_bridge_endpoint_status':
+        'id_[?]equal_to': vdnet index
+        'active_nodes_[?]contains': vdnet index
+  sample_value:
+     -'get_bridge_endpoint_status':
+        'id_[?]equal_to': nsxmanager.[1].bridgeendpoint.[1]
+        'active_nodes_[?]contain_once': nsxmanager.[1].transportnode.[1]
+
+port:
+  derived_components:
+    - bridge
+  description: Creates a port on given bridge.
+  linkedworkload: PortWorkload
+  method: CreateComponent
+  params:
+    - port
+    - execution_type
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    bridge: 'VDNetLib::Switch::Port::OVSPort'
+
+update:
+  derived_components:
+    - bridgeendpoint
+  description: 'Reconfigures bridge endpoint'
+  format:
+    name: 'ref: name'
+    ha: 'ref: ha'
+    vlan_id: 'ref: vlan_id'
+    guest_vlan: 'ref guest_vlan'
+  method: UpdateComponent
+  params:
+    - update
+  preprocess: PreProcessNestedParametersForAction
+  sample_value:
+    name: 'bridge_endpoint1'
+    vlan_id: 16
+    guest_vlan: 0
+  type: action
+

@@ -1,0 +1,300 @@
+!include ../Clustering/L2Workloads.yaml
+!include ../Clustering/MPCommonWorkloads.yaml
+!include ../Clustering/MPVerticalWorkloads.yaml
+!include ../Clustering/TestbedSpec.yaml
+
+MPClusterStabilityTest_1:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ManagementPlatform'
+    TestName: 'MPClusterStabilityTest_1'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P1'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify MP cluster remains stable after this test'
+    Procedure: '1. Create three node MP cluster
+                2. Create IPPool on node -1
+                3. Block traffic to node 2 and node 3
+                4. Create IPPool on node 2 and node 3
+                5. Read and Update IP Pool from node 2
+                6. Unblock traffic to node 2 and node 3
+                7. Restart proton service on node 1
+                8. Delete all IPPools
+                9. Repeat above procedure 500 times'
+    ExpectedResult: 'MP cluster should remain stable after this test'
+    Duration: '604800'
+    Tags: 'nsx,management,clustering,stability'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        Iterations: 500
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *IPPoolWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - SetProtonServiceIdFor_Node1
+            - - CreateIPPool1From_Node1
+            - - BlockMPNode2Traffic_On_Node1
+              - BlockMPNode3Traffic_On_Node1
+            - - VerifyMPClusterStatusUnknownOnNode1
+            - - VerifyClusterStatusFrom_Node2
+            - - VerifyClusterStatusFrom_Node3
+            - - CreateIPPool2From_Node2
+            - - CreateIPPool3From_Node3
+            - - UnBlockMPNode2Traffic_On_Node1
+              - UnBlockMPNode3Traffic_On_Node1
+            - - RestartProtonServiceOn_Node1
+            - - VerifyStartProtonServiceStatusOnNode1
+            - - VerifyClusterStatusFrom_Node1
+            - - VerifyClusterStatusFrom_Node2
+            - - VerifyClusterStatusFrom_Node3
+            - - DeleteAllIPPoolsFrom_Node1
+        ExitSequence:
+            - - UnBlockMPNode2Traffic_On_Node1
+              - UnBlockMPNode3Traffic_On_Node1
+            - - RestartProtonServiceOn_Node1
+            - - VerifyStartProtonServiceStatusOnNode1
+            - - VerifyClusterStatusFrom_Node1
+            - - VerifyClusterStatusFrom_Node2
+            - - VerifyClusterStatusFrom_Node3
+            - - CleanupIPPools
+
+        VerifyMPClusterStatusUnknownOnNode1:
+            <<: *VERIFY_MP_CLUSTER_STATUS_UNKNOWN_ON_NODE1
+            sleepbetweenworkloads: 120
+
+        VerifyStartProtonServiceStatusOnNode1:
+            <<: *VERFIY_START_PROTON_SERVICE_STATUS_FOR_NODE_1
+            sleepbetweenworkloads: 120
+
+        CleanupIPPools:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteippool: "nsxmanager.[1].ippool.[-1]"
+            expectedResult: ignore
+
+MPClusterStabilityTest_2:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ManagementPlatform'
+    TestName: 'MPClusterStabilityTest_2'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P1'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify MP cluster remains stable after this test'
+    Procedure: '1. Create setup with three NSXManagers, three NSXControllers and two ESX servers
+                2. Poweroff NSXManager-1
+                3. Create one logical switch-1 from NSXManager-1
+                4. Poweroff NSXManager-2
+                5. Poweroff NSXManager-3
+                6. Poweron NSXManager-1
+                7. Poweron NSXManager-2
+                8. Poweron NSXManager-3
+                9. Wait for MP cluster to become stable
+                10. Create logical port-1 from NSXManager-1
+                11. Create logical port-2 from NSXManager-2
+                12. Create logical port-3 from NSXManager-3
+                13. Verify all three logical ports are realized on all three NSXController nodes
+                14. Delete all logical ports and logical switch
+                15. Repeat above procedure 500 times'
+    ExpectedResult: 'MP cluster should remain stable after this test'
+    Duration: '604800'
+    Tags: 'nsx,management,clustering,stability'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        Iterations: 500
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_for_cluster_status_STABLE_on_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - PowerOffMP_Node1
+            - - CreateLogicalSwitch01From_Node2
+            - - PowerOffMP_Node2
+            - - PowerOffMP_Node3
+            - - PowerOnMP_Node1
+            - - PowerOnMP_Node2
+            - - PowerOnMP_Node3
+            - - Wait_for_cluster_status_STABLE_on_Node1_After_Restart
+            - - VerifyClusterStatusFrom_Node2
+            - - VerifyClusterStatusFrom_Node3
+            - - CreateLogicalPort01FromNode1
+            - - CreateLogicalPort02FromNode2
+            - - CreateLogicalPort03FromNode3
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode1
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode2
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode3
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+        ExitSequence:
+            - - CleanupLogicalPorts
+            - - CleanupLogicalSwitch
+
+        PowerOffMP_Node2:
+            <<: *POWER_OFF_MP_NODE_2
+            sleepbetweenworkloads: 120
+
+        Wait_for_cluster_status_STABLE_on_Node1:
+            <<: *WAIT_STABLE_NODE_1
+            sleepbetweenworkloads: 20
+
+        Wait_for_cluster_status_STABLE_on_Node1_After_Restart:
+            <<: *WAIT_STABLE_NODE_1
+            sleepbetweenworkloads: 180
+
+        CreateLogicalPort01FromNode1:
+            <<: *CREATE_LP01_ON_LS01_FROM_NODE1
+
+        CreateLogicalPort02FromNode2:
+            <<: *CREATE_LP02_ON_LS01_FROM_NODE1
+            TestNSX: nsxmanager.[2]
+
+        CreateLogicalPort03FromNode3:
+            <<: *CREATE_LP03_ON_LS01_FROM_NODE1
+            TestNSX: nsxmanager.[3]
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode1:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode2:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode3:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+        CleanupLogicalPorts:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+            expectedResult: ignore
+
+        CleanupLogicalSwitch:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[-1]'
+            expectedResult: ignore
+
+MPClusterStabilityTest_3:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ManagementPlatform'
+    TestName: 'MPClusterStabilityTest_3'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P1'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify MP cluster remains stable after this test'
+    Procedure: '1. Create three node MP cluster
+                2. Block traffic to node-2 and node-3 from node-1
+                3. Block traffic to node-3 from node-2
+                4. Verify cluster status on all nodes in UNKNOWN
+                5. Unblock traffic to node-2 and node-3 from node-1
+                6. Unblock traffic to node-3 from node-2
+                7. Restart proton service on all cluster nodes
+                8. Verify cluster status is stable on all three nodes
+                9. Repeat above procedure 500 times'
+    ExpectedResult: 'MP cluster should remain stable after this test'
+    Duration: '604800'
+    Tags: 'nsx,management,clustering,stability'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        Iterations: 500
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringVerificationWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - SetProtonServiceIdFor_Node1
+            - - BlockMPNode2Traffic_On_Node1
+              - BlockMPNode3Traffic_On_Node1
+              - BlockMPNode3TrafficOnNode2
+            - - VerifyMPClusterStatusUnknownOnNode1
+            - - VerifyMPClusterStatusUnknownOnNode2
+            - - VerifyMPClusterStatusUnknownOnNode3
+            - - UnBlockMPNode2Traffic_On_Node1
+              - UnBlockMPNode3Traffic_On_Node1
+              - UnBlockMPNode3TrafficOnNode2
+            - - RestartProtonServiceOn_Node1
+            - - RestartProtonServiceOn_Node2
+            - - RestartProtonServiceOn_Node3
+            - - VerifyClusterStatusFrom_Node1
+            - - VerifyClusterStatusFrom_Node2
+            - - VerifyClusterStatusFrom_Node3
+        ExitSequence:
+            - - UnBlockMPNode2Traffic_On_Node1
+              - UnBlockMPNode3Traffic_On_Node1
+              - UnBlockMPNode3TrafficOnNode2
+            - - RestartProtonServiceOn_Node1
+            - - RestartProtonServiceOn_Node2
+            - - RestartProtonServiceOn_Node3
+            - - VerifyClusterStatusFrom_Node1
+            - - VerifyClusterStatusFrom_Node2
+            - - VerifyClusterStatusFrom_Node3
+
+        VerifyMPClusterStatusUnknownOnNode1:
+            <<: *VERIFY_MP_CLUSTER_STATUS_UNKNOWN_ON_NODE1
+            sleepbetweenworkloads: 120
+
+        VerifyMPClusterStatusUnknownOnNode2:
+            <<: *VERIFY_MP_CLUSTER_STATUS_UNKNOWN_ON_NODE1
+            TestCluster: 'nsxmanager.[2].cluster.[1]'
+
+        VerifyMPClusterStatusUnknownOnNode3:
+            <<: *VERIFY_MP_CLUSTER_STATUS_UNKNOWN_ON_NODE1
+            TestCluster: 'nsxmanager.[3].cluster.[1]'
+
+        VerifyClusterStatusFrom_Node1:
+            <<: *VERIFY_CLUSTER_STATUS_FROM_NODE_1
+            sleepbetweenworkloads: 120
+
+        BlockMPNode3TrafficOnNode2:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[2]'
+            node_network_partitioning:
+                operation: 'set'
+                manager_ip: 'nsxmanager.[3]'
+                execution_type: 'cli'
+
+        UnBlockMPNode3TrafficOnNode2:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[2]'
+            node_network_partitioning:
+                operation: 'reset'
+                manager_ip: 'nsxmanager.[3]'
+                execution_type: 'cli'

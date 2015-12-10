@@ -1,0 +1,109 @@
+TestFabricProfile:
+    Product: "NSXTransformers"
+    Category: "Fabric Profile"
+    Component: "Rest API"
+    TestName: "Test CRUD operation for Fabric Profile"
+    Version: "2"
+    Summary: "Verify CRUD operations for Fabric Profile"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: TBD
+    Priority: "P0"
+    Developer: "agujar"
+    Procedure: '
+                1. Create one Fabric Profile
+                2. Perform the Read operation
+                3. Update the Fabric Profile
+                4. Check whether Fabric Profile has been updated
+                5. Delete the Fabric Profile'
+    ExpectedResult: 'CRD operation should be successful for Fabric Profile'
+    Duration: '5'
+    Tags: 'cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateFabricProfile"]
+            - ["ReadFabricProfile"]
+            - ["GetAllFabricProfiles"]
+            #- ["QueryFabricProfiles"]
+            - ["UpdateFabricProfile"]
+            - ["ReadFabricProfileAfterUpdate"]
+        ExitSequence:
+            - ["DeleteFabricProfile"]
+
+        CreateFabricProfile:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            fabricprofile:
+                '[1]':
+                    name: 'Fabric_Profile_1'
+                    summary: "Fabric Profile created through automation"
+                    resource_type: "FabricProfileClusterKeepAlive"
+                    hello_interval: 50
+                    declare_dead_timer: 1500
+
+        ReadFabricProfile:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].fabricprofile.[1]"
+            read:
+              'name[?]defined': 'Fabric_Profile_1'
+              'summary[?]equal_to': "Fabric Profile created through automation"
+              'id_[?]equal_to': 'nsxmanager.[1].fabricprofile.[1]'
+              'resource_type[?]equal_to': "FabricProfileClusterKeepAlive"
+
+        GetAllFabricProfiles:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].fabricprofile.[1]"
+            get_fabric_profile_list:
+              'result_count[?]equal_to': 1
+              'results[?]contain_once':
+                   - name: "Fabric_Profile_1"
+                     resource_type: "FabricProfileClusterKeepAlive"
+                     'id_[?]equal_to': 'nsxmanager.[1].fabricprofile.[1]'
+
+        # Bug in VDNet: 1315155
+        QueryFabricProfiles:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].fabricprofile.[1]"
+            get_fabric_profile_list:
+              'url_parameters':
+                resource_type: 'FabricProfileClusterKeepAlive'
+              'result_count[?]equal_to': 1
+              'results[?]contain_once':
+                   - name: "Fabric_Profile_1"
+                     resource_type: "FabricProfileClusterKeepAlive"
+                     'id_[?]equal_to': 'nsxmanager.[1].fabricprofile.[1]'
+
+        UpdateFabricProfile:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].fabricprofile.[1]"
+            reconfigure: true
+            name: 'Fabric_Profile_1_Update'
+            summary: "Fabric Profile updated through automation"
+            resource_type: "FabricProfileClusterKeepAlive"
+            hello_interval: 10000
+            declare_dead_timer: 70000
+            fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        ReadFabricProfileAfterUpdate:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].fabricprofile.[1]"
+            read:
+              'name[?]equal_to': 'Fabric_Profile_1_Update'
+              'summary[?]equal_to': "Fabric Profile updated through automation"
+              'resource_type[?]equal_to': "FabricProfileClusterKeepAlive"
+              'id_[?]equal_to': 'nsxmanager.[1].fabricprofile.[1]'
+
+        DeleteFabricProfile:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletefabricprofile: "nsxmanager.[1].fabricprofile.[1]"
+

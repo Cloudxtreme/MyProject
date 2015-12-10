@@ -1,0 +1,959 @@
+!include TestbedSpecs.yaml
+!include L2Workloads.yaml
+!include QosWorkloads.yaml
+
+QosProfileSystemDefaultValuesAndAssociation:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: Unknown\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosProfileSystemDefaultValuesAndAssociation
+    Priority: P0
+    Summary: Verify properties of the default QoS Profile and association with
+        LSwitch and LPort.
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Read and verify QoS default system profile.
+        - Verify LSwitch association with default QoS Profile.
+        - Verify LPort association with default QoS Profile.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # Validate default Qos profile.
+            - ['DiscoverQosProfile1SystemDefault']
+            - ['VerifyQosProfile1SystemDefaultOnManager']
+            # Verify LSwitch and LPort have default profile association.
+            - ['VerifyQosProfile1OnLogicalSwitch1OnManager']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosProfileFailDeleteSystemDefault:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: Unknown\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosProfileFailDeleteSystemDefault
+    Priority: P1
+    Summary: Verify default system QoS Profile can not be deleted.
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Read and verify Qos default system profile.
+        - Verify delete default Qos profile fails.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # Validate default Qos profile.
+            - ['DiscoverQosProfile1SystemDefault']
+            - ['VerifyQosProfile1SystemDefaultOnManager']
+            - ['VerifyFailDeleteQosProfile1']
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosProfileManagementAndPropagationBasic:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: Unknown\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosProfileManagementAndPropagationBasic
+    Priority: P0
+    Summary: Verify custom QoS Profile can be defined in Manager. Exercise
+        basic field values. Verify Manager association of profiles to LSwitch
+        and LPort. Verify configuration push to the LPort's Transport Node.
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Read Qos default system profile.
+        - Create Qos profile will all fields unset. Verify defaults provided.
+        - Create and verify Qos profile with all fields set with custom
+          settings.
+        - Associate profile to LSwitch and verify propagation to
+          Manager, Transport Node.
+        - Associate profile to LPort and verify propagation to Manager,
+          Transport Node.
+        - Delete Qos profile associated to LPort, verify LPort profile
+          reverts to that of LSwitch.
+        - Delete Qos profile associated to LSwitch, verify LSwitch and
+          LPort profile reverts to that of system default.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # Discover the system default Qos profile.
+            - ['DiscoverQosProfile1SystemDefault']
+            # Create a custom Qos profile with default values.
+            - ['CreateQosProfileDefault2']
+            - ['VerifyQosProfileDefault2OnManager']
+            - ['DeleteQosProfile2']
+            # Create a Qos profile with custom values.
+            - ['CreateQosProfileCustom3']
+            - ['VerifyQosProfileCustom3OnManager']
+            # Associate a Qos profile with LPort.
+            - ['AssociateQosProfile3ToLogicalPort1']
+            - ['VerifyQosProfile3OnLogicalPort1OnManager']
+            - ['VerifyQosProfileCustom3OnLogicalPort1OnTransportNode1--ESX']
+            # Associate a Qos profile with LSwitch.
+            - ['CreateQosProfileCustom7']
+            - ['VerifyQosProfileCustom7OnManager']
+            - ['AssociateQosProfile7ToLogicalSwitch1']
+            - ['VerifyQosProfile7OnLogicalSwitch1OnManager']
+            - ['VerifyQosProfile7OnLogicalPort2OnManager']
+            - ['VerifyQosProfileCustom7OnLogicalPort2OnTransportNode2--ESX']
+            # Delete profile associated with LPort, verify revert to
+            # LSwitch profile.
+            - ['DeleteQosProfile3Force']
+            - ['VerifyQosProfile7OnLogicalPort1OnManager']
+            # Delete profile associated with LSwitch, verify revert to
+            # system default profile.
+            - ['DeleteQosProfile7Force']
+            - ['VerifyQosProfile1OnLogicalSwitch1OnManager']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+            - ['VerifyQosProfile1OnLogicalPort2OnManager']
+            - ['VerifyQosProfileSystemDefault1OnLogicalPort1OnTransportNode1--ESX']
+            - ['VerifyQosProfileSystemDefault1OnLogicalPort2OnTransportNode2--ESX']
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosProfileManagementValidValuesRange:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: Unknown\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosProfileManagementValidValuesRange
+    Priority: P2
+    Summary: Verify custom QoS Profile can be defined in Manager and
+        propagated to LPort on Transport Node. Exercise full range of valid
+        field values.
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - For each field to be configured in QoS Profile configure valid values.
+          Verify the correct profile is saved. Associate the saved profile to a
+          LPort and verify configuration on the Transport Node host.
+        - Delete created QoS Profiles.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # dscp mode: enum, default "TRUSTED", ["TRUSTED","UNTRUSTED"]
+            - ['CreateQosProfile1DscpModeTrusted']
+            - ['VerifyQosProfile1DscpModeTrustedOnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1DscpModeTrustedOnLogicalPort1OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            - ['CreateQosProfile1DscpModeUntrusted']
+            - ['VerifyQosProfile1DscpModeUntrustedOnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1DscpModeUntrustedOnLogicalPort1OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            # dscp priority: int, default 0, min 0, max 63
+            - ['CreateQosProfile1DscpPriority0']
+            - ['VerifyQosProfile1DscpPriority0OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1DscpPriority0OnLogicalPort1OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            - ['CreateQosProfile1DscpPriority63']
+            - ['VerifyQosProfile1DscpPriority63OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1DscpPriority63OnLogicalPort1OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            # class_of_service: int, default 0, min 0, max 7
+            - ['CreateQosProfile1ClassOfService0']
+            - ['VerifyQosProfile1ClassOfService0OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1ClassOfService0OnLogicalPort5OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            - ['CreateQosProfile1ClassOfService7']
+            - ['VerifyQosProfile1ClassOfService7OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1ClassOfService7OnLogicalPort5OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            # average_bandwidth: int, default 0
+            # peak_bandwidth: int, default 0
+            # average and peak tested in combination, peak must be >= average
+            - ['CreateQosProfile1AveragePeakBandwidth0']
+            - ['VerifyQosProfile1AveragePeakBandwidth0OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1AveragePeakBandwidth0OnLogicalPort1OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            - ['CreateQosProfile1AveragePeakBandwidth1']
+            - ['VerifyQosProfile1AveragePeakBandwidth1OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1AveragePeakBandwidth1OnLogicalPort1OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            - ['CreateQosProfile1AveragePeakBandwidthMaxSignedInt32Bit']
+            - ['VerifyQosProfile1AveragePeakBandwidthMaxSignedInt32BitOnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1AveragePeakBandwidthMaxSignedInt32BitOnLogicalPort1OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            # burst_size: int, default 0
+            # burst size > 0 not valid without average and peak bandwidth > 0
+            - ['CreateQosProfile1BurstSize0']
+            - ['VerifyQosProfile1BurstSize0OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1BurstSize0OnLogicalPort1OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            - ['CreateQosProfile1BurstSize1']
+            - ['VerifyQosProfile1BurstSize1OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1BurstSize1OnLogicalPort1OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+            - ['CreateQosProfile1BurstSizeMaxSignedInt32Bit']
+            - ['VerifyQosProfile1BurstSizeMaxSignedInt32BitOnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1BurstSizeMaxSignedInt32BitOnLogicalPort1OnTransportNode1--ESX']
+            - ['DeleteQosProfile1Force']
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosProfileManagementErrorHandling:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: Unknown\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosProfileManagementErrorHandling
+    Priority: P1
+    Summary: Verify custom QoS Profile defined with bad values are properly
+        trapped with error responses by Manager.
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - For each field to be configured in QoS Profile configure invalid
+          values. Verify the correct API error handling.
+        - Delete any created QoS Profiles.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # dscp mode: enum, default "TRUSTED", ["TRUSTED","UNTRUSTED"]
+            - ['CreateQosProfile1DSCPModeIllegalEmptyString']
+            - ['CreateQosProfile1DSCPModeIllegalNonemptyString']
+            - ['CreateQosProfile1DSCPModeIllegalTypeInt']
+            # dscp priority: int, default 0, min 0, max 63
+            - ['CreateQosProfile1DSCPPriorityIllegalLessThanMin']
+            - ['CreateQosProfile1DSCPPriorityIllegalGreaterThanMax']
+            - ['CreateQosProfile1DSCPPriorityIllegalFloat']
+            - ['CreateQosProfile1DSCPPriorityIllegalString']
+            # class_of_service: int, default 0, min 0, max 7
+            - ['CreateQosProfile1ClassOfServiceIllegalLessThanMin']
+            - ['CreateQosProfile1ClassOfServiceIllegalGreaterThanMax']
+            - ['CreateQosProfile1ClassOfServiceIllegalFloat']
+            - ['CreateQosProfile1ClassOfServiceIllegalString']
+            # average_bandwidth: int, default 0
+            - ['CreateQosProfile1AverageBandwidthIllegalNegativeInt']
+            - ['CreateQosProfile1AverageBandwidthIllegalMaxUnsignedInt32Bit']
+            - ['CreateQosProfile1AverageBandwidthIllegalFloat']
+            - ['CreateQosProfile1AverageBandwidthIllegalString']
+            # burst_size: int, default 0
+            - ['CreateQosProfile1BurstSizeIllegalNegativeInt']
+            - ['CreateQosProfile1BurstSizeIllegalMaxUnsignedInt32Bit']
+            - ['CreateQosProfile1BurstSizeIllegalFloat']
+            - ['CreateQosProfile1BurstSizeIllegalString']
+            # peak_bandwidth: int, default 0
+            - ['CreateQosProfile1PeakBandwidthIllegalNegativeInt']
+            - ['CreateQosProfile1PeakBandwidthIllegalMaxUnsignedInt32Bit']
+            - ['CreateQosProfile1PeakBandwidthIllegalFloat']
+            - ['CreateQosProfile1PeakBandwidthIllegalString']
+            # expect peak bandwidth >= average bandwidth
+            - ['CreateQosProfile1PeakBandwidth1LessThanAverageBandwidth2Illegal']
+            # expect burst size > 0 if average or peak > 0 (BZ1382490)
+            - ['CreateQosProfile1BurstSizeGreaterThan0WithAverageAndPeak0Illegal']
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosDscpMarkingTrustedBasic:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: DSCPMarking\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosDscpMarkingTrustedBasic
+    Priority: P0
+    Summary: Verify tenant Qos trusted DSCP marking.
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Create a Qos profile with custom values and DSCP trusted.
+        - Associate Qos profile with trusted DSCP to LPort.
+        - Create a Qos profile with custom values and DSCP untrusted.
+        - Associate Qos profile with untrusted DSCP to LPort.
+        - Verify tenant traffic for trusted DSCP Qos profile.
+        - Verify tenant traffic for untrusted DSCP Qos profile.
+        - Delete created Qos profiles.
+        - Clean up the base testbed used for basic Qos testing.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, Qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # Verify tenant traffic with default Qos profile.
+            - ['DiscoverQosProfile1SystemDefault'] 
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['AssociateQosProfile1ToLogicalPort2']
+            - ['TrafficPingVM1ToVM2--ESX'] 
+            # Create a Qos profile with custom values and DSCP trusted.
+            - ['CreateQosProfileCustom4']
+            - ['VerifyQosProfileCustom4OnManager']
+            # Associate Qos profile with trusted DSCP to LPort
+            - ['AssociateQosProfile4ToLogicalPort1']
+            - ['VerifyQosProfile4OnLogicalPort1OnManager']
+            - ['VerifyQosProfileCustom4OnLogicalPort1OnTransportNode1--ESX']
+            # Verify tenant traffic after Qos profile association.
+            - ['TrafficPingVM1ToVM2--ESX'] 
+            # Create a Qos profile with custom values and DSCP untrusted.
+            - ['CreateQosProfileCustom5']
+            - ['VerifyQosProfileCustom5OnManager']
+            # Associate Qos profile with untrusted DSCP to LPort.
+            - ['AssociateQosProfile5ToLogicalPort2']
+            - ['VerifyQosProfile5OnLogicalPort2OnManager']
+            - ['VerifyQosProfileCustom5OnLogicalPort2OnTransportNode2--ESX']
+            # Verify tenant traffic after Qos profile association.
+            - ['TrafficPingVM1ToVM2--ESX'] 
+            # Verify tenant traffic for trusted DSCP Qos profile.
+            - ['TrafficVIF1OnVM1ToVIF1VM2DSCP38Trusted--ESX']
+            # Verify tenant traffic for untrusted DSCP Qos profile.
+            - ['TrafficVIF1OnVM2ToVIF1VM1DSCP38Untrusted4--ESX']
+            # Delete created Qos profiles.
+            - ['DeleteQosProfile4Force']
+            - ['DeleteQosProfile5Force']
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosDscpMarkingValidValuesRange:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: DSCPMarking\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosDscpMarkingValidValuesRange
+    Priority: P2
+    Summary: Verify tenant Qos trusted and untrusted DSCP marking for a range
+        of normal and boundary marking values with Overlay and VLAN
+        encapsulation.
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - For each field to be configured in QoS Profile configure valid values.
+          Verify the correct profile is saved. Associate the saved profile to a
+          LPort and verify configuration on the Transport Node host. Verify
+          expected DSCP marking in tenant traffic and during transit on host.
+        - Clean up the base testbed used for basic Qos testing.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, Qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # Overlay - DSCP Trusted, tenant DSCP 0x4
+            - ['CreateQosProfile1DscpModeTrusted']
+            - ['VerifyQosProfile1DscpModeTrustedOnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+            - ['VerifyQosProfile1DscpModeTrustedOnLogicalPort1OnTransportNode1--ESX']
+            - ['TrafficVIF1VM1DscpPriority4TrustedToVIF1VM2ViaOverlayVerifyHostTx--ESX']
+            - ['TrafficVIF1VM1DscpPriority4TrustedToVIF1VM2ViaOverlayVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # Overlay - DSCP Trusted, tenant DSCP 0x0
+            - ['CreateQosProfile1DscpModeTrusted']
+            - ['VerifyQosProfile1DscpModeTrustedOnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+            - ['VerifyQosProfile1DscpModeTrustedOnLogicalPort1OnTransportNode1--ESX']
+            - ['TrafficVIF1VM1DscpPriority0TrustedToVIF1VM2ViaOverlayVerifyHostTx--ESX']
+            - ['TrafficVIF1VM1DscpPriority0TrustedToVIF1VM2ViaOverlayVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # Overlay - DSCP Untrusted set Priority 0, tenant DSCP 0x4
+            - ['CreateQosProfile1DscpModeUntrustedPriority0']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority0OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority0OnLogicalPort1OnTransportNode1--ESX']
+            - ['TrafficVIF1VM1DscpPriority4UntrustedPriority0ToVIF1VM2ViaOverlayVerifyHostTx--ESX']
+            - ['TrafficVIF1VM1DscpPriority4UntrustedPriority0ToVIF1VM2ViaOverlayVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # Overlay - DSCP Untrusted set Priority 1, tenant DSCP 0x4
+            - ['CreateQosProfile1DscpModeUntrustedPriority1']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority1OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority1OnLogicalPort1OnTransportNode1--ESX']
+            - ['TrafficVIF1VM1DscpPriority4UntrustedPriority1ToVIF1VM2ViaOverlayVerifyHostTx--ESX']
+            - ['TrafficVIF1VM1DscpPriority4UntrustedPriority1ToVIF1VM2ViaOverlayVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # Overlay - DSCP Untrusted set Priority 63, tenant DSCP 0x4
+            - ['CreateQosProfile1DscpModeUntrustedPriority63']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority63OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority63OnLogicalPort1OnTransportNode1--ESX']
+            - ['TrafficVIF1VM1DscpPriority4UntrustedPriority63ToVIF1VM2ViaOverlayVerifyHostTx--ESX']
+            - ['TrafficVIF1VM1DscpPriority4UntrustedPriority63ToVIF1VM2ViaOverlayVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # Overlay - DSCP Untrusted set Priority 0, tenant DSCP 0x0
+            - ['CreateQosProfile1DscpModeUntrustedPriority0']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority0OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority0OnLogicalPort1OnTransportNode1--ESX']
+            - ['TrafficVIF1VM1DscpPriority0UntrustedPriority0ToVIF1VM2ViaOverlayVerifyHostTx--ESX']
+            - ['TrafficVIF1VM1DscpPriority0UntrustedPriority0ToVIF1VM2ViaOverlayVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # Overlay - DSCP Untrusted set Priority 1, tenant DSCP 0x0
+            - ['CreateQosProfile1DscpModeUntrustedPriority1']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority1OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority1OnLogicalPort1OnTransportNode1--ESX']
+            - ['TrafficVIF1VM1DscpPriority0UntrustedPriority1ToVIF1VM2ViaOverlayVerifyHostTx--ESX']
+            - ['TrafficVIF1VM1DscpPriority0UntrustedPriority1ToVIF1VM2ViaOverlayVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # Overlay - DSCP Untrusted set Priority 63, tenant DSCP 0x0
+            - ['CreateQosProfile1DscpModeUntrustedPriority63']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority63OnManager']
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority63OnLogicalPort1OnTransportNode1--ESX']
+            - ['TrafficVIF1VM1DscpPriority0UntrustedPriority63ToVIF1VM2ViaOverlayVerifyHostTx--ESX']
+            - ['TrafficVIF1VM1DscpPriority0UntrustedPriority63ToVIF1VM2ViaOverlayVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # VLAN - DSCP Trusted, tenant DSCP 0x4
+            - ['CreateQosProfile1DscpModeTrusted']
+            - ['VerifyQosProfile1DscpModeTrustedOnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1DscpModeTrustedOnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5DscpPriority4TrustedToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            - ['TrafficVIF1VM5DscpPriority4TrustedToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # VLAN - DSCP Trusted, tenant DSCP 0x0
+            - ['CreateQosProfile1DscpModeTrusted']
+            - ['VerifyQosProfile1DscpModeTrustedOnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1DscpModeTrustedOnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5DscpPriority0TrustedToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            - ['TrafficVIF1VM5DscpPriority0TrustedToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # VLAN - DSCP Untrusted set Priority 0, tenant DSCP 0x4
+            - ['CreateQosProfile1DscpModeUntrustedPriority0']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority0OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority0OnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5DscpPriority4UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            - ['TrafficVIF1VM5DscpPriority4UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # VLAN - DSCP Untrusted set Priority 1, tenant DSCP 0x4
+            - ['CreateQosProfile1DscpModeUntrustedPriority1']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority1OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority1OnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5DscpPriority4UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            - ['TrafficVIF1VM5DscpPriority4UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # VLAN - DSCP Untrusted set Priority 63, tenant DSCP 0x4
+            - ['CreateQosProfile1DscpModeUntrustedPriority63']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority63OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority63OnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5DscpPriority4UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            - ['TrafficVIF1VM5DscpPriority4UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # VLAN - DSCP Untrusted set Priority 0, tenant DSCP 0x0
+            - ['CreateQosProfile1DscpModeUntrustedPriority0']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority0OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority0OnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5DscpPriority0UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            - ['TrafficVIF1VM5DscpPriority0UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # VLAN - DSCP Untrusted set Priority 1, tenant DSCP 0x0
+            - ['CreateQosProfile1DscpModeUntrustedPriority1']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority1OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority1OnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5DscpPriority0UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            - ['TrafficVIF1VM5DscpPriority0UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+            # VLAN - DSCP Untrusted set Priority 63, tenant DSCP 0x0
+            - ['CreateQosProfile1DscpModeUntrustedPriority63']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority63OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1DscpModeUntrustedPriority63OnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5DscpPriority0UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            - ['TrafficVIF1VM5DscpPriority0UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX']
+            - ['DeleteQosProfile1Force']
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosClassOfServiceBasic:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: COS\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosClassOfServiceBasic
+    Priority: P0
+    Summary: Verify class of service marking
+    Procedure:
+        - Deploy and prep MP, CCP, TN(VLAN).
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Create a Qos profile with custom values including Class of Service.
+        - Associate Qos profile with CoS to LPort.
+        - Transmit non-VLAN tenant traffic to a tenant on different TN. Verify
+          CoS marking is per the Qos profile.
+        - Delete created Qos profiles.
+        - Clean up the base testbed used for basic Qos testing.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, Qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # Create a Qos profile with custom values including Class of Service.
+            - ['CreateQosProfile1ClassOfService1']
+            - ['VerifyQosProfile1ClassOfService1OnManager']
+            # Associate Qos profile with CoS to LPort.
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1ClassOfService1OnLogicalPort5OnTransportNode1--ESX']
+            # Transmit non-VLAN tenant traffic to a tenant on different TN. Verify
+            # CoS marking is per the Qos profile.
+            - ['TrafficVif1Vm5ToVif1Vm6VerifyClassOfService1OnPif2HostNode1--ESX']
+            # Delete created Qos profiles.
+            - ['DeleteQosProfile1Force']
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosClassOfServiceValidValuesRange:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: COS\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosClassOfServiceValidValuesRange
+    Priority: P2
+    Summary: Verify class of service marking for a range of normal and boundary
+        values.
+    Procedure:
+        - Deploy and prep MP, CCP, TN(VLAN).
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - For each field to be configured in QoS Profile configure valid values.
+          Verify the correct profile is saved. Associate the saved profile to a
+          LPort and verify configuration on the Transport Node host. Verify
+          expected CoS marking in tenant traffic and during transit on host.
+        - Clean up the base testbed used for basic Qos testing.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, Qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # VLAN - ClassOfService 0x0, no tenant VLAN
+            - ['CreateQosProfile1ClassOfService0']
+            - ['VerifyQosProfile1ClassOfService0OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1ClassOfService0OnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5SetClassOfService0ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            # VLAN - ClassOfService 0x1, no tenant VLAN
+            - ['CreateQosProfile1ClassOfService1']
+            - ['VerifyQosProfile1ClassOfService1OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1ClassOfService1OnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5SetClassOfService1ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            # VLAN - ClassOfService 0x7, no tenant VLAN
+            - ['CreateQosProfile1ClassOfService7']
+            - ['VerifyQosProfile1ClassOfService7OnManager']
+            - ['AssociateQosProfile1ToLogicalPort5']
+            - ['VerifyQosProfile1OnLogicalPort5OnManager']
+            - ['VerifyQosProfile1ClassOfService7OnLogicalPort5OnTransportNode1--ESX']
+            - ['TrafficVIF1VM5SetClassOfService7ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX']
+            # TODO(jschmidt, gyang): Tenant tagging in conjunction with
+            # VLAN-backed switch is undefined. Must revisit.
+            # TODO(jschmidt, gyang): Consider Overlay-encapsulated tenant
+            # tagging. Not well defined. Not anticipated customer usage.
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosTrafficShapingBasicDifferentHost:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: !!str Traffic Shaping - Max/Min/Shares\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosTrafficShapingBasicDifferentHost
+    Priority: P0
+    Summary: Verify tenant traffic shaping functionality with average_bandwidth
+        specification when tenants reside on different hosts.
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Create a Qos Profile with low average bandwidth restriction.
+        - Associate the average bandwidth Qos Profile with one LPort.
+        - Verify traffic from unrestricted to restricted LPort exhibits no
+          shaping, maximal throughput.
+        - Verify traffic from restricted to unrestricted LPort exhibits
+          shaping.
+        - Delete created Qos profiles.
+        - Clean up the base testbed used for basic Qos testing.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, Qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # Create a Qos Profile with low average bandwidth restriction.
+            - ['CreateQosProfileCustom6']
+            - ['VerifyQosProfileCustom6OnManager']
+            # Associate the average bandwidth Qos Profile with one LPort.
+            - ['AssociateQosProfile6ToLogicalPort1']
+            - ['VerifyQosProfileCustom6OnLogicalPort1OnTransportNode1--ESX']
+            # Verify traffic from unrestricted to restricted LPort exhibits no
+            # shaping, maximal throughput.
+            - ['VerifyTrafficBandwidthMin4VM2VIF1ToVM1VIF1--ESX']
+            # Verify traffic from restricted to unrestricted LPort exhibits
+            # shaping.
+            - ['VerifyTrafficBandwidthMax2Min1VM1VIF1ToVM2VIF1--ESX']
+            # Delete created Qos profiles.
+            - ['DeleteQosProfile6Force']
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosTrafficShapingBasicSameHost:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: !!str Traffic Shaping - Max/Min/Shares\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosTrafficShapingBasicSameHost
+    Priority: P0
+    Summary: Verify tenant traffic shaping functionality with average_bandwidth
+        specification when tenants reside on the same host.
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Create a Qos Profile with low average bandwidth restriction.
+        - Associate the average bandwidth Qos Profile with one LPort.
+        - Verify traffic from unrestricted to restricted LPort exhibits no
+          shaping, maximal throughput.
+        - Verify traffic from restricted to unrestricted LPort exhibits
+          shaping.
+        - Delete created Qos profiles.
+        - Clean up the base testbed used for basic Qos testing.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, Qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # Create a Qos Profile with low average bandwidth restriction.
+            - ['CreateQosProfileCustom6']
+            - ['VerifyQosProfileCustom6OnManager']
+            # Associate the average bandwidth Qos Profile with one LPort.
+            - ['AssociateQosProfile6ToLogicalPort1']
+            - ['VerifyQosProfileCustom6OnLogicalPort1OnTransportNode1--ESX']
+            # Verify traffic from unrestricted to restricted LPort exhibits no
+            # shaping, maximal throughput.
+            - ['VerifyTrafficBandwidthMin4VM3VIF1ToVM1VIF1--ESX']
+            # Verify traffic from restricted to unrestricted LPort exhibits
+            # shaping.
+            - ['VerifyTrafficBandwidthMax2Min1VM1VIF1ToVM3VIF1--ESX']
+            # Delete created Qos profiles.
+            - ['DeleteQosProfile6Force']
+        ExitSequence:
+            - ['L2Teardown--ESX']
+
+QosCosMarkingOverlaySwitch:
+    Product: NSXTransformers
+    Category: L2
+    Component: QOS
+    QCPath: COS\ESX
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    TestName: QosCosMarkingOverlaySwitch
+    Priority: P2
+    Summary: Verify tenant traffic success when CoS marking profile is applied
+        on LPort attached to overlay-backed LSwitch. (BZ1397176)
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Create a Qos profile with Class of Service marking.
+        - Associate Qos profile to LPort where the LPort attachment is made
+          to LSwitch with overlay backing, not VLAN.
+        - Verify tenant traffic across the overlay-backed LSwitch is not
+          impaired by the QoS profile including CoS marking.
+        - Delete created Qos profiles.
+        - Clean up the base testbed used for basic Qos testing.
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: jschmidt
+    Tags: nsx, avalanche, Qos, l2
+    Version: 2
+    TestbedSpec: *TestbedL2-3Mp-3Ccp-2HostNode-4VmPerNode--ESX
+    WORKLOADS:
+        <<: *L2Workloads
+        <<: *QosWorkloads
+        Sequence:
+            # Setup
+            - ['L2SetupAndWiring--ESX']
+            - ['L2SetupDataplaneVerification--ESX']
+            # Create a Qos profile with custom values and DSCP trusted.
+            - ['CreateQosProfile1ClassOfService1']
+            - ['VerifyQosProfile1ClassOfService1OnManager']
+            # Associate Qos profile with trusted DSCP to LPort
+            - ['AssociateQosProfile1ToLogicalPort1']
+            - ['VerifyQosProfile1OnLogicalPort1OnManager']
+            - ['VerifyQosProfile1ClassOfService1OnLogicalPort1OnTransportNode1--ESX']
+            # Verify tenant traffic after Qos profile association.
+            - ['TrafficPingVM1ToVM2--ESX'] 
+            # Delete created Qos profiles.
+            - ['DeleteQosProfile1Force']
+        ExitSequence:
+            - ['L2Teardown--ESX']

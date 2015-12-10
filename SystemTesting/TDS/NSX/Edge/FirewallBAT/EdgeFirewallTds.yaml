@@ -1,0 +1,871 @@
+Test_DNAT:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "DNAT"
+    ExpectedResult: "PASS"
+    Summary: "Verify DNAT Configuration and Validation"
+    Tags: "Edge,DNAT"
+    TestName: "Test_DNAT"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["AllowFirewall_ForNAT"]
+            - ["AddDNAT"]
+            - ["pkt_traffic_VM2_to_VM1_AfterDNAT"]
+        ExitSequence:
+            - ["DeleteNAT"]
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        AddDNAT:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            nat:
+                '[1]':
+                    nat_rules:
+                        - action: "dnat"
+                          enabled: "true"
+                          description: "Destination NAT"
+                          edge_interface_index: 2
+                          original_address: "10.10.10.1"
+                          translated_address: "172.16.0.2"
+                          logging_enabled: "true"
+
+        pkt_traffic_VM2_to_VM1_AfterDNAT:
+            Type: "Traffic"
+            ToolName: "Iperf"
+            L3Protocol: "ipv4"
+            L4Protocol: "tcp"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration: "5"
+            connectivitytest: '0'
+            Verification: 'Verification_DNAT'
+            Expectedresult: "PASS"
+            MinExpResult  : "1"
+
+        Verification_DNAT:
+            PktCapVerification:
+                verificationtype: "pktcap"
+                target: 'vm.[1].vnic.[1]'
+                pktcapfilter: "count 10,dst host vm.[1].vnic.[1],src host vm.[2].vnic.[1]"
+                pktcount: '5+'
+                badpkt: '0'
+
+
+Test_SNAT:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "SNAT"
+    ExpectedResult: "PASS"
+    Summary: "Verify SNAT Configuration and Validation"
+    Tags: "Edge,SNAT"
+    TestName: "Test_SNAT"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["AllowFirewall_ForNAT"]
+            - ["AddSNAT"]
+            - ["pkt_traffic_VM1_to_VM2_AfterSNAT"]
+        ExitSequence:
+            - ["DeleteNAT"]
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        AddSNAT:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            nat:
+                '[1]':
+                    nat_rules:
+                        - action: "snat"
+                          enabled: "true"
+                          description: "Source NAT"
+                          edge_interface_index: 2
+                          original_address: "172.16.0.2"
+                          translated_address: "10.10.10.1"
+                          logging_enabled: "true"
+
+        pkt_traffic_VM1_to_VM2_AfterSNAT:
+            Type: "Traffic"
+            ToolName: "Iperf"
+            L3Protocol: "ipv4"
+            L4Protocol: "tcp"
+            TestAdapter: "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+            TestDuration: "5"
+            connectivitytest: '0'
+            Verification: 'Verification_SNAT'
+            Expectedresult: "PASS"
+            MinExpResult  : "1"
+
+        Verification_SNAT:
+            PktCapVerification:
+                verificationtype: "pktcap"
+                target: 'vm.[2].vnic.[1]'
+                pktcapfilter: "count 10,dst host vm.[2].vnic.[1],src host 10.10.10.1"
+                pktcount: '5+'
+                badpkt: '0'
+
+
+Test_FirewallALLOW_ICMP:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "Firewall"
+    ExpectedResult: "PASS"
+    Summary: "Add and Verify Firewall-Allow rule with ICMP packets"
+    Tags: "Edge,Firewall"
+    TestName: "Test_FirewallALLOW_ICMP"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["ConfigureFirewall1_EDGE1_VM2toVM1Allow"]
+            - ["PingVM2toVM1_AfterFW_Allow"]
+        ExitSequence:
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        ConfigureFirewall1_EDGE1_VM2toVM1Allow:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+                    global_config:
+                        tcp_pick_ongoing_conn: "true"
+                        tcp_allow_outofwindow_packets: "true"
+                        tcp_send_resets_for_closed_servicerouter_ports: "true"
+                        tcp_timeout_close: 30
+                        tcp_timeout_established: 3600
+                        tcp_timeout_open: 30
+                        icmp_timeout: 10
+                        icmp6_timeout: 10
+                        drop_invalid_traffic: "true"
+                        log_invalid_traffic: "true"
+                        udp_timeout: 120
+                        ip_generic_timeout: 120
+                    rules:
+                        - name: "Auto-ALLOW_ICMP"
+                          rule_type: "USER"
+                          enabled: "true"
+                          logging_enabled: "true"
+                          action: "accept"
+                          application:
+                              application_id:
+                                  - value: "vsm.[1].applicationservicegroup.[1]"
+                                    type: "ServiceGroup"
+                          source:
+                              ipv4address: "10.10.10.2"
+                          destination:
+                              ipv4address: "172.16.0.2"
+
+        PingVM2toVM1_AfterFW_Allow:
+            Type: "Traffic"
+            ToolName: "Ping"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration: "5"
+            connectivitytest: '0'
+            Expectedresult: "PASS"
+
+Test_FirewallALLOW_TCP:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "Firewall"
+    ExpectedResult: "PASS"
+    Summary: "Add and Verify Firewall-Allow rule with TCP packets"
+    Tags: "Edge,Firewall"
+    TestName: "Test_FirewallALLOW_TCP"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["ConfigureFirewall1_EDGE1_VM2toVM1Allow"]
+            - ["pkt_tcp_traffic_VM2_to_VM1_AfterFW_Allow"]
+        ExitSequence:
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        ConfigureFirewall1_EDGE1_VM2toVM1Allow:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+                    global_config:
+                        tcp_pick_ongoing_conn: "true"
+                        tcp_allow_outofwindow_packets: "true"
+                        tcp_send_resets_for_closed_servicerouter_ports: "true"
+                        tcp_timeout_close: 30
+                        tcp_timeout_established: 3600
+                        tcp_timeout_open: 30
+                        icmp_timeout: 10
+                        icmp6_timeout: 10
+                        drop_invalid_traffic: "true"
+                        log_invalid_traffic: "true"
+                        udp_timeout: 120
+                        ip_generic_timeout: 120
+                    rules:
+                        - name: "Auto-ALLOW_TCP"
+                          rule_type: "USER"
+                          enabled: "true"
+                          logging_enabled: "true"
+                          action: "accept"
+                          application:
+                              application_id:
+                                  - value: "vsm.[1].applicationservicegroup.[1]"
+                                    type: "ServiceGroup"
+                          source:
+                              ipv4address: "10.10.10.2"
+                          destination:
+                              ipv4address: "172.16.0.2"
+
+        pkt_tcp_traffic_VM2_to_VM1_AfterFW_Allow:
+            Type: "Traffic"
+            ToolName: "Iperf"
+            L3Protocol: "ipv4"
+            L4Protocol: "tcp"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration: "5"
+            Verification: 'Verification_TCP_Allow'
+            connectivitytest: '0'
+            Expectedresult: "PASS"
+            MinExpResult  : "1"
+
+        Verification_TCP_Allow:
+            PktCapVerification:
+                verificationtype: "pktcap"
+                target: 'vm.[1].vnic.[1]'
+                pktcapfilter: "count 10,dst host vm.[1].vnic.[1],src host vm.[2].vnic.[1]"
+                pktcount: '5+'
+                badpkt: '0'
+
+Test_FirewallALLOW_UDP:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "Firewall"
+    ExpectedResult: "PASS"
+    Summary: "Add and Verify Firewall-Allow rule with UDP packets"
+    Tags: "Edge,Firewall"
+    TestName: "Test_FirewallALLOW_UDP"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["ConfigureFirewall1_EDGE1_VM2toVM1Allow"]
+            - ["pkt_udp_traffic_VM2_to_VM1_AfterFW_Allow"]
+        ExitSequence:
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        ConfigureFirewall1_EDGE1_VM2toVM1Allow:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+                    global_config:
+                        tcp_pick_ongoing_conn: "true"
+                        tcp_allow_outofwindow_packets: "true"
+                        tcp_send_resets_for_closed_servicerouter_ports: "true"
+                        tcp_timeout_close: 30
+                        tcp_timeout_established: 3600
+                        tcp_timeout_open: 30
+                        icmp_timeout: 10
+                        icmp6_timeout: 10
+                        drop_invalid_traffic: "true"
+                        log_invalid_traffic: "true"
+                        udp_timeout: 120
+                        ip_generic_timeout: 120
+                    rules:
+                        - name: "Auto-ALLOW_UDP"
+                          rule_type: "USER"
+                          enabled: "true"
+                          logging_enabled: "true"
+                          action: "accept"
+                          application:
+                              application_id:
+                                  - value: "vsm.[1].applicationservicegroup.[1]"
+                                    type: "ServiceGroup"
+                          source:
+                              ipv4address: "10.10.10.2"
+                          destination:
+                              ipv4address: "172.16.0.2"
+
+        pkt_udp_traffic_VM2_to_VM1_AfterFW_Allow:
+            Type: "Traffic"
+            ToolName: "Iperf"
+            L3Protocol: "ipv4"
+            L4Protocol: "udp"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration: "5"
+            Verification: 'Verification_UDP_Allow'
+            connectivitytest: '0'
+            Expectedresult: "PASS"
+            udpbandwidth  : "10M"
+
+        Verification_UDP_Allow:
+            PktCapVerification:
+                verificationtype: "pktcap"
+                target: 'vm.[1].vnic.[1]'
+                pktcapfilter: "count 10,dst host vm.[1].vnic.[1],src host vm.[2].vnic.[1]"
+                pktcount: '5+'
+                badpkt: '0'
+
+Test_FirewallDENY_ICMP:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "Firewall"
+    ExpectedResult: "PASS"
+    Summary: "Add and Verify Firewall-Deny rule with ICMP packets"
+    Tags: "Edge,Firewall"
+    TestName: "Test_FirewallDENY_ICMP"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["ConfigureFirewall1_EDGE1_VM2toVM1Deny"]
+            - ["PingVM2toVM1_AfterFW_Deny"]
+        ExitSequence:
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        ConfigureFirewall1_EDGE1_VM2toVM1Deny:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+                    global_config:
+                        tcp_pick_ongoing_conn: "true"
+                        tcp_allow_outofwindow_packets: "true"
+                        tcp_send_resets_for_closed_servicerouter_ports: "true"
+                        tcp_timeout_close: 30
+                        tcp_timeout_established: 3600
+                        tcp_timeout_open: 30
+                        icmp_timeout: 10
+                        icmp6_timeout: 10
+                        drop_invalid_traffic: "true"
+                        log_invalid_traffic: "true"
+                        udp_timeout: 120
+                        ip_generic_timeout: 120
+                    rules:
+                        - name: "Auto-DENY_ICMP"
+                          rule_type: "USER"
+                          enabled: "true"
+                          logging_enabled: "true"
+                          action: "deny"
+                          application:
+                              application_id:
+                                  - value: "vsm.[1].applicationservicegroup.[1]"
+                                    type: "ServiceGroup"
+                          source:
+                              ipv4address: "10.10.10.2"
+                          destination:
+                              ipv4address: "172.16.0.2"
+
+        PingVM2toVM1_AfterFW_Deny:
+            Type: "Traffic"
+            ToolName: "Ping"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration: "5"
+            connectivitytest: '0'
+            Expectedresult: "FAIL"
+
+Test_FirewallDENY_TCP:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "Firewall"
+    ExpectedResult: "PASS"
+    Summary: "Add and Verify Firewall-Deny rule with TCP packets"
+    Tags: "Edge,Firewall"
+    TestName: "Test_FirewallDENY_TCP"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["ConfigureFirewall1_EDGE1_VM2toVM1Deny"]
+            - ["pkt_tcp_traffic_VM2_to_VM1_AfterFW_Deny"]
+        ExitSequence:
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        ConfigureFirewall1_EDGE1_VM2toVM1Deny:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+                    global_config:
+                        tcp_pick_ongoing_conn: "true"
+                        tcp_allow_outofwindow_packets: "true"
+                        tcp_send_resets_for_closed_servicerouter_ports: "true"
+                        tcp_timeout_close: 30
+                        tcp_timeout_established: 3600
+                        tcp_timeout_open: 30
+                        icmp_timeout: 10
+                        icmp6_timeout: 10
+                        drop_invalid_traffic: "true"
+                        log_invalid_traffic: "true"
+                        udp_timeout: 120
+                        ip_generic_timeout: 120
+                    rules:
+                        - name: "Auto-DENY_TCP"
+                          rule_type: "USER"
+                          enabled: "true"
+                          logging_enabled: "true"
+                          action: "deny"
+                          application:
+                              application_id:
+                                  - value: "vsm.[1].applicationservicegroup.[1]"
+                                    type: "ServiceGroup"
+                          source:
+                              ipv4address: "10.10.10.2"
+                          destination:
+                              ipv4address: "172.16.0.2"
+
+        pkt_tcp_traffic_VM2_to_VM1_AfterFW_Deny:
+            Type: "Traffic"
+            ToolName: "Iperf"
+            L3Protocol: "ipv4"
+            L4Protocol: "tcp"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration: "5"
+            connectivitytest: '0'
+            Expectedresult: "FAIL"
+            MinExpResult  : "1"
+
+Test_FirewallDENY_UDP:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "Firewall"
+    ExpectedResult: "PASS"
+    Summary: "Add and Verify Firewall-Deny rule with UDP packets"
+    Tags: "Edge,Firewall"
+    TestName: "Test_FirewallDENY_UDP"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["ConfigureFirewall1_EDGE1_VM2toVM1Deny"]
+            - ["pkt_udp_traffic_VM2_to_VM1_AfterFW_Deny"]
+        ExitSequence:
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        ConfigureFirewall1_EDGE1_VM2toVM1Deny:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+                    global_config:
+                        tcp_pick_ongoing_conn: "true"
+                        tcp_allow_outofwindow_packets: "true"
+                        tcp_send_resets_for_closed_servicerouter_ports: "true"
+                        tcp_timeout_close: 30
+                        tcp_timeout_established: 3600
+                        tcp_timeout_open: 30
+                        icmp_timeout: 10
+                        icmp6_timeout: 10
+                        drop_invalid_traffic: "true"
+                        log_invalid_traffic: "true"
+                        udp_timeout: 120
+                        ip_generic_timeout: 120
+                    rules:
+                        - name: "Auto-DENY_UDP"
+                          rule_type: "USER"
+                          enabled: "true"
+                          logging_enabled: "true"
+                          action: "deny"
+                          application:
+                              application_id:
+                                  - value: "vsm.[1].applicationservicegroup.[1]"
+                                    type: "ServiceGroup"
+                          source:
+                              ipv4address: "10.10.10.2"
+                          destination:
+                              ipv4address: "172.16.0.2"
+
+        pkt_udp_traffic_VM2_to_VM1_AfterFW_Deny:
+            Type: "Traffic"
+            ToolName: "Iperf"
+            L3Protocol: "ipv4"
+            L4Protocol: "udp"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration: "5"
+            connectivitytest: '0'
+            Expectedresult: "FAIL"
+            udpbandwidth  : "10M"
+
+Test_FirewallREJECT_ICMP:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "Firewall"
+    ExpectedResult: "PASS"
+    Summary: "Add and Verify Firewall-Reject rule with ICMP packets"
+    Tags: "Edge,Firewall"
+    TestName: "Test_FirewallREJECT_ICMP"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["ConfigureFirewall1_EDGE1_VM2toVM1Reject"]
+            - ["PingVM2toVM1_AfterFW_Reject"]
+        ExitSequence:
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        ConfigureFirewall1_EDGE1_VM2toVM1Reject:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+                    global_config:
+                        tcp_pick_ongoing_conn: "true"
+                        tcp_allow_outofwindow_packets: "true"
+                        tcp_send_resets_for_closed_servicerouter_ports: "true"
+                        tcp_timeout_close: 30
+                        tcp_timeout_established: 3600
+                        tcp_timeout_open: 30
+                        icmp_timeout: 10
+                        icmp6_timeout: 10
+                        drop_invalid_traffic: "true"
+                        log_invalid_traffic: "true"
+                        udp_timeout: 120
+                        ip_generic_timeout: 120
+                    rules:
+                        - name: "fw001-Auto"
+                          rule_type: "USER"
+                          enabled: "true"
+                          logging_enabled: "true"
+                          action: "reject"
+                          application:
+                              application_id:
+                                  - value: "vsm.[1].applicationservicegroup.[1]"
+                                    type: "ServiceGroup"
+                          source:
+                              ipv4address: "10.10.10.2"
+                          destination:
+                              ipv4address: "172.16.0.2"
+
+        PingVM2toVM1_AfterFW_Reject:
+            Type: "Traffic"
+            ToolName: "Ping"
+            L3Protocol: "ipv4"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration: "5"
+            Verification: 'Verification_Reject_ICMP'
+            connectivitytest: '0'
+            Expectedresult: "FAIL"
+            postmortem: "0"
+
+        Verification_Reject_ICMP:
+            PktCapVerification:
+                verificationtype: "pktcap"
+                target          : "vm.[2].vnic.[1]"
+                pktcapfilter    : "count 1,dst host vm.[2].vnic.[1],src host 10.10.10.1,icmptype == 3"
+                pktcount        : "1-10"
+                badpkt          : "0"
+
+Test_FirewallREJECT_TCP:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "Firewall"
+    ExpectedResult: "PASS"
+    Summary: "Add and Verify Firewall-Reject rule with TCP packets"
+    Tags: "Edge,Firewall"
+    TestName: "Test_FirewallREJECT_TCP"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["ConfigureFirewall1_EDGE1_VM2toVM1Reject"]
+            - ["pkt_tcp_traffic_VM2_to_VM1_AfterFW_Reject"]
+        ExitSequence:
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        ConfigureFirewall1_EDGE1_VM2toVM1Reject:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+                    global_config:
+                        tcp_pick_ongoing_conn: "true"
+                        tcp_allow_outofwindow_packets: "true"
+                        tcp_send_resets_for_closed_servicerouter_ports: "true"
+                        tcp_timeout_close: 30
+                        tcp_timeout_established: 3600
+                        tcp_timeout_open: 30
+                        icmp_timeout: 10
+                        icmp6_timeout: 10
+                        drop_invalid_traffic: "true"
+                        log_invalid_traffic: "true"
+                        udp_timeout: 120
+                        ip_generic_timeout: 120
+                    rules:
+                        - name: "fw001-Auto"
+                          rule_type: "USER"
+                          enabled: "true"
+                          logging_enabled: "true"
+                          action: "reject"
+                          application:
+                              application_id:
+                                  - value: "vsm.[1].applicationservicegroup.[1]"
+                                    type: "ServiceGroup"
+                          source:
+                              ipv4address: "10.10.10.2"
+                          destination:
+                              ipv4address: "172.16.0.2"
+
+        pkt_tcp_traffic_VM2_to_VM1_AfterFW_Reject:
+            Type: "Traffic"
+            ToolName: "Iperf"
+            L3Protocol: "ipv4"
+            L4Protocol: "tcp"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration: "5"
+            connectivitytest: '0'
+            SleepBetweenCombos: "5"
+            NoofOutbound: "1"
+            Verification: 'Verification_REJECT_TCP'
+            Expectedresult: "FAIL"
+            MinExpResult  : "1"
+            postmortem: "0"
+
+        Verification_REJECT_TCP:
+            PktCapVerification:
+                verificationtype: "pktcap"
+                target          : "vm.[2].vnic.[1]"
+                pktcapfilter    : "count 1,tcp-rst != 0,dst host vm.[2].vnic.[1],src host vm.[1].vnic.[1]"
+                pktcount        : "1-10"
+                badpkt          : "0"
+
+Test_FirewallREJECT_UDP:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "Firewall"
+    ExpectedResult: "PASS"
+    Summary: "Add and Verify Firewall-Reject rule with UDP packets"
+    Tags: "Edge,Firewall"
+    TestName: "Test_FirewallREJECT_UDP"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["ConfigureFirewall1_EDGE1_VM2toVM1Reject"]
+            - ["pkt_udp_traffic_VM2_to_VM1_AfterFW_Reject"]
+        ExitSequence:
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        ConfigureFirewall1_EDGE1_VM2toVM1Reject:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+                    global_config:
+                        tcp_pick_ongoing_conn: "true"
+                        tcp_allow_outofwindow_packets: "true"
+                        tcp_send_resets_for_closed_servicerouter_ports: "true"
+                        tcp_timeout_close: 30
+                        tcp_timeout_established: 3600
+                        tcp_timeout_open: 30
+                        icmp_timeout: 10
+                        icmp6_timeout: 10
+                        drop_invalid_traffic: "true"
+                        log_invalid_traffic: "true"
+                        udp_timeout: 120
+                        ip_generic_timeout: 120
+                    rules:
+                        - name: "fw001-Auto"
+                          rule_type: "USER"
+                          enabled: "true"
+                          logging_enabled: "true"
+                          action: "reject"
+                          application:
+                              application_id:
+                                  - value: "vsm.[1].applicationservicegroup.[1]"
+                                    type: "ServiceGroup"
+                          source:
+                              ipv4address: "10.10.10.2"
+                          destination:
+                              ipv4address: "172.16.0.2"
+
+        pkt_udp_traffic_VM2_to_VM1_AfterFW_Reject:
+            Type: "Traffic"
+            ToolName: "Iperf"
+            L3Protocol: "ipv4"
+            L4Protocol: "udp"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration: "5"
+            connectivitytest: '0'
+            SleepBetweenCombos: "5"
+            NoofOutbound: "1"
+            Verification: 'Verification_REJECT_UDP'
+            Expectedresult: "FAIL"
+            udpbandwidth  : "10M"
+            postmortem: "0"
+
+        Verification_REJECT_UDP:
+            PktCapVerification:
+                verificationtype: "pktcap"
+                target          : "vm.[2].vnic.[1]"
+                pktcapfilter    : "count 1,dst host vm.[2].vnic.[1],src host 10.10.10.1,icmptype == 3"
+                pktcount        : "1-10"
+                badpkt          : "0"
+
+Read_Firewall:
+    Category: "Edge_NAT_Firewall_BAT"
+    Component: "Firewall"
+    ExpectedResult: "PASS"
+    Summary: "Read Firewall rule"
+    Tags: "Edge,Firewall"
+    TestName: "Read_Firewall"
+    Version: "2"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    WORKLOADS:
+        Sequence:
+            - ["CreateGatewayInterface1"]
+            - ["CreateGatewayInterface2"]
+            - ["VifAttachment_VM1_VM2"]
+            - ["ConfigureIP_VM1_VM2"]
+            - ["AddRouteALLVMs"]
+            - ["AddFirewall"]
+            - ["ReadFirewall1_EDGE1"]
+        ExitSequence:
+            - ["DefaultFirewallRule"]
+            - ["DeleteVnic1_VM1_VM2"]
+            - ["DeleteGatewayIterface1"]
+            - ["DeleteGatewayIterface2"]
+
+        AddFirewall:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+
+        ReadFirewall1_EDGE1:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1].firewall.[1]"
+            verifyendpointattributes:
+                "enabled[?]equal_to": "true"
+                "defaultPolicy[?]equal_to":
+                    "action[?]equal_to": "deny"
+                    "loggingEnabled[?]equal_to": "true"
+                "firewallRules[?]contains":
+                    - "action[?]equal_to": "accept"
+                      "name[?]equal_to": "firewall"
+

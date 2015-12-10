@@ -1,0 +1,321 @@
+---
+adapters:
+  description: adapters associated with VXLAN MAC table
+  format: '<tuple>'
+  method: GetOneObjectFromOneTuple
+  type: parameter
+checkvnimaconcontroller:
+  description: Check VXLAN MAC table on controller
+  format: '<integer>'
+  method: CheckVNIMacOnController
+  params:
+    - checkvnimaconcontroller
+    - vtep
+    - adatpers
+  preprocess: PreProcessHashTypeAPI
+  type: action
+ippool:
+  description: IP Pool required for deploying controller. Controller fetches IPs from these pools
+  format: x.x.x.x-y.y.y.y
+  method: GetOneObjectFromOneTuple
+  type: parameter
+vtep:
+  description: configure virtual tunnel end pointon every host as part of the VXLAN configuration
+  format: x.x.x.x
+  method: GetOneObjectFromOneTuple
+  type: parameter
+switches:
+  derived_components:
+    - nsxcontroller
+  description: Get an array of switchs objs which is used for verification module
+  format: vdnet index
+  method: GetPyComponentObjectsFromTuple
+  sample_value: 'nsxmanager.[1].logicalswitch.[-1]'
+  type: parameter
+
+set_nsx_manager: &set_nsx_manager
+   type: action
+   description: Configure NSX registration on the node
+   derived_components:
+      - nsxcontroller
+   format:
+      operation: 'ref: operation'
+      manager_ip: 'vdnet index'
+      manager_thumbprint: 'vdnet index'
+   preprocess: PreProcessNestedParametersForAction
+   method: set_nsx_registration
+   params:
+      - configure_nsx_registration
+   sample_value:
+      operation: 'register'
+      manager_ip: nsxmanager.[1]
+      nsx_thumbprint: nsxmanager.[1]
+
+set_nsx_registration: *set_nsx_manager
+
+clusternode:
+  derived_components:
+    - nsxcontroller
+  description: Join CCP node to CCP cluster
+  method: CreateComponent
+  params:
+    - cluster_node
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  sample_value: nsxcontroller.[1].clusternode.[2]
+  format:
+    - clusternode:
+        '[2]':
+            controller_ip: nsxcontroller.[2]
+            control_cluster_thumbprint: nsxcontroller.[2]
+            execution_type: cli
+  linkedworkload: ClusterWorkload
+  type: component
+  objtype:
+    nsxcontroller: 'VDNetLib::NSXController::ClusterNode'
+
+remove_ccp_cluster_node:
+   type: action
+   description: Remove ccp node from ccp cluster
+   derived_components:
+      - nsxcontroller
+   preprocess: PreProcessNestedParametersForAction
+   method: remove_ccp_cluster_node
+   params:
+      - remove_ccp_cluster_node
+   sample_value:
+   format:
+    - remove_ccp_cluster_node:
+        controller_ip: nsxcontroller.[1]
+        execution_type: cli
+        force: yes
+
+read_ip:
+  type: verification
+  derived_components:
+    - nsxcontroller
+  method: read_ip
+  preprocess: PreProcessVerification
+  description: 'Used to read controller ip, this key is for
+                verification module'
+  format:
+     'ip': 'string'
+  samplevalue:
+     'ip': 'test'
+  params:
+    - read_ip
+
+clear_controller:
+   type: action
+   description: Kill process in ccp
+   derived_components:
+      - nsxcontroller
+   format:
+      - execution_type: string
+   preprocess: PreProcessShiftTypeAPI
+   method: clear_controller
+   params:
+      - clear_controller
+   sample_value:
+      - exectuion_type: cmd
+set_security:
+   type: action
+   description: Configure security secret for controller
+   dependency:
+      - set_nsx_registration
+   derived_components:
+      - nsxcontroller
+   format:
+      - security_type: string
+      - value: string
+   preprocess: PreProcessShiftTypeAPI
+   method: set_security
+   params:
+      - set_security
+   sample_value:
+      - security_type: 'password'
+      - value: '12345'
+
+get_logical_switches:
+  description: Verify logical switch info on CCP node.
+  type: verification
+  derived_components:
+     - nsxcontroller
+  format:
+    table:
+        - switch_vni: vdnet index
+          replication_mode: string
+          binding_type: string
+  method: get_logical_switches
+  params:
+    - execution_type
+    - switches
+    - get_logical_switches
+  preprocess: PreProcessVerification
+  sample_value:
+    table:
+        - switch_vni: nsxmanager.[1].logicalswitch.[1]
+          replication_mode: unicast_mtep
+          binding_type: vxstt
+
+get_entry_count:
+  description: Verify entry count on CCP node.
+  type: verification
+  derived_components:
+     - nsxcontroller
+  format:
+    - logical_router: integer
+      logical_router_port: integer
+      transport_node: integer
+      dhcp_relay: integer
+      logical_switch: integer
+      logical_switch_port: integer
+  method: get_entry_count
+  params:
+    - execution_type
+    - get_entry_count
+  preprocess: PreProcessVerification
+  sample_value:
+    - logical_router: 1
+      logical_router_port: 2
+      transport_node: 2
+      dhcp_relay: 2
+      logical_switch: 1
+      logical_switch_port: 2
+
+configure_service_state:
+  allowed_values:
+    - state : 'stop/start/restart'
+    - service_name : 'controller'
+  derived_components:
+    - nsxservice
+  dependency:
+    - set_security
+  description: Stop/Start/Restart service on controller e.g controller,ntp
+  format:
+    - state: string
+    - service_name: string
+  method: configure_service_state
+  params:
+    - configure_service_state
+  preprocess: PreProcessShiftTypeAPI
+  sample_value:
+    state: 'stop'
+    service_name: 'controller'
+  type: action
+
+read_full_sync_count:
+  description: Verify full sync number on CCP node.
+  type: verification
+  derived_components:
+     - nsxcontroller
+  format:
+    - fullsync_progress: string
+      config_session_id: integer
+      number_syncs: integer
+      config_sequence_num: integer
+      ccp_id: integer
+  method: get_full_sync_count
+  params:
+    - execution_type
+    - get_full_sync_count
+  preprocess: PreProcessVerificationAndParameters
+  sample_value:
+    - fullsync_progress: No sync
+      config_session_id: cc8f3af5-5f9b-4c3c-96da-07b643091548
+      number_syncs: 5
+      config_sequence_num: 1330
+      ccp_id: 6c10ff14-34c9-40ab-8bb0-8afac4c57b33
+
+number_syncs:
+  derived_components:
+    - nsxcontroller
+  description: Count of full sync on CCP node
+  format: integer
+  sample_value: 10
+  type: parameter
+
+before_test_full_sync_count:
+  derived_components:
+    - nsxcontroller
+  description: Count of full sync before test on CCP node
+  format: integer
+  sample_value: 10
+  type: parameter
+
+full_sync_diff:
+  derived_components:
+    - nsxcontroller
+  description: Count of full sync difference on CCP node
+  format: integer
+  sample_value: 10
+  type: parameter
+
+get_full_sync_diff:
+  description: Verify full sync count difference on CCP node.
+  type: verification
+  derived_components:
+     - nsxcontroller
+  format:
+    - full_sync_diff: integer
+  method: get_full_sync_diff
+  params:
+    - get_full_sync_diff
+    - execution_type
+  preprocess: PreProcessVerificationAndParameters
+  sample_value:
+    - full_sync_diff: 5
+
+get_configuration:
+  type: verification
+  description: Verify NSXController Configuration
+  derived_components:
+    - nsxcontroller
+  format:
+    - ipv4: string
+      ntp_server: string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_configuration
+  params:
+    - get_configuration
+    - execution_type
+  sample_value:
+    - ipv4: '10.10.10.10'
+      ntp_server: 'ntp.ubuntu.com'
+
+ntp_server:
+  derived_components:
+    - nsxcontroller
+  description: NTP Server name
+  format: string
+  sample_value: 'ntp.ubuntu.com'
+  type: parameter
+
+get_service_status:
+  type: verification
+  description: Returns the service status for given services.
+  format:
+    - service_name: string
+      service_status: string
+  method: get_service_status
+  params:
+    - execution_type
+    - service_names
+    - get_service_status
+  derived_components:
+    - nsxcontroller
+  preprocess: PreProcessVerification
+  sample_value:
+    table:
+      - service_name: controller
+        service_status: running
+
+service_names:
+  derived_components:
+    - nsxcontroller
+  description: list of service names.
+  format: list
+  sample_value:
+    - controller
+    - ssh
+  type: parameter

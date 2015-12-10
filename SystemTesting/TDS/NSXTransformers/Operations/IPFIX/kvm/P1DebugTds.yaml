@@ -1,0 +1,877 @@
+!include ../../../L2/Kvm/TestbedSpec.yaml
+!include CommonWorkloads.yaml
+!include TopoIPFIX_4Hosts.yaml
+!include ../MetaDataTemplates.yaml
+
+IPFIXMPAReconnect:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXMPAReconnect"
+    Summary: "Test datapath is successfully reconfigured when MPA disconnects and reconnects to MP."
+    Procedure:
+        - Setup L2 topology.
+        - Enable IPFIX.
+        - Update the IPFIX configuration with the 1st set of values.
+        - Verify whether the 1st set of values have been configured on all the hosts.
+        - Enable firewall on hosts.
+        - Block the connection between MP and MPA to prevent new configuration being pushed on hosts.
+        - Change the IPFIX configuration on the manager.
+        - Verify that the old configuration still exists on the hosts.
+        - Restore the connection between MP and MPA.
+        - Since manager will persist the new configuration, this new configuration should be pushed
+          to the hosts once the MPA is reconnected. Verify whetehr new configuration has been pushed
+          on all hosts.
+        - Disable firewall on hosts.
+        - Disable IPFIX.
+        - Cleanup L2 setup.
+    Developer: "gangarm"
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - ['L2Setup--KVM']
+            - ['L2Verification--KVM']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['VerifyIPFIXConfigOnHosts1to4--KVM']
+            - ['Verify_MP_MPA_Connection_Up--KVM']
+            - ['EnableFirewallOnHosts1to4']
+            - ['BlockMPtoMPAConnectionOnHosts1to4--KVM']
+            - ['Verify_MP_MPA_Connection_Down--KVM']
+            - ['ChangeIPFIXConfig']
+            - ['VerifyIPFIXConfigOnHosts1to4--KVM']
+            - ['RestoreMPtoMPAConnectionOnHosts1to4--KVM']
+            - ['VerifyNewIPFIXConfigOnHost1to4--KVM']
+        ExitSequence:
+            - ['RestoreMPtoMPAConnectionOnHosts1to4--KVM']
+            - ['DisableFirewallOnHosts1to4']
+            - ['DisableIPFIX']
+            - ['L2Cleanup--KVM']
+
+        EnableFirewallOnHosts1to4:
+            Type: Host
+            TestHost: kvm.[1-4]
+            execution_type: *FIREWALL_EXECUTION_TYPE--KVM
+            firewall_status: enable
+
+        DisableFirewallOnHosts1to4:
+            Type: Host
+            TestHost: kvm.[1-4]
+            execution_type: *FIREWALL_EXECUTION_TYPE--KVM
+            firewall_status: disable
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            domain_id: '10'
+            port: 9999
+            idle_timeout: '100'
+            flow_timeout: '200'
+            packet_sample_probability: '0.1'
+            max_flows: '1000'
+
+        ChangeIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            enabled: "true"
+            ip_address: 'vm.[8]->ip'
+            domain_id: '123'
+            port: 7777
+            idle_timeout: '111'
+            flow_timeout: '222'
+            packet_sample_probability: '0.2'
+            max_flows: '100'
+
+IPFIXMPReboot:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXMPReboot"
+    Summary: "Test scenario where MP is rebooted."
+    Procedure:
+        - Setup L2 topology.
+        - Enable IPFIX.
+        - Update the IPFIX configuration.
+        - Verify the IPFIX configuration from READ API call to nsx-manager.
+        - Verify whether the values have been configured on all the hosts.
+        - Start the capture process on the collector.
+        - Toggle IPFIX.
+        - Send ICMP IPv4 traffic.
+        - Verify the captured data.
+        - Reboot the MP.
+        - Verify the IPFIX configuration from READ API call to nsx-manager.
+        - Verify that the old configuration still exists on the hosts.
+        - Start the capture process on the collector.
+        - Toggle IPFIX.
+        - Send ICMP IPv4 traffic.
+        - Verify the captured data.
+        - Disable IPFIX.
+        - Cleanup L2 setup.
+    Developer: "gangarm"
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - ['L2Setup--KVM']
+            - ['L2Verification--KVM']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['ReadIPFIXConfig']
+            - ['VerifyIPFIXConfigOnHosts1to4--KVM']
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv4ICMPTraffic']
+            - ['GetIPFIXCapturedData']
+            - ['RebootNSXM-1']
+            - ['ReadIPFIXConfigAfterMPReboot']
+            - ['VerifyIPFIXConfigOnHosts1to4--KVM']
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv4ICMPTraffic']
+            - ['GetIPFIXCapturedData']
+        ExitSequence:
+            - ['DisableIPFIX']
+            - ['L2Cleanup--KVM']
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            domain_id: '10'
+            port: 9999
+            idle_timeout: '60'
+            flow_timeout: '65'
+            packet_sample_probability: '1'
+            max_flows: '1000'
+
+        ReadIPFIXConfig: &ReadIPFIXConfig
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            read:
+              'domain_id[?]equal_to': '10'
+              'port[?]equal_to': 9999
+              'idle_timeout[?]equal_to': '60'
+              'flow_timeout[?]equal_to': '65'
+              'max_flows[?]equal_to': '1000'
+              'ip_address[?]equal_to': 'vm.[8]->ip'
+              'packet_sample_probability[?]equal_to': '1.0'
+
+        ReadIPFIXConfigAfterMPReboot:
+            <<: *ReadIPFIXConfig
+            # It takes about 2 minutes from when the MP's start script is
+            # called until its API service is ready, assuming the machine
+            # isn't resource-starved.
+            noofretries: 3
+            sleepbetweenretry: 60
+
+        VerifyIPFIXConfigOnHosts1to4--KVM:
+            Type: Host
+            TestHost: 'kvm.[1-4]'
+            execution_type: 'cli'
+            'get_ipfix_config[?]contain_once':
+                packet_sample_probability: '1'
+                ip_address: 'vm.[8]->ip'
+                port: 9999
+                flow_timeout: '65'
+                max_flows: '1000'
+                domain_id: '10'
+
+        StartTShark:
+            Type: 'VM'
+            TestVM: 'vm.[8]'
+            capture:
+                tool: 'tshark'
+                file_name: '/tmp/tshark123.cap'
+                capture_filter: '-s 1500 -f "dst port 9999"'
+                adapter_name: 'eth0'
+                execution_type: 'cmd'
+
+        IPv4ICMPTraffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[3].vif.[1]"
+            TestDuration  : "10"
+            sleepbetweenworkloads: "10"
+            connectivitytest: "0"
+
+        GetIPFIXCapturedData:
+            Type: VM
+            TestVM: 'vm.[8]'
+            sleepbetweenworkloads: "65"
+            tool: 'tshark'
+            execution_type: 'cmd'
+            file_name: '/tmp/tshark123.cap'
+            port: 9999
+            stop_capture: true
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -R "cflow.srcaddr==vm.[1].vif.[1]->get_adapter_ip && cflow.dstaddr==vm.[3].vif.[1]->get_adapter_ip " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+
+IPFIXVerifyFlowTimeout:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXVerifyFlowTimeout"
+    Summary: "Verify if an IPFIX packet is sent every flow_timeout seconds with the right number of packets."
+    Procedure:
+        - Setup L2 topology.
+        - Start the capture process on the collector so that we get the first template sent
+          when IPFIX is enabled.
+        - Enable IPFIX with vm.[8] management interface as collector.
+        - Configure IPFIX to have an active timeout of 60s and sampling rate of 100%.
+        - Send an ICMP flow between VMs 1-3, 2-4, 5-7 each for 90 seconds at 1 pkt/sec.
+        - Verify whether the captured data has 2 IPFIX packets for each of the 3 flows,
+          and those 2 packets have the packet count as 60 and 30 respectively to account
+          for the 90 ICMP packets sent for each flow.
+    Developer: "gangarm"
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - ['L2Setup--KVM']
+            - ['L2Verification--KVM']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['ReadIPFIXConfig']
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['TrafficVM1toVM3']
+            - ['GetIPFIXCapturedDataVM1toVM3']
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['TrafficVM2toVM4']
+            - ['GetIPFIXCapturedDataVM2toVM4']
+        ExitSequence:
+            - ['DisableIPFIX']
+            - ['L2Cleanup--KVM']
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            domain_id: '10'
+            port: 9999
+            flow_timeout: '60'
+            packet_sample_probability: '1'
+
+        ReadIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            read:
+              'domain_id[?]equal_to': '10'
+              'port[?]equal_to': 9999
+              'idle_timeout[?]equal_to': '300'
+              'flow_timeout[?]equal_to': '60'
+              'ip_address[?]equal_to': 'vm.[8]->ip'
+              'packet_sample_probability[?]equal_to': '1.0'
+
+        StartTShark:
+            Type: VM
+            TestVM: 'vm.[8]'
+            capture:
+                tool: 'tshark'
+                file_name: '/tmp/tshark123.cap'
+                capture_filter: '-s 1500 -f "dst port 9999"'
+                adapter_name: 'eth0'
+                execution_type: 'cmd'
+
+        TrafficVM1toVM3:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[3].vif.[1]"
+            TestDuration  : "90"
+            sleepbetweenworkloads: "10"
+            connectivitytest: "0"
+
+        TrafficVM2toVM4:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[2].vif.[1]"
+            SupportAdapter: "vm.[4].vif.[1]"
+            TestDuration  : "90"
+            sleepbetweenworkloads: "10"
+            connectivitytest: "0"
+
+        GetIPFIXCapturedDataVM1toVM3: &GetIPFIXCapturedDataVM1toVM3
+            Type: VM
+            TestVM: 'vm.[8]'
+            sleepbetweenworkloads: "60"
+            tool: 'tshark'
+            execution_type: 'cmd'
+            file_name: '/tmp/tshark123.cap'
+            port: 9999
+            stop_capture: true
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -R "cflow.srcaddr==vm.[1].vif.[1]->get_adapter_ip && cflow.dstaddr==vm.[3].vif.[1]->get_adapter_ip && (cflow.packets64==59 || cflow.packets64==60 || cflow.packets64==61)" -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                    - domain_id: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[3].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+
+        GetIPFIXCapturedDataVM2toVM4:
+            <<: *GetIPFIXCapturedDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -R "cflow.srcaddr==vm.[2].vif.[1]->get_adapter_ip && cflow.dstaddr==vm.[4].vif.[1]->get_adapter_ip && (cflow.packets64==59 || cflow.packets64==60 || cflow.packets64==61)" -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      src_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                    - domain_id: '10'
+                      src_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[4].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[4].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+
+IPFIXNodeFailure:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXNodeFailure"
+    Summary: "Test datapath is successfully reconfigured after a node failure/reboot."
+    Procedure:
+        - Setup L2 topology.
+        - Enable IPFIX.
+        - Update the IPFIX configuration.
+        - Verify whether the configuration has been pushed on all hosts.
+        - Reboot a host.
+        - Verify that the old configuration still exists on the hosts.
+        - Disable IPFIX.
+        - Cleanup L2 setup.
+    Developer: "gangarm"
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - ['L2Setup--KVM']
+            - ['L2Verification--KVM']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['VerifyIPFIXConfigOnHosts1to4--KVM']
+            - ['RebootKVM-1']
+            - ['PowerOnVM-1-2']
+            - ['VerifyIPFIXConfigOnHosts1to4--KVM']
+        ExitSequence:
+            - ['DisableIPFIX']
+            - ['L2Cleanup--KVM']
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            domain_id: '10'
+            port: 9999
+            idle_timeout: '100'
+            flow_timeout: '200'
+            packet_sample_probability: '0.1'
+            max_flows: '1000'
+
+IPFIXMultiplePacketSizes:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXMultiplePacketSizes"
+    Summary: "To verify that packets of different sizes (normal, large, jumbo)
+              are sampled correctly."
+    Procedure:
+        - Setup and verify L2 topology.
+        - Set the MTU to 9k for vif 1 on vm 1-4.
+        - Enable IPFIX.
+        - Update the IPFIX configuration to have an active timeout of 60s and sampling rate of 100%.
+        - Verify the IPFIX configuration from READ API call to nsx-manager.
+        - Verify IPFIX configuration on the hosts.
+        - Start the capture process on the collector so that we get the first template sent
+          when IPFIX is enabled.
+        - Toggle IPFIX.
+        - Send ICMP packets between VM1-VM3 and verify the following fields related to packet size:
+            1. Total bytes (octets).
+            2. Min packet length in the flow.
+            3. Max packet length in the flow.
+        - Verify above for ICMP packets of size:
+            1. 56 bytes (default)
+            2. 500 bytes (large)
+            3. 8000 bytes (jumbo)
+            4. Parallel flows of default and large packets.
+        - Repeat above for VMs 2-4.
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - ['L2Setup--KVM']
+            - ['L2Verification--KVM']
+            - ['Set9000MTUOnVM1Vif1', 'Set9000MTUOnVM3Vif1']
+            - ['Set9000MTUOnVM2Vif1', 'Set9000MTUOnVM4Vif1']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['ReadIPFIXConfig']
+            - ['VerifyIPFIXConfigOnHosts1to4--KVM']
+
+            # Normal ICMP packets over MTEP based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['ICMPNormalTrafficVM1toVM3']
+            - ['GetICMPNormalIPFIXCapturedDataVM1toVM3']
+
+            # Large ICMP packets over MTEP based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['ICMP500ByteTrafficVM1toVM3']
+            - ['GetICMP500ByteIPFIXCapturedDataVM1toVM3']
+
+            # Jumbo ICMP packets over MTEP based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['ICMPJumboTrafficVM1toVM3']
+            - ['GetICMPJumboIPFIXCapturedDataVM1toVM3']
+
+            # Normal+Large ICMP packets over MTEP based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['ICMPNormalTrafficVM1toVM3', 'ICMP500ByteTrafficVM1toVM3']
+            - ['GetICMPMultipleSizedIPFIXCapturedDataVM1toVM3']
+
+            # Normal ICMP packets over SOURCE based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['ICMPNormalTrafficVM2toVM4']
+            - ['GetICMPNormalIPFIXCapturedDataVM2toVM4']
+
+            # Large ICMP packets over SOURCE based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['ICMP500ByteTrafficVM2toVM4']
+            - ['GetICMP500ByteIPFIXCapturedDataVM2toVM4']
+
+            # Jumbo ICMP packets over SOURCE based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['ICMPJumboTrafficVM2toVM4']
+            - ['GetICMPJumboIPFIXCapturedDataVM2toVM4']
+
+            # Normal+Large ICMP packets over SOURCE based LS.
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['ICMPNormalTrafficVM2toVM4', 'ICMP500ByteTrafficVM2toVM4']
+            - ['GetICMPMultipleSizedIPFIXCapturedDataVM2toVM4']
+        ExitSequence:
+            - ['DisableIPFIX']
+            - ['Set1500MTUOnVM1Vif1', 'Set1500MTUOnVM3Vif1']
+            - ['Set1500MTUOnVM2Vif1', 'Set1500MTUOnVM4Vif1']
+            - ['L2Cleanup--KVM']
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            domain_id: '10'
+            port: 9999
+            flow_timeout: '60'
+            idle_timeout: '60'
+            packet_sample_probability: '1'
+            max_flows: '1000'
+
+        ReadIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            read:
+              'domain_id[?]equal_to': '10'
+              'port[?]equal_to': 9999
+              'flow_timeout[?]equal_to': '60'
+              'idle_timeout[?]equal_to': '60'
+              'ip_address[?]equal_to': 'vm.[8]->ip'
+              'packet_sample_probability[?]equal_to': '1.0'
+              'max_flows[?]equal_to': '1000'
+
+        VerifyIPFIXConfigOnHosts1to4--KVM:
+            Type: Host
+            TestHost: 'kvm.[1-4]'
+            execution_type: 'cli'
+            'get_ipfix_config[?]contain_once':
+                packet_sample_probability: '1'
+                ip_address: 'vm.[8]->ip'
+                port: 9999
+                flow_timeout: '60'
+                max_flows: '1000'
+                domain_id: '10'
+
+        StartTShark:
+            Type: VM
+            TestVM: 'vm.[8]'
+            capture:
+                tool: 'tshark'
+                file_name: '/tmp/tshark123.cap'
+                capture_filter: '-s 1500 -f "dst port 9999"'
+                adapter_name: 'eth0'
+                execution_type: 'cmd'
+
+        ICMPNormalTrafficVM1toVM3: &ICMPNormalTrafficVM1toVM3
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[3].vif.[1]"
+            TestDuration  : "10"
+            Connectivitytest: 0
+
+        ICMP500ByteTrafficVM1toVM3:
+            <<: *ICMPNormalTrafficVM1toVM3
+            pingpktsize: '500'
+
+        ICMPJumboTrafficVM1toVM3:
+            <<: *ICMPNormalTrafficVM1toVM3
+            pingpktsize: '8000'
+            pktfragmentation: 'disable'
+
+        ICMPNormalTrafficVM2toVM4: &ICMPNormalTrafficVM2toVM4
+            <<: *ICMPNormalTrafficVM1toVM3
+            TestAdapter   : "vm.[2].vif.[1]"
+            SupportAdapter: "vm.[4].vif.[1]"
+
+        ICMP500ByteTrafficVM2toVM4:
+            <<: *ICMPNormalTrafficVM2toVM4
+            pingpktsize: '500'
+
+        ICMPJumboTrafficVM2toVM4:
+            <<: *ICMPNormalTrafficVM2toVM4
+            pingpktsize: '8000'
+            pktfragmentation: 'disable'
+
+        GetICMPNormalIPFIXCapturedDataVM1toVM3: &GetICMPNormalIPFIXCapturedDataVM1toVM3
+            Type: VM
+            TestVM: 'vm.[8]'
+            sleepbetweenworkloads: "60"
+            tool: 'tshark'
+            execution_type: 'cmd'
+            file_name: '/tmp/tshark123.cap'
+            port: 9999
+            stop_capture: true
+            read_filter: '-T fields -E header=y -e cflow.packets64 -e cflow.octets64 -e cflow.length_min -e cflow.length_max -e ip.src -R "cflow.srcaddr==vm.[1].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[3].vif.[1]->GetIPv4 " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - exporter_ip: 'kvm.[1]->mgmt_ip'
+                      pktcount: '10'
+                      # Octets = 840 --> 10 packets x 84 bytes/packet (56 default data bytes in ICMP + 8 ICMP header + 20 IP header)
+                      octets: '840'
+                      min_length: '84'
+                      max_length: '84'
+                    - exporter_ip: 'kvm.[2]->mgmt_ip'
+                      pktcount: '10'
+                      octets: '840'
+                      min_length: '84'
+                      max_length: '84'
+
+        GetICMP500ByteIPFIXCapturedDataVM1toVM3: &GetICMP500ByteIPFIXCapturedDataVM1toVM3
+            <<: *GetICMPNormalIPFIXCapturedDataVM1toVM3
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - exporter_ip: 'kvm.[1]->mgmt_ip'
+                      pktcount: '10'
+                      # Octets = 5280 --> 10 packets x 528 bytes/packet (500 data bytes in ICMP + 8 ICMP header + 20 IP header)
+                      octets: '5280'
+                      min_length: '528'
+                      max_length: '528'
+                    - exporter_ip: 'kvm.[2]->mgmt_ip'
+                      pktcount: '10'
+                      octets: '5280'
+                      min_length: '528'
+                      max_length: '528'
+
+        GetICMPJumboIPFIXCapturedDataVM1toVM3: &GetICMPJumboIPFIXCapturedDataVM1toVM3
+            <<: *GetICMPNormalIPFIXCapturedDataVM1toVM3
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - exporter_ip: 'kvm.[1]->mgmt_ip'
+                      pktcount: '10'
+                      # Octets = 80280 --> 10 packets x 8028 bytes/packet (8000 data bytes in ICMP + 8 ICMP header + 20 IP header)
+                      octets: '80280'
+                      min_length: '8028'
+                      max_length: '8028'
+                    - exporter_ip: 'kvm.[2]->mgmt_ip'
+                      pktcount: '10'
+                      octets: '80280'
+                      min_length: '8028'
+                      max_length: '8028'
+
+        GetICMPMultipleSizedIPFIXCapturedDataVM1toVM3: &GetICMPMultipleSizedIPFIXCapturedDataVM1toVM3
+            <<: *GetICMPNormalIPFIXCapturedDataVM1toVM3
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - exporter_ip: 'kvm.[1]->mgmt_ip'
+                      pktcount: '20'
+                      # Octets = 6120 --> 840 + 5280 --> (84 x 10) + (528 x 10). See above workloads for explaination on why 84 and 528 bytes.
+                      octets: '6120'
+                      min_length: '84'
+                      max_length: '528'
+                    - exporter_ip: 'kvm.[2]->mgmt_ip'
+                      pktcount: '20'
+                      octets: '6120'
+                      min_length: '84'
+                      max_length: '528'
+
+        GetICMPNormalIPFIXCapturedDataVM2toVM4:
+            <<: *GetICMPNormalIPFIXCapturedDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.packets64 -e cflow.octets64 -e cflow.length_min -e cflow.length_max -e ip.src -R "cflow.srcaddr==vm.[2].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[4].vif.[1]->GetIPv4 " -2'
+
+        GetICMP500ByteIPFIXCapturedDataVM2toVM4:
+            <<: *GetICMP500ByteIPFIXCapturedDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.packets64 -e cflow.octets64 -e cflow.length_min -e cflow.length_max -e ip.src -R "cflow.srcaddr==vm.[2].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[4].vif.[1]->GetIPv4 " -2'
+
+        GetICMPJumboIPFIXCapturedDataVM2toVM4:
+            <<: *GetICMPJumboIPFIXCapturedDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.packets64 -e cflow.octets64 -e cflow.length_min -e cflow.length_max -e ip.src -R "cflow.srcaddr==vm.[2].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[4].vif.[1]->GetIPv4 " -2'
+
+        GetICMPMultipleSizedIPFIXCapturedDataVM2toVM4:
+            <<: *GetICMPMultipleSizedIPFIXCapturedDataVM1toVM3
+            read_filter: '-T fields -E header=y -e cflow.packets64 -e cflow.octets64 -e cflow.length_min -e cflow.length_max -e ip.src -R "cflow.srcaddr==vm.[2].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[4].vif.[1]->GetIPv4 " -2'
+
+IPFIXIPv6Collector:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXIPv6Collector"
+    Summary: "Test scenario where collector is specified using an IPv6 address."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Automated"
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - L2Verification--KVM
+            #- - StartNcatServer
+            - - StartTShark
+            - - EnableIPFIX
+            - - UpdateIPFIXConfig-1_DOMAINID-10_FLOWTIMEOUT-65_IDLETIMEOUT-60_SAMPLING-1_PORT-9999
+            - - ReadIPFIXConfig
+            - - VerifyIPFIXConfigOnHosts1to4--KVM
+            - - IPv4ICMPTraffic
+            - - GetIPFIXCapturedData
+        ExitSequence:
+            - - DisableIPFIX
+            #- - StopNCatServer
+            - - L2Cleanup--KVM
+
+        EnableIPFIX:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            ipfixconfig:
+                "[1]":
+                    enabled: "true"
+                    ip_address: vm.[8]->management_ipv6
+                    port: 9999
+
+        ReadIPFIXConfig:
+            Type: Service
+            Testservice: nsxmanager.[1].ipfixconfig.[1]
+            read:
+              domain_id[?]equal_to: '10'
+              port[?]equal_to: 9999
+              idle_timeout[?]equal_to: '60'
+              flow_timeout[?]equal_to: '65'
+              max_flows[?]equal_to: '16384'
+              ip_address[?]equal_to: vm.[8]->management_ipv6
+              packet_sample_probability[?]equal_to: '1.0'
+
+        VerifyIPFIXConfigOnHosts1to4--KVM:
+            Type: Host
+            TestHost: kvm.[1-4]
+            execution_type: cli
+            get_ipfix_config[?]contain_once:
+                packet_sample_probability: 1
+                ip_address: vm.[8]->management_ipv6
+                port: 9999
+                flow_timeout: 65
+                max_flows: 16834
+                domain_id: 10
+
+        StartTShark:
+            Type: VM
+            TestVM: vm.[8]
+            capture:
+                tool: tshark
+                file_name: /tmp/tshark123.cap
+                capture_filter: '-s 1500 -f "dst port 9999"'
+                adapter_name: eth0
+                execution_type: cmd
+
+        IPv4ICMPTraffic:
+            Type          : Traffic
+            ToolName      : ping
+            TestAdapter   : vm.[1].vif.[1]
+            SupportAdapter: vm.[3].vif.[1]
+            TestDuration  : 10
+            sleepbetweenworkloads: 60
+            connectivitytest: 0
+
+        GetIPFIXCapturedData:
+            Type: VM
+            TestVM: vm.[8]
+            sleepbetweenworkloads: 65
+            tool: tshark
+            execution_type: cmd
+            file_name: /tmp/tshark123.cap
+            port: 9999
+            stop_capture: true
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -e cflow.flowset_id -R "cflow.srcaddr==vm.[1].vif.[1]->get_adapter_ip && cflow.dstaddr==vm.[3].vif.[1]->get_adapter_ip " -2'
+            get_ipfix_capture_data[?]contains:
+                table:
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+                      flowset_id: 267
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 266
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_mac: 'vm.[3].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[2]->mgmt_ip'
+                      flowset_id: 267
+
+IPFIXControllerDown:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXControllerDown"
+    Summary: "Test scenario where a controller/cluster is down."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}
+
+IPFIXConfigBeforeAddingTN:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXConfigBeforeAddingTN"
+    Summary: "Test a scenario where a TN joins on an MP already configured for IPFIX."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}
+
+IPFIXSlowFastTraffic:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXSlowFastTraffic"
+    Summary: "Verify if packets are sampled correctly even when they are sent with very small/large intervals."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}
+
+IPFIXReplicatedSetupAcrossLS:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXReplicatedSetupAcrossLS"
+    Summary: "Verify behavior when 2 VMs in different logical L2 segments have same IP address and MAC address."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}
+
+IPFIXMultipleCollectors:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXMultipleCollectors"
+    Summary: "Test IPFIX with multiple collectors."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}
+
+IPFIXReplicatedSetupAcrossTZ:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXReplicatedSetupAcrossTZ"
+    Summary: "Verify behavior when the whole setup is replicated in 2 transport zones."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}
+
+IPFIXSimultaneousTraffic:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXSimultaneousTraffic"
+    Summary: "Send traffic (icmp/tcp/udp/sctp/l2 + ipv4/ipv6) from different VMs to different VMs for different durations."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}
+
+IPFIXVerifyBFDSampling:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXVerifyBFDSampling"
+    Summary: "Verify BFD packets are not sampled by IPFIX."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}
+
+IPFIXVerifyARPSuppression:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXVerifyARPSuppression"
+    Summary: "Verify ARP suppression packets are not sampled by IPFIX."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}
+
+IPFIXVerifyMaxFlows:
+    <<: *P1_KVM_Template
+    TestName: "IPFIXVerifyMaxFlows"
+    Summary: "Verify max_flows property."
+    Procedure: ""
+    Developer: "gangarm"
+    SubRelease: "Bumblebee"
+    AutomationLevel: "Manual"
+    WORKLOADS: {}

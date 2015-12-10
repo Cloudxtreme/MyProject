@@ -1,0 +1,756 @@
+#------------------------------------------------------------------------------
+#                       ECMP-TOPOLOGY
+#------------------------------------------------------------------------------
+#
+#              192.168.40.20        192.168.40.21
+#                +-------+           +--------+
+#                |  VM6  |           |  VM6'  |
+#                +---+---+           +----+---+
+#                    |                    |
+#              +-----+--------------------+-------+
+#              |       Logical Switch-06          |
+#              +---+------------------------+-----+
+#                  |                        |
+#    192.168.40.1  |                        | 192.168.40.2
+#                  |                        |
+#              +---+---+               +----+---+
+#              |  R1   |               |   R2   |
+#              +---+---+               +----+---+
+#    192.168.50.100|                        |192.168.50.101
+#         +--------+------------------------+-------------+
+#         |            LogicalSwitch-01                   |
+#         +--------|-------------------------|------------+
+#                  |                         |
+#                  |                         |
+#         +--------|-------------------------|-----------+
+#         |    +---|---+                +----|----+      |
+#         |    | SR1   |   TIER-0       |   SR2   |      |
+#         |   192.168.50.1              192.168.50.2     |
+#         |    +-------+                +---------+      |
+#         +--------------------+-------------------------+
+#                              |
+#         +--------------------+------------------------+
+#         |                 TIER-1                      |
+#         +------------------+--------------------------+
+#                            |
+#                            |
+#              +-------------+-----------------+
+#              |     Logical Switch-04         |
+#              +----+---------------------+----+
+#                   |                     |
+#                +--+--+                +-+--+
+#  192.168.70.20 | VM4 |                |VM4'| 192.168.70.21
+#                +-----+                +----+
+#
+#-------------------------------------------------------------------------------------
+ECMP_BASIC_SETUP:
+    Category: L3
+    Component: Edge
+    Summary: "This test case verifies ECMP routes on SRs"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: BAT_Tier0_Tier1_ECMP_Test
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            - - 'RegisterController'
+            - - 'SetManagerOnHost'
+            - - 'DiscoverHostNodes'
+            - - 'CreateTransportZone'
+            - - 'CreateUplinkProfile'
+            - - 'CreateTransportNodes'
+            - - 'CreateLogicalSwitch01_FOR_UPLINK_SR1'
+            - - 'CreateLogicalSwitch04_For_Tier1_Downlink'
+            - - 'CreateLogicalSwitch06_ForExternalRouter'
+            - - 'Create_LogicalPorts_ECMP'
+
+            # XXX: Tier0 setup
+            - - 'DeployNSXEdge1'
+            - - 'RegisterEdgeNode1WithNSX'
+            - - 'CreateFabricProfile'
+            - - 'DiscoverEdgeNodeId1'
+            - - 'CreateEdgeClusterWithEdgeNode_BAT_Tier0_Basic'
+            - - 'CreateTIER0LogicalRouter'                    # for Tier0 router
+            - - 'CreateTier0UplinkLogicalRouterPortForSR1'    # for Tier0 router
+
+            # XXX: TIER-0 to TIER1 Connection
+            - - 'CreateTIER1LogicalRouter'
+            - - 'CreateDownlinkTier1LogicalRouterPortOnLS04'
+            - - 'CreateRouterLinkPortOnTIER0Router'
+            - - 'CreateRouterLinkPortOnTIER1Router'
+
+            # XXX: VM Related Operations
+            - - 'VifAttachmentAllVMs_ECMP'
+            - - 'PowerOnAllVms_ECMP'
+            - - 'ConfigureIPAllVMVNics_ECMP'
+            - - 'AddRouteAllVMs_ECMP'
+
+#---------------------------------------------------------------------------------------
+ECMP_RoutesOnSr_Via_BGP:
+    Category: L3
+    Component: Edge
+    Summary: "This test case verifies ECMP routes on SRs via ECMP"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: BAT_Tier0_Tier1_ECMP_Test
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Route Global Config
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'AddBGPNeighboursTier0_ECMP'
+
+            # XXX Route Redistribution: fromprotocol:Connected,INTERNAL TO Protocol: BGP
+            - - 'AddRouteRedistribution'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR1_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX Related to Traffic Flow
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+        ExitSequence:
+            - - 'DeleteAllNeighbours'
+            - - 'DeleteRoutingGlobalConfig'
+            - - 'DeleteRedistributionConfig'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+
+#---------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------
+# This case is dependant on ECMP_BASIC_SETUP
+#----------------------------------------------------------------------------
+ECMP_Increase_Decrease_Weight_Via_BGP:
+    Category: L3
+    Component: Edge
+    Summary: "Verify that if the weight of eBGP prefix is increased/decrease best route should
+               be selected and other routes should be removed from routing table"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: ECMP_Increase_Decrease_Weight_Via_BGP
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Route Global Config
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'IncreaseWeightBGPNeighboursTier0_ECMP'
+
+            # XXX Route Redistribution: fromprotocol:Connected,INTERNAL TO Protocol: BGP
+            - - 'AddRouteRedistribution'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'Show_Configuration_BGP_SR1_ECMP_Increase_Weight'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP_Best_Route_After_Increased_Weight'
+
+            # XX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP_Best_Route_After_Increased_Weight'
+
+            # XXX Related to Traffic Flow
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+            # XXX Decrease the weight of BGP neighbours
+            - - 'DecreaseWeightBGPNeighboursTier0_ECMP'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'Show_Configuration_BGP_SR1_ECMP_Decrease_Weight'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP_Best_Route_After_Decreased_Weight'
+
+            # XX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP_Best_Route_After_Decreased_Weight'
+
+            # XXX Related to Traffic Flow
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+        ExitSequence:
+            - - 'DeleteAllNeighbours'
+            - - 'DeleteRoutingGlobalConfig'
+            - - 'DeleteRedistributionConfig'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+
+#---------------------------------------------------------------------------------------
+ECMP_Disable_Enable_EBPOnRouter_BGP:
+    Category: L3
+    Component: Edge
+    Summary: "Ecmp routes should be removed from the SRs  And there shouldnt be any impact on end to end traffic.
+             Enable the EBGP again on the router and see that routes gets added back on SR and traffic flows"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: ECMP_Disable_Enable_EBPOnRouter_BGP
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Route Global Config
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'AddBGPNeighboursTier0_ECMP'
+
+            # XXX Route Redistribution: fromprotocol:Connected,INTERNAL TO Protocol: BGP
+            - - 'AddRouteRedistribution'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR1_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XXX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX Related to Traffic Flow
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+            # XXX Disable the EBGP on physical router
+            # We are simulating this condition via changing the configuration
+            # on SR so that it point to non-existant router.
+            # we are changing the BGP neighbourship
+            - - 'ChangeBGPNeighboursTier0_ECMP'
+
+            # XXX This should fail since we have changed the configuration and other should pass
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_FAIL', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+            # XXX Verify routes on SR-1 CLI shouldnt be displayed for 192.168.50.100
+            - - 'AfterChange_Show_IP_Route_SR1_ECMP'
+
+            # XXX Verify the forwarding table it should have 1 route
+            - - 'AfterChange_Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX After enabling the neighbours again on SR, all the routes/forwarding IPs should be displayed and traffic should flow
+            - - 'RevertChangedBGPNeighboursTier0_ECMP'
+
+            # XXX traffic should flow properly now
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+            # XXX Verify routes on SR-1 CLI
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XXX Verify the forwarding table
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+        ExitSequence:
+            - - 'DeleteAllNeighbours'
+            - - 'DeleteRoutingGlobalConfig'
+            - - 'DeleteRedistributionConfig'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+
+#---------------------------------------------------------------------------------------
+
+#----------------------------------------------------------------------------
+# Testcase Name: ECMP_Failover_Scenario1
+#
+# This case is dependant on ECMP_BASIC_SETUP
+#----------------------------------------------------------------------------
+ECMP_Failover_Scenario1_viaBGP:
+    Category: L3
+    Component: Edge
+    Summary: "Southbound channel will be disconnected/connected; management interface is up
+             Verify that Failover should not get triggered, and ECMP routes are learned"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: ECMP_Failover_Scenario1_viaBGP
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Route Global Config
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'AddBGPNeighboursTier0_ECMP'
+
+            # XXX Route Redistribution: fromprotocol:Connected,INTERNAL TO Protocol: BGP
+            - - 'AddRouteRedistribution'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR1_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX Add another SR
+            - - 'DeployNSXEdge2'
+            - - 'RegisterEdgeNode2WithNSX'
+            - - 'DiscoverEdgeNodeId2'
+            - - 'Update_EdgeCluster_With_EdgeNode2'
+            - - 'CreateTier0UplinkLogicalRouterPortForSR2_ActiveFailover'
+
+            # XXX Update BGP Neighbourship for SR2
+            - - 'UpdateBGPNeighboursTier0_ECMP'
+
+            # XXX Verify routes on SR-2 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR2_ECMP'
+
+            # XXX Verify the forwarding table it should 2 routes on SR2
+            - - 'Show_IP_Forwarding_SR2_ECMP'
+
+            # XXX Show Edge Cluster status on SR1 and SR2
+            - ['VerifyEdgeClusterStatus_SR1', 'VerifyEdgeClusterStatus_SR2']
+
+            # XXX Disconnect the soutbound channel on SR2
+            - - 'DiscoverEdgeVnics_SR2'
+            - - 'DisconnectvNic3_InternalTLS_SR2'
+
+            # XXX After disconnect routes should remain intact on SR-1 and SR-2
+            - ['Show_IP_Route_SR1_ECMP', 'Show_IP_Route_SR2_ECMP']
+
+            # XXX After disconnect Failover should not happen
+            - ['VerifyEdgeClusterStatus_SR1', 'VerifyEdgeClusterStatus_SR2']
+
+        ExitSequence:
+            - - 'DeleteAllNeighbours'
+            - - 'DeleteRoutingGlobalConfig'
+            - - 'DeleteRedistributionConfig'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+            - - 'DeleteUplinkPort_SR2'
+            - - 'Remove_EdgeNode2_From_EdgeCluster'
+            - - 'UnRegister_SR2'
+            - - 'DeleteSR2'
+#----------------------------------------------------------------------------
+# Testcase Name: ECMP_Failover_Scenario2_viaBGP
+#
+# This case is dependant on ECMP_BASIC_SETUP
+#----------------------------------------------------------------------------
+ECMP_Failover_Scenario2_viaBGP:
+    Category: L3
+    Component: Edge
+    Summary: "Southbound channel will be disconnected/connected; management interface is up
+             and if BGP neighborship is down. Verify that Failover should get triggered,
+             and ECMP routes should be removed, IP address should be migrated."
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: ECMP_Failover_Scenario2_viaBGP
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Route Global Config
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'AddBGPNeighboursTier0_ECMP'
+
+            # XXX Route Redistribution: fromprotocol:Connected,INTERNAL TO Protocol: BGP
+            - - 'AddRouteRedistribution'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR1_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX Add another SR
+            - - 'DeployNSXEdge2'
+            - - 'RegisterEdgeNode2WithNSX'
+            - - 'DiscoverEdgeNodeId2'
+            - - 'Update_EdgeCluster_With_EdgeNode2'
+            - - 'CreateTier0UplinkLogicalRouterPortForSR2_ActiveFailover'
+
+            # XXX Update BGP Neighbourship for SR2
+            - - 'UpdateBGPNeighboursTier0_ECMP'
+
+            # XXX Verify routes on SR-2 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR2_ECMP'
+
+            # XXX Verify the forwarding table it should 2 routes on SR2
+            - - 'Show_IP_Forwarding_SR2_ECMP'
+
+            # XXX Show Edge Cluster status on SR1 and SR2
+            - ['VerifyEdgeClusterStatus_SR1', 'VerifyEdgeClusterStatus_SR2']
+
+            # XXX traffic should flow properly
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+            # XXX Verify that IP is migrated
+            # Get the VNic Ip address or SR1
+            - - 'ReadEdgeVm2SouthIpBfdIp'
+
+            # XXX Disconnect the soutbound channel on SR2
+            - - 'DiscoverEdgeVnics_SR2'
+            - - 'DisconnectvNic3_InternalTLS_SR2'
+
+            # XXX After disconnect routes should remain intact on SR-1 and SR-2
+            - ['Show_IP_Route_SR1_ECMP', 'Show_IP_Route_SR2_ECMP']
+
+            # XXX Change the BGP configuration so that BGP neighbourship is down for SR2
+            - - 'ChangeBGPNeighboursTier0_SR2_ECMP'
+
+             # XXX After BGP neighbourship is changed Failover should get triggered
+            - ['VerifyEdgeClusterStatus_SR1', 'VerifyEdgeClusterStandbyStatus_SR2']
+
+            # XXX make sure that IP of First SR has migrated to Second SR
+            - - 'CheckIPMigrationOnSR1'
+
+            # XXX Verify that Routes should be removed from SR2, since we have changed BGP neighbourship
+            - - 'AfterChange_Show_IP_Route_SR2_ECMP'
+
+            # XXX traffic should flow as there should be no impact after failover
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+            # XXX Now reconnect the southbound interface
+            - - 'ConnectvNic3_InternalTLS_SR2'
+
+             # XXX Verify that Cluster status for SR2 is still in standby since BGP neighbor is down
+            - - 'VerifyEdgeClusterStandbyStatus_SR2'
+
+            # XXX traffic should flow as there should be no impact after failover
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+        ExitSequence:
+            - - 'DeleteAllNeighbours'
+            - - 'DeleteRoutingGlobalConfig'
+            - - 'DeleteRedistributionConfig'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+            - - 'DeleteUplinkPort_SR2'
+            - - 'Remove_EdgeNode2_From_EdgeCluster'
+            - - 'UnRegister_SR2'
+            - - 'DeleteSR2'
+
+#-----------------------------------------------------------------------------
+# Testcase Name: ECMP_Addition_Deletion_OF_SR
+#
+# This case is dependant on ECMP_BASIC_SETUP
+#----------------------------------------------------------------------------
+ECMP_Addition_Deletion_OF_SR_viaBGP:
+    Category: L3
+    Component: Edge
+    Summary: "This test case Addition and Deletion of SR ECMP
+              also covers the case of Verify when a failed SR comes up"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: BAT_ECMP_Addition_Deletion_SR_ECMP
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Route Global Config
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'AddBGPNeighboursTier0_ECMP'
+
+            # XXX Route Redistribution: fromprotocol:Connected,INTERNAL TO Protocol: BGP
+            - - 'AddRouteRedistribution'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR1_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX Related to Traffic Flow
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+            # XXX Add another SR
+            - - 'DeployNSXEdge2'
+            - - 'RegisterEdgeNode2WithNSX'
+            - - 'DiscoverEdgeNodeId2'
+            - - 'Update_EdgeCluster_With_EdgeNode2'
+            - - 'CreateTier0UplinkLogicalRouterPortForSR2_ActiveFailover'
+
+            # XXX Update BGP Neighbourship for SR2
+            - - 'UpdateBGPNeighboursTier0_ECMP'
+
+            # XXX Verify routes on SR-2 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR2_ECMP'
+
+            # XXX Verify the forwarding table it should 2 routes on SR2
+            - - 'Show_IP_Forwarding_SR2_ECMP'
+
+            # XXX Related to Traffic Flow shouldnt be impacted when we PowerOFF SR2
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_Parallel', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21_Parallel', 'PowerOffSR2']
+
+            # XXX Power On the SR2
+            - - 'PowerONSR2'
+
+            # XXX Verify routes on SR-2 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR2_ECMP'
+
+            # XXX Verify the forwarding table it should 2 routes on SR2
+            - - 'Show_IP_Forwarding_SR2_ECMP'
+
+            # XXX Traffic should Flow
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+            # XXX Related to Traffic Flow shouldnt be impacted when we PowerOFF SR1
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_Parallel', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21_Parallel', 'PowerOffSR1']
+
+        ExitSequence:
+            - - 'DeleteAllNeighbours'
+            - - 'DeleteRoutingGlobalConfig'
+            - - 'DeleteRedistributionConfig'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+            - - 'DeleteUplinkPort_SR2'
+            - - 'Remove_EdgeNode2_From_EdgeCluster'
+            - - 'UnRegister_SR2'
+            - - 'DeleteSR2'
+#----------------------------------------------------------------------------
+
+#----------------------------------------------------------------------------
+# This case is dependant on ECMP_BASIC_SETUP
+#----------------------------------------------------------------------------
+ECMP_AdditionOfStaticRoutes:
+    Category: L3
+    Component: Edge
+    Summary: "This test case Addition of SR ECMP via Static Route"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: AddingStaticRoute
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Add Static Route
+            - - 'Add_Static_Routes_SR1_ECMP'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR1_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX Related to Traffic Flow shouldn't be impacted
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+        ExitSequence:
+            - - 'DeleteAllStaticRoutes'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+#----------------------------------------------------------------------------
+
+#----------------------------------------------------------------------------
+# This case is dependant on ECMP_BASIC_SETUP
+#----------------------------------------------------------------------------
+ECMP_DefaultRouteAsExternalRouter_Via_StaticRoute:
+    Category: L3
+    Component: Edge
+    Summary: "Verify with SRs, having default route as external routers via static routes"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: DefaultRoutesAsStaticRoutes
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Add Static Route
+            - - 'Add_Default_Static_Routes_SR1_ECMP'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR1_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX Related to Traffic Flow shouldn't be impacted
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20'     # External Router to Tier1 through Tier0 traffic
+            - - 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21'     # External Router to Tier1 through Tier0 traffic
+
+        ExitSequence:
+            - - 'DeleteAllStaticRoutes'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+#----------------------------------------------------------------------------
+
+#----------------------------------------------------------------------------
+# This case is dependant on ECMP_BASIC_SETUP
+#----------------------------------------------------------------------------
+ECMP_Delete_StaticRoute:
+    Category: L3
+    Component: Edge
+    Summary: "Verify if static ecmp route is deleted"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: DeleteStaticRoutesECMP
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Add Static Route
+            - - 'Add_Static_Routes_SR1_ECMP'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR1_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XXX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX Related to Traffic Flow shouldn't be impacted
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20'     # External Router to Tier1 through Tier0 traffic
+            - - 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21'     # External Router to Tier1 through Tier0 traffic
+
+            # XXX Remove the Static Route for External Router 2 from SR1
+            - - 'Delete_Static_Routes_For_R2_From_SR1_ECMP'
+
+            # XXX Verify that static routes are removed from SR1
+            - - 'After_Show_IP_Route_StaticRoutes_SR1_ECMP'
+
+            # XXX Related to Traffic Flow shouldn't be impacted
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20'      # External Router to Tier1 through Tier0 traffic
+
+            # XXX Related to Traffic Flow should fail as we have delete route
+            - - 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21_FAIL' # External Router to Tier1 through Tier0 traffic
+
+        ExitSequence:
+            - - 'DeleteAllStaticRoutes'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+#----------------------------------------------------------------------------
+
+#----------------------------------------------------------------------------
+# This case is dependant on ECMP_BASIC_SETUP
+#----------------------------------------------------------------------------
+ECMP_Addition_Deletion_OfUplink_ToLR_StaticRoute:
+    Category: L3
+    Component: Edge
+    Summary: "Verify ecmp via static routing with addition and deletion of uplinks to the LR"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: Addition_Deletion_OfUplink_ToLR_StaticRoute_ECMP
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Add Static Route
+            - - 'Add_Static_Routes_SR1_ECMP'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR1_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XXX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX Related to Traffic Flow shouldn't be impacted
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+            # XXX Add another SR
+            - - 'DeployNSXEdge2'
+            - - 'RegisterEdgeNode2WithNSX'
+            - - 'DiscoverEdgeNodeId2'
+            - - 'Update_EdgeCluster_With_EdgeNode2'
+            - - 'CreateTier0UplinkLogicalRouterPortForSR2_ActiveFailover'
+
+            # XXX Add Static Route
+            - - 'Update_Static_Routes_SR2_ECMP'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR2_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR2_ECMP'
+
+            # XXX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR2_ECMP'
+
+            # XXX  Check if the Second Node is in Active State
+            - - 'VerifyEdgeClusterStatus_SR2'
+
+            # XXX Get the VNic Ip address or SR1
+            - - 'ReadEdgeVm1SouthIpBfdIp'
+
+            # XXX Start the traffic at the same time poweroff SR1 so that traffic should now flow through SR2
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_Parallel', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21_Parallel', 'PowerOffSR1']
+
+            #
+            # Now Verify the deletion of uplinks to LR
+            #
+            # XXX Power ON the First SR
+            - - 'PowerONSR1'
+
+            # XXX Check if the First Node is in Active state
+            - - 'VerifyEdgeClusterStatus_SR1'
+
+            # XXX Start the traffic at the same time poweroff SR2 so that traffic should now flow through SR1
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_Parallel', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21_Parallel', 'PowerOffSR2']
+
+        ExitSequence:
+            - - 'DeleteAllStaticRoutes'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+            - - 'DeleteUplinkPort_SR2'
+            - - 'Remove_EdgeNode2_From_EdgeCluster'
+            - - 'UnRegister_SR2'
+            - - 'DeleteSR2'
+#----------------------------------------------------------------------------
+ECMP_CLEANUP_SETUP:
+    Category: L3
+    Component: Edge
+    Summary: "This test case Cleanups the ECMP setup"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: ECMP_CLEANUP_SETUP
+    TestbedSpec: *TESTBEDSPEC_TIER0_TIER1_ECMP
+
+    WORKLOADS:
+        Sequence:
+            - - 'PowerOffAllVms_ECMP'
+            - - 'DeleteTestVnics_ECMP'
+            - - 'CleanupBasicTier0_Tier1'
+            - - 'CleanupEdge'
+            - - 'DeleteSR1'
+            - - 'UnregisterHosts'
+#----------------------------------------------------------------------------
+
+

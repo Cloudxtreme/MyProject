@@ -1,0 +1,322 @@
+TORSanity:
+    Component: "TOR"
+    Category: "Sanity"
+    TestName: "TORSanity"
+    Version: "2"
+    Tags: "nsx,vsm,BAT,TOR"
+    Summary: "This test case creates TOR"
+    ExpectedResult: "PASS"
+    TestbedSpec: *TOR_TESTBEDSPEC1
+    WORKLOADS:
+        Sequence:
+
+            - ['CreateDC']
+            - ['CreateCC']
+            - ['CreateVDS']
+            - ['InitVSM']
+            - ['HostPrep']
+            - ['CreateIPPool']
+            - ['DeployController']
+
+            - ['InstallTORGatewayService4.2.3']
+            - ['Create2TORSwitches']
+            - ['Add2PhysicalPortsToTORSwitch1']
+            - ['BindVtepWithTORSwitch']
+            - ['StartVtepSimulator']
+
+            - ["CreateSegmentIDRange"]
+            - ["CreateMulticastGroup"]
+            - ["CreateNetworkScope"]
+            - ["CreateVirtualWire"]
+
+            - ["AddToPTEPCluster"]
+            - ["CreateTOR"]
+            - ["VerifyTOR"]
+            - ["CreateTORBinding"]
+            - ["VerifyTORBinding"]
+            - ["CreateTORAttachment"]
+            - ["DeleteTORAttachment"]
+            - ["DeleteTORBinding"]
+            - ["DeleteTOR"]
+            - ["RemoveFromPTEPCluster"]
+        ExitSequence:
+            - ['StopVtepSimulator']
+            - ['DeleteTORPortsOnEachSwitch']
+            - ['DeleteTORSwitches']
+            - ['UninstallTORGatewayService']
+
+        CreateDC:
+            Type: "VC"
+            TestVC: "vc.[1]"
+            datacenter:
+                '[1]':
+
+        CreateCC:
+            Type: "Datacenter"
+            TestDatacenter: "vc.[1].datacenter.[1]"
+            cluster:
+                '[1]':
+                    'host': 'esx.[1]'
+                    'clustername': "ControlCluster1-$$"
+                '[2]':
+                    'host': "esx.[2]"
+                    'clustername': "ComputeCluster1-$$"
+
+        CreateVDS:
+            Type: "VC"
+            TestVC: "vc.[1]"
+            vds:
+                '[1]':
+                    'datacenter':     "vc.[1].datacenter.[1]"
+                    'vmnicadapter':   "esx.[2].vmnic.[1]"
+
+        InitVSM:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            'reconfigure': "true"
+            'vc': "vc.[1]"
+            'assignrole': "enterprise_admin"
+
+        HostPrep:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            'vdncluster':
+              '[1]':
+               'cluster': "vc.[1].datacenter.[1].cluster.[2]"
+               'vibs':    "install"
+               'switch':  "vc.[1].vds.[1]"
+               'vlan':    "0"
+               'mtu':     "1600"
+               'teaming': "FAILOVER_ORDER"
+
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            'ippool':
+                '[1]':
+                    'name': 'AutoGenerate'
+                    'gateway': '10.144.139.253'
+                    'prefixlength': '22'
+                    'ipranges': ['10.144.136.226-10.144.136.228']
+
+        DeployController:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            'vxlancontroller':
+                '[1]':
+                    name:         "AutoGenerate"
+                    ippool:       "vsm.[1].ippool.[1]"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+                    host:         "esx.[1]"
+
+        CreateSegmentIDRange:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            segmentidrange:
+                '[1]':
+                    name: "AutoGenerate"
+                    begin: "5001-10001"
+                    end: "99000"
+
+        CreateMulticastGroup:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            multicastiprange:
+                '[1]':
+                    name:  "AutoGenerate"
+                    begin: "239.0.0.101"
+                    end:   "239.254.254.254"
+
+        BindVtepWithTORSwitch:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           bind_pnic:
+                 name: "eth1"
+                 switch_name: "torgateway.[1].torswitch.[1]" 
+
+        Add2PhysicalPortsToTORSwitch1:
+           Type: Switch
+           TestSwitch: torgateway.[1].torswitch.[1]
+           torport:
+              '[1]':
+                  # you can specify specific portid here here, like p0, or you
+                  # can also specify 'autogenerate'
+                  # phy_port_name: 'autogenerate'
+
+                  # or you can also specify an existing vnic, which will be used
+                  # to get the eth name of TOR gateway
+                  phy_port_name: 'torgateway.[1].pif.[3]->name'
+                  vlan: 10
+              '[2]':
+                  phy_port_name: 'torgateway.[1].pif.[4]->name'
+                  vlan: 20
+
+        DeleteTORSwitches:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           deletetorswitch: torgateway.[1].torswitch.[-1]
+
+        UninstallTORGatewayService:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           configure_package:
+              operation: uninstall
+              resource:
+                - openvswitch-datapath-dkms
+                - openvswitch-vtep
+                - openvswitch-switch
+                - openvswitch-common
+                - python-openvswitch
+
+        InstallTORGatewayService4.2.3:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           configure_package: # this workload will move to user spec later
+              operation: install
+              resource:
+                - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-datapath-dkms_2.3.1.41279_all.deb
+                - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-common_2.3.1.41279_amd64.deb
+                - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-switch_2.3.1.41279_amd64.deb
+                - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/python-openvswitch_2.3.1.41279_all.deb
+                - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-vtep_2.3.1.41279_amd64.deb
+        
+        Create2TORSwitches:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           torswitch:
+              '[1]':
+                  # you can specify specific switch name here here, like switch0,
+                  # or you can also specify 'autogenerate'
+                  name: 'autogenerate'
+
+        CreateVirtualWire:
+            Type: "TransportZone"
+            TestTransportZone: "vsm.[1].networkscope.[1]"
+            virtualwire:
+                 '[1]':
+                     name: "AutoGenerate"
+                     tenantid: "AutoGenerate"
+
+        CreateNetworkScope:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            networkscope:
+                 '[1]':
+                     'name': "network-scope-1-45"
+                     'controlplanemode': "HYBRID_MODE"
+                     'clusters': "vc.[1].datacenter.[1].cluster.[2]"
+
+        VerifyAddToPTEPCluster:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            verifyptepattributes:
+                "ptep_cluster[?]contain_once":
+                   'ptep_cluster[?]contain_once':
+                        - 'esx.[2]'
+
+        VerifyTOR:
+            Type: "Switch"
+            TestSwitch: "vsm.[1].tor.[1]"
+            verifyendpointattributes:
+                "name[?]equal_to": "torgateway.[1].torswitch.[1]"
+
+        VerifyTORBinding:
+            Type: "Switch"
+            TestSwitch: "vsm.[1].tor_binding.[1]"
+            verifyendpointattributes:
+                "switch_name[?]equal_to": "torswitch1"
+                "name[?]equal_to": "torswitch1port1"
+                "vlan[?]equal_to": "22"
+                "hardwaregatewayId[?]equal_to": "vsm.[1].tor.[1]->id"
+
+        ModifyPTEPCluster:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            modify_ptep_cluster:
+                    'ptep_cluster_entries':
+                        'ptep_cluster_entry':
+                            - 'esx.[2]'
+
+        AddToPTEPCluster:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            ptep:
+                '[1]':
+                    'ptep_cluster':
+                        -
+                            'id': 'esx.[2]'
+
+        RemoveFromPTEPCluster:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            remove_ptep:
+                '[1]':
+                    'ptep_cluster':
+                        -
+                            'id': 'esx.[2]'
+
+        CreateTOR:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            tor:
+                '[1]':
+                    'name': 'torgateway.[1]->name'
+                    'certificate': 'torgateway.[1]'
+                    'bfdconfig': 'false'
+
+        DeleteTOR:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            delete_tor: "vsm.[1].tor.[1]"
+
+        CreateTORBinding:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            tor_binding:
+                '[2]':
+                    'tor_switch_name': 'torgateway.[1].torswitch.[1]'
+                    'tor_port_name': 'torgateway.[1].torswitch.[1].torport.[1]'
+                    'tor_id': 'vsm.[1].tor.[1]'
+                    'vlan': '22'
+                    'switch_id': 'vsm.[1].networkscope.[1].virtualwire.[1]'
+
+        DeleteTORBinding:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            delete_tor_binding: "vsm.[1].tor_binding.[1]"
+
+        CreateTORAttachment:
+            Type: "Switch"
+            TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+            port_attach:
+                    'bindings':
+                        'binding': 'vsm.[1].tor_binding.[1]'
+
+        DeleteTORAttachment:
+            Type: "Switch"
+            TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+            port_detach:
+                    'bindings':
+                        'binding': 'vsm.[1].tor_binding.[1]'
+
+        StartVtepSimulator:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           start_service:
+               service_name: "ovs-vtep"
+               tor_entries:
+                   - node_id: "torgateway.[1].torswitch.[1]->name"
+
+        StopVtepSimulator:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           stop_service:
+               service_name: "ovs-vtep"
+               tor_entries:
+                   - node_id: "torgateway.[1].torswitch.[1]->name"
+
+        DeleteTORPortsOnEachSwitch:
+           Type: Switch
+           TestSwitch: torgateway.[1].torswitch.[1]
+           deletetorport: torgateway.[1].torswitch.[1].torport.[1-2]
+

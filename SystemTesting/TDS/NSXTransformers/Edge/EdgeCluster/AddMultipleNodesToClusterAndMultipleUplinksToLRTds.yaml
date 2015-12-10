@@ -1,0 +1,368 @@
+TestEdgeClusterOperations:
+    Product: "NSXTransformers"
+    Category: "Edge"
+    Component: "ClusterCreation"
+    Developer: "sureshkoli"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat-02'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: "/NSXTransformers/EDGE/Clustering"
+    TestName: "Verify more than 8 nodes can be added to a Cluster; however no more than 8 uplinks can be configured for a logical router"
+    Summary: "Verify more than 8 nodes can be added to a Cluster; however no more than 8 uplinks can be configured for a logical router"
+    Procedure: "1. Create Cluster.
+                2. Create and Add 9 Nodes in cluster.
+                3. Create a LR.
+                4. Configure 8 uplinks and 1 downlink on LR.
+                5. Try adding the 9th uplink to this LR; should fail"
+    ExpectedResult: "Verify more than 8 nodes can be added to a Cluster; however no more than 8 uplinks can be configured for a logical router"
+
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+
+    WORKLOADS:
+        Sequence:
+              - ['DiscoverHostnodes']
+              - ['CreateTransportZone']
+              - ['CreateUplinkProfile']
+              - ['CreateTransportNodes']
+              - ['CreateFabricProfile']
+              - ['DiscoverEdgeNodes']
+              - ['CreateEdgeClusterWithEdgeNode']
+              - ['CreateLogicalSwitch1ForTIER0']
+              - ['CreateLogicalSwitch2ForTIER0']
+              - ['CreateLogicalPortsForUplinkForTIER0']
+              - ['CreateLogicalPortForDownlinkForTIER0']
+              - ['CreateTIER0LogicalRouterForEdge']         # for Tier0 router
+              - ['CreateDownlinkLogicalRouterPortForEdge']  # for Tier0 router
+              - ['CreateUplinkLogicalRouterPortsForEdge']    # for Tier0 router
+              # this should pass as you can add more than 8 nodes to a cluster
+              - ['AddEdgeNode9ToCluster']
+              # this should fail; presently passing because of lack of validations
+              - ['CreateUplinkLogicalRouterPort9ForEdge']
+        ExitSequence:
+             - ['DeleteLogicalRouterPort']
+             - ['DeleteLogicalRouterUplinkPort']
+             - ['DeleteLogicalRouter']
+             - ['DeleteEdgeCluster']
+             - ['DeleteFabricProfile']
+             - ['DeleteLogicalPorts']
+             - ['DeleteLogicalSwitches']
+             - ['DeleteTransportNodes']
+             - ['DeleteUplinkProfile']
+             - ['DeleteTransportZone']
+
+        CreateFabricProfile: *CREATE_FABRIC_PROFILE
+
+        DiscoverEdgeNodes:
+                Type: "NSX"
+                TestNSX: "nsxmanager.[1]"
+                edgenode:
+                    '[1]':
+                        discover: 'true'
+                        resource_type: "EdgeNode"
+                        ipaddresses:
+                           - 'nsxedge.[1]->management_ip'
+                    '[2]':
+                        discover: 'true'
+                        resource_type: "EdgeNode"
+                        ipaddresses:
+                           - 'nsxedge.[2]->management_ip'
+                    '[3]':
+                        discover: 'true'
+                        resource_type: "EdgeNode"
+                        ipaddresses:
+                           - 'nsxedge.[3]->management_ip'
+                    '[4]':
+                        discover: 'true'
+                        resource_type: "EdgeNode"
+                        ipaddresses:
+                           - 'nsxedge.[4]->management_ip'
+                    '[5]':
+                        discover: 'true'
+                        resource_type: "EdgeNode"
+                        ipaddresses:
+                           - 'nsxedge.[5]->management_ip'
+                    '[6]':
+                        discover: 'true'
+                        resource_type: "EdgeNode"
+                        ipaddresses:
+                           - 'nsxedge.[6]->management_ip'
+                    '[7]':
+                        discover: 'true'
+                        resource_type: "EdgeNode"
+                        ipaddresses:
+                           - 'nsxedge.[7]->management_ip'
+                    '[8]':
+                        discover: 'true'
+                        resource_type: "EdgeNode"
+                        ipaddresses:
+                           - 'nsxedge.[8]->management_ip'
+                    '[9]':
+                        discover: 'true'
+                        resource_type: "EdgeNode"
+                        ipaddresses:
+                           - 'nsxedge.[9]->management_ip'
+
+        CreateEdgeClusterWithEdgeNode:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            edgecluster:
+                '[1]':
+                    name: 'Edge_Cluster_1'
+                    summary: "Edge Cluster created through automation"
+                    members:
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[3]'
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[4]'
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[5]'
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[6]'
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[7]'
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[8]'
+                    fabric_profile_bindings:
+                      - resource_type: "FabricProfileClusterKeepAlive"
+                        # enter the fabric_profile_id: uuid1
+                        fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        # create logical switches for Tier0
+        CreateLogicalSwitch1ForTIER0: *CREATE_LOGICAL_SWITCH_01_TIER0
+        CreateLogicalSwitch2ForTIER0: *CREATE_LOGICAL_SWITCH_02_TIER0
+
+        # create 2 logical port on switch 1 for uplink for tier0
+        CreateLogicalPortsForUplinkForTIER0:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalport:
+                '[1]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    name: 'TIER0-LogicalPort-1-For-uplink'
+                    admin_state: UP
+                '[2]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    name: 'TIER0-LogicalPort-2-For-uplink'
+                    admin_state: UP
+                '[3]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    name: 'TIER0-LogicalPort-3-For-uplink'
+                    admin_state: UP
+                '[4]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    name: 'TIER0-LogicalPort-4-For-uplink'
+                    admin_state: UP
+                '[5]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    name: 'TIER0-LogicalPort-5-For-uplink'
+                    admin_state: UP
+                '[6]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    name: 'TIER0-LogicalPort-6-For-uplink'
+                    admin_state: UP
+                '[7]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    name: 'TIER0-LogicalPort-7-For-uplink'
+                    admin_state: UP
+                '[8]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    name: 'TIER0-LogicalPort-8-For-uplink'
+                    admin_state: UP
+                '[9]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    name: 'TIER0-LogicalPort-9-For-uplink'
+                    admin_state: UP
+
+        CreateLogicalPortForDownlinkForTIER0:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalport:
+                '[10]':
+                    switch_id: nsxmanager.[1].logicalswitch.[2]
+                    name: 'TIER0-LogicalPort-10-For-downlink'
+                    admin_state: UP
+
+        CreateTIER0LogicalRouterForEdge: *CREATE_LOGICAL_ROUTER_TIER0
+
+        CreateDownlinkLogicalRouterPortForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouterport:
+                '[1]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-2-Downlinkport'
+                    summary: "LRPort Downlink Port1 created through automation"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[10]->id
+                    resource_type: "LogicalRouterDownLinkPort"
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.60.1'
+
+        AddEdgeNode9ToCluster:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].edgecluster.[1]"
+            reconfigure: true
+            name: 'Edge_Cluster_1_update'
+            summary: "Edge Cluster updated through automation"
+            members:
+              - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+              - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+              - edge_node_id: 'nsxmanager.[1].edgenode.[3]'
+              - edge_node_id: 'nsxmanager.[1].edgenode.[4]'
+              - edge_node_id: 'nsxmanager.[1].edgenode.[5]'
+              - edge_node_id: 'nsxmanager.[1].edgenode.[6]'
+              - edge_node_id: 'nsxmanager.[1].edgenode.[7]'
+              - edge_node_id: 'nsxmanager.[1].edgenode.[8]'
+              - edge_node_id: 'nsxmanager.[1].edgenode.[9]'
+            fabric_profile_bindings:
+              - resource_type: "FabricProfileClusterKeepAlive"
+                # enter the fabric_profile_id: uuid1
+                fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        CreateUplinkLogicalRouterPortsForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouteruplinkport:
+                '[1]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port1 created through automation"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[1]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.1'
+                '[2]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port2 created through automation"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[2]->id
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[2]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.2'
+                '[3]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port3 created through automation"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[3]->id
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[3]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.3'
+                '[4]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port4 created through automation"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[4]->id
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[4]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.4'
+                '[5]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port5 created through automation"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[5]->id
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[5]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.5'
+                '[6]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port6 created through automation"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[6]->id
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[6]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.6'
+                '[7]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port7 created through automation"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[7]->id
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[7]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.7'
+                '[8]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port8 created through automation"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[8]->id
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[8]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.8'
+
+        CreateUplinkLogicalRouterPort9ForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: EINVALID
+            logicalrouteruplinkport:
+                '[9]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-LRPort-1-UPLINKPORT'
+                    summary: "TIER0 LRPort Uplink Port9 created through automation"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[9]->id
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[9]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.9'
+
+        DeleteEdgeCluster: *DELETE_EDGE_CLUSTER
+
+        DeleteFabricProfile: *DELETE_FABRIC_PROFILE
+
+        DeleteLogicalRouter: *DELETE_LOGICAL_ROUTER
+
+        DeleteLogicalRouterPort:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            sleepbetweenworkloads: 120
+            deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[-1]"
+
+        DeleteLogicalRouterUplinkPort: *DELETE_LOGICAL_ROUTER_UPLINK_PORT
+
+        DeleteLogicalPorts: *DELETE_LOGICAL_PORT
+
+        DeleteLogicalSwitches: *DELETE_LOGICAL_SWITCH
+
+        DiscoverHostnodes: *DISCOVER_HOST_NODES
+
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01--ESX
+
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01--ESX
+
+        CreateTransportNodes: *CREATE_TRANSPORT_NODE_01--ESX
+
+        DeleteTransportZone: *DELETE_TRANSPORT_ZONE_01--ESX
+
+        DeleteUplinkProfile: *DELETE_UPLINK_PROFILE_01--ESX
+
+        DeleteTransportNodes: *DELETE_TRANSPORT_NODE_01--ESX

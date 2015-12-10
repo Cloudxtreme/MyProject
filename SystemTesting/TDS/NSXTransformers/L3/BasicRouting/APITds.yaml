@@ -1,0 +1,261 @@
+{% include 'TDS/NSXTransformers/L3/BasicRouting/APIWorkloads.yaml' %}
+
+tds_template: &tds_template
+    AutomationLevel: Automated
+    Category: L3
+    Component: BasicRouting
+    Developer: miriyalak
+    FullyAutomatable: Y
+    PartnerFacing: N
+    Product: NSXTransformers
+    Status: Execution Ready
+    Tags: cat,nsxmanager,management,logicalrouter
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Version: 2
+
+p0_template: &p0_template
+    <<: *tds_template
+    Priority: P0
+
+p1_template: &p1_template
+    <<: *tds_template
+    Priority: P1
+
+LogicalRouter:
+    <<: *p0_template
+    Duration: 5
+    ExpectedResult: LRouter should get created successfully
+    Procedure:
+        - Create one LRouter
+        - Verify LRouter gets created successfully
+        - Update LRouter name and other properties
+        - Verify LRouter gets updated successfully
+    Summary: Verify that LRouter can be created and updated
+    TestName: LogicalRouter
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+                ip: None
+    WORKLOADS:
+        Sequence:
+            - - CreateLR-1
+            - - ReadLR-1
+            - - UpdateLR-1
+            - - ReadAfterUpdateLR-1
+        ExitSequence:
+            - - DeleteLR-1
+        ReadLR-1:
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            Type: Router
+            read:
+                id_[?]equal_to: nsxmanager.[1].logicalrouter.[1]->id
+                name[?]equal_to: lrouter-1
+                router_type[?]equal_to: TIER0
+                summary[?]equal_to: LRouter1 created through automation
+        ReadAfterUpdateLR-1:
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            Type: Router
+            read:
+                id_[?]equal_to: nsxmanager.[1].logicalrouter.[1]->id
+                name[?]equal_to: lrouter-1-updated
+                router_type[?]equal_to: TIER0
+                summary[?]equal_to: LRouter1 updated through automation
+        UpdateLR-1:
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            Type: Router
+            reconfigure:
+                name: lrouter-1-updated
+                router_type: TIER0
+                summary: LRouter1 updated through automation
+LogicalRouterPort:
+    <<: *p0_template
+    Duration: 5
+    ExpectedResult: LRouterPort should get created successfully
+    Procedure:
+        - Create one LRouter
+        - Create one LRPort for that LRouter
+        - Verify that LRPort gets created successfully
+        - Update LRPort name and other properties
+        - Verify that LRPort gets updated successfully
+    Summary: Verify that LRPort can be created and updated
+    TestName: LogicalRouterPort
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+                ip: None
+    WORKLOADS:
+        Sequence:
+            - - CreateLR-1
+            - - CreateLRP-1
+            - - ReadLRP-1
+            - - UpdateLRP-1
+            - - ReadAfterUpdateLRP-1
+        ExitSequence:
+            - - DeleteLRP-1
+            - - DeleteLR-1
+        CreateLRP-1:
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalrouterport:
+                '[1]':
+                    logical_router_id: nsxmanager.[1].logicalrouter.[1]
+                    name: lrouterport-1
+                    resource_type: LogicalRouterDownLinkPort
+                    subnets:
+                    -   ip_addresses:
+                        - 192.168.1.1
+                        prefixlen: 24
+                    summary: LRPort1 created through automation
+        UpdateLRP-1:
+            TestPort: nsxmanager.[1].logicalrouterport.[1]
+            Type: Port
+            reconfigure:
+                name: lrouterport-1-updated
+                subnets:
+                -   ip_addresses:
+                    - 192.168.1.200
+                    prefixlen: 22
+                summary: LRPort1 updated through automation
+        ReadLRP-1:
+            TestPort: nsxmanager.[1].logicalrouterport.[1]
+            Type: Port
+            read:
+                id_[?]equal_to: nsxmanager.[1].logicalrouterport.[1]->id
+                macaddress[?]defined: ''
+                name[?]equal_to: lrouterport-1
+                summary[?]equal_to: LRPort1 created through automation
+                subnets[?]equal_to:
+                -   ip_addresses:
+                    - 192.168.1.1
+                    prefixlen: 24
+        ReadAfterUpdateLRP-1:
+            TestPort: nsxmanager.[1].logicalrouterport.[1]
+            Type: Port
+            read:
+                id_[?]equal_to: nsxmanager.[1].logicalrouterport.[1]->id
+                macaddress[?]defined: ''
+                name[?]equal_to: lrouterport-1-updated
+                summary[?]equal_to: LRPort1 updated through automation
+                subnets[?]equal_to:
+                -   ip_addresses:
+                    - 192.168.1.200
+                    prefixlen: 22
+LogicalRouterPortAttachLSPort:
+    <<: *p1_template
+    Duration: 5
+    ExpectedResult: LRouter should get created successfully
+    Procedure:
+    - Create one LRouter
+    - Create one LRPort for that LRouter
+    - Create one LSPort on an LSwitch
+    - Attach LSPort to LRPort already created
+    - Verify that LSPort gets attached to LRPort successfully
+    Summary: Verify that LRPort can be created and lsport attached later
+    TestName: LogicalRouterPortAttachLSPort
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+                ip: None
+    WORKLOADS:
+        Sequence:
+            - - CreateTZ-1
+            - - CreateLS-1
+            - - CreateLSP-1
+            - - CreateLR-1
+            - - CreateLRP-1
+            - - ReadLRP-1
+            - - AttachLRP-1_LSP-1
+            - - ReadAfterAttachLRP-1
+        ExitSequence:
+            - - DeleteLRP-1
+            - - DeleteLR-1
+            - - DeleteLSP-1
+            - - DeleteLS-1
+            - - DeleteTZ-1
+        CreateLRP-1:
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalrouterport:
+                '[1]':
+                    logical_router_id: nsxmanager.[1].logicalrouter.[1]
+                    name: lrouterport-1
+                    resource_type: LogicalRouterDownLinkPort
+                    subnets:
+                    -   ip_addresses:
+                        - 192.168.1.1
+                        prefixlen: 24
+                    summary: LRPort1 created through automation
+        ReadLRP-1:
+            TestPort: nsxmanager.[1].logicalrouterport.[1]
+            Type: Port
+            read:
+                id_[?]equal_to: nsxmanager.[1].logicalrouterport.[1]->id
+                macaddress[?]defined: ''
+                name[?]equal_to: lrouterport-1
+                summary[?]equal_to: LRPort1 created through automation
+        AttachLRP-1_LSP-1:
+            TestPort: nsxmanager.[1].logicalrouterport.[1]
+            Type: Port
+            reconfigure:
+                linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+                name: lrouterport-1-attached-lswitchport-1
+                summary: LRPort1 attached to LSPort1 through automation
+                subnets:
+                -   ip_addresses:
+                    - 192.168.1.1
+                    prefixlen: 24
+        ReadAfterAttachLRP-1:
+            TestPort: nsxmanager.[1].logicalrouterport.[1]
+            Type: Port
+            read:
+                id_[?]equal_to: nsxmanager.[1].logicalrouterport.[1]->id
+                linked_switch_port_id[?]equal_to: nsxmanager.[1].logicalport.[1]->id
+                macaddress[?]defined: ''
+                name[?]equal_to: lrouterport-1-attached-lswitchport-1
+                summary[?]equal_to: LRPort1 attached to LSPort1 through automation
+LogicalRouterDuplicateLSPortAttach:
+    <<: *p1_template
+    ExpectedResult: LRouter should get created successfully
+    Procedure:
+    - Create one LRouter
+    - Create one LRPort for that LRouter
+    - Create one LSPort on an LSwitch
+    - Attach LSPort to LRPort already created
+    - Verify that same LSPort cannot be attached to another
+      LRPort
+    Summary: Verify that multiple lrports cannot attach to same lsport
+    TestName: LogicalRouterDuplicateLSPortAttach
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+                ip: None
+    WORKLOADS:
+        Sequence:
+            - - CreateTZ-1
+            - - CreateLS-1
+            - - CreateLSP-1
+            - - CreateLR-1
+            - - CreateLRP-1_IP-192.168.1.1_LSP-1
+            - - CreateLRP-2_IP-192.168.2.1_LSP-1
+        ExitSequence:
+            - - DeleteLRP-1
+            - - DeleteLSP-1
+            - - DeleteLS-1
+            - - DeleteLR-1
+        CreateLRP-2_IP-192.168.2.1_LSP-1:
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            ExpectedResult:
+                    status_code: BAD_REQUEST
+            logicalrouterport:
+                '[2]':
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+                    logical_router_id: nsxmanager.[1].logicalrouter.[1]
+                    name: lrouterport-2
+                    resource_type: LogicalRouterDownLinkPort
+                    subnets:
+                    -   ip_addresses:
+                        - 192.168.2.1
+                        prefixlen: 24
+                    summary: LRPort2 created through automation

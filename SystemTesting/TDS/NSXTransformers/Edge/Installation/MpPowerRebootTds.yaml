@@ -1,0 +1,142 @@
+EdgeSetup:
+    Product: "NSXTransformers"
+    Category: "Edge"
+    Component: "EdgeRegistration"
+    Developer: "sureshkoli"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat-02'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: "/NSXTransformers/EDGE/Install"
+    TestName: "Power OFF ,Power ON Edge "
+    Summary: "Power OFF ,Power ON Edge"
+    Procedure: "1. Installed Edge.
+                2. Configured services in Edge.
+                3. Power OFF/On Reboot Edge .
+                4. verify registration and configured services status"
+    ExpectedResult: "Verify there is no impact on configured services on Edge
+                     and no registration require after power ON "
+
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        Sequence:
+              - ['DiscoverHostnodes']
+              - ['CreateTransportZone']
+              - ['CreateUplinkProfile']
+              - ['CreateTransportNodes']
+              - ['CreateFabricProfile']
+              - ['DiscoverEdgeNodeId']
+              - ['CreateEdgeClusterWithEdgeNode']
+              - ['CreateLogicalSwitch1ForTIER0']
+              - ['CreateLogicalSwitch2ForTIER0']
+              - ['CreateLogicalPortForUplinkForTIER0']
+              - ['CreateLogicalPortForDownlinkForTIER0']
+              - ['CreateTIER0LogicalRouterForEdge']
+              - ['CreateDownlinkLogicalRouterPortForEdge']
+              - ['CreateUplinkLogicalRouterPortForEdge']
+              - ['UpdateStaticRoutes']
+              - ['VerifyEdgeClusterStatus']
+              - ['NSXReboot']
+              - ['VerifyEdgeClusterStatusAfterReboot']
+        ExitSequence:
+              - ['DeleteLogicalRouterUplinkPort']
+              - ['DeleteLogicalRouterPort']
+              - ['DeleteLogicalRouter']
+              - ['DeleteEdgeCluster']
+              - ['DeleteFabricProfile']
+              - ['DeleteLogicalPorts']
+              - ['DeleteLogicalSwitches']
+              - ['DeleteTransportNodes']
+              - ['DeleteUplinkProfile']
+              - ['DeleteTransportZone']
+
+        NSXReboot:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            configure_power_state:
+                state: 'reboot'
+                execution_type: 'cli'
+
+        VerifyEdgeClusterStatus:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            sleepbetweenworkloads: 60
+            get_cluster_status:
+                ha_status[?]equal_to: 'Active'
+                ha_admin_state[?]equal_to: 'Up'
+                routing_status[?]equal_to: 'Up'
+                routing_status_channel[?]equal_to: 'Up'
+                healthcheck_status_channel[?]equal_to: 'Up'
+
+        VerifyEdgeClusterStatusAfterReboot:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            sleepbetweenworkloads: 300
+            get_cluster_status:
+                ha_status[?]equal_to: 'Active'
+                ha_admin_state[?]equal_to: 'Up'
+                routing_status[?]equal_to: 'Up'
+                routing_status_channel[?]equal_to: 'Up'
+                healthcheck_status_channel[?]equal_to: 'Up'
+
+        DiscoverHostnodes: *DISCOVER_HOST_NODES
+
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01--ESX
+
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01--ESX
+
+        CreateTransportNodes: *CREATE_TRANSPORT_NODE_01--ESX
+
+        DeleteTransportZone: *DELETE_TRANSPORT_ZONE_01--ESX
+
+        DeleteUplinkProfile: *DELETE_UPLINK_PROFILE_01--ESX
+
+        DeleteTransportNodes: *DELETE_TRANSPORT_NODE_01--ESX
+
+        CreateEdgeClusterWithEdgeNode: *CREATE_EDGE_CLUSTER_WITH_EDGE_NODE
+
+        UpdateStaticRoutes: *UPDATE_STATIC_ROUTES
+
+        CreateFabricProfile: *CREATE_FABRIC_PROFILE
+
+        DiscoverEdgeNodeId: *DISCOVER_EDGE_NODE_ID
+
+        # create logical switches for Tier0
+        CreateLogicalSwitch1ForTIER0: *CREATE_LOGICAL_SWITCH_01_TIER0
+        CreateLogicalSwitch2ForTIER0: *CREATE_LOGICAL_SWITCH_02_TIER0
+
+        # create 2 logical port on switch 1 for uplink for tier0
+        CreateLogicalPortForUplinkForTIER0: *CREATE_LOGICAL_PORT_FOR_UPLINK_TIER0
+
+        # create 1 logical port on switch 2 for downlink for tier0
+        CreateLogicalPortForDownlinkForTIER0: *CREATE_LOGICAL_PORT_FOR_DOWNLINK_TIER0
+
+        CreateTIER0LogicalRouterForEdge: *CREATE_LOGICAL_ROUTER_TIER0
+
+        CreateDownlinkLogicalRouterPortForEdge: *CREATE_DOWNLINK_LOGICAL_ROUTER_PORT
+
+        CreateUplinkLogicalRouterPortForEdge: *CREATE_UPLINK_LOGICAL_ROUTER_PORT
+
+        DeleteEdgeCluster: *DELETE_EDGE_CLUSTER
+
+        DeleteFabricProfile: *DELETE_FABRIC_PROFILE
+
+        DeleteLogicalRouter: *DELETE_LOGICAL_ROUTER_01
+
+        DeleteLogicalRouterPort: *DELETE_LOGICAL_ROUTER_PORT_01
+
+        DeleteLogicalRouterUplinkPort: *DELETE_LOGICAL_ROUTER_UPLINK_PORT
+
+        DeleteLogicalPorts: *DELETE_LOGICAL_PORT_01
+
+        DeleteLogicalSwitches: *DELETE_LOGICAL_SWITCH_01

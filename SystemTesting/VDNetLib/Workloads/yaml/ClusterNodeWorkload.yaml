@@ -1,0 +1,156 @@
+---
+is_master:
+  description: the ccp cluster is master or not
+  derived_components:
+    - clusternode
+  format: string
+  sample_value: true/false
+  type: parameter
+in_majority:
+  description: the ccp cluster is in majority or not
+  derived_components:
+    - clusternode
+  format: string
+  sample_value: true/false
+  type: parameter
+cluster_nodes:
+  description: ccp cluster node spec
+  derived_components:
+    - clusternode
+  format:
+    - 'cluster_nodes[?]contain_once':
+         - controller_ip: vdnet index
+           id_: vdnet index
+           status: "ref: status"
+         - controller_ip: vdnet index
+           id_: vdnet index
+           status: "ref: status"
+         - controller_ip: vdnet index
+           id_: vdnet index
+           status: "ref: status"
+  sample_value:
+    - 'cluster_nodes[?]contain_once':
+         - controller_ip: "nsxcontroller.[]"
+           id_: "nsxcontroller.[1].clusternode.[1]"
+           status: "active"
+         - controller_ip: "nsxcontroller.[2]"
+           id_: "nsxcontroller.[2].clusternode.[2]"
+           status: "active"
+         - controller_ip: "nsxcontroller.[3]"
+           id_: "nsxcontroller.[3].clusternode.[3]"
+           status: "active"
+  type: parameter
+
+get_cluster_node:
+  derived_components:
+    - clusternode
+  description: Verify cluster node info on CCP node
+  format:
+    -'get_cluster_node':
+        'id_[?]equal_to': vdnet index
+        'is_master[?]equal_to': "ref: is_master"
+        'in_majority[?]equal_to': "ref: in_majority"
+        'cluster_nodes[?]contain_once':
+           - controller_ip: vdnet index
+             id_: vdnet index
+             status: "ref: status"
+           - controller_ip: vdnet index
+             id_: vdnet index
+             status: "ref: status"
+           - controller_ip: vdnet index
+             id_: vdnet index
+             status: "ref: status"
+  sample_value:
+    -'get_cluster_node':
+        'id_[?]equal_to': nsxcontroller.[1].clusternode.[1]
+        'is_master[?]equal_to': "true"
+        'in_majority[?]equal_to': "true"
+        'cluster_nodes[?]contain_once':
+           - controller_ip: "nsxcontroller.[1]"
+             id_: "nsxcontroller.[1].clusternode.[1]"
+             status: "active"
+           - controller_ip: "nsxcontroller.[2]"
+             id_: "nsxcontroller.[2].clusternode.[2]"
+             status: "active"
+           - controller_ip: "nsxcontroller.[3]"
+             id_: "nsxcontroller.[3].clusternode.[3]"
+             status: "active"
+  method: get_cluster_node
+  params:
+    - execution_type
+    - get_cluster_node
+  preprocess: PreProcessVerification
+  type: verification
+
+get_controller_vif:
+  derived_components:
+    - clusternode
+  description: Verify vif entry info on CCP node
+  format:
+    - vif_id: vdnet index
+      port_id: vdnet index
+      transportnode_id: vdnet index
+      transportnode_ip: vdnet index
+  method: get_controller_vif
+  params:
+    - execution_type
+    - get_controller_vif
+    - vif_id
+  preprocess: PreProcessVerification
+  sample_value:
+    - vif_id: 'vm.[1].vnic.[1]->uuid'
+      port_id: 'nsxmanager.[1].logicalswitch.[1]->id_'
+      transportnode_id: 'nsxmanager.[1].transportnode.[1]->id_'
+      transportnode_ip: 'esx.[1]->mgmt_ip'
+  type: verification
+
+get_switch_ports:
+  derived_components:
+    - clusternode
+  description: Verify logicalswitch port info on CCP node
+  format:
+    - vif_id: vdnet index
+      switch_id: vdnet index
+      port_id: vdnet index
+  method: get_switch_ports
+  params:
+    - execution_type
+    - get_switch_ports
+    - switch_id
+  preprocess: PreProcessVerification
+  sample_value:
+    - vif_id: 'vm.[1].vnic.[1]->uuid'
+      switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+      port_id: 'nsxmanager.[1].logicalport.[1]->id_'
+  type: verification
+
+switch_id:
+  description: Identifier for a logical switch.
+  derived_components:
+    - clusternode
+  format: vdnet index
+  method: GetComponentAttribute
+  sample_value: nsxmanager.[1].logicalswitch.[1]
+  type: parameter
+
+get_cluster_startupnodes:
+  derived_components:
+    - clusternode
+  description: Verify start up nodes info on CCP node
+  method: get_cluster_startupnodes
+  params:
+    - execution_type
+    - get_cluster_startupnodes
+  preprocess: PreProcessVerification
+  type: verification
+
+get_cluster_managers:
+  derived_components:
+    - clusternode
+  description: Verify managers info on CCP node
+  method: get_cluster_managers
+  params:
+    - execution_type
+    - get_cluster_managers
+  preprocess: PreProcessVerification
+  type: verification

@@ -1,0 +1,247 @@
+---
+teaming:
+  description: 'Uplink Teaming policy and order of uplinks'
+  type: parameter
+  derived_components:
+     - uplinkprofile
+  method: ProcessParameters
+policy:
+  description: 'policy'
+  format: 'string'
+  sample_value:
+    - FAILOVER_ORDER
+  type: parameter
+  allowed_values:
+    - FAILOVER_ORDER
+    - LOADBALANCE_SRCID
+resource_type:
+  description: 'resource type'
+  format: 'string'
+  sample_value:
+    - uplink
+  type: parameter
+active:
+  description: 'active uplink list'
+  type: parameter
+  method: ProcessParameters
+  sample_value:
+    - uplink: 'uplink1'
+      type: 'PNIC'
+    - uplink: 'uplink2'
+      type: 'LAG'
+standby:
+  description: 'standby uplink list'
+  type: parameter
+  method: ProcessParameters
+  sample_value:
+    - uplink: 'uplink1'
+      type: 'PNIC'
+    - uplink: 'uplink2'
+      type: 'LAG'
+reconfigure:
+  description: Reconfigures uplink profile
+  format: string
+  sample_value: true
+  derived_components:
+     - all
+  method: UpdateComponent
+  params:
+    - teaming
+    - vlan
+    - name
+    - mtu
+  preprocess: PreProcessHashRefTypeAPI
+  type: action
+
+mtu:
+  description: 'MTU to be set for the uplink profile'
+  type: parameter
+  format: integer
+  method: ProcessParameters
+  sample_value:
+    - 1600
+  allowed_values:
+    - 1500-9000
+vlan:
+  description: 'VLAN ID to be used as transport for uplink profile'
+  type: parameter
+  format: integer
+  method: ProcessParameters
+  sample_value:
+    - 20
+  allowed_values:
+    - 0-4094
+
+mode:
+  description: 'LACP mode for the lag'
+  type: parameter
+  format: string
+  method: ProcessParameters
+  sample_value:
+    - ACTIVE
+  allowed_values:
+    - ACTIVE
+    - PASSIVE
+
+lags:
+  description: 'array of the lag'
+  type: parameter
+  format:
+    - name: 'ref: name'
+      mode: 'ref: mode'
+      load_balance: 'ref: load_balance'
+      number_of_uplinks: 'ref: number_of_uplinks'
+  method: ProcessParameters
+  sample_value:
+    - name: lag1
+      mode: ACTIVE
+      load_balance: SRCMAC
+      number_of_uplink: 3
+
+load_balance:
+  description: 'load balancing algorithm for the lag'
+  type: parameter
+  format: string
+  method: ProcessParameters
+  sample_value: SRCMAC
+  allowed_values:
+    - SRCMAC
+    - DESTMAC
+    - SRCDESTMAC
+    - SRCDESTIPVLAN
+
+number_of_uplinks:
+  description: 'number of uplinks in a LAG'
+  type: parameter
+  format: integer
+  method: ProcessParameters
+  sample_value: 3
+
+send_enabled:
+  description:  Enable or disable sending LLDP packets.
+  format: boolean
+  method: ConvertToPythonBool
+  type: parameter
+  sample_value: true
+
+update:
+  derived_components:
+    - lldp_profile
+  description: update the component
+  method: UpdateComponent
+  params:
+    - update
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+
+white_list:
+  derive_components:
+    - spoof_guard_profile
+  description: List of providers for white listed address bindings
+  method: ProcessParameters
+  type: parameter
+  format: array
+  sample_value:
+    - LPORT_BINDINGS
+  allowed_values:
+    - LPORT_BINDINGS
+    - LSWITCH_BINDINGS
+
+bpdu_filter:
+  derive_components:
+    - switch_securiy_profile
+  description: Indicates whether BPDU filter is enabled
+  method: ProcessParameters
+  type: parameter
+  format:
+    - enabled: 'ref: enabled'
+      macaddresses: 'ref: macaddresses'
+  sample_value:
+    - enabled: 'true'
+      macaddresses:
+        - 'XX:XX:XX:XX:XX:XX'
+
+dhcp_filter:
+  derived_components:
+    - switch_securiy_profile
+  description: DHCP filtering configuration
+  method: ProcessParameters
+  type: parameter
+  format:
+    - server_block: 'ref: server_block'
+      client_block: 'ref: client_block'
+  sample_value:
+    - server_block: 'true'
+      client_block: 'false'
+
+server_block:
+  derived_components:
+    - switch_security_profile
+  description: Indicates whether DHCP server blocking is enabled
+  format: boolean
+  sample_value: true
+  type: parameter
+  method: ConvertToPythonBool
+
+client_block:
+  derived_components:
+    - switch_security_profile
+  description: Indicates whether DHCP client blocking is enabled
+  format: boolean
+  sample_value: true
+  type: parameter
+  method: ConvertToPythonBool
+
+rate_limits:
+  derived_components:
+    - switch_security_profile
+  description: Traffic rate limiting configuration for broadcast and multicast
+  format:
+    - rx_broadcast: 'ref: rx_broadcast'
+      tx_broadcast: 'ref: tx_broadcast'
+      rx_multicast: 'ref: rx_multicast'
+      tx_multicast: 'ref: tx_multicast'
+  sample_value:
+    - rx_broadcast: 10
+      tx_broadcast: 20
+      rx_multicast: 10
+      tx_broadcast: 10
+  type: parameter
+  method: ProcessParameters
+
+rx_broadcast:
+  derived_components:
+    - switch_security_profile
+  description: Incoming broadcast traffic limit in packets per second
+  format: integer
+  sample_value: 2
+  type: parameter
+  method: ProcessParameters
+
+tx_broadcast:
+  derived_components:
+    - switch_security_profile
+  description: Outgoing broadcast traffic limit in packets per second
+  format: integer
+  sample_value: 2
+  type: parameter
+  method: ProcessParameters
+
+rx_multicast:
+  derived_components:
+    - switch_security_profile
+  description: Incoming multicast traffic limit in packets per second
+  format: integer
+  sample_value: 2
+  type: parameter
+  method: ProcessParameters
+
+tx_multicast:
+  derived_components:
+    - switch_security_profile
+  description: outgoing multicast traffic limit in packets per second
+  format: integer
+  sample_value: 2
+  type: parameter
+  method: ProcessParameters
+

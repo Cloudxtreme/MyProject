@@ -1,0 +1,151 @@
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+L2BasicMulticast:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Summary: This test case verifies L2 connectivity works between 2 VC
+             sites
+    Tags: 'TBD'
+    Version: 2
+    TestName: L2Basic
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2MulticastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['NetperfTestAllVMs']
+        ExitSequence:
+            - ['AllVMsPowerOff']
+            # This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigAllSite']
+            - ['UnRegisterAllSlaves']
+            - ['DELETE_ALL_CONTROLLERS']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+            ## VIB uninstall and deleting vxlancontroller is done in
+            ## Testbedcleanup
+
+L2BasicDifferentOrderMulticast:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Tags: 'TBD'
+    Version: 2
+    TestName: L2Basic
+    TestbedSpec: *L2_TOPOLOGY_01
+    Summary: This test case verifies L3 East West connectivity works between 2 VC
+             sites
+    WORKLOADS:
+        Sequence:
+            # TODO: We can group this and launch controller deployment
+            # + vib installation in parallel
+            - ['SetMasterNSXReplicatorAsPrimary',
+               'AllVMsPowerOn']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2MulticastGlobalLogicalSwitches']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+
+            ## Check L2 connecitivity first, same site and different site
+            ## Even though its verified in L2 P0 tests, this is the first
+            ## thing we check when L3 fails
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+
+        ExitSequence:
+            - ['AllVMsPowerOff']
+            ## This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigAllSite']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+
+L2BasicUnicast:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Tags: 'TBD'
+    Version: 2
+    Summary: |
+        "verify ping and BUM traffic across multiple VC sites in unicast mode of GLS"
+        "To verify controller info sync to host by deleting TZ and GLS"
+        "Ref vxlan tds for additional verification steps"
+    TestName: Unicast
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['VerifyIpLearningVMNotOnHost']
+            - ['AllVMsBUMEachOther']
+            - ['VerifyIpLearningVMOnHost']
+
+        ExitSequence:
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+
+
+L2BasicDifferentOrderUnicast:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Tags: 'TBD'
+    Version: 2
+    Summary: |
+        "verify ping and BUM traffic across multiple VC sites in unicast mode of GLS"
+        "To verify controller info sync to host by deleting TZ and GLS"
+        "Ref vxlan tds for additional verification steps"
+    TestName: Unicast
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+              #registering  the slave  later
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['VerifyIpLearningVMNotOnHost']
+            - ['AllVMsBUMEachOther']
+            - ['VerifyIpLearningVMOnHost']
+
+        ExitSequence:
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']

@@ -1,0 +1,507 @@
+1/21/2015 1:22:47 PM
+
+UI deployment of NSX network
+
+testrunid: rtqa10c10-kvm-api
+
+vdnet-esx:main$ ./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputKvm.yaml  -t NSXTransformers.systemtest.bat.kvm.TenantsLocalValidateNetwork.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetwork/$(date +%Y%02m%02d-%02k%02M%02S) --testbed save
+
+Session log file: /tmp-vdnet/vdnet/TenantsLocalValidateNetwork/20150121-155607/vdnet.log
+Racetrack link  : http://racetrack-dev.eng.vmware.com/result.php?id=593121
+Base log dir for this session: /tmp-vdnet/vdnet/TenantsLocalValidateNetwork/20150121-155607
+
+ifconfig eth1 20.1.1.10 netmask 255.255.255.0
+ip route add 20.0.0.0/8 dev eth1
+
+esx.1 ip address: 10.146.100.130
+kvm.1 ip address: 10.146.102.91
+kvm.2 ip address: 10.146.100.43
+kvm.3 ip address: 10.146.110.231
+kvm.4 ip address: 10.146.104.237
+kvm.5 ip address: 10.146.105.124
+kvm.6 ip address: 10.146.101.6
+kvm.7 ip address: 10.146.110.96
+kvm.8 ip address: 10.146.111.172
+kvm.9 ip address: 10.146.106.55
+kvm.10 ip address: 10.146.107.236
+nsxcontroller.1 ip address: 10.146.102.67
+nsxmanager.1 ip address: 10.146.110.80
+
+1-template_kvm_debian-local-826, IP address: 10.146.110.239
+2-template_kvm_debian-local-826, IP address: 10.146.102.182
+3-template_kvm_debian-local-826, IP address: 10.146.100.163
+4-template_kvm_debian-local-826, IP address: 10.146.109.134
+5-template_kvm_debian-local-826, IP address: 10.146.103.244
+6-template_kvm_debian-local-826, IP address: 10.146.102.190
+7-template_kvm_debian-local-826, IP address: 10.146.102.143
+8-template_kvm_debian-local-826, IP address: 10.146.105.209
+9-template_kvm_debian-local-826, IP address: 10.146.103.12
+10-template_kvm_debian-local-826, IP address: 10.146.106.80
+11-template_kvm_debian-local-826, IP address: 10.146.106.63
+12-template_kvm_debian-local-826, IP address: 10.146.106.90
+
+
+========================================================================
+NSX MANAGER UI -> NETWORK DEPOYMENT
+========================================================================
+
+Notes:
+as network is created via UI, double check using API that all is correct
+
+----------------------------------------
+- testbed deployment:
+----------------------------------------
+    based on BAT "TenantsLocalValidateNetwork --save" testbed:
+        deployed KVM hosts, RHEL VMs, NSX Manager, NSX Controller
+        RPMs installed,
+
+----------------------------------------
+- registration:
+----------------------------------------
+    controller & KVM hosts are VDnet registered and listed in UI
+
+----------------------------------------
+- create transport zone
+----------------------------------------
+VERIFY: ${CURLGET}/api/v1/transport-zones
+
+{
+  "cursor" : "00366aa7938f-8549-4374-8d22-6dd4f81a91f5TZ1",
+  "result_count" : 1,
+  "results" : [ {
+    "revision" : 0,
+    "id" : "6aa7938f-8549-4374-8d22-6dd4f81a91f5",
+    "display_name" : "TZ1",
+    "description" : "transport zone 1",
+    "resource_type" : "TransportZone",
+    "transport_type" : "OVERLAY",
+    "host_switch_name" : "nsxvswitch",
+    "_last_modified_user" : "admin",
+    "_last_modified_time" : 1421878212379,
+    "_create_time" : 1421878212379,
+    "_create_user" : "admin",
+    "_schema" : "/v1/schema/TransportZone"
+  } ]
+}
+
+----------------------------------------
+- create uplink profile
+----------------------------------------
+
+VERIFY ${CURLGET}/api/v1/host-switch-profiles
+
+{
+  "result_count" : 1,
+  "results" : [ {
+    "resource_type" : "UplinkHostSwitchProfile",
+    "revision" : 0,
+    "id" : "e6db6465-c230-4eb4-a673-9db0719dc9bd",
+    "display_name" : "UplinkProfile1",
+    "description" : "uplink profile 1",
+    "resource_type" : "UplinkHostSwitchProfile",
+    "system_defined" : false,
+    "mtu" : 1600,
+    "teaming" : {
+      "standby_list" : [ ],
+      "active_list" : [ {
+        "uplink_name" : "uplink-1",
+        "uplink_type" : "PNIC"
+      } ],
+      "policy" : "FAILOVER_ORDER"
+    },
+    "transport_vlan" : 0,
+    "_last_modified_user" : "admin",
+    "_last_modified_time" : 1421878422278,
+    "_create_time" : 1421878422278,
+    "_create_user" : "admin"
+  } ]
+}
+
+----------------------------------------
+- create transport IP pool manually
+----------------------------------------
+
+1387120: UI: no ability to create IP Pool for transport nodes
+
+CREATE: curl -k -u admin:default -H 'Content-Type: application/json' -X POST https://10.146.110.80:443/api/v1/pools/ip-pools -d '{ "display_name":"ip-pool-1", "description":"IP Pool 1", "subnets":[ { "dns_nameservers":[ "192.168.110.10" ], "allocation_ranges":[ { "start":"192.168.150.100", "end":"192.168.150.200" }], "gateway_ip":"192.168.150.2", "cidr":"192.168.150.0/24" }] }'
+
+curl -k -u admin:default -H 'Content-Type: aplication/json' -X GET https://10.146.101.17:443/api/v1/pools/ip-pools
+
+{
+  "revision" : 0,
+  "id" : "5df7cb1b-fde3-4133-a883-af11b8f02a2d",
+  "display_name" : "ip-pool-1",
+  "description" : "IP Pool 1",
+  "resource_type" : "IpPool",
+  "subnets" : [ {
+    "dns_nameservers" : [ "192.168.110.10" ],
+    "allocation_ranges" : [ {
+      "start" : "192.168.150.100",
+      "end" : "192.168.150.200"
+    } ],
+    "gateway_ip" : "192.168.150.2",
+    "cidr" : "192.168.150.0/24"
+  } ],
+  "_last_modified_user" : "admin",
+  "_last_modified_time" : 1421878500463,
+  "_create_time" : 1421878500463,
+  "_create_user" : "admin"
+}
+
+----------------------------------------
+- create 11 transport nodes
+----------------------------------------
+
+1387125: UI: on Add Transport Note screen, description field is missing
+TESTBLOCKER
+1387152 - UI: on Add Transport Node: Error "Unrecognized field migrate_mgmt_interfaces"
+
+${CURLGET}/api/v1/fabric/nodes > nodes.txt
+
+egrep "external_id|ip_addresses" nodes.txt
+
+kvm.1    "external_id" : "89edf68e-a1b2-11e4-97b2-005056b0474c",
+    "ip_addresses" : [ "10.146.102.91" ],
+kvm.2    "external_id" : "969ca6f0-a1b2-11e4-acfe-005056b0b84c",
+    "ip_addresses" : [ "10.146.100.43" ],
+kvm.3    "external_id" : "899a9322-a1b2-11e4-bc54-005056b0acbb",
+    "ip_addresses" : [ "10.146.110.231" ],
+kvm.4    "external_id" : "8bcfd7ce-a1b2-11e4-84dd-005056b0725f",
+    "ip_addresses" : [ "10.146.104.237" ],
+kvm.5    "external_id" : "8e5a8ffc-a1b2-11e4-97b9-005056b0f6ca",
+    "ip_addresses" : [ "10.146.105.124" ],
+kvm.6    "external_id" : "8c7cd1ea-a1b2-11e4-94de-005056b06da6",
+    "ip_addresses" : [ "10.146.101.6" ],
+kvm.7    "external_id" : "8a3cc2f0-a1b2-11e4-96c8-005056b0fbfd",
+    "ip_addresses" : [ "10.146.110.96" ],
+kvm.8    "external_id" : "8c9f7f1a-a1b2-11e4-8786-005056b04997",
+    "ip_addresses" : [ "10.146.111.172" ],
+kvm.9    "external_id" : "92c238ec-a1b2-11e4-bbf3-005056b087f0",
+    "ip_addresses" : [ "10.146.106.55" ],
+kvm.10    "external_id" : "93ea3512-a1b2-11e4-9248-005056b0238d",
+    "ip_addresses" : [ "10.146.107.236" ],
+
+----------------------------------------
+- workaround, API call to create Transport Node
+----------------------------------------
+
+curl -k -u admin:default -H 'Content-Type: application/json' -X POST https://10.146.101.17:443/api/v1/transport-nodes -d '  { "description":"Transport Node ESX 1", "display_name":"TN_ESX_1", "node_id":"1e1d98fa-a0c8-11e4-b186-fd819a4df8e1", "host_switches":[ { "host_switch_name": "opaque-switch-1", "static_ip_pool_id": "ad49c8ff-dbe5-454e-a7f9-901c228c3311", "host_switch_profile_ids": [ { "key":"UplinkHostSwitchProfile", "value":"8a307f6c-d69e-4c40-9985-cafd76c40362" } ], "pnics":[ { "uplink_name":"uplink-1", "device_name":"vmnic1" }] }], "transport_zone_endpoints":[ { "transport_zone_id":"08554825-f959-4be0-9399-d710ed16f684" }] } '
+
+{
+  "revision" : 0,
+  "id" : "773f810b-04e5-4a71-a994-709573cbae10",
+  "display_name" : "TN_ESX_1",
+  "description" : "Transport Node ESX 1",
+  "resource_type" : "TransportNode",
+  "host_switches" : [ {
+    "pnics" : [ {
+      "device_name" : "vmnic1",
+      "uplink_name" : "uplink-1"
+    } ],
+    "host_switch_profile_ids" : [ {
+      "value" : "8a307f6c-d69e-4c40-9985-cafd76c40362",
+      "key" : "UplinkHostSwitchProfile"
+    } ],
+    "static_ip_pool_id" : "ad49c8ff-dbe5-454e-a7f9-901c228c3311",
+    "host_switch_name" : "opaque-switch-1"
+  } ],
+  "transport_zone_endpoints" : [ {
+    "transport_zone_id" : "08554825-f959-4be0-9399-d710ed16f684"
+  } ],
+  "node_id" : "1e1d98fa-a0c8-11e4-b186-fd819a4df8e1",
+  "_last_modified_user" : "admin",
+  "_last_modified_time" : 1421789299355,
+  "_create_time" : 1421789299355,
+  "_create_user" : "admin"
+}
+
+
+curl -k -u admin:default -H 'Content-Type: application/json' -X GET https://10.146.101.17:443/api/v1/transport-nodes
+{
+  "cursor" : "00363f4cd669-bcfe-4da2-acb9-2f6c1bd2b8b1TN_KVM_9",
+  "result_count" : 9,
+  "results" : [ {
+    "revision" : 0,
+    "id" : "18175c64-057d-4589-8572-71c4722d0047",
+    "display_name" : "TN_KVM_1",
+    "description" : "Transport Node KVM `",
+    "resource_type" : "TransportNode",
+    "host_switches" : [ {
+      "pnics" : [ {
+        "device_name" : "eth1",
+        "uplink_name" : "uplink-1"
+      } ],
+      "host_switch_profile_ids" : [ {
+        "value" : "e6db6465-c230-4eb4-a673-9db0719dc9bd",
+        "key" : "UplinkHostSwitchProfile"
+      } ],
+      "static_ip_pool_id" : "5df7cb1b-fde3-4133-a883-af11b8f02a2d",
+      "host_switch_name" : "nsxvswitch"
+    } ],
+    "transport_zone_endpoints" : [ {
+      "transport_zone_id" : "6aa7938f-8549-4374-8d22-6dd4f81a91f5"
+    } ],
+    "node_id" : "89edf68e-a1b2-11e4-97b2-005056b0474c",
+    "_last_modified_user" : "admin",
+    "_last_modified_time" : 1421879271423,
+    "_create_time" : 1421879271423,
+    "_create_user" : "admin"
+  },
+
+----------------------------------------
+- crete logical switches
+----------------------------------------
+
+${CURLGET}/api/v1/logical-switches
+
+
+{
+  "cursor" : "0036252d3e68-d8e8-428d-b0d6-cdf3fe5b3029LS-7",
+  "result_count" : 7,
+  "results" : [ {
+    "revision" : 0,
+    "id" : "0038450e-a89c-46b5-bf43-27c9fa4c6c13",
+    "display_name" : "LS-1",
+    "description" : "logical switch 1",
+    "resource_type" : "LogicalSwitch",
+    "transport_zone_id" : "6aa7938f-8549-4374-8d22-6dd4f81a91f5",
+    "replication_mode" : "MTEP",
+    "admin_state" : "UP",
+    "vni" : 37000,
+    "vlan" : 0,
+    "switching_profile_ids" : [ {
+      "value" : "64814784-7896-3901-9741-badeff705639",
+      "key" : "IpDiscoverySwitchingProfile"
+    }, {
+      "value" : "93b4b7e8-f116-415d-a50c-3364611b5d09",
+      "key" : "PortMirroringSwitchingProfile"
+    }, {
+      "value" : "f313290b-eba8-4262-bd93-fab5026e9495",
+      "key" : "QosSwitchingProfile"
+    } ],
+    "_last_modified_user" : "admin",
+    "_last_modified_time" : 1421879958315,
+    "_create_time" : 1421879958315,
+    "_create_user" : "admin",
+    "_schema" : "/v1/schema/LogicalSwitch"
+  }
+
+----------------------------------------
+- VIF attachments via API
+----------------------------------------
+
+--- BEFORE - ovs-vsctl show
+
+ovs-vsctl show
+db2e75f3-05ee-4ae7-a4a5-739b0f0d9605
+    Manager "tcp:127.0.0.1:6632"
+        is_connected: true
+    Bridge nsxvswitch
+        Controller "unix:ovs-l3d.mgmt"
+            is_connected: true
+        Controller "tcp:127.0.0.1:6633"
+            is_connected: true
+        fail_mode: secure
+        Port nsxvswitch
+            Interface nsxvswitch
+                type: internal
+    Bridge "nsx-switch.0"
+        Port "nsx-uplink.0"
+            Interface "eth1"
+        Port "nsx-vtep0.0"
+            tag: 0
+            Interface "nsx-vtep0.0"
+                type: internal
+        Port "nsx-switch.0"
+            Interface "nsx-switch.0"
+                type: internal
+        Port "nsx-mgmt.eth1"
+            Interface "nsx-mgmt.eth1"
+                type: internal
+    Bridge "breth0"
+        fail_mode: standalone
+        Port "breth0"
+            Interface "breth0"
+                type: internal
+        Port "eth0"
+            Interface "eth0"
+        Port "vma6ef-00"
+            Interface "vma6ef-00"
+    Bridge br-int
+        fail_mode: secure
+        Port br-int
+            Interface br-int
+                type: internal
+    ovs_version: "2.3.90.2420090"
+
+ovs-vsctl add-br br-int
+ovs-vsctl set bridge br-int fail-mode=secure
+ovs-vsctl set bridge br-int external-ids:bridge-id=nsx-managed
+
+--- ovs-vsctl show
+
+db2e75f3-05ee-4ae7-a4a5-739b0f0d9605
+    Manager "tcp:127.0.0.1:6632"
+        is_connected: true
+    Bridge nsxvswitch
+        Controller "unix:ovs-l3d.mgmt"
+        Controller "tcp:127.0.0.1:6633"
+            is_connected: true
+        fail_mode: secure
+        Port nsxvswitch
+            Interface nsxvswitch
+                type: internal
+    Bridge "nsx-switch.0"
+        Port "nsx-uplink.0"
+            Interface "eth1"
+        Port "nsx-vtep0.0"
+            tag: 0
+            Interface "nsx-vtep0.0"
+                type: internal
+        Port "nsx-switch.0"
+            Interface "nsx-switch.0"
+                type: internal
+        Port "nsx-mgmt.eth1"
+            Interface "nsx-mgmt.eth1"
+                type: internal
+    Bridge "breth0"
+        fail_mode: standalone
+        Port "breth0"
+            Interface "breth0"
+                type: internal
+        Port "eth0"
+            Interface "eth0"
+        Port "vma6ef-00"
+            Interface "vma6ef-00"
+    Bridge br-int
+        Controller "unix:ovs-l3d.mgmt"
+        Controller "tcp:127.0.0.1:6633"
+            is_connected: true
+        fail_mode: secure
+        Port br-int
+            Interface br-int
+                type: internal
+    ovs_version: "2.3.90.2420090"
+
+--- VIF attach KVM.1 wit LS-1
+
+curl -k -u admin:default -H 'Content-Type: pplication/json' -X POST https://10.146.110.80:443/api/v1/logical-ports -d ' { "logical_switch_id": "0038450e-a89c-46b5-bf43-27c9fa4c6c13", "admin_state": "UP", "attachment" : { "attachment_type": "VIF", "id" : "KVM1vif" } } '
+{
+  "revision" : 0,
+  "id" : "6e59c270-07b3-45d6-a41b-134bb6d4e144",
+  "resource_type" : "LogicalPort",
+  "logical_switch_id" : "0038450e-a89c-46b5-bf43-27c9fa4c6c13",
+  "admin_state" : "UP",
+  "attachment" : {
+    "id" : "KVM1vif",
+    "attachment_type" : "VIF"
+  },
+  "switching_profile_ids" : [ {
+    "value" : "64814784-7896-3901-9741-badeff705639",
+    "key" : "IpDiscoverySwitchingProfile"
+  }, {
+    "value" : "93b4b7e8-f116-415d-a50c-3364611b5d09",
+    "key" : "PortMirroringSwitchingProfile"
+  }, {
+    "value" : "f313290b-eba8-4262-bd93-fab5026e9495",
+    "key" : "QosSwitchingProfile"
+  } ],
+  "_last_modified_user" : "admin",
+  "_last_modified_time" : 1421969718154,
+  "_create_time" : 1421969718154,
+  "_create_user" : "admin"
+}
+
+
+--- ovs-vsctl show
+db2e75f3-05ee-4ae7-a4a5-739b0f0d9605
+    Manager "tcp:127.0.0.1:6632"
+        is_connected: true
+    Bridge nsxvswitch
+        Controller "unix:ovs-l3d.mgmt"
+        Controller "tcp:127.0.0.1:6633"
+            is_connected: true
+        fail_mode: secure
+        Port nsxvswitch
+            Interface nsxvswitch
+                type: internal
+    Bridge "nsx-switch.0"
+        Port "nsx-uplink.0"
+            Interface "eth1"
+        Port "nsx-vtep0.0"
+            tag: 0
+            Interface "nsx-vtep0.0"
+                type: internal
+        Port "nsx-switch.0"
+            Interface "nsx-switch.0"
+                type: internal
+        Port "nsx-mgmt.eth1"
+            Interface "nsx-mgmt.eth1"
+                type: internal
+    Bridge "breth0"
+        fail_mode: standalone
+        Port "breth0"
+            Interface "breth0"
+                type: internal
+        Port "eth0"
+            Interface "eth0"
+        Port "vma6ef-00"
+            Interface "vma6ef-00"
+    Bridge br-int
+        Controller "unix:ovs-l3d.mgmt"
+        Controller "tcp:127.0.0.1:6633"
+            is_connected: true
+        fail_mode: secure
+        Port br-int
+            Interface br-int
+                type: internal
+    ovs_version: "2.3.90.2420090"
+
+${CURLGET}/api/v1/fabric/vifs
+
+{
+    "id" : "564d6eb6-4597-c6ea-838e-76a7239091e4-4000",
+    "resource_type" : "VirtualNetworkInterface",
+    "mac_address" : "00:0c:29:90:91:e4",
+    "device_key" : "4000",
+    "external_id" : "564d6eb6-4597-c6ea-838e-76a7239091e4-4000",
+    "device_name" : "Network adapter 1",
+    "lport_attachment_id" : "1af82458-1a50-407c-82d0-5552bbf5355a",
+    "owner_vm_id" : "03f9133a-1372-4a31-a5e5-9637e1f1b4ab"
+  }, {
+
+----------------------------------------
+- create logical switch ports
+----------------------------------------
+VERIFIED 9 ports, LS-1 thru LS-6
+
+${CURLGET}/api/v1/logical-ports
+
+{
+  "cursor" : "00366340d1a0-3cc5-482a-a313-48c05c54251dnnuullll",
+  "result_count" : 9,
+  "results" : [ {
+    "revision" : 1,
+    "id" : "886d52d8-25da-45f7-8a1f-6ae838f363af",
+    "resource_type" : "LogicalPort",
+    "logical_switch_id" : "08c90737-3b6a-4d6d-b8db-035359c4d282",
+    "admin_state" : "UP",
+    "attachment" : {
+      "id" : "3959f4e8-283f-4926-b48c-db2732b6555b",
+      "attachment_type" : "VIF"
+    },
+    "switching_profile_ids" : [ {
+      "value" : "64814784-7896-3901-9741-badeff705639",
+      "key" : "IpDiscoverySwitchingProfile"
+    }, {
+      "value" : "93b4b7e8-f116-415d-a50c-3364611b5d09",
+      "key" : "PortMirroringSwitchingProfile"
+    }, {
+      "value" : "f313290b-eba8-4262-bd93-fab5026e9495",
+      "key" : "QosSwitchingProfile"
+    } ],
+    "_last_modified_user" : "system",
+    "_last_modified_time" : 1421796166145,
+    "_create_time" : 1421796166139,
+    "_create_user" : "system"
+  }, {

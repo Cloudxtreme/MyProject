@@ -1,0 +1,184 @@
+#######################################################################
+# ECMP (router vm) Topology Diagram: (3 Hosts, 4 Edges, 1 RouterVM)
+#
+#                            (uplink ls)
+#                   +- LP201 --- LS1 -+
+#     +---- VM1 ----|                 |
+#     | (router vm) +- LP202 ----+    |
+#     |                        LS10   |
+# HV1-|                          |    |
+#     +---- VM2 ----+- LP203 ----+    |
+#                                     |  | LSP1 ---  LRP1 (sr1) --- +
+#                                     |  | LSP2 ---  LRP2 (sr2) --- |---+
+#                                     +--| LSP3 ---- LRP3 (sr3) --- |   |
+#                                        | LSP4 ---- LRP4 (sr4) --- |   |
+#                                                                   |   + - LR1
+#                                                                   |
+# HV2-|-VM3-|- LP204 ---|--- LS101 --- LSP101 ---- LRP101 ----------|
+#                         (downlink ls)                             |
+#                                                                   |
+# HV3-|-VM4-|- LP205 ---|--- LS102 --- LSP102 ---- LRP102 ----------+
+#                         (downlink ls)
+#######################################################################
+
+TopoL3-3Hosts-4Edges-1RouterVM: &TopoL3-3Hosts-4Edges-1RouterVM
+# Common Topo file for both ESX/KVM. All differences are specified under
+# ALIASES--ESX and ALIASES--KVM.
+
+    L2Setup--ESX:
+        # Host preparation steps
+        - - 'SetManagerOn3Hosts--ESX'
+        - - 'Discover3Hostnodes--ESX'
+        - - 'CreateTransportZone1'
+        - - 'CreateUPROF-1_MTU-1600'
+        - - 'Create3TransportNodes_TZ-1--ESX'
+        # Prepare logical switchs for router uplinkports/downlinkports
+        - - 'CreateUplinkLS-LS1'
+        - - 'CreateLS-LS10'
+        - - 'CreateDownlinkLS-LS101-LS102'
+        - - 'CreateLSP-1-2-3-4_LS1'
+        - - 'CreateLSP-101_LS101-102_LS102'
+
+    L2Setup--EDGEESX:
+        - - 'SetManagerOnESX-1'
+        - - 'SetManagerOnESX-100'
+        - - 'DiscoverHostNode1FromESX1'
+        - - 'DiscoverHostNode4FromESX100'
+        - - 'CreateTN-1_HOSTNODE-1_TZ-1_VMNIC-1'
+        - - 'CreateTN-4_HOSTNODE-4_TZ-1_VMNIC-1'
+        - - 'DiscoverESX1Vtep1FromDevice-vmk10'
+        - - 'DiscoverESX100Vtep1FromDevice-vmk10'
+
+    L2Setup--KVM:
+        # Host preparation steps
+        - - 'SetManagerOnKVM-2'
+        - - 'SetManagerOnKVM-3'
+        - - 'DiscoverHostNode2FromKVM2'
+        - - 'DiscoverHostNode3FromKVM3'
+        - - 'CreateTransportZone1'
+        - - 'CreateUPROF-1_MTU-1600'
+        - - 'L2Setup--EDGEESX'
+        - - 'CreateTN-2_HOSTNODE-2_TZ-1_ETH-1'
+        - - 'CreateTN-3_HOSTNODE-3_TZ-1_ETH-1'
+        - - 'DiscoverKVM2Vtep1FromDevice-nsx-vtep0.0'
+        - - 'DiscoverKVM3Vtep1FromDevice-nsx-vtep0.0'
+        # Prepare logical switchs for router uplinkports/downlinkports
+        - - 'CreateUplinkLS-LS1'
+        - - 'CreateLS-LS10'
+        - - 'CreateDownlinkLS-LS101-LS102'
+        - - 'CreateLSP-1-2-3-4_LS1'
+        - - 'CreateLSP-101_LS101-102_LS102'
+
+    VerifyL2Setup--KVM:
+        - - 'PingFromKVM2Vtep1ToKVM3Vtep1'
+        - - 'PingFromESX1Vtep1ToKVM2Vtep1'
+        - - 'PingFromESX1Vtep1ToKVM3Vtep1'
+
+    L2Cleanup--ESX:
+        - - 'CleanupLSP-101_LS101-102_LS102'
+        - - 'CleanupLSP-1-2-3-4_LS1'
+        - - 'CleanupLS-LS10'
+        - - 'CleanupDownlinkLS-LS101-LS102'
+        - - 'CleanupUplinkLS-LS1'
+        - - 'CleanupTransportNode'
+        - - 'CleanupUplinkProfile'
+        - - 'CleanupTransportZone'
+        - - 'RemoveManagerOn3Hosts--ESX'
+        - - 'Undiscover3HostNodes'
+
+    L2Cleanup--EDGEESX:
+        - - 'RemoveManagerOnESX-1'
+        - - 'RemoveManagerOnESX-100'
+        - - 'UndiscoverHostNode-1'
+        - - 'UndiscoverHostNode-4'
+
+    L2Cleanup--KVM:
+        - - 'CleanupLSP-101_LS101-102_LS102'
+        - - 'CleanupLSP-1-2-3-4_LS1'
+        - - 'CleanupLS-LS10'
+        - - 'CleanupDownlinkLS-LS101-LS102'
+        - - 'CleanupUplinkLS-LS1'
+        - - 'CleanupTransportNode'
+        - - 'CleanupUplinkProfile'
+        - - 'CleanupTransportZone'
+        - - 'RemoveManagerOnKVM-2'
+          - 'RemoveManagerOnKVM-3'
+        - - 'UndiscoverHostNode-2'
+          - 'UndiscoverHostNode-3'
+        - - 'L2Cleanup--EDGEESX'
+
+    L3Setup:
+        # Create Edge nodes and Edge cluster
+        - - 'Register4EdgeNodes'
+        - - 'Discover4EdgeNodeIds'
+        - - 'CreateFabricProfile'
+        - - 'CreateEdgeClusterWith4Nodes'
+        # Prepare Router
+        - - 'Create_PLR_01'
+        - - 'Create4ULRPs-RP1-RP2-RP3-RP4_PLR1'
+        - - 'Create2RPs-101-102_PLR1'
+        # Workaround for Bug 1406989
+        #- - 'DiscoverEdge1-4Vnics'
+
+    L3Cleanup:
+        - - 'CleanupLRPort'
+        - - 'CleanupLRUplinkPort'
+        - - 'CleanupLR'
+        - - 'CleanupEdgeCluster'
+        - - 'CleanupFabricProfile'
+        - - 'CleanupEdgeNode'
+        # Workaround for Bug 1406989
+        #- - 'ReconnectEdge1-4Vnics2-3ToVMNetwork'
+
+    VMSetup--ESX:
+        - - UplinkVMConfig--EDGEESX
+        - - AddVM3Vnic1ToLS101
+        - - DiscoverLP204FromVM3Vnic1
+        - - AddVM4Vnic1ToLS102
+        - - DiscoverLP205FromVM4Vnic1
+        - - ConfigureVM3Vnic1IP-192.168.1.10
+        - - ConfigureVM4Vnic1IP-192.168.2.10
+        - - AddRouteVM3ToVM1VM2--ESX
+        - - AddRouteVM4ToVM1VM2--ESX
+
+    UplinkVMConfig--EDGEESX:
+        - - AddVM1Vnic1ToLS1_Vnic2ToLS10
+        - - DiscoverLP201FromVM1Vnic1_LP202FromVM1Vnic2
+        - - AddVM2Vnic1ToLS10
+        - - DiscoverLP203FromVM2Vnic1
+        - - ConfigureVM1Vnic1IP-192.168.50-80.100
+        - - ConfigureVM1Vnic2IP-192.168.100.100
+        - - ConfigureVM2Vnic1IP-192.168.100.10
+        - - AddRouteVM1ToVM3VM4--ESX
+        - - AddRouteVM2ToVM3VM4--ESX
+
+    VMSetup--KVM:
+        - - UplinkVMConfig--EDGEESX
+        - - AddVM3Vif1ToKVM2Bridge1
+        - - AddVM4Vif1ToKVM3Bridge1
+        - - CreateLP204OnLS101ForVM3Vif1
+        - - CreateLP205OnLS102ForVM4Vif1
+        - - ConfigureVM3Vif1IP-192.168.1.10
+        - - ConfigureVM4Vif1IP-192.168.2.10
+        - - AddRouteVM3ToVM1VM2--KVM
+        - - AddRouteVM4ToVM1VM2--KVM
+
+    VMCleanup--ESX:
+        - - UplinkVMCleanup--EDGEESX
+        - - DeleteVnic1_VM3
+        - - UndiscoverLP204FromVM3Vnic1
+        - - DeleteVnic1_VM4
+        - - UndiscoverLP205FromVM4Vnic1
+
+    UplinkVMCleanup--EDGEESX:
+        - - DeleteVnic1-Vnic2_VM1
+        - - UndiscoverLP201FromVM1Vnic1_LP202FromVM1Vnic2
+        - - DeleteVnic1_VM2
+        - - UndiscoverLP203FromVM2Vnic1
+
+    VMCleanup--KVM:
+        - - UplinkVMCleanup--EDGEESX
+        - - DeleteVif1_VM3
+        - - DeleteLSP-204
+        - - DeleteVif1_VM4
+        - - DeleteLSP-205

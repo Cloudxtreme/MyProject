@@ -1,0 +1,263 @@
+vMotionVSSVDSPG:
+   TestName       : 'vMotionVSSToVSSToVDSToVDS'
+   Status         : 'Execution Ready'
+   Priority       : 'P0'
+   Product        : 'VPX'
+   Component      : 'VDS'
+   Category       : 'ESX Server'
+   TestcaseType   : 'Functional'
+   TestcaseLevel  : 'Functional'
+   AutomationLevel: 'Automated'
+   Summary        : 'Migrate a vm connected to a vss to another vss within
+datacenter. Migrate a vm connected to a vss to another vdspg within
+datacenter. Migrate a vm connected to a vdspg to another vdspg within
+datacenter. Verify the network during each vmotion.'
+   ExpectedResult : 'PASS'
+   Tags           : 'physicalonly,vmotion'
+   PMT            : '4803'
+   Version        : '2'
+   TestbedSpec    : *Functional_Topology_1
+   WORKLOADS:
+      Sequence:
+         - ['PowerOnVM']
+         - ['TrafficTest']
+         - ['Vmotion1_1','Traffic']
+         - ['Vmotion2_2','Traffic']
+         - ['Vmotion1_2','Traffic']
+         - ['ReconfigureVnicToVSS']
+         - ['Vmotion2_1','Traffic']
+         - ['TrafficTest']
+         - ['PowerOffVM']
+      PowerOnVM: *POWER_ON_VM
+      TrafficTest: *TRAFFIC_TEST
+      Traffic: *TRAFFIC
+      PowerOffVM: *POWER_OFF_VM
+      Vmotion1_1: *VMOTION1_1
+      Vmotion1_2: *VMOTION1_2
+      Vmotion2_1: *VMOTION2_1
+      Vmotion2_2: *VMOTION2_2
+      ReconfigureVnicToVSS:
+         Type:        "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         reconfigure: "true"
+         portgroup:   "host.[2].portgroup.[1]"
+
+
+vMotionVSSVDSPGCrossDC:
+   TestName       : 'vMotionVSSToVSSToVDSToVDSCrossDC'
+   Status         : 'Execution Ready'
+   Priority       : 'P0'
+   Product        : 'VPX'
+   Component      : 'VDS'
+   Category       : 'ESX Server'
+   TestcaseType   : 'Functional'
+   TestcaseLevel  : 'Functional'
+   AutomationLevel: 'Automated'
+   Summary        : 'Migrate a vm connected to a vss to another vss across datacenter. Migrate a vm connected to a vss to another vdspg across datacenter. Migrate a vm connected to a vdspg to another vdspg across datacenter. Verify the network during each vmotion.'
+   ExpectedResult : 'PASS'
+   Tags           : 'physicalonly,crossDC,vmotion'
+   PMT            : '4803'
+   Version        : '2'
+   TestbedSpec    : *Functional_Topology_2
+   WORKLOADS:
+      Sequence:
+         - ['PowerOnVM']
+         - ['TrafficTest']
+         - ['Vmotion1_1','Traffic']
+         - ['Vmotion2_2','Traffic']
+         - ['Vmotion1_2','Traffic']
+         - ['ReconfigureVnicToVSS']
+         - ['Vmotion2_1','Traffic']
+         - ['TrafficTest']
+         - ['PowerOffVM']
+      PowerOnVM: *POWER_ON_VM
+      TrafficTest: *TRAFFIC_TEST
+      Traffic: *TRAFFIC
+      PowerOffVM: *POWER_OFF_VM
+      Vmotion1_1: *VMOTION1_1
+      Vmotion1_2: *VMOTION1_2
+      Vmotion2_1: *VMOTION2_1
+      Vmotion2_2: *VMOTION2_2
+      ReconfigureVnicToVSS:
+         Type:        "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         reconfigure: "true"
+         portgroup:   "host.[2].portgroup.[1]"
+
+
+vMotionNIOC:
+   TestName       : 'vMotionNIOC'
+   Status         : 'Execution Ready'
+   Priority       : 'P0'
+   Product        : 'VPX'
+   Component      : 'VDS'
+   Category       : 'ESX Server'
+   TestcaseType   : 'Functional'
+   TestcaseLevel  : 'Functional'
+   AutomationLevel: 'Automated'
+   Summary        : 'Migrate a vm attached to a vmnicresourcepool on a vds portgroup to another vds portgroup which does not have a vmvnic resourcepool across datacenter, migrate back.'
+   ExpectedResult : 'PASS'
+   Tags           : 'physicalonly,crossDC,vmotion'
+   PMT            : '4803'
+   Version        : '2'
+   TestbedSpec    : *Functional_Topology_2
+   WORKLOADS:
+      Sequence:
+         - ['PowerOnVM']
+         - ['TrafficTest']
+         - ['EnableNIOC']
+         - ['SetInfrastrueSLR']
+         - ['ReconfigureVnicToVDS']
+         - ['Vmotion1_2','Traffic']
+         - ['Vmotion2_2','Traffic']
+         - ['TrafficTest']
+         - ['PowerOffVM']
+      PowerOnVM: *POWER_ON_VM
+      TrafficTest: *TRAFFIC_TEST
+      Traffic: *TRAFFIC
+      PowerOffVM: *POWER_OFF_VM
+      Vmotion1_1: *VMOTION1_1
+      Vmotion1_2: *VMOTION1_2
+      Vmotion2_1: *VMOTION2_1
+      Vmotion2_2: *VMOTION2_2
+      ReconfigureVnicToVDS:
+         Type:        'NetAdapter'
+         TestAdapter: 'vm.[1].vnic.[1]'
+         reconfigure: 'true'
+         portgroup:   "vc.[1].dvportgroup.[1]"
+      EnableNIOC:
+         Type:        'Switch'
+         TestSwitch:  'vc.[1].vds.[1-2]'
+         nioc:        'enable'
+         niocversion: 'version3'
+      SetInfrastrueSLR:
+         Type:        'Switch'
+         TestSwitch:  'vc.[1].vds.[1]'
+         niocinfrastructuretraffic:
+            virtualMachine: '80:100:1000'
+
+
+vMotionVSSVDSPGCrossVC:
+   TestName       : 'vMotionVSSToVSSToVDSToVDSCrossVC'
+   Status         : 'Execution Ready'
+   Priority       : 'P0'
+   Product        : 'VPX'
+   Component      : 'VDS'
+   Category       : 'ESX Server'
+   TestcaseType   : 'Functional'
+   TestcaseLevel  : 'Functional'
+   AutomationLevel: 'Automated'
+   Summary        : 'Migrate a vm connected to a vss/vss/vdspg/ to another vss/vsdpg/vdspg across vc. Verify the network during each vmotion.'
+   ExpectedResult : 'PASS'
+   Tags           : 'physicalonly,crossVC,vmotion'
+   PMT            : '4803'
+   Version        : '2'
+   TestbedSpec    : *Functional_Topology_3
+   WORKLOADS:
+      Sequence:
+         - ['PowerOnVM']
+         - ['TrafficTest']
+         - ['VmotionCrossVC1_1','Traffic']
+         - ['VmotionCrossVC2_2','Traffic']
+         - ['VmotionCrossVC1_2','Traffic']
+         - ['ReconfigureVnicToVSS']
+         - ['VmotionCrossVC2_1','Traffic']
+         - ['TrafficTest']
+         - ['PowerOffVM']
+      PowerOnVM: *POWER_ON_VM
+      TrafficTest: *TRAFFIC_TEST
+      Traffic: *TRAFFIC
+      PowerOffVM: *POWER_OFF_VM
+      VmotionCrossVC1_1: *VMOTIONCROSSVC1_1
+      VmotionCrossVC1_2: *VMOTIONCROSSVC1_2
+      VmotionCrossVC2_1: *VMOTIONCROSSVC2_1
+      VmotionCrossVC2_2: *VMOTIONCROSSVC2_2
+      ReconfigureVnicToVSS:
+         Type:        "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         reconfigure: "true"
+         portgroup:   "host.[2].portgroup.[1]"
+
+
+vMotion2VMsCrossVC:
+   TestName       : 'vMotion2VMsCrossVC'
+   Status         : 'Execution Ready'
+   Priority       : 'P1'
+   Product        : 'VPX'
+   Component      : 'VDS'
+   Category       : 'ESX Server'
+   TestcaseType   : 'Functional'
+   TestcaseLevel  : 'Functional'
+   AutomationLevel: 'Automated'
+   Summary        : 'Migrate two vms connected to a vss to another vss from two vcs at the same time.'
+   ExpectedResult : 'PASS'
+   Tags           : 'physicalonly,crossVC,vmotion'
+   PMT            : '4803'
+   Version        : '2'
+   TestbedSpec    : *Functional_Topology_3
+   WORKLOADS:
+      Sequence:
+         - ['PowerOnVM']
+         - ['TrafficTest']
+         - ['VmotionCrossVC1_1','VmotionVM2CrossVC1_1','Traffic']
+         - ['VmotionCrossVC2_1','VmotionVM2CrossVC2_1','Traffic']
+         - ['TrafficTest']
+         - ['PowerOffVM']
+      PowerOnVM: *POWER_ON_VM
+      TrafficTest: *TRAFFIC_TEST
+      Traffic: *TRAFFIC
+      PowerOffVM: *POWER_OFF_VM
+      VmotionCrossVC1_1: *VMOTIONCROSSVC1_1
+      VmotionCrossVC2_1: *VMOTIONCROSSVC2_1
+      VmotionVM2CrossVC1_1: *VMOTIONVM2CROSSVC1_1
+      VmotionVM2CrossVC2_1: *VMOTIONVM2CROSSVC2_1
+
+
+vMotionNIOCCrossVC:
+   TestName       : 'vMotionNIOCCrossVC'
+   Status         : 'Execution Ready'
+   Priority       : 'P1'
+   Product        : 'VPX'
+   Component      : 'VDS'
+   Category       : 'ESX Server'
+   TestcaseType   : 'Functional'
+   TestcaseLevel  : 'Functional'
+   AutomationLevel: 'Automated'
+   Summary        : 'Migrate a vm attached to a vmnicresourcepool on a vds portgroup to another vds portgroup which does not have a vmvnic resourcepool across vc, migrate back.'
+   ExpectedResult : 'PASS'
+   Tags           : 'physicalonly,crossDC,vmotion'
+   PMT            : '4803'
+   Version        : '2'
+   TestbedSpec    : *Functional_Topology_3
+   WORKLOADS:
+      Sequence:
+         - ['PowerOnVM']
+         - ['TrafficTest']
+         - ['EnableNIOC']
+         - ['SetInfrastrueSLR']
+         - ['ReconfigureVnicToVDS']
+         - ['VmotionCrossVC1_2','Traffic']
+         - ['VmotionCrossVC2_2','Traffic']
+         - ['TrafficTest']
+         - ['PowerOffVM']
+      PowerOnVM: *POWER_ON_VM
+      TrafficTest: *TRAFFIC_TEST
+      Traffic: *TRAFFIC
+      PowerOffVM: *POWER_OFF_VM
+      VmotionCrossVC1_2: *VMOTIONCROSSVC1_2
+      VmotionCrossVC2_2: *VMOTIONCROSSVC2_2
+      ReconfigureVnicToVDS:
+         Type:        'NetAdapter'
+         TestAdapter: 'vm.[1].vnic.[1]'
+         reconfigure: 'true'
+         portgroup:   "vc.[1].dvportgroup.[1]"
+      EnableNIOC:
+         Type:        'Switch'
+         TestSwitch:  'vc.[1-2].vds.[1]'
+         nioc:        'enable'
+         niocversion: 'version3'
+      SetInfrastrueSLR:
+         Type:        'Switch'
+         TestSwitch:  'vc.[1].vds.[1]'
+         niocinfrastructuretraffic:
+            virtualMachine: '80:100:1000'

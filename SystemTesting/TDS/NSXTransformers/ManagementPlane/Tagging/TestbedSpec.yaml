@@ -1,0 +1,165 @@
+3MP_3CCP_4ESX: &3MP_3CCP_4ESX
+
+  nsxmanager:
+    '[1]':
+      ip: none
+      clusternode:
+        '[2-3]':
+          mgr_role_config:
+            username: 'admin'
+            password: 'default'
+            node_type: 'AddManagementNodeSpec'
+            manager_ip: "nsxmanager.[x=clusternode_index]"
+            manager_thumbprint: "nsxmanager.[x=clusternode_index]"
+
+      hostnode:
+        '[1-2]':
+          discover: 'true'
+          ip_addresses: 'esx.[x=hostnode_index]'
+
+      transportzone:
+        '[1]':
+          name: autogenerate
+          transport_zone_type: 'OVERLAY'
+          switch_name: 'nsxvswitch'
+
+      UplinkProfile:
+        '[1]':
+          mtu: 1600
+          teaming:
+            active:
+              - adapter_name: 'uplink1'
+                adapter_type: 'PNIC'
+            policy: 'FAILOVER_ORDER'
+          vlan: '0'
+          resource_type: 'UplinkHostSwitchProfile'
+
+      transportnode:
+        '[1-2]':
+          node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+          host_switches:
+            - switch_name: 'nsxvswitch'
+              host_switch_profile_ids:
+                - key: 'UplinkHostSwitchProfile'
+                  value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+              uplinks:
+                - device_name: 'vmnic1'
+                  adapter_name: 'uplink1'
+          transport_zone_endpoint:
+            - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+    '[2-3]':
+      ip: none
+
+  nsxcontroller:
+    '[1-3]':
+      ip: none
+      set_nsx_registration:
+        manager_ip: 'nsxmanager.[1]'
+        manager_thumbprint: 'nsxmanager.[1]'
+        execution_type: 'cli'
+
+  esx:
+    '[1-2]':
+      vmnic:
+        '[1]':
+          driver: 'any'
+      configure_package:
+        execution_type: 'cli'
+        operation: install
+        maintenance: 1
+        signaturecheck: 0
+      set_nsx_manager:
+        manager_ip: 'nsxmanager.[1]'
+        manager_thumbprint: 'nsxmanager.[1]'
+        execution_type: 'cli'
+
+    '[3-4]':
+      vmnic:
+        '[1]':
+          driver: 'any'
+
+3MP_3CCP_4ESX_1AUTHSERVER: &3MP_3CCP_4ESX_1AUTHSERVER
+
+  nsxmanager:
+    '[1]':
+      ip: none
+      clusternode:
+        '[2-3]':
+          mgr_role_config:
+            username: 'admin'
+            password: 'default'
+            node_type: 'AddManagementNodeSpec'
+            manager_ip: "nsxmanager.[x=clusternode_index]"
+            manager_thumbprint: "nsxmanager.[x=clusternode_index]"
+
+      hostnode:
+        '[1-2]':
+          discover: 'true'
+          ip_addresses: 'esx.[x=hostnode_index]'
+
+      transportzone:
+        '[1]':
+          name: autogenerate
+          transport_zone_type: 'OVERLAY'
+          switch_name: 'nsxvswitch'
+
+      UplinkProfile:
+        '[1]':
+          mtu: 1600
+          teaming:
+            active:
+              - adapter_name: 'uplink1'
+                adapter_type: 'PNIC'
+            policy: 'FAILOVER_ORDER'
+          vlan: '0'
+          resource_type: 'UplinkHostSwitchProfile'
+
+      transportnode:
+        '[1-2]':
+          node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+          host_switches:
+            - switch_name: 'nsxvswitch'
+              host_switch_profile_ids:
+                - key: 'UplinkHostSwitchProfile'
+                  value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+              uplinks:
+                - device_name: 'vmnic1'
+                  adapter_name: 'uplink1'
+          transport_zone_endpoint:
+            - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+    '[2-3]':
+      ip: none
+
+  nsxcontroller:
+    '[1-3]':
+      ip: none
+      set_nsx_registration:
+        manager_ip: 'nsxmanager.[1]'
+        manager_thumbprint: 'nsxmanager.[1]'
+        execution_type: 'cli'
+
+  esx:
+    '[1-2]':
+      vmnic:
+        '[1]':
+          driver: 'any'
+      configure_package:
+        execution_type: 'cli'
+        operation: install
+        maintenance: 1
+        signaturecheck: 0
+      set_nsx_manager:
+        manager_ip: 'nsxmanager.[1]'
+        manager_thumbprint: 'nsxmanager.[1]'
+        execution_type: 'cli'
+
+    '[3-4]':
+      vmnic:
+        '[1]':
+          driver: 'any'
+
+  authserver:
+    '[1]':
+      'ip': None

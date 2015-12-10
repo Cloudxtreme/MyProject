@@ -1,0 +1,2020 @@
+WORKLOADS:
+    PowerOffallVM: &PowerOffallVM
+        Type: "VM"
+        TestVM: "vm.[-1]"
+        vmstate: "poweroff"
+    DELETE_VDR_EDGE: &DELETE_VDR_EDGE
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        deletegateway: "vsm.[1].gateway.[-1]"
+    DELETE_ALL_EDGE: &DELETE_ALL_EDGE
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        deletegateway: "vsm.[1].gateway.[-1]"
+    CreateVirtualWires: &CreateVirtualWires
+        Type: "TransportZone"
+        TestTransportZone: "vsm.[1].networkscope.[1]"
+        VirtualWire:
+           '[1-10]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+    DeleteVirtualWires: &DeleteVirtualWires
+        Type: "TransportZone"
+        TestTransportZone: "vsm.[1].networkscope.[-1]"
+        deletevirtualwire: "vsm.[1].networkscope.[-1].virtualwire.[-1]"
+        sleepbetweenworkloads: "20"
+    RemovevNICFromVM1: &RemovevNICFromVM1
+        Type: "VM"
+        TestVM: "vm.[1]"
+        deletevnic: "vm.[1].vnic.[1]"
+    RemovevNICFromVM2: &RemovevNICFromVM2
+        Type: "VM"
+        TestVM: "vm.[2]"
+        deletevnic: "vm.[2].vnic.[1]"
+    RemovevNICFromVM3: &RemovevNICFromVM3
+        Type: "VM"
+        TestVM: "vm.[3]"
+        deletevnic: "vm.[3].vnic.[1]"
+    RemovevNICFromVM4: &RemovevNICFromVM4
+        Type: "VM"
+        TestVM: "vm.[4]"
+        deletevnic: "vm.[4].vnic.[1]"
+    RemovevNICFromVM5: &RemovevNICFromVM5
+        Type: "VM"
+        TestVM: "vm.[5]"
+        deletevnic: "vm.[5].vnic.[1]"
+    RemovevNICFromVM6: &RemovevNICFromVM6
+        Type: "VM"
+        TestVM: "vm.[6]"
+        deletevnic: "vm.[6].vnic.[1]"
+    PingVM5andVM6: &PingVM5andVM6
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[5].vnic.[1]"
+        SupportAdapter: "vm.[6].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "120"
+    PingVM1andVM3: &PingVM1andVM3
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[1].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "120"
+    PingVM1andVM3_Fail: &PingVM1andVM3_Fail
+        Type: "Traffic"
+        Expectedresult: "FAIL"
+        ToolName: "Ping"
+        TestAdapter: "vm.[1].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "60"
+    PingVM2andVM4: &PingVM2andVM4
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[2].vnic.[1]"
+        SupportAdapter: "vm.[4].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "120"
+    PingVM2andVM4_Fail: &PingVM2andVM4_Fail
+        Type: "Traffic"
+        expectedresult: "FAIL"
+        ToolName: "Ping"
+        TestAdapter: "vm.[2].vnic.[1]"
+        SupportAdapter: "vm.[4].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "60"
+    PingVM1andVM3_Bidir: &PingVM1andVM3_Bidir
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[1].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        NoofOutbound: "1"
+        NoofInbound: "1"
+        TestDuration: "120"
+    PingVM1andVM3_Bidir_Fail: &PingVM1andVM3_Bidir_Fail
+        Type: "Traffic"
+        ToolName: "Ping"
+        expectedresult: "FAIL"
+        TestAdapter: "vm.[1].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        NoofOutbound: "1"
+        NoofInbound: "1"
+        TestDuration: "120"
+        sleepbetweenworkloads: "40"
+    PlaceVM1OnVwire1: &PlaceVM1OnVwire1
+        Type: "VM"
+        TestVM: "vm.[1]"
+        vnic:
+            '[1]':
+                driver: "e1000"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+    PlaceVM3OnDVPG8: &PlaceVM3OnDVPG8
+        Type: "VM"
+        TestVM: "vm.[3]"
+        vnic:
+            '[1]':
+                driver: "e1000"
+                portgroup: "vc.[1].dvportgroup.[8]"
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+    PowerOnVM1: &PowerOnVM1
+        Type: "VM"
+        TestVM: "vm.[1]"
+        vmstate: "poweron"
+    PowerOnVM3: &PowerOnVM3
+        Type: "VM"
+        TestVM: "vm.[3]"
+        vmstate: "poweron"
+    SetVXLANIPVM1: &SetVXLANIPVM1
+        Type: "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        ipv4: '90.90.90.10'
+        netmask: "255.255.255.0"
+    SetVXLANIPVM3: &SetVXLANIPVM3
+        Type: "NetAdapter"
+        Testadapter: "vm.[3].vnic.[1]"
+        ipv4: '80.80.80.1'
+        netmask: "255.255.255.0"
+    AddVXLANRouteVM1: &AddVXLANRouteVM1
+        Type: "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        netmask: "255.255.255.0"
+        route: "add"
+        network: "80.80.80.0"
+        gateway: "90.90.90.1"
+        expectedresult: "ignore"
+    AddVXLANRouteVM3: &AddVXLANRouteVM3
+        Type: "NetAdapter"
+        Testadapter: "vm.[3].vnic.[1]"
+        netmask: "255.255.255.0"
+        route: "add"
+        network: "90.90.90.0"
+        gateway: "80.80.80.5"
+        expectedresult: "ignore"
+    Add75RouteVM3: &Add75RouteVM3
+        Type: "NetAdapter"
+        Testadapter: "vm.[3].vnic.[1]"
+        netmask: "255.255.255.0"
+        route: "add"
+        network: "75.75.75.0"
+        gateway: "80.80.80.5"
+        expectedresult: "ignore"
+    Add85RouteVM3: &Add85RouteVM3
+        Type: "NetAdapter"
+        Testadapter: "vm.[3].vnic.[1]"
+        netmask: "255.255.255.0"
+        route: "add"
+        network: "85.85.85.0"
+        gateway: "80.80.80.5"
+        expectedresult: "ignore"
+    PlaceVM2OnVwire9: &PlaceVM2OnVwire9
+        Type: "VM"
+        TestVM: "vm.[2]"
+        vnic:
+            '[1]':
+                driver: "e1000"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[9]"
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+    PlaceVM4OnDVPG10: &PlaceVM4OnDVPG10
+        Type: "VM"
+        TestVM: "vm.[4]"
+        vnic:
+            '[1]':
+                driver: "e1000"
+                portgroup: "vc.[1].dvportgroup.[10]"
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+    PowerOnVM2: &PowerOnVM2
+        Type: "VM"
+        TestVM: "vm.[2]"
+        vmstate: "poweron"
+    PowerOnVM4: &PowerOnVM4
+        Type: "VM"
+        TestVM: "vm.[4]"
+        vmstate: "poweron"
+    SetVXLANIPVM2: &SetVXLANIPVM2
+        Type: "NetAdapter"
+        Testadapter: "vm.[2].vnic.[1]"
+        ipv4: '190.190.190.10'
+        netmask: "255.255.255.0"
+    SetVXLANIPVM4: &SetVXLANIPVM4
+        Type: "NetAdapter"
+        Testadapter: "vm.[4].vnic.[1]"
+        ipv4: '180.180.180.1'
+        netmask: "255.255.255.0"
+    AddVXLANRouteVM2: &AddVXLANRouteVM2
+        Type: "NetAdapter"
+        Testadapter: "vm.[2].vnic.[1]"
+        netmask: "255.255.255.0"
+        route: "add"
+        network: "180.180.180.0"
+        gateway: "190.190.190.1"
+        expectedresult: "ignore"
+    AddVXLANRouteVM4: &AddVXLANRouteVM4
+        Type: "NetAdapter"
+        Testadapter: "vm.[4].vnic.[1]"
+        netmask: "255.255.255.0"
+        route: "add"
+        network: "190.190.190.0"
+        gateway: "180.180.180.5"
+        expectedresult: "ignore"
+    PlaceVM5OnVwire7: &PlaceVM5OnVwire7
+        Type: "VM"
+        TestVM: "vm.[5]"
+        vnic:
+            '[1]':
+                driver: "e1000"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[7]"
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+    PlaceVM6OnVwire8: &PlaceVM6OnVwire8
+        Type: "VM"
+        TestVM: "vm.[6]"
+        vnic:
+            '[1]':
+                driver: "e1000"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[8]"
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+    PowerOnVM5: &PowerOnVM5
+        Type: "VM"
+        TestVM: "vm.[5]"
+        vmstate: "poweron"
+    PowerOnVM6: &PowerOnVM6
+        Type: "VM"
+        TestVM: "vm.[6]"
+        vmstate: "poweron"
+    SetVXLANIPVM5: &SetVXLANIPVM5
+        Type: "NetAdapter"
+        Testadapter: "vm.[5].vnic.[1]"
+        ipv4: '75.75.75.10'
+        netmask: "255.255.255.0"
+    SetVXLANIPVM6: &SetVXLANIPVM6
+        Type: "NetAdapter"
+        Testadapter: "vm.[6].vnic.[1]"
+        ipv4: '85.85.85.10'
+        netmask: "255.255.255.0"
+    AddVXLANRouteVM5: &AddVXLANRouteVM5
+        Type: "NetAdapter"
+        Testadapter: "vm.[5].vnic.[1]"
+        netmask: "255.255.255.0"
+        route: "add"
+        network: "80.80.80.0"
+        gateway: "75.75.75.1"
+        expectedresult: "ignore"
+    AddVXLANRouteVM6: &AddVXLANRouteVM6
+        Type: "NetAdapter"
+        Testadapter: "vm.[6].vnic.[1]"
+        netmask: "255.255.255.0"
+        route: "add"
+        network: "80.80.80.0"
+        gateway: "85.85.85.1"
+        expectedresult: "ignore"
+    Enable_promiscuous_vlan16: &Enable_promiscuous_vlan16
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan16"
+    Enable_promiscuous_vlan17: &Enable_promiscuous_vlan17
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan17"
+    Enable_promiscuous_vlan18: &Enable_promiscuous_vlan18
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan18"
+    Enable_promiscuous_vlan19: &Enable_promiscuous_vlan19
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan19"
+    Enable_promiscuous_vlan20: &Enable_promiscuous_vlan20
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan20"
+    Enable_promiscuous_vlan21: &Enable_promiscuous_vlan21
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan21"
+    Enable_promiscuous_vlan22: &Enable_promiscuous_vlan22
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan22"
+    Enable_promiscuous_vlan23: &Enable_promiscuous_vlan23
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan23"
+    Enable_promiscuous_vlan24: &Enable_promiscuous_vlan24
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan24"
+    Enable_promiscuous_vlan25: &Enable_promiscuous_vlan25
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan25"
+    DeployGatewayServicesEDGE1: &DeployGatewayServicesEDGE1
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        gateway:
+            '[1]':
+                name: "AutoGenerate-1"
+                resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                datacenter: "vc.[1].datacenter.[1]"
+                host: "host.[1]"
+                portgroup: "vc.[1].dvportgroup.[100]"
+                primaryaddress: "10.10.10.10"
+                subnetmask: "255.255.255.0"
+    DeployGatewayServicesEDGE2: &DeployGatewayServicesEDGE2
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        gateway:
+            '[2]':
+                name: "AutoGenerate-2"
+                resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                datacenter: "vc.[1].datacenter.[1]"
+                host: "host.[1]"
+                portgroup: "vc.[1].dvportgroup.[100]"
+                primaryaddress: "10.10.10.20"
+                subnetmask: "255.255.255.0"
+    DeployGatewayServicesEDGE3: &DeployGatewayServicesEDGE3
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        gateway:
+            '[3]':
+                name: "AutoGenerate-3"
+                resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                datacenter: "vc.[1].datacenter.[1]"
+                host: "host.[2]"
+                portgroup: "vc.[1].dvportgroup.[100]"
+                primaryaddress: "10.10.10.30"
+                subnetmask: "255.255.255.0"
+    DeployGatewayServicesEDGE4: &DeployGatewayServicesEDGE4
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        gateway:
+            '[4]':
+                name: "AutoGenerate-4"
+                resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                datacenter: "vc.[1].datacenter.[1]"
+                host: "host.[3]"
+                portgroup: "vc.[1].dvportgroup.[100]"
+                primaryaddress: "10.10.10.40"
+                subnetmask: "255.255.255.0"
+    DeployGatewayServicesEDGE5: &DeployGatewayServicesEDGE5
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        gateway:
+            '[5]':
+                name: "AutoGenerate"
+                resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                datacenter: "vc.[1].datacenter.[1]"
+                host: "host.[3]"
+                portgroup: "vc.[1].dvportgroup.[100]"
+                primaryaddress: "10.10.10.50"
+                subnetmask: "255.255.255.0"
+    ReCreateGatewayInterface2EDGE1: &ReCreateGatewayInterface2EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "120.120.120.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface1EDGE1: &CreateGatewayInterface1EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+                ipv4address: "90.90.90.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface2EDGE1: &CreateGatewayInterface2EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "20.20.20.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    DisconnectGatewayIface2EDGE1: &DisconnectGatewayIface2EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "20.20.20.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+                connected: "0"
+    CreateGatewayInterface3EDGE1: &CreateGatewayInterface3EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[3]':
+                name: "vnic3"
+                index: "3"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+                ipv4address: "30.30.30.1"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    DisconnectGatewayIface3EDGE1: &DisconnectGatewayIface3EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[3]':
+                name: "vnic3"
+                index: "3"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+                ipv4address: "30.30.30.1"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+    CreateGatewayInterface4EDGE1: &CreateGatewayInterface4EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[4]':
+                name: "vnic4"
+                index: "4"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[4]"
+                ipv4address: "40.40.40.1"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    DisconnectGatewayIface4EDGE1: &DisconnectGatewayIface4EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[4]':
+                name: "vnic4"
+                index: "4"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[4]"
+                ipv4address: "40.40.40.1"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+    CreateGatewayInterface5EDGE1: &CreateGatewayInterface5EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[5]':
+                name: "vnic5"
+                index: "5"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[9]"
+                ipv4address: "190.190.190.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface6EDGE1: &CreateGatewayInterface6EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[6]':
+                name: "vnic6"
+                index: "6"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[7]"
+                ipv4address: "75.75.75.1"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface7EDGE1: &CreateGatewayInterface7EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[7]':
+                name: "vnic7"
+                index: "7"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[8]"
+                ipv4address: "85.85.85.1"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    ReCreateGatewayInterface1EDGE2: &ReCreateGatewayInterface1EDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "120.120.120.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    ShutGatewayInterface1EDGE2: &ShutGatewayInterface1EDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        sleepbetweenworkloads: "30"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "20.20.20.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+                connected: "0"
+    CreateGatewayInterface1EDGE2: &CreateGatewayInterface1EDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "20.20.20.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface2EDGE2: &CreateGatewayInterface2EDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[5]"
+                ipv4address: "50.50.50.2"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface1EDGE3: &CreateGatewayInterface1EDGE3
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[3]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+                ipv4address: "30.30.30.3"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface2EDGE3: &CreateGatewayInterface2EDGE3
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[3]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[6]"
+                ipv4address: "60.60.60.3"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface1EDGE4: &CreateGatewayInterface1EDGE4
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[4]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[4]"
+                ipv4address: "40.40.40.4"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface2EDGE4: &CreateGatewayInterface2EDGE4
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[4]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[7]"
+                ipv4address: "70.70.70.4"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface1EDGE5: &CreateGatewayInterface1EDGE5
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[5]"
+        interface:
+           '[1]':
+               name: "vnic1"
+               index: "1"
+               portgroup: "vc.[1].dvportgroup.[5]"
+               ipv4address: "50.50.50.5"
+               netmask: "255.255.255.0"
+               type: "uplink"
+    CreateGatewayInterface2EDGE5: &CreateGatewayInterface2EDGE5
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[5]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[6]"
+                ipv4address: "60.60.60.5"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface3EDGE5: &CreateGatewayInterface3EDGE5
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[5]"
+        interface:
+            '[3]':
+                name: "vnic3"
+                index: "3"
+                portgroup: "vc.[1].dvportgroup.[7]"
+                ipv4address: "70.70.70.5"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface4EDGE5: &CreateGatewayInterface4EDGE5
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[5]"
+        interface:
+            '[4]':
+                name: "vnic4"
+                index: "4"
+                portgroup: "vc.[1].dvportgroup.[8]"
+                ipv4address: "80.80.80.5"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayInterface5EDGE5: &CreateGatewayInterface5EDGE5
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[5]"
+        interface:
+            '[5]':
+                name: "vnic5"
+                index: "5"
+                portgroup: "vc.[1].dvportgroup.[10]"
+                ipv4address: "180.180.180.5"
+                netmask: "255.255.255.0"
+                type: "internal"
+    Enable_ECMP_EDGE_GATEWAY1: &Enable_ECMP_EDGE_GATEWAY1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        globalrouteconfig:
+            '[1]':
+                ecmp: "true"
+                routerid: "1.1.1.1"
+    Disable_ECMP_EDGE_GATEWAY1: &Disable_ECMP_EDGE_GATEWAY1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        sleepbetweenworkloads: "60"
+        globalrouteconfig:
+            '[1]':
+                ecmp: "false"
+                routerid: "1.1.1.1"
+    Enable_ECMP_EDGE_GATEWAY5: &Enable_ECMP_EDGE_GATEWAY5
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[5]"
+        globalrouteconfig:
+            '[1]':
+                ecmp: "true"
+                routerid: "5.5.5.5"
+    Enable_ECMP_EDGE_GATEWAY2: &Enable_ECMP_EDGE_GATEWAY2
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[2]"
+        globalrouteconfig:
+            '[1]':
+                ecmp: "true"
+                routerid: "2.2.2.2"
+    Enable_ECMP_EDGE_GATEWAY3: &Enable_ECMP_EDGE_GATEWAY3
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[3]"
+        globalrouteconfig:
+            '[1]':
+                ecmp: "true"
+                routerid: "3.3.3.3"
+    Enable_ECMP_EDGE_GATEWAY4: &Enable_ECMP_EDGE_GATEWAY4
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[4]"
+        globalrouteconfig:
+            '[1]':
+                ecmp: "true"
+                routerid: "4.4.4.4"
+    Configure_STATICROUTE1_EDGE1: &Configure_STATICROUTE1_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: '80.80.80.0/24'
+                      nexthop: '20.20.20.2'
+                      mtu : '1600'
+                    - network: "80.80.80.0/24"
+                      nexthop: "30.30.30.3"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Reconfigure_STATICROUTE1_EDGE1: &Reconfigure_STATICROUTE1_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "120.120.120.2"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "30.30.30.3"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Reconfigure_STATICROUTE1_EDGE2: &Reconfigure_STATICROUTE1_EDGE2
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[2]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "50.50.50.5"
+                      mtu : "1600"
+    Configure_STATICROUTE1_EDGE2: &Configure_STATICROUTE1_EDGE2
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[2]"
+        staticrouting:
+             '[1]':
+                 staticroutes:
+                     - network: "80.80.80.0/24"
+                       nexthop: "50.50.50.5"
+                       mtu : "1600"
+    Configure_STATICROUTE1_EDGE3: &Configure_STATICROUTE1_EDGE3
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[3]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "60.60.60.5"
+                      mtu : "1600"
+    Configure_STATICROUTE1_EDGE4: &Configure_STATICROUTE1_EDGE4
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[4]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "70.70.70.5"
+                      mtu : "1600"
+    Configure_STATICROUTE2_EDGE1: &Configure_STATICROUTE2_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.2"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "30.30.30.3"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "20.20.20.2"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "30.30.30.3"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Configure_STATICROUTE2_EDGE2: &Configure_STATICROUTE2_EDGE2
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[2]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "50.50.50.5"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "50.50.50.5"
+                      mtu : "1600"
+    Configure_STATICROUTE2_EDGE3: &Configure_STATICROUTE2_EDGE3
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[3]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "60.60.60.5"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "60.60.60.5"
+                      mtu : "1600"
+    Configure_STATICROUTE2_EDGE4: &Configure_STATICROUTE2_EDGE4
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[4]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "70.70.70.5"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "70.70.70.5"
+                      mtu : "1600"
+    Remove_NH1_2_STATICROUTE2_EDGE1: &Remove_NH1_2_STATICROUTE2_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "20.20.20.2"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "30.30.30.3"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Remove_NH1_2_STATICROUTE2_EDGE5: &Remove_NH1_2_STATICROUTE2_EDGE5
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[5]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "90.90.90.0/24"
+                      nexthop: "70.70.70.4"
+                      mtu : "1600"
+                    - network: "190.190.190.0/24"
+                      nexthop: "50.50.50.2"
+                      mtu : "1600"
+                    - network: "190.190.190.0/24"
+                      nexthop: "60.60.60.3"
+                      mtu : "1600"
+                    - network: "190.190.190.0/24"
+                      nexthop: "70.70.70.4"
+                      mtu : "1600"
+    Remove_NH3_STATICROUTE2_EDGE1: &Remove_NH3_STATICROUTE2_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "180.180.180.0/24"
+                      nexthop: "20.20.20.2"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "30.30.30.3"
+                      mtu : "1600"
+                    - network: "180.180.180.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Remove_NH3_STATICROUTE2_EDGE5: &Remove_NH3_STATICROUTE2_EDGE5
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[5]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "190.190.190.0/24"
+                      nexthop: "50.50.50.2"
+                      mtu : "1600"
+                    - network: "190.190.190.0/24"
+                      nexthop: "60.60.60.3"
+                      mtu : "1600"
+                    - network: "190.190.190.0/24"
+                      nexthop: "70.70.70.4"
+                      mtu : "1600"
+    Reconfigure_NH1_EDGE5: &Reconfigure_NH1_EDGE5
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[5]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "90.90.90.0/24"
+                      nexthop: "50.50.50.2"
+                      mtu : "1600"
+    Remove_NH1_EDGE1: &Remove_NH1_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "30.30.30.3"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Remove_NH2_EDGE1: &Remove_NH2_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Remove_NH3_EDGE1: &Remove_NH3_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "18.80.80.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Remove_Route1_EDGE2: &Remove_Route1_EDGE2
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[2]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "50.50.50.5"
+                      mtu : "1600"
+    Configure_STATICROUTE1_EDGE1_Fail: &Configure_STATICROUTE1_EDGE1_Fail
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        expectedresult: "FAIL"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.2"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "30.30.30.3"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Configure_STATICROUTE9_EDGE1: &Configure_STATICROUTE9_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        expectedresult: "FAIL"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.2"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.3"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.4"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.5"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.6"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.7"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.8"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "30.30.30.3"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Configure_STATICROUTE8_EDGE1: &Configure_STATICROUTE8_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.2"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.3"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.4"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.5"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.6"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "20.20.20.7"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "30.30.30.3"
+                      mtu : "1600"
+                    - network: "80.80.80.0/24"
+                      nexthop: "40.40.40.4"
+                      mtu : "1600"
+    Configure_OSPF_EDGE1: &Configure_OSPF_EDGE1
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '4'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                    - vnic: '2'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                    - vnic: '3'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    Configure_OSPF_EDGE2: &Configure_OSPF_EDGE2
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[2]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    ConfigureOSPF_EDGE3: &Configure_OSPF_EDGE3
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[3]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    Configure_OSPF_EDGE4: &Configure_OSPF_EDGE4
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[4]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    DisconnectIface1EDGE2: &DisconnectIface1EDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "20.20.20.2"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+    DisconnectIface1EDGE3: &DisconnectIface1EDGE3
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[3]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+                ipv4address: "30.30.30.3"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+    DisconnectIface1EDGE4: &DisconnectIface1EDGE4
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[4]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[4]"
+                ipv4address: "40.40.40.4"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+
+    Remove_NH1_EDGE5: &Remove_NH1_EDGE5
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[5]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "90.90.90.0/24"
+                      nexthop: "60.60.60.3"
+                      mtu : "1600"
+                    - network: "90.90.90.0/24"
+                      nexthop: "70.70.70.4"
+                      mtu : "1600"
+                    - network: '75.75.75.0/24'
+                      nexthop: '60.60.60.3'
+                      mtu : '1600'
+                    - network: '75.75.75.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+                    - network: '85.85.85.0/24'
+                      nexthop: '60.60.60.3'
+                      mtu : '1600'
+                    - network: '85.85.85.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+    Remove_NH2_EDGE5: &Remove_NH2_EDGE5
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[5]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "90.90.90.0/24"
+                      nexthop: "70.70.70.4"
+                      mtu : "1600"
+                    - network: '75.75.75.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+                    - network: '85.85.85.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+    Remove_NH3_EDGE5: &Remove_NH3_EDGE5
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[5]"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: "19.90.90.0/24"
+                      nexthop: "70.70.70.4"
+                      mtu : "1600"
+    Disable_OSPF_EDGE1: &Disable_OSPF_EDGE1
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1]'
+        ospf:
+            '[1]':
+                enabled: 'false'
+    Disable_OSPF_EDGE2: &Disable_OSPF_EDGE2
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[2]'
+        ospf:
+            '[1]':
+                enabled: 'false'
+    Disable_OSPF_EDGE3: &Disable_OSPF_EDGE3
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[3]'
+        ospf:
+            '[1]':
+                enabled: 'false'
+    Disable_OSPF_EDGE4: &Disable_OSPF_EDGE4
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[4]'
+        ospf:
+            '[1]':
+                enabled: 'false'
+    Unconnected_LS_NH1_OSPF_EDGE1: &Unconnected_LS_NH1_OSPF_EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[10]"
+                type: "uplink"
+                connected: "1"
+                expectedresult: "FAIL"
+                ipv4address: "20.20.20.1"
+                netmask: "255.255.255.0"
+    Unconnected_LS_NH2_OSPF_EDGE1: &Unconnected_LS_NH2_OSPF_EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[3]':
+                name: "vnic3"
+                index: "3"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[5]"
+                type: "uplink"
+                connected: "1"
+                expectedresult: "FAIL"
+                ipv4address: "30.30.30.1"
+                netmask: "255.255.255.0"
+
+    Unconnected_LS_NH3_OSPF_EDGE1: &Unconnected_LS_NH3_OSPF_EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+           '[4]':
+               name: "vnic4"
+               index: "4"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[6]"
+               type: "uplink"
+               connected: "1"
+               expectedresult: "FAIL"
+               ipv4address: "40.40.40.1"
+               netmask: "255.255.255.0"
+    Diff_LS_NH3_OSPF_EDGE1: &Diff_LS_NH3_OSPF_EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[4]':
+                name: "vnic4"
+                index: "4"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[6]"
+                type: "uplink"
+                connected: "1"
+                expectedresult: "FAIL"
+                ipv4address: "40.40.40.1"
+                netmask: "255.255.255.0"
+    Diff_LS_NH3_OSPF_EDGE4: &Diff_LS_NH3_OSPF_EDGE4
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[4]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[6]"
+                ipv4address: "40.40.40.4"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    Configure_STATICROUTE1_EDGE5: &Configure_STATICROUTE1_EDGE5
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[5]'
+        staticrouting:
+            '[1]':
+                 staticroutes:
+                     - network: '90.90.90.0/24'
+                       nexthop: '50.50.50.2'
+                       mtu : '1600'
+                     - network: '90.90.90.0/24'
+                       nexthop: '60.60.60.3'
+                       mtu : '1600'
+                     - network: '90.90.90.0/24'
+                       nexthop: '70.70.70.4'
+                       mtu : '1600'
+                     - network: '75.75.75.0/24'
+                       nexthop: '50.50.50.2'
+                       mtu : '1600'
+                     - network: '75.75.75.0/24'
+                       nexthop: '60.60.60.3'
+                       mtu : '1600'
+                     - network: '75.75.75.0/24'
+                       nexthop: '70.70.70.4'
+                       mtu : '1600'
+                     - network: '85.85.85.0/24'
+                       nexthop: '50.50.50.2'
+                       mtu : '1600'
+                     - network: '85.85.85.0/24'
+                       nexthop: '60.60.60.3'
+                       mtu : '1600'
+                     - network: '85.85.85.0/24'
+                       nexthop: '70.70.70.4'
+                       mtu : '1600'
+    Configure_NH3_EDGE5: &Configure_NH3_EDGE5
+         Type: 'Router'
+         TestRouter: 'vsm.[1].gateway.[5]'
+         staticrouting:
+             '[1]':
+                 staticroutes:
+                     - network: '90.90.90.0/24'
+                       nexthop: '70.70.70.4'
+                       mtu : '1600'
+                     - network: '75.75.75.0/24'
+                       nexthop: '70.70.70.4'
+                       mtu : '1600'
+                     - network: '85.85.85.0/24'
+                       nexthop: '70.70.70.4'
+                       mtu : '1600'
+    PingVM5andVM3: &PingVM5andVM3
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[5].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "90"
+        minexpresult: "50"
+        sleepbetweenworkloads: "30"
+    PingVM6andVM3: &PingVM6andVM3
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[6].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "90"
+        minexpresult: "50"
+        sleepbetweenworkloads: "30"
+    PingVM5andVM3_Fail: &PingVM5andVM3_Fail
+        Type: "Traffic"
+        Expectedresult: "FAIL"
+        ToolName: "Ping"
+        TestAdapter: "vm.[5].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "30"
+        sleepbetweenworkloads: "30"
+    PingVM6andVM3_Fail: &PingVM6andVM3_Fail
+        Type: "Traffic"
+        Expectedresult: "FAIL"
+        ToolName: "Ping"
+        TestAdapter: "vm.[6].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "30"
+        sleepbetweenworkloads: "30"
+    DisconnectIface1EDGE5: &DisconnectIface1EDGE5
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[5]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vc.[1].dvportgroup.[5]"
+                ipv4address: "50.50.50.5"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+    DisconnectIface2EDGE5: &DisconnectIface2EDGE5
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[5]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[6]"
+                ipv4address: "60.60.60.5"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+    DisconnectIface2EDGE2: &DisconnectIface2EDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[5]"
+                ipv4address: "50.50.50.2"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+    ReconnectIface2EDGE5: &ReconnectIface2EDGE5
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[5]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[6]"
+                ipv4address: "60.60.60.5"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "1"
+    ReconnectIface2EDGE2: &ReconnectIface2EDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[5]"
+                ipv4address: "50.50.50.2"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "1"
+    DisconnectIface2EDGE3: &DisconnectIface2EDGE3
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[3]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[6]"
+                ipv4address: "60.60.60.3"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+    DisconnectIface2EDGE4: &DisconnectIface2EDGE4
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[4]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[7]"
+                ipv4address: "70.70.70.4"
+                netmask: "255.255.255.0"
+                type: "internal"
+                connected: "0"
+    ReconnectIface2EDGE3: &ReconnectIface2EDGE3
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[3]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[6]"
+                ipv4address: "60.60.60.3"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "1"
+    Reboot_EDGE1: &Reboot_EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        vmstate: "reboot"
+        sleepbetweenworkloads: "30"
+    Reboot_EDGE2: &Reboot_EDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        vmstate: "reboot"
+    Reboot_EDGE3: &Reboot_EDGE3
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[3]"
+        vmstate: "reboot"
+
+    Reboot_EDGE4: &Reboot_EDGE4
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[4]"
+        vmstate: "reboot"
+    Reboot_EDGE5: &Reboot_EDGE5
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[5]"
+        vmstate: "reboot"
+    PowerOff_EDGE1: &PowerOff_EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        vmstate: "poweroff"
+    PowerOff_EDGE2: &PowerOff_EDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        vmstate: "poweroff"
+    PowerOff_EDGE3: &PowerOff_EDGE3
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[3]"
+        vmstate: "poweroff"
+    PowerOff_EDGE4: &PowerOff_EDGE4
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[4]"
+        vmstate: "poweroff"
+    PowerOn_EDGE1: &PowerOn_EDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        vmstate: "poweron"
+    PowerOn_EDGE2: &PowerOn_EDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        vmstate: "poweron"
+    PowerOn_EDGE3: &PowerOn_EDGE3
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[3]"
+        vmstate: "poweron"
+    PowerOn_EDGE4: &PowerOn_EDGE4
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[4]"
+        vmstate: "poweron"
+    Configure_STATICROUTE1_NH1_EDGE5: &Configure_STATICROUTE1_NH1_EDGE5
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[5]'
+        sleepbetweenworkloads: "30"
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: '90.90.90.0/24'
+                      nexthop: '50.50.50.2'
+                      mtu : '1600'
+                    - network: '75.75.75.0/24'
+                      nexthop: '50.50.50.2'
+                      mtu : '1600'
+                    - network: '85.85.85.0/24'
+                      nexthop: '50.50.50.2'
+                      mtu : '1600'
+    Configure_STATICROUTE2_EDGE5: &Configure_STATICROUTE2_EDGE5
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[5]'
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: '90.90.90.0/24'
+                      nexthop: '50.50.50.2'
+                      mtu : '1600'
+                    - network: '90.90.90.0/24'
+                      nexthop: '60.60.60.3'
+                      mtu : '1600'
+                    - network: '90.90.90.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+                    - network: '75.75.75.0/24'
+                      nexthop: '50.50.50.2'
+                      mtu : '1600'
+                    - network: '75.75.75.0/24'
+                      nexthop: '60.60.60.3'
+                      mtu : '1600'
+                    - network: '75.75.75.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+                    - network: '85.85.85.0/24'
+                      nexthop: '50.50.50.2'
+                      mtu : '1600'
+                    - network: '85.85.85.0/24'
+                      nexthop: '60.60.60.3'
+                      mtu : '1600'
+                    - network: '85.85.85.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+                    - network: '190.190.190.0/24'
+                      nexthop: '50.50.50.2'
+                      mtu : '1600'
+                    - network: '190.190.190.0/24'
+                      nexthop: '60.60.60.3'
+                      mtu : '1600'
+                    - network: '190.190.190.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+    Remove_NH1_2_EDGE5: &Remove_NH1_2_EDGE5
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[5]'
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: '90.90.90.0/24'
+                      nexthop: '60.60.60.3'
+                      mtu : '1600'
+                    - network: '90.90.90.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+                    - network: '75.75.75.0/24'
+                      nexthop: '60.60.60.3'
+                      mtu : '1600'
+                    - network: '75.75.75.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+                    - network: '85.85.85.0/24'
+                      nexthop: '60.60.60.3'
+                      mtu : '1600'
+                    - network: '85.85.85.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+                    - network: '190.190.190.0/24'
+                      nexthop: '60.60.60.3'
+                      mtu : '1600'
+                    - network: '190.190.190.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+    Remove_NH2_2_EDGE5: &Remove_NH2_2_EDGE5
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[5]'
+        staticrouting:
+            '[1]':
+                staticroutes:
+                   - network: '90.90.90.0/24'
+                     nexthop: '70.70.70.4'
+                     mtu : '1600'
+                   - network: '75.75.75.0/24'
+                     nexthop: '70.70.70.4'
+                     mtu : '1600'
+                   - network: '85.85.85.0/24'
+                     nexthop: '70.70.70.4'
+                     mtu : '1600'
+                   - network: '190.190.190.0/24'
+                     nexthop: '70.70.70.4'
+                     mtu : '1600'
+    Remove_NH3_2_EDGE5: &Remove_NH3_2_EDGE5
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[5]'
+        staticrouting:
+            '[1]':
+                staticroutes:
+                    - network: '190.190.190.0/24'
+                      nexthop: '70.70.70.4'
+                      mtu : '1600'
+    CreateGatewayInterface1EDGE3_OneUplink: &CreateGatewayInterface1EDGE3_OneUplink
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[3]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "20.20.20.3"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    CreateGatewayInterface1EDGE4_OneUplink: &CreateGatewayInterface1EDGE4_OneUplink
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[4]"
+            interface:
+                '[1]':
+                    name: "vnic1"
+                    index: "1"
+                    portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                    ipv4address: "20.20.20.4"
+                    netmask: "255.255.255.0"
+                    type: "uplink"
+    RemoveOSPF_Redistribution_EDGE2: &RemoveOSPF_Redistribution_EDGE2
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[2]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+    RemoveOSPF_Redistribution_EDGE3: &RemoveOSPF_Redistribution_EDGE3
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[3]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+    RemoveOSPF_Redistribution_EDGE4: &RemoveOSPF_Redistribution_EDGE4
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[4]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+    CreateGatewayIface1EDGE2_different_subnet: &CreateGatewayIface1EDGE2_different_subnet
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "120.120.120.2"
+                netmask: "255.255.255.0"
+                type: "internal"
+    CreateGatewayIface2EDGE1_different_subnet: &CreateGatewayIface2EDGE1_different_subnet
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+                ipv4address: "120.120.120.1"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    Configure_Passwd_OSPF_EDGE1: &Configure_Passwd_OSPF_EDGE1
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                      authentication:
+                          ospfauthenticationtype: 'password'
+                          ospfpasswordvalue: 'pawan'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '4'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                    - vnic: '2'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                    - vnic: '3'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    Same_PasswdNH1_OSPF_EDGE2: &Same_PasswdNH1_OSPF_EDGE2
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[2]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                      authentication:
+                          ospfauthenticationtype: 'password'
+                          ospfpasswordvalue: 'pawan'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    Same_PasswdNH2_OSPF_EDGE3: &Same_PasswdNH2_OSPF_EDGE3
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[3]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                      authentication:
+                          ospfauthenticationtype: 'password'
+                          ospfpasswordvalue: 'pawan'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    Same_PasswdNH3_OSPF_EDGE4: &Same_PasswdNH3_OSPF_EDGE4
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[4]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                      authentication:
+                          ospfauthenticationtype: 'password'
+                          ospfpasswordvalue: 'pawan'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    Diff_PasswdNH1_OSPF_EDGE2: &Diff_PasswdNH1_OSPF_EDGE2
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[2]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                      authentication:
+                          ospfauthenticationtype: 'password'
+                          ospfpasswordvalue: 'cisco'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    Diff_PasswdNH2_OSPF_EDGE3: &Diff_PasswdNH2_OSPF_EDGE3
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[3]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                      authentication:
+                          ospfauthenticationtype: 'password'
+                          ospfpasswordvalue: 'juniper'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    Diff_PasswdNH3_OSPF_EDGE4: &Diff_PasswdNH3_OSPF_EDGE4
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[4]'
+        ospf:
+            '[1]':
+                enabled: 'true'
+                gracefulrestart: 'disabled'
+                ospfareas:
+                    - areaid: '0'
+                      authentication:
+                          ospfauthenticationtype: 'password'
+                          ospfpasswordvalue: 'nsx'
+                    - areaid: '1'
+                ospfinterfaces:
+                    - vnic: '1'
+                      areaid: '0'
+                      hellointerval: '1'
+                      deadinterval: '4'
+                      cost: '1'
+                      priority: '128'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    Sleep_Workload: &Sleep_Workload
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan25"
+        sleepbetweenworkloads: "60"
+    DisableFirewall_EDGE1: &DisableFirewall_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        firewall:
+            '[1]':
+                enabled: "false"
+    DisableFirewall_EDGE5: &DisableFirewall_EDGE5
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[5]"
+        firewall:
+            '[1]':
+                enabled: "false"
+    DisableFirewall_EDGE2: &DisableFirewall_EDGE2
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[2]"
+        firewall:
+            '[1]':
+                enabled: "false"
+    DisableFirewall_EDGE3: &DisableFirewall_EDGE3
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[3]"
+        firewall:
+            '[1]':
+                enabled: "false"
+    DisableFirewall_EDGE4: &DisableFirewall_EDGE4
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[4]"
+        firewall:
+            '[1]':
+                enabled: "false"
+

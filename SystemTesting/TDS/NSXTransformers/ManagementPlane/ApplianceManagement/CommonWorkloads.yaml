@@ -1,0 +1,59 @@
+APPMGMT_WORKLOADS: &APPMGMT_WORKLOADS
+      SetServiceId:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          nsxservice:
+            '[1]':
+                map_object: true
+                id_: 'proton'
+
+      FirstLoginWithIncorrectPassword: &FIRST_LOGIN_WITH_INCORRECT_PASSWORD
+          Type: "Service"
+          TestService: "nsxmanager.[1].nsxservice.[1]"
+          runtime_params:
+              username: "admin"
+              password: "admin123"
+          get_service_state:
+             'runtime_state[?]equal_to': 'running'
+          ExpectedResult:
+              status_code: FORBIDDEN
+
+      VerifyUserIsLocked: &VERIFY_USER_IS_LOCKED
+          <<: *FIRST_LOGIN_WITH_INCORRECT_PASSWORD
+          runtime_params:
+              username: "admin"
+              password: "default"
+
+      VerifyUserIsUnLocked: &VERIFY_USER_IS_UNLOCKED
+          Type: "Service"
+          TestService: "nsxmanager.[1].nsxservice.[1]"
+          runtime_params:
+              username: "admin"
+              password: "default"
+          get_service_state:
+             'runtime_state[?]equal_to': 'running'
+          sleepbetweenworkloads: 300
+
+      FirstLoginWithIncorrectUser: &FIRST_LOGIN_WITH_INCORRECT_USER
+          Type: "Service"
+          TestService: "nsxmanager.[1].nsxservice.[1]"
+          runtime_params:
+              username: "admin1"
+              password: "default"
+          get_service_state:
+             'runtime_state[?]equal_to': 'running'
+          ExpectedResult:
+              status_code: FORBIDDEN
+
+      FetchTechSupportBundle: &FETCH_TECH_SUPPORT_BUNDLE
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          techsupportbundlelog:
+            '[1]':
+                name: 'supportbundle'
+
+      VerifyTechSupportBundle: &VERIFY_TECH_SUPPORT_BUNDLE
+          Type: "ComponentLog"
+          TestComponentLog: "nsxmanager.[1].techsupportbundlelog.[1]"
+          read:
+              'result[?]equal_to': true

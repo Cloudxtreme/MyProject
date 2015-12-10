@@ -1,0 +1,193 @@
+# (XXX) Below tests to be run only for ESX.
+!include ../../../L2/esx/TestbedSpec.yaml
+!include CommonWorkloads.yaml
+!include ../TestbedSpec.yaml
+!include TopoIPFIX_4Hosts.yaml
+
+IPFIXVerifyIdleTimeout:
+    Product: "NSXTransformers"
+    Category: "Operations"
+    Component: "IPFIX"
+    TestName: "IPFIXVerifyIdleTimeout"
+    Version: "2"
+    QCPath: ESX
+    Summary: "Verify IPFIX idle_timeout functionality."
+    Procedure:
+        - Setup L2 topology.
+        - Enable IPFIX.
+        - Update IPFIX to have an idle timeout of 60 seconds and sampling rate of 100%.
+        - Start the capture process on the collector.
+        - Toggle IPFIX.
+        - Send an ICMP flow between VMs 1-3 for 10 seconds at 1 pkt/sec.
+        - Wait for idle_timeout duration, i.e. 60 seconds.
+        - Verify after idle timeout, whether captured IPFIX data has an entry with
+          packet count as 10 to account for the 10 ICMP packets.
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "gangarm"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_4HOSTS_3MP_3CCP--ESX
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - ['L2Setup--ESX']
+            - ['L2Verification--ESX']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['ReadIPFIXConfig']
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['TrafficVM1toVM3']
+            - ['GetIPFIXCapturedDataVM1toVM3']
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['TrafficVM2toVM4']
+            - ['GetIPFIXCapturedDataVM2toVM4']
+        ExitSequence:
+            - ['DisableIPFIX']
+            - ['L2Cleanup--ESX']
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            domain_id: '10'
+            port: 9999
+            idle_timeout: '60'
+            flow_timeout: '300'
+            packet_sample_probability: '1'
+
+        ReadIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            read:
+              'domain_id[?]equal_to': '10'
+              'port[?]equal_to': 9999
+              'idle_timeout[?]equal_to': '60'
+              'flow_timeout[?]equal_to': '300'
+              'ip_address[?]equal_to': 'vm.[8]->ip'
+              'packet_sample_probability[?]equal_to': '1.0'
+
+        StartTShark:
+            Type: VM
+            TestVM: 'vm.[8]'
+            capture:
+                tool: 'tshark'
+                file_name: '/tmp/tshark123.cap'
+                capture_filter: '-f "dst port 9999"'
+                adapter_name: 'eth0'
+                execution_type: 'cmd'
+
+        TrafficVM1toVM3:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            TestDuration  : "10"
+            sleepbetweenworkloads: "10"
+            Connectivitytest: 0
+
+        TrafficVM2toVM4:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[4].vnic.[1]"
+            TestDuration  : "10"
+            sleepbetweenworkloads: "10"
+            Connectivitytest: 0
+
+        GetIPFIXCapturedDataVM1toVM3: &GetIPFIXCapturedDataVM1toVM3
+            Type: VM
+            TestVM: 'vm.[8]'
+            sleepbetweenworkloads: "60"
+            tool: 'tshark'
+            execution_type: 'cmd'
+            file_name: '/tmp/tshark123.cap'
+            port: 9999
+            stop_capture: true
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -R "cflow.packets64==9 || cflow.packets64==10 || cflow.packets64==11" -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - src_ip: 'vm.[1].vnic.[1]->adapter_ip'
+                      dst_ip: 'vm.[3].vnic.[1]->adapter_ip'
+                      protocol: '1'  # ICMP
+
+        GetIPFIXCapturedDataVM2toVM4:
+            <<: *GetIPFIXCapturedDataVM1toVM3
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - src_ip: 'vm.[2].vnic.[1]->adapter_ip'
+                      dst_ip: 'vm.[4].vnic.[1]->adapter_ip'
+                      protocol: '1'  # ICMP
+
+IPFIXTemplateRefresh:
+    Product: "NSXTransformers"
+    Category: "Operations"
+    Component: "IPFIX"
+    TestName: "IPFIXTemplateRefresh"
+    Version: "2"
+    QCPath: ESX
+    Summary: "Verify IPFIX idle_timeout functionality."
+    Procedure:
+        - Setup L2 topology.
+        - Enable IPFIX.
+        - Update IPFIX to export to port 9999.
+        - Start the capture process on the collector.
+        - Wait for 300 seconds.
+        - Verify if we receive 1 template packet per 60 seconds from each host.
+          i.e. 5 mins x 1 template packet/sec x 4 hosts = 20 packets total.
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "gangarm"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_4HOSTS_3MP_3CCP--ESX
+    WORKLOADS:
+        <<: *TopoIPFIX_4Hosts
+        Sequence:
+            - ['L2Setup--ESX']
+            - ['L2Verification--ESX']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['StartTShark']
+            - ['GetIPFIXTemplatePacketCount']
+        ExitSequence:
+            - ['DisableIPFIX']
+            - ['L2Cleanup--ESX']
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            port: 9999
+
+        StartTShark:
+            Type: VM
+            TestVM: 'vm.[8]'
+            capture:
+                tool: 'tshark'
+                file_name: '/tmp/tshark123.cap'
+                capture_filter: '-f "dst port 9999"'
+                adapter_name: 'eth0'
+                execution_type: 'cmd'
+
+        GetIPFIXTemplatePacketCount:
+            Type: VM
+            TestVM: 'vm.[8]'
+            sleepbetweenworkloads: "300"
+            tool: 'tshark'
+            execution_type: 'cmd'
+            file_name: '/tmp/tshark123.cap'
+            stop_capture: true
+            read_filter: '-R "ip.dst==vm.[8]->get_ip && cflow.flowset_id==2" -2 -d udp.port==9999,cflow'
+            get_captured_packet_count[?]contains:
+                pktcount: '20'

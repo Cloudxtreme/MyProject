@@ -1,0 +1,224 @@
+WORKLOADS:
+    PlaceVM1OnDVPG1: &PlaceVM1OnDVPG1
+        Type: "VM"
+        TestVM: "vm.[1]"
+        vnic:
+            '[1]':
+                driver: "e1000"
+                portgroup: "vc.[1].dvportgroup.[1]"
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+    PlaceVM2OnDVPG2: &PlaceVM2OnDVPG2
+        Type: "VM"
+        TestVM: "vm.[2]"
+        vnic:
+            '[1]':
+                driver: "e1000"
+                portgroup: "vc.[1].dvportgroup.[2]"
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+    SetDVPGIPVM1: &SetDVPGIPVM1
+        Type: "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        ipv4: '172.16.0.2'
+        netmask: "255.255.255.0"
+    SetDVPGIPVM2: &SetDVPGIPVM2
+        Type: "NetAdapter"
+        Testadapter: "vm.[2].vnic.[1]"
+        ipv4: '10.10.10.2'
+        netmask: "255.255.255.0"
+    AddRouteVM1_VM2: &AddRouteVM1_VM2
+        Type: "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        netmask: "255.255.255.0"
+        route: "add"
+        network: "10.10.10.0"
+        gateway: "172.16.0.1"
+        expectedresult: "ignore"
+    AddRouteVM2_VM1: &AddRouteVM2_VM1
+        Type: "NetAdapter"
+        Testadapter: "vm.[2].vnic.[1]"
+        netmask: "255.255.255.0"
+        route: "add"
+        network: "172.16.0.0"
+        gateway: "10.10.10.1"
+        expectedresult: "ignore"
+
+    DeployGatewayServicesEdge: &DeployGatewayServicesEdge
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        gateway:
+            '[1]':
+                name: autogenerate
+#                datastoretype: "datastore1"
+                datastoreType: "shared"
+                resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+                datacenter: "vc.[1].datacenter.[1]"
+                host: "host.[1]"
+                portgroup: "vc.[1].dvportgroup.[5]"
+                primaryaddress: "10.65.31.134"
+                subnetmask: "255.255.240.0"
+                username: "admin"
+                password: "VMware.12345"
+                remote_access: "true"
+
+    CreateGatewayInterface1:
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[1]':
+                name: "internal1"
+                index: "1"
+                portgroup: "vc.[1].dvportgroup.[1]"
+                ipv4address: "172.16.0.1"
+                netmask: "255.255.255.0"
+                type: "internal"
+
+    CreateGatewayInterface2:
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[2]':
+                name: "uplink1"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[2]"
+                ipv4address: "10.10.10.1"
+                netmask: "255.255.255.0"
+                type: "uplink"
+
+    DeleteGatewayIterface1:
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        vnic_index: "1"
+        deleteinterface: "vsm.[1].gateway.[1].interface.[1]"
+
+    DeleteGatewayIterface2:
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        vnic_index: "2"
+        deleteinterface: "vsm.[1].gateway.[1].interface.[2]"
+
+
+    AllowFirewall_ForNAT:
+            Type: "Router"
+            TestRouter: "vsm.[1].gateway.[1]"
+            firewall:
+                '[1]':
+                    enabled: "true"
+                    default_policy:
+                       action: "deny"
+                       logging_enabled: "true"
+                    global_config:
+                        tcp_pick_ongoing_conn: "true"
+                        tcp_allow_outofwindow_packets: "true"
+                        tcp_send_resets_for_closed_servicerouter_ports: "true"
+                        tcp_timeout_close: 30
+                        tcp_timeout_established: 3600
+                        tcp_timeout_open: 30
+                        icmp_timeout: 10
+                        icmp6_timeout: 10
+                        drop_invalid_traffic: "true"
+                        log_invalid_traffic: "true"
+                        udp_timeout: 120
+                        ip_generic_timeout: 120
+                    rules:
+                        - name: "AllowRuleForNAT"
+                          rule_type: "USER"
+                          enabled: "true"
+                          logging_enabled: "true"
+                          action: "accept"
+                          application:
+                              application_id:
+                                  - value: "vsm.[1].applicationservicegroup.[1]"
+                                    type: "ServiceGroup"
+
+    DeleteEdge:
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        deletegateway: "vsm.[1].gateway.[1]"
+
+    DeleteServices:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            deleteapplicationservice: vsm.[1].applicationservice.[-1]
+
+    DeleteServiceGroup:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            deleteapplicationservicegroup: vsm.[1].applicationservicegroup.[1]
+
+
+    VifAttachment_VM1_VM2: &VIFATTACHMENT_VM1_VM2
+         - - 'VIF_ATTACHMENT_VM1'
+         - - 'VIF_ATTACHMENT_VM2'
+
+    VIF_ATTACHMENT_VM1:
+         Type: VM
+         TestVM: 'vm.[1]'
+         vnic:
+            '[1]':
+                driver: "e1000"
+                portgroup: "vc.[1].dvportgroup.[1]"
+                connected: 1
+                startconnected: 1
+
+    VIF_ATTACHMENT_VM2:
+         Type: VM
+         TestVM: 'vm.[2]'
+         vnic:
+            '[1]':
+                driver: "e1000"
+                portgroup: "vc.[1].dvportgroup.[2]"
+                connected: 1
+                startconnected: 1
+
+    ConfigureIP_VM1_VM2: &CONFIGUREIP_VM1_VM2
+         - - 'ConfigureVM1Vnic1IP_172_16_0_2'
+         - - 'ConfigureVM2Vnic1IP_10_10_10_2'
+
+    ConfigureVM1Vnic1IP_172_16_0_2: &CONFIGUREVM1VNIC1IP_172_16_0_2
+         Type: NetAdapter
+         TestAdapter: 'vm.[1].vnic.[1]'
+         ipv4:       '172.16.0.2'
+         netmask:    "255.255.255.0"
+
+    ConfigureVM2Vnic1IP_10_10_10_2: &CONFIGUREVM1VNIC1IP_10_10_10_2
+         Type: NetAdapter
+         TestAdapter: 'vm.[2].vnic.[1]'
+         ipv4:       '10.10.10.2'
+         netmask:    "255.255.255.0"
+
+    AddRouteALLVMs: &ADD_ROUTE_ALL_VMS
+         - - 'AddRouteVM1_VM2'
+         - - 'AddRouteVM2_VM1'
+
+    DeleteVnic1_VM1_VM2: &DELETEVNIC1_VM1_VM2
+         - - 'DeleteVM1Vnic1'
+         - - 'DeleteVM2Vnic1'
+
+    DeleteVM1Vnic1:
+         Type: VM
+         TestVM: 'vm.[1]'
+         deletevnic: 'vm.[1].vnic.[1]'
+
+    DeleteVM2Vnic1:
+         Type: VM
+         TestVM: 'vm.[2]'
+         deletevnic: 'vm.[2].vnic.[1]'
+
+    DefaultFirewallRule:
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        firewall:
+            '[1]':
+                enabled: "true"
+                default_policy:
+                   action: "deny"
+                   logging_enabled: "false"
+
+    DeleteNAT:
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        deletenat_rules: vsm.[1].gateway.[1].nat.[1]

@@ -1,0 +1,640 @@
+MPACommonTestParams: &MPACommonTestParams
+    AutomationLevel: Automated
+    Category: ManagementPlatform
+    Component: MPA
+    Developer: mihaid
+    FullyAutomatable: Y
+    Priority: p0
+    Product: NSXTransformers
+    QCPath: Verticals
+    Status: Execution Ready
+    Summary: 'Generic Summary'
+    Tags: mp,mpa,nsx
+    Version: 2
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    TestName: 'Generic Test Name'
+
+MPACommonWorkloads: &MPACommonWorkloads
+
+    Common:
+        TestHost: &TEST_HOST 'esx.[1]'
+        Logfile: &SYSLOG '/var/log/syslog.log'
+        HostIp: &HOST_IP 'esx.[1]->ip_addresses'
+        SampleClientDir: &SAMPLE_CLIENT_DIR
+            destination: '/tmp'
+        ConfigFile: &CONFIG_FILE '/etc/vmware/nsx-mpa/mpaconfig.json'
+
+    StartMPA: &START_MPA
+        Type: Host
+        TestHost: *TEST_HOST
+        configure_service_state:
+            execution_type: 'cli'
+            service_name: 'nsx-mpa'
+            state: 'start'
+        ExpectedResult: Ignore
+
+    StopMPA:
+        Type: Host
+        TestHost: *TEST_HOST
+        configure_service_state:
+            execution_type: 'cli'
+            service_name: 'nsx-mpa'
+            state: 'stop'
+        ExpectedResult: Ignore
+
+    RestartMPA: &RESTART_MPA
+        Type: Host
+        TestHost: *TEST_HOST
+        configure_service_state:
+            execution_type: 'cli'
+            service_name: 'nsx-mpa'
+            state: 'restart'
+        ExpectedResult: Ignore
+
+    SetManagerOnHost:
+        Type: Host
+        TestHost: *TEST_HOST
+        set_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    RegisterHost:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        fabrichost:
+            '[1]':
+                hypervisor_info:
+                     ip_addresses: 'esx.[x=fabrichost_index]'
+                     external_id: 'esx.[x=fabrichost_index]->id'
+                     os_type: 'ESXI'
+                host_msg_client_info:
+                     account_name: 'esx.[x=fabrichost_index]'
+                     shared_secret: 'cvn-1-2-3'
+                     certificate: 'iaWCS2wJhrhXGz0e7iFk7zFO9fM='
+
+    SampleClientWait:
+        Type: Host
+        TestHost: *TEST_HOST
+        sample_client:
+            execution_type: 'cmd'
+            application_type: 'CustomerVertical'
+            application_id: 'any_id'
+            client_type: 1
+            demo_mode: 0
+            time_delay: 0
+        ExpectedResult: Ignore
+
+    CheckThreeClientsConnected:
+        Type: Host
+        TestHost: 'esx.[1]'
+        verify_broker_num_clients:
+            execution_type: 'cmd'
+            num_clients: 3
+
+    CheckTwoClientsConnected:
+        Type: Host
+        TestHost: 'esx.[1]'
+        verify_broker_num_clients:
+            execution_type: 'cmd'
+            num_clients: 2
+
+    #
+    # Config File
+    #
+
+    SaveConfigDetails: &SAVECONFIGDETAILS
+        Type: Host
+        TestHost: *TEST_HOST
+        PersistData: "Yes"
+        execution_type: 'cmd'
+        file_name: '/etc/vmware/nsx-mpa/mpaconfig.json'
+        get_dict_from_json_file:
+            json[?]defined: ''
+
+    CheckConfigSame: &CHECKCONFIGSAME
+        Type: Host
+        TestHost: *TEST_HOST
+        execution_type: 'cmd'
+        file_name: '/etc/vmware/nsx-mpa/mpaconfig.json'
+        get_dict_from_json_file:
+            json[?]equal_to: 'esx.[1]->get_dict_from_json_file->json'
+
+    CheckConfigDifferent: &CHECKCONFIGDIFFERENT
+        <<: *CHECKCONFIGSAME
+        ExpectedResult: 'FAIL'
+
+    #
+    # RPC
+    #
+
+    RPC: &RPC
+        Type: Host
+        TestHost: *TEST_HOST
+        sample_client:
+            execution_type: 'cmd'
+            application_type: 'CustomerVertical'
+            application_id: 'any_id'
+            client_type: 1
+            demo_mode: 2
+            expected_output: 'Received RPC response matches request'
+
+    RPCSent: &RPCSENT
+        Type: Host
+        TestHost: *TEST_HOST
+        query_file:
+            execution_type: 'cmd'
+            file_name: *SYSLOG
+            grep_after: 'Sending message:RMQ_CLIENT_RPC_REQUEST to mp'
+            grep_string: 'Successfully sent app data to broker'
+            max_wait: 20
+
+    TestRPC: &TESTRPC
+        Type: Host
+        TestHost: *TEST_HOST
+        fetch_endpoint_testrpc:
+            master: True
+            execution_type: 'cmd'
+            pre_sleep: 3
+
+    TestRPC_NonPreferred: &TESTRPC_NP
+        <<: *TESTRPC
+        fetch_endpoint_testrpc:
+            master: False
+            execution_type: 'cmd'
+            pre_sleep: 3
+
+    #
+    # GenericMessage
+    #
+
+    GenericMessage: &GENERIC
+        Type: Host
+        TestHost: *TEST_HOST
+        sample_client:
+            execution_type: 'cmd'
+            application_type: 'CustomerVertical'
+            application_id: 'any_id'
+            client_type: 1
+            demo_mode: 1
+            expected_output: 'Demo1: Send Generic Message'
+
+
+    GenericMessageSent: &GENERICSENT
+        Type: Host
+        TestHost: *TEST_HOST
+        query_file:
+            execution_type: 'cmd'
+            file_name: *SYSLOG
+            grep_after: 'Sending message:RMQ_VSM_PAYLOAD to mp'
+            grep_string: 'Successfully sent app data to broker'
+            max_wait: 20
+
+    #
+    # Publish Subscribe
+    #
+
+    PublishSubscribe: &PUBLISH
+        Type: Host
+        TestHost: *TEST_HOST
+        sample_client:
+            execution_type: 'cmd'
+            application_type: 'CustomerVertical'
+            application_id: 'any_id'
+            client_type: 1
+            demo_mode: 3
+            expected_output: 'Demo3: Publish a message on a topic'
+
+    PublishSubscribeSent: &PUBLISHSENT
+        Type: Host
+        TestHost: *TEST_HOST
+        query_file:
+            execution_type: 'cmd'
+            file_name: *SYSLOG
+            grep_after: 'Sending message:RMQ_CLIENT_PUBLISH to mp'
+            grep_string: 'Successfully sent app data to broker'
+            max_wait: 20
+
+    #
+    # XMLRPC Sample Client
+    #
+
+    ConnectXMLRPCServer: &CONNECTXMLRPCSERVER
+        Type: Host
+        TestHost: *TEST_HOST
+        connect_sample_client:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            name: 'xmlrpc'
+
+    VerticalRegistration: &VERTICALREGISTRATION
+        Type: Host
+        TestHost: *TEST_HOST
+        execution_type: 'cmd'
+        PersistData: "Yes"
+        host_ip: *HOST_IP
+        application_type: 'CustomerVertical'
+        application_id: '345'
+        client_type: 1
+        vertical_registration:
+            'cookie_id[?]defined': ''
+
+
+    VerticalCloseConnection: &VERTICALCLOSECONNECTION
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_close_connection:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            cookieid: 'esx.[1]->vertical_registration->cookie_id'
+
+    KillSampleClient: &KILLSAMPLECLIENT
+        Type: Host
+        TestHost: *TEST_HOST
+        kill_processes_by_name:
+            execution_type: 'cmd'
+            options: '-9 -f'
+            process_name: 'sample_client'
+        ExpectedResult: Ignore
+
+    #
+    # Broker Service State
+    #
+
+    GetMasterBrokerIp: &GET_MASTER_BROKER_IP
+        Type: Host
+        TestHost: *TEST_HOST
+        execution_type: 'cmd'
+        PersistData: 'yes'
+        read_master_broker_ip:
+            'master_broker_ip[?]defined' : ''
+
+    ReadIP_Master:
+        Type: Host
+        TestHost: *TEST_HOST
+        execution_type: 'cmd'
+        PersistData: "Yes"
+        read_broker_ip:
+            num: 0
+            ip[?]defined: ''
+
+    SetServiceId: &SET_SERVICE_ID
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        nsxservice:
+            '[1]':
+                map_object: true
+                id_: 'rabbitmq'
+
+    StopBrokerService: &STOP_BROKER_SERVICE
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+            state: 'stop'
+            service_name: 'rabbitmq'
+
+    StartBrokerService: &START_BROKER_SERVICE
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+            state: 'start'
+            service_name: 'rabbitmq'
+
+    SetServiceId_SavedMP:
+        <<: *SET_SERVICE_ID
+        TestNSX: 'esx.[1]->read_broker_ip->ip'
+
+    StopService_SavedMP:
+        <<: *STOP_BROKER_SERVICE
+        TestService: 'esx.[1]->read_broker_ip->ip'
+
+    StartService_SavedMP:
+        <<: *START_BROKER_SERVICE
+        TestService: 'esx.[1]->read_broker_ip->ip'
+
+    ReplaceIP_SavedMP: #Replaces saved mp ip with invalid ip
+        Type: Host
+        TestHost: *TEST_HOST
+        replace_regex_in_file:
+            execution_type: 'cmd'
+            path: *CONFIG_FILE
+            find: 'esx.[1]->read_broker_ip->ip'
+            replace: '0.0.0.0'
+
+    VerticalSendGenericMsg:
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_send_msg:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            msg_type: 1
+            test_params: '{"amqpPayload_content": "Sample Generic Message"}'
+            cookie_id: 'esx.[1]->vertical_registration->cookie_id'
+            count: 1
+
+    VerticalSendRpcMsg:
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_send_msg:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            msg_type: 2
+            test_params: '{"amqPayload_content": "Sample RPC Message"}'
+            cookie_id: 'esx.[1]->vertical_registration->cookie_id'
+            count: 1
+
+    VerticalSendTwentyRpcMsg:
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_send_msg:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            msg_type: 2
+            test_params: '{"amqp_payload": "Sample RPC Message"}'
+            cookie_id: 'esx.[1]->vertical_registration->cookie_id'
+            count: 20
+
+    VerticalSendPublishMsg:
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_send_msg:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            msg_type: 3
+            test_params: '{"amqp_payload": "Sample Publish Message"}'
+            cookie_id: 'esx.[1]->vertical_registration->cookie_id'
+            count: 1
+
+    VerticalSendGenericMsgFail:
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_send_msg:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            msg_type: 1
+            test_params: '{"amqpPayload_content": "Sample Generic Message"}'
+            cookie_id: 'esx.[1]->vertical_registration->cookie_id'
+            count: 1
+        ExpectedResult: 'FAIL'
+
+    VerticalSendRPCZeroSizePayload:
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_send_msg:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            msg_type: 2
+            test_params: '{"amqpPayload_content": "Sample RPC Message","amqpPayloadLen": 0}'
+            cookie_id: 'esx.[1]->vertical_registration->cookie_id'
+            count: 1
+
+    VerticalSendRPCNegativePayloadLen:
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_send_msg:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            msg_type: 2
+            test_params: '{"amqpPayload_content": "Sample RPC Message","amqpPayloadLen": -1}'
+            cookie_id: 'esx.[1]->vertical_registration->cookie_id'
+            count: 1
+
+    VerticalSendRPCInvalidContentType:
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_send_msg:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            msg_type: 2
+            test_params: '{"amqpPayload_content": "Sample RPC Message","amqpContentType": "***"}'
+            cookie_id: 'esx.[1]->vertical_registration->cookie_id'
+            count: 1
+
+    VerticalSendRPCInvalidRoutingKey:
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_send_msg:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            msg_type: 2
+            test_params: '{"amqpPayload_content": "Sample RPC Message","amqpRoutingKey": "Invalid"}'
+            cookie_id: 'esx.[1]->vertical_registration->cookie_id'
+            count: 1
+
+    VerticalSendRPCInvalidAmqpHeader:
+        Type: Host
+        TestHost: *TEST_HOST
+        vertical_send_msg:
+            execution_type: 'cmd'
+            host_ip: *HOST_IP
+            msg_type: 2
+            test_params: '{"amqpPayload_content": "Sample RPC Message","amqpHeaders": 0}'
+            cookie_id: 'esx.[1]->vertical_registration->cookie_id'
+            count: 1
+
+    #
+    # MP Log Messages
+    #
+
+    #
+    # IP rules
+    #
+    BlockRabbitMQProxyESX:
+        Type: Host
+        TestHost: *TEST_HOST
+        firewall_rule:
+                rule_operation: disable
+                ruleset: rabbitmqproxy
+                execution_type: "cli"
+        ExpectedResult: "ignore"
+
+    BlockvSFW-UWESX:
+        Type: Host
+        TestHost: *TEST_HOST
+        sleepbetweenworkloads: 30
+        firewall_rule:
+                rule_operation: disable
+                ruleset: vSFW-UW
+                execution_type: "cli"
+        ExpectedResult: "ignore"
+
+    UnblockRabbitMQProxyESX:
+        Type: Host
+        TestHost: *TEST_HOST
+        firewall_rule:
+                rule_operation: enable
+                ruleset: rabbitmqproxy
+                execution_type: "cli"
+
+    UnblockvSFW-UWESX:
+        Type: Host
+        TestHost: *TEST_HOST
+        firewall_rule:
+                rule_operation: enable
+                ruleset: vSFW-UW
+                execution_type: "cli"
+    #
+    # Clustering Workloads
+    #
+
+    #Service Management
+
+    GetMasterBrokerIp_Host1:
+        <<: *GET_MASTER_BROKER_IP
+        TestHost: 'esx.[1]'
+
+    GetMasterBrokerIp_Host2:
+        <<: *GET_MASTER_BROKER_IP
+        TestHost: 'esx.[2]'
+
+    GetMasterBrokerIp_Host3:
+        <<: *GET_MASTER_BROKER_IP
+        TestHost: 'esx.[3]'
+
+    #Start/Stop Proton
+
+    SetServiceId_MP1:
+        <<: *SET_SERVICE_ID
+        TestNSX: "nsxmanager.[1]"
+
+    SetServiceId_MP2:
+        <<: *SET_SERVICE_ID
+        TestNSX: "nsxmanager.[2]"
+
+    SetServiceId_MP3:
+        <<: *SET_SERVICE_ID
+        TestNSX: "nsxmanager.[3]"
+
+    StopService_MP1:
+        <<: *STOP_BROKER_SERVICE
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+
+    StopService_MP2:
+        <<: *STOP_BROKER_SERVICE
+        TestService: "nsxmanager.[2].nsxservice.[1]"
+
+    StopService_MP3:
+        <<: *STOP_BROKER_SERVICE
+        TestService: "nsxmanager.[3].nsxservice.[1]"
+
+    StartService_MP1:
+        <<: *START_BROKER_SERVICE
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+
+    StartService_MP2:
+        <<: *START_BROKER_SERVICE
+        TestService: "nsxmanager.[2].nsxservice.[1]"
+
+    StartService_MP3:
+        <<: *START_BROKER_SERVICE
+        TestService: "nsxmanager.[2].nsxservice.[1]"
+
+    #XMLRPC Server
+
+    ConnectXMLRPCServer_Host1:
+        <<: *CONNECTXMLRPCSERVER
+        TestHost: 'esx.[1]'
+
+    ConnectXMLRPCServer_Host2:
+        <<: *CONNECTXMLRPCSERVER
+        TestHost: 'esx.[2]'
+        connect_sample_client:
+            execution_type: 'cmd'
+            host_ip: 'esx.[2]->ip_addresses'
+            name: 'xmlrpc'
+
+    ConnectXMLRPCServer_Host3:
+        <<: *CONNECTXMLRPCSERVER
+        TestHost: 'esx.[3]'
+        connect_sample_client:
+            execution_type: 'cmd'
+            host_ip: 'esx.[3]->ip_addresses'
+            name: 'xmlrpc'
+
+    VerticalRegistration_Host1:
+        <<: *VERTICALREGISTRATION
+        TestHost: 'esx.[1]'
+        vertical_registration:
+            execution_type: 'cmd'
+            host_ip: 'esx.[1]->ip_addresses'
+            application_type: 'CustomerVertical'
+            application_id: '345'
+            client_type: 1
+            vertical_registration:
+                'cookie_id[?]defined': ''
+
+    VerticalRegistration_Host2:
+        <<: *VERTICALREGISTRATION
+        TestHost: 'esx.[2]'
+        vertical_registration:
+            execution_type: 'cmd'
+            host_ip: 'esx.[2]->ip_addresses'
+            application_type: 'CustomerVertical'
+            application_id: '345'
+            client_type: 1
+            vertical_registration:
+                'cookie_id[?]defined': ''
+
+    VerticalRegistration_Host3:
+        <<: *VERTICALREGISTRATION
+        TestHost: 'esx.[3]'
+        vertical_registration:
+            execution_type: 'cmd'
+            host_ip: 'esx.[3]->ip_addresses'
+            application_type: 'CustomerVertical'
+            application_id: '345'
+            client_type: 1
+            vertical_registration:
+                'cookie_id[?]defined': ''
+
+    #Kill sample client
+
+    VerticalCloseConnection_Host1:
+        <<: *VERTICALCLOSECONNECTION
+        TestHost: 'esx.[1]'
+        vertical_close_connection:
+            execution_type: 'cmd'
+            host_ip: 'esx.[1]->ip_addresses'
+            cookieid: 'esx.[1]->vertical_registration->cookie_id'
+
+    VerticalCloseConnection_Host2:
+        <<: *VERTICALCLOSECONNECTION
+        TestHost: 'esx.[2]'
+        vertical_close_connection:
+            execution_type: 'cmd'
+            host_ip: 'esx.[2]->ip_addresses'
+            cookieid: 'esx.[2]->vertical_registration->cookie_id'
+
+    VerticalCloseConnection_Host3:
+        <<: *VERTICALCLOSECONNECTION
+        TestHost: 'esx.[3]'
+        vertical_close_connection:
+            execution_type: 'cmd'
+            host_ip: 'esx.[3]->ip_addresses'
+            cookieid: 'esx.[3]->vertical_registration->cookie_id'
+
+    KillSampleClient_Host1:
+        <<: *KILLSAMPLECLIENT
+        TestHost: 'esx.[1]'
+
+    KillSampleClient_Host2:
+        <<: *KILLSAMPLECLIENT
+        TestHost: 'esx.[2]'
+
+    KillSampleClient_Host3:
+        <<: *KILLSAMPLECLIENT
+        TestHost: 'esx.[3]'
+
+    #TestRPC
+
+    TestRPC_Host1:
+        <<: *TESTRPC
+        TestHost: 'esx.[1]'
+
+    TestRPC_Host2:
+        <<: *TESTRPC
+        TestHost: 'esx.[2]'
+
+    TestRPC_Host3:
+        <<: *TESTRPC
+        TestHost: 'esx.[3]'

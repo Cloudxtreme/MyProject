@@ -1,0 +1,47 @@
+RTQA10C10 deployment with edge
+
+
+
+L3ESXNS2Tier:
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+
+
+NIMBUS_CONFIG_FILE=~netfvt/master-config.json \
+NIMBUS=wdc-ucs-guest  /mts/git/bin/nimbus-ctl kill \
+ jworsnup-vdnet-*-rtqa10-c10-esx-edge
+
+SUBBU's NOTES
+----------------------------------------
+
+1a. To run N-S test involving nsxedge the deployment has to be done in 2 steps.
+First step only deploy vESXes, nsxmanager & nsxcontroller and install all the vibs.
+b. In the second step deploy the nsxedge. This is required now because of bugs in nsx-da.
+
+2. After registering edge and before creating LR you need to introduce sleep of 1 min.
+This is required because of a timing issue in nsx-da. You can use “sleepbetweenworkloads” key.
+
+3. User needs to use reconfigure nsxedge vnics workloads to connect edge vnics to
+mgmt, backplane and northbound logical switches respectively.
+
+YAML EDITTING AND VDNET CMDS
+----------------------------------------
+--- in testbedspec and rtqa_latest_with_edge, comment out [edge], then deploy testbed
+./vdnet -c ../yaml/nsxtransformers/esx/rtqa_latest_with_edge.yaml -t NSXTransformers.L3.L3Sample.L3ESXNS2Tier --logs=/tmp-vdnet/vdnet/L3Sample/$(date +%Y%02m%02d-%02k%02M%02S) --testbed save
+
+Session log file: /tmp-vdnet/vdnet/L3Sample/20150123-175546/vdnet.log
+Racetrack link  : http://racetrack-dev.eng.vmware.com/result.php?id=595284
+Base log dir for this session: /tmp-vdnet/vdnet/L3Sample/20150123-175546
+
+--- in testbedspec and rtqa_latest_with_edge, comment out [nsxmanager, nsxcontroller, vm], leave [esx] uncommented, uncomment [edge], then deploy testbed again
+--- in testbedspec and rtqa_latest_with_edge, uncomment [edge], then deploy testbed again
+--- now the reverse, comment out everything else except EDGE
+./vdnet -c ../yaml/nsxtransformers/esx/rtqa_latest_with_edge.yaml -t NSXTransformers.L3.L3Sample.L3ESXNS2Tier --logs=/tmp-vdnet/vdnet/L3Sample/$(date +%Y%02m%02d-%02k%02M%02S) --testbed save
+
+
+Session log file: /tmp-vdnet/vdnet/L3Sample/20150123-181526/vdnet.log
+Racetrack link  : http://racetrack-dev.eng.vmware.com/result.php?id=595309
+Base log dir for this session: /tmp-vdnet/vdnet/L3Sample/20150123-181526
+
+--- in testbedspec and rtqa_latest_with_edge, uncomment everything
+--- now the reverse, comment out everything else except EDGE
+./vdnet -c ../yaml/nsxtransformers/esx/rtqa_latest_with_edge.yaml -t NSXTransformers.L3.L3Sample.L3ESXNS2Tier --logs=/tmp-vdnet/vdnet/L3Sample/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse

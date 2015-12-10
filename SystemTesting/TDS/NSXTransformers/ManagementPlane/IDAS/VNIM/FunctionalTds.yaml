@@ -1,0 +1,1205 @@
+!include CommonWorkloads.yaml
+!include ../../Clustering/L2Workloads.yaml
+!include ../../Clustering/TestbedSpec.yaml
+
+#####################################################################
+# Title : Avalanche VNIM TDS                                        |
+#####################################################################
+
+
+#####################################################################
+#                 P0 Test Cases                                     |
+#####################################################################
+
+CreateVNIPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateVNIPool"
+    Version: "2"
+    Summary: "Verify VNIPool creation failing"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P0"
+    Developer: "dgargote"
+    Procedure: '1. Create one VNIPool
+                2. Verify VNIPool creation is failing with
+                correct error message'
+    ExpectedResult: 'VNIPool creation should fail with correct
+                    error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateVNIPool"]
+
+        CreateVNIPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: METHOD_NOT_ALLOWED
+            vnipool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "VNIPool created through automation"
+                    begin: 5000
+                    end: 8000
+
+UpdateVNIPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateVNIPool"
+    Version: "2"
+    Summary: "Verify VNIPool gets updated"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P0"
+    Developer: "dgargote"
+    Procedure: '1. Get id of existing VNIPool
+                2. Update VNIPool
+                2. Verify VNIPool gets updated successfully'
+    ExpectedResult: 'VNIPool should get updated successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["UpdateVNIPool"]
+            - ["ReadVNIPool"]
+        ExitSequence:
+            - ["ResetVNIPool"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            name: 'DefaultVniPool'
+            summary: "Default VNI Pool Updated summary"
+            ranges:
+                - begin: 100000
+                  end: 160000
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'DefaultVniPool'
+               'summary[?]equal_to': "Default VNI Pool Updated summary"
+               'ranges[?]contain_once':
+                - begin: 100000
+                  end: 160000
+
+        ResetVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+            ranges:
+                - begin: 5000
+                  end: 65535
+
+GetVNIPoolDetails:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'GetVNIPoolDetails'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P0"
+    Developer: "dgargote"
+    Summary: 'Verify VNIPool details can be retrieved'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Get VNIPool details
+                3. Verify VNIPool details are getting retrieved'
+    ExpectedResult: 'VNIPool details should get retrieved successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["ReadVNIPool"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'DefaultVniPool'
+               'summary[?]defined': ''
+
+UpdateVNIPoolDescription:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateVNIPoolDescription'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P0"
+    Developer: "dgargote"
+    Summary: 'Verify if VNIPool description gets updated'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Try to update VNIPool description with correct value
+                3. Verify VNIPool description gets updated successfully'
+    ExpectedResult: 'VNIPool description should get updated successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["UpdateVNIPool"]
+            - ["ReadVNIPool"]
+        ExitSequence:
+            - ["ResetVNIPool"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool Updated summary"
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'DefaultVniPool'
+               'summary[?]equal_to': "Default VNI Pool Updated summary"
+
+        ResetVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+
+ExpandVNIPoolRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'ExpandVNIPoolRange'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P0"
+    Developer: "dgargote"
+    Summary: 'Verify if VNIPool range gets expanded with correct value'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Try to expand VNIPool range with correct value
+                3. Verify VNIPool range gets updated successfully'
+    ExpectedResult: 'VNIPool range should get updated successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["UpdateVNIPool"]
+            - ["ReadVNIPool"]
+        ExitSequence:
+            - ["ResetVNIPoolStep1"]
+            - ["ResetVNIPoolStep2"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            ranges:
+                - begin: 5000
+                  end: 70000
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'ranges[?]contain_once':
+                 - begin: 5000
+                   end: 70000
+
+        ResetVNIPoolStep1:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+            ranges:
+                - begin: 100000
+                  end: 165000
+
+        ResetVNIPoolStep2:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+            ranges:
+                - begin: 5000
+                  end: 65535
+
+AddRangeToVNIPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'AddRangeToVNIPool'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P0"
+    Developer: "dgargote"
+    Summary: 'Verify if range gets added to VNIPool with correct value'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Try to add range to VNIPool with correct value
+                3. Verify range gets added to VNIPool successfully'
+    ExpectedResult: 'VNIPool range should get updated successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["AddRangeToVNIPool"]
+            - ["ReadVNIPool"]
+        ExitSequence:
+            - ["ResetVNIPool"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        AddRangeToVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            ranges:
+                - begin: 100000
+                  end: 160000
+                - begin: 200000
+                  end: 260000
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'ranges[?]contain_once':
+                 - begin: 100000
+                   end: 160000
+                 - begin: 200000
+                   end: 260000
+
+        ResetVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+            ranges:
+                - begin: 5000
+                  end: 65535
+
+DeleteRangeFromVNIPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'DeleteRangeFromVNIPool'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P0"
+    Developer: "dgargote"
+    Summary: 'Verify if range gets deleted from VNIPool with correct value'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Add range to VNIPool with correct value
+                3. Try to delete range from VNIPool with correct value
+                3. Verify range gets deleted from VNIPool successfully'
+    ExpectedResult: 'VNIPool range should get updated successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["AddRangeToVNIPool"]
+            - ["DeleteRangeFromVNIPool"]
+            - ["ReadVNIPoolForRangeExistance"]
+            - ["ReadVNIPoolForRangeAbscence"]
+        ExitSequence:
+            - ["ResetVNIPool"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        AddRangeToVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            ranges:
+                - begin: 100000
+                  end: 160000
+                - begin: 200000
+                  end: 260000
+
+        DeleteRangeFromVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            ranges:
+                - begin: 100000
+                  end: 160000
+
+        ReadVNIPoolForRangeExistance:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'ranges[?]contain_once':
+                 - begin: 100000
+                   end: 160000
+
+        ReadVNIPoolForRangeAbscence:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'ranges[?]not_contains':
+                 - begin: 200000
+                   end: 260000
+
+        ResetVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+            ranges:
+                - begin: 5000
+                  end: 65535
+
+GetAllVNIPools:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'GetAllVNIPools'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P0"
+    Developer: "dgargote"
+    Summary: 'Verify list of VNIPools can be retrieved'
+    Procedure: '1. Get list of VNIPools
+                2. Verify list of VNIPools are getting retrieved'
+    ExpectedResult: 'VNIPool list should get retrieved successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["VerifyVNIPoolList"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        VerifyVNIPoolList:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            get_pool_list:
+               'result_count[?]equal_to': 1
+               'results[?]contain_once':
+                   - name: DefaultVniPool
+
+#####################################################################
+#                 P1 Test Cases                                     |
+#####################################################################
+
+UpdateVNIPoolWithoutAllocatedID:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateVNIPoolWithoutAllocatedID"
+    Version: "2"
+    Summary: "Verify if VNIPool range gets updated without allocated Ids"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Get id of existing VNIPool
+                2. Try to update VNIPool range to completely different range
+                without any allocated Ids
+                3. Verify VNIPool range gets updated successfully'
+    ExpectedResult: 'VNIPool range should get updated successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["UpdateVNIPool"]
+            - ["ReadVNIPool"]
+        ExitSequence:
+            - ["ResetVNIPool"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            name: 'DefaultVniPool'
+            summary: "Default VNI Pool Updated summary"
+            ranges:
+                - begin: 100000
+                  end: 160000
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'DefaultVniPool'
+               'summary[?]equal_to': "Default VNI Pool Updated summary"
+               'ranges[?]contain_once':
+                - begin: 100000
+                  end: 160000
+
+        ResetVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+            ranges:
+                - begin: 5000
+                  end: 65535
+
+ExpandVNIPoolRangeWithIncorrectValue:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'ExpandVNIPoolRangeWithIncorrectValue'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Summary: 'Verify if VNIPool range gets expanded with incorrect value'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Try to expand VNIPool range with incorrect value
+                3. Verify VNIPool range updatation is failing with correct error message'
+    ExpectedResult: 'VNIPool range updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["UpdateVNIPool"]
+            - ["ReadVNIPool"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            reconfigure: true
+            ranges:
+                - begin: 192.168.1.10
+                  end: 192.168.1.20
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'ranges[?]contain_once':
+                 - begin: 5000
+                   end: 65535
+
+#####################################################################
+#                 P2 Test Cases                                     |
+#####################################################################
+
+DeleteVNIPool:
+    Product: "NSX"
+    Category: "Management Plane"
+    Component: "IDAS"
+    TestName: "DeleteVNIPool"
+    Version: "2"
+    Summary: "Verify VNIPool deletion failing"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Get Id of existing VNIPool
+                2. Delete VNIPool by specifying Id retrived in step 1
+                3. Verify VNIPool deletion is failing
+                with correct error message'
+    ExpectedResult: 'VNIPool deletion should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["DeleteVNIPool"]
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        DeleteVNIPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: METHOD_NOT_ALLOWED
+            deleteVNIPool: "nsxmanager.[1].vnipool.[1]"
+
+GetVNIPoolDetailsWithIncorrectID:
+    Product: "NSX"
+    Category: "Management Plane"
+    Component: "IDAS"
+    TestName: "GetVNIPoolDetailsWithIncorrectID"
+    Version: "2"
+    Summary: "Verify if VNIPool details gets retrived with incorrect VNIPool Id"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Try to get details of existing VNIPool with incorrect VNIPool Id
+                2. Verify get VNIPool details operation is failing
+                with correct error message'
+    ExpectedResult: 'VNIPool read operation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetVNIPoolId"]
+            - ["ReadVNIPool"]
+
+        SetVNIPoolId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            vnipool:
+                '[1]':
+                    map_object: true
+                    id_: 'incorrect_id'
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            ExpectedResult:
+                status_code: NOT_FOUND
+            read:
+               'ranges[?]contain_once':
+                 - begin: 5000
+                   end: 65535
+
+ShrinkVNIPoolRangeWithIdsNotAllocated:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'ShrinkVNIPoolRangeWithIdsNotAllocated'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Summary: 'Verify if VNIPool range gets shrinked with Ids not allocated
+              from excluded range'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Try to shrink VNIPool range Ids not allocated
+                from excluded range
+                3. Verify VNIPool update operation is successful'
+    ExpectedResult: 'VNIPool range update operation should be successful'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["UpdateVNIPool"]
+            - ["ReadVNIPool"]
+        ExitSequence:
+            - ["ResetVNIPool"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            ranges:
+                - begin: 5000
+                  end: 7000
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'ranges[?]contain_once':
+                 - begin: 5000
+                   end: 7000
+
+        ResetVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+            ranges:
+                - begin: 5000
+                  end: 65535
+
+UpdateVNIPoolWithBlankName:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateVNIPoolWithBlankName"
+    Version: "2"
+    Summary: "Verify if VNIPool name gets updated with blank value"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Get id of existing VNIPool
+                2. Try to update VNIPool name with blank value
+                3. Verify update VNIPool operation is successful'
+    ExpectedResult: 'Update VNIPool operation should success'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["UpdateVNIPool"]
+            - ["ReadVNIPool"]
+        ExitSequence:
+            - ["ResetVNIPool"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            merge: False
+            reconfigure:
+                summary: "Default VNI Pool Updated summary"
+                ranges:
+                    - begin: 5000
+                      end: 65535
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'nsxmanager.[1].vnipool.[1]->vnipool_id'
+
+        ResetVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            name: "DefaultVniPool"
+            summary: "Default VNI Pool"
+
+UpdateVNIPoolRangeWithAllocatedId:
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateVNIPoolRangeWithAllocatedId'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Summary: 'Verify if VNIPool range gets updated with allocated Ids'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Create logical switch so that some id can get allocated
+                   from VNIPool
+                3. Try to update VNIPool range to completely different range with allocated Ids
+                4. Verify VNIPool range updation is failing with correct error message'
+    ExpectedResult: 'VNIPool range update should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,l2_cat'
+    Partnerfacing: "N"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MPClusteringL2Workloads
+        Sequence:
+            - ["CreateTransportNodesFrom_Node1"]
+            - ["CreateLogicalSwitch01From_Node1"]
+            - ["GetVNIPoolId"]
+            - ["UpdateVNIPool"]
+            - ["ReadVNIPool"]
+        ExitSequence:
+            - ["DeleteLogicalSwitchFrom_Node1"]
+            - ["DeleteTransportNodesFrom_Node1"]
+
+        CreateTransportNodesFrom_Node1: *CREATE_TRANSPORT_NODE_01--ESX
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            reconfigure: true
+            ranges:
+                - begin: 70000
+                  end: 80000
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'ranges[?]contain_once':
+                 - begin: 5000
+                   end: 65535
+
+UpdateVNIPoolRangeMultipleTimes:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateVNIPoolRangeMultipleTimes'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Summary: 'Verify if VNIPool range gets updated if tried to
+              expand range multiple times'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Expand VNIPool range
+                3. Try to expand range again for 3-4 times
+                3. Verify VNIPool update operation is successful'
+    ExpectedResult: 'Multiple time range expansion should work
+                     correctly without any internal server error'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - GetVNIPoolId
+            - - UpdateVNIPoolFirstTime
+            - - UpdateVNIPoolSecondTime
+            - - UpdateVNIPoolThirdTime
+            - - UpdateVNIPoolFourthTime
+            - - ReadVNIPool
+        ExitSequence:
+            - - ResetVNIPool
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPoolFirstTime:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            ranges:
+                - begin: 5000
+                  end: 6000
+
+        UpdateVNIPoolSecondTime:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            ranges:
+                - begin: 7000
+                  end: 8000
+
+        UpdateVNIPoolThirdTime:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            ranges:
+                - begin: 9000
+                  end: 10000
+
+        UpdateVNIPoolFourthTime:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            ranges:
+                - begin: 11000
+                  end: 12000
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'ranges[?]contain_once':
+                 - begin: 11000
+                   end: 12000
+
+        ResetVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+            ranges:
+                - begin: 5000
+                  end: 65535
+
+UpdateVNIPoolStartAttributeGreaterThanEndAttribute:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateVNIPoolStartAttributeGreaterThanEndAttribute'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Summary: 'Verify if VNIPool range gets updated with start
+              attribute greater than end attribute'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Try to expand VNIPool range with start attribute greater than end attribute
+                3. Verify VNIPool range updatation is failing with correct error message'
+    ExpectedResult: 'VNIPool range updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - GetVNIPoolId
+            - - UpdateVNIPool
+            - - ReadVNIPool
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            reconfigure: true
+            ranges:
+                - begin: 7000
+                  end: 5000
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'ranges[?]contain_once':
+                 - begin: 5000
+                   end: 65535
+
+UpdateVNIPoolNameWithMoreThan255Chars:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateVNIPoolNameWithMoreThan255Chars'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Summary: 'Verify if VNIPool name gets updated with
+              more than 255 characters'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Try to update VNIPool name with more than 255 chars
+                3. Verify VNIPool name updatation is failing with correct error message'
+    ExpectedResult: 'VNIPool updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - GetVNIPoolId
+            - - UpdateVNIPool
+            - - ReadVNIPool
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            reconfigure: true
+            name: 'nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+                   nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+                   nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+                   nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+                   nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn'
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'DefaultVniPool'
+
+UpdateVNIPoolDescriptionWithMoreThan1024Chars:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateVNIPoolDescriptionWithMoreThan1024Chars'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Summary: 'Verify if VNIPool description gets updated with
+              more than 1024 characters'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Try to update VNIPool description with more than 1024 chars
+                3. Verify VNIPool description updatation is failing with correct error message'
+    ExpectedResult: 'VNIPool updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - GetVNIPoolId
+            - - UpdateVNIPool
+            - - ReadVNIPool
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            reconfigure: true
+            name: 'DefaultVniPool'
+            summary: "ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+                      ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'DefaultVniPool'
+               'summary[?]equal_to': "Default VNI Pool"
+
+UpdateVNIPoolWithoutRangeField:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateVNIPoolWithoutRangeField'
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Summary: 'Verify if VNIPool range gets updated if range
+              field is missing from payload'
+    Procedure: '1. Get Id of existing VNIPool
+                2. Try to update VNIPool range with range field missing from payload
+                3. Verify VNIPool range updatation is failing with correct error message'
+    ExpectedResult: 'VNIPool range updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - GetVNIPoolId
+            - - UpdateVNIPool
+            - - ReadVNIPool
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        UpdateVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            merge: False
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            reconfigure:
+                name: "DefaultVniPool"
+                summary: "Default VNI Pool updated"
+
+        ReadVNIPool:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'ranges[?]contain_once':
+                 - begin: 5000
+                   end: 65535

@@ -1,0 +1,1757 @@
+!include ../BackupRestore/CommonWorkloads.yaml
+!include CommonWorkloads.yaml
+############################### P0 Tests ###############################
+
+ShutdownNSXManager:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "ShutdownNSXManager"
+    Summary: "Shutdown NSX manager appliance"
+    Procedure: '1. Shutdown NSX Manager appliance'
+    ExpectedResult: ''
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ["ShutdownManagerAppliance"]
+
+      ShutdownManagerAppliance:
+        Type: NSX
+        TestNSX: "nsxmanager.[1]"
+        configure_power_state:
+          state: 'shutdown'
+
+RestartNSXManager:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "RestartNSXManager"
+    Summary: "Restart NSX manager appliance"
+    Procedure: '1. Restart NSX Manager appliance'
+    ExpectedResult: ''
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ["RestartManagerAppliance"]
+
+      RestartManagerAppliance:
+        Type: NSX
+        TestNSX: "nsxmanager.[1]"
+        configure_power_state:
+          state: 'restart'
+
+GetNSXServices:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "GetNSXServices"
+    Summary: "Verify all services on NSXManager"
+    Procedure: '1. Get all services'
+    ExpectedResult: 'Verify all expected services'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetServiceId"]
+            - ["VerifyAllServices"]
+
+        SetServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[1]':
+                  map_object: true
+                  id_: 'all'
+        VerifyAllServices:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            get_services:
+                'result_count[?]equal_to': 8
+                'results[?]equal_to':
+                    - service_name: 'snmp'
+                    - service_name: 'proton'
+                    - service_name: 'syslog'
+                    - service_name: 'ntp'
+                    - service_name: 'httpd'
+                    - service_name: 'rabbitmq'
+                    - service_name: 'ssh'
+                    - service_name: 'appmgmt'
+
+UpdateServiceStatus:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "UpdateServiceStatus"
+    Summary: "Verify stop, start services e.g ntp,syslog"
+    Procedure: '1. Stop ntp service
+                2. Start ntp Service'
+    ExpectedResult: 'Verify stop start service works'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetServiceId"]
+            - ["StopService"]
+            - ["VerifyStopServiceStatus"]
+            - ["StartService"]
+            - ["VerifyStartServiceStatus"]
+
+        SetServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[1]':
+                  map_object: true
+                  id_: 'ntp'
+        StopService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+                state: 'stop'
+                service_name: 'ntp'
+        VerifyStopServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'stopped'
+        StartService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+                state: 'start'
+                service_name: 'ntp'
+        VerifyStartServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+
+VerifyDefaultNSXServiceStatus:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement,gating_test_cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "VerifyDefaultNSXServiceStatus"
+    Summary: "Verify if all nsx services are running on NSX bringup"
+    Procedure: '1. Get all service status'
+    ExpectedResult: 'Verify all services are running'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetSnmpServiceId"]
+            - ["VerifySnmpServiceStatus"]
+
+            - ["SetProtonServiceId"]
+            - ["VerifyProtonServiceStatus"]
+
+            - ["SetSyslogServiceId"]
+            - ["VerifySyslogServiceStatus"]
+
+            - ["SetNtpServiceId"]
+            - ["VerifyNtpServiceStatus"]
+
+            - ["SetRabbitmqServiceId"]
+            - ["VerifyRabbitmqServiceStatus"]
+
+            - ["SetHttpdServiceId"]
+            - ["VerifyHttpdServiceStatus"]
+
+            - ["SetSshServiceId"]
+            - ["VerifySshServiceStatus"]
+
+            - ["SetAppmgmtServiceId"]
+            - ["VerifyAppmgmtServiceStatus"]
+
+        SetSnmpServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[1]':
+                  map_object: true
+                  id_: 'snmp'
+        VerifySnmpServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+
+        SetProtonServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[2]':
+                  map_object: true
+                  id_: 'proton'
+        VerifyProtonServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[2]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+               'monitor_runtime_state[?]equal_to': 'running'
+
+        SetSyslogServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[3]':
+                  map_object: true
+                  id_: 'syslog'
+        VerifySyslogServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[3]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+
+        SetNtpServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[4]':
+                  map_object: true
+                  id_: 'ntp'
+        VerifyNtpServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[4]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+
+        SetLocatorServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[5]':
+                  map_object: true
+                  id_: 'locator'
+        VerifyLocatorServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[5]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+
+        SetRabbitmqServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[6]':
+                  map_object: true
+                  id_: 'rabbitmq'
+        VerifyRabbitmqServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[6]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+
+        SetHttpdServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[7]':
+                  map_object: true
+                  id_: 'httpd'
+        VerifyHttpdServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[7]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+               'monitor_runtime_state[?]equal_to': 'running'
+
+        SetSshServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[8]':
+                  map_object: true
+                  id_: 'ssh'
+        VerifySshServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[8]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+
+        SetAppmgmtServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[9]':
+                  map_object: true
+                  id_: 'appmgmt'
+        VerifyAppmgmtServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[9]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+               'monitor_runtime_state[?]equal_to': 'running'
+
+ConfigureNTPServer:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "ConfigureNTPServer"
+    Summary: "Verify Ntp server is configured"
+    Procedure: '1. Configure Ntp server'
+    ExpectedResult: 'Verify Ntp server is configured correctly'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetNtpServerId"]
+            - ["ConfigureNtpServer"]
+            - ["VerifyConfiguredNtpServer"]
+            - ["ConfigureDefaultNtpServer"]
+            - ["VerifyDefaultNtpServer"]
+        SetNtpServerId:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          ntpserver:
+            '[1]':
+                map_object: true
+                id_: 'ntp'
+        ConfigureNtpServer:
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           reconfigure: true
+           service_properties:
+               servers:
+                  - 'ntp2-blr2.eng.vmware.com'
+                  - 'time.vmware.com'
+        VerifyConfiguredNtpServer:
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           read:
+              service_properties:
+                 'servers[?]equal_to':
+                    - 'ntp2-blr2.eng.vmware.com'
+                    - 'time.vmware.com'
+        ConfigureDefaultNtpServer :
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           reconfigure: true
+           service_properties:
+               servers:
+                  - '127.0.0.1'
+        VerifyDefaultNtpServer:
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           read:
+              service_properties:
+                 'servers[?]equal_to':
+                    - '127.0.0.1'
+
+RemoveAllNTPServers:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "RemoveAllNTPServers"
+    Summary: "Verify NTP server removal"
+    Procedure: '1. Configure no NTP server'
+    ExpectedResult: 'Verify removing all NTP servers is correctly'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetNtpServerId"]
+            - ["RemoveAllNtpServers"]
+            - ["ConfigureDefaultNtpServer"]
+            - ["VerifyDefaultNtpServer"]
+
+        SetNtpServerId:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          ntpserver:
+            '[1]':
+                map_object: true
+                id_: 'ntp'
+        RemoveAllNtpServers:
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           reconfigure: true
+           service_properties:
+               servers:
+                  - ''
+        ConfigureDefaultNtpServer :
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           reconfigure: true
+           service_properties:
+               servers:
+                  - '127.0.0.1'
+        VerifyDefaultNtpServer:
+           Type: "Service"
+           TestService: "nsxmanager.[1].ntpserver.[1]"
+           read:
+              service_properties:
+                 'servers[?]equal_to':
+                    - '127.0.0.1'
+
+GetNetworkInterfaces:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "GetNetworkInterfaces"
+    Summary: "Verify default Network Interfaces"
+    Procedure: '1. Get Network Interface'
+    ExpectedResult: 'Verify default Network Interface'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetNetworkInterface"]
+            - ["VerifyNetworkInterface"]
+        SetNetworkInterface:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          nsxinterface:
+            '[1]':
+                map_object: true
+                id_: 'interface'
+        VerifyNetworkInterface:
+           Type: "Service"
+           TestService: "nsxmanager.[1].nsxinterface.[1]"
+           get_interface_list:
+                  'result_count[?]equal_to': 2
+                  'results[?]equal_to':
+                      - interface_id: 'lo'
+                      - interface_id: 'mgmt'
+
+UpdateNetworkInterface:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "UpdateNetworkInterface"
+    Summary: "Verify Network Interfaces"
+    Procedure: '1. Get Network Interface
+                2. Update interface setting
+                3. Verify updated interface setting'
+    ExpectedResult: 'Verify Network Interface'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetNetworkInterface"]
+            - ["UpdateNetworkInterface"]
+            - ["VerifyNetworkInterface"]
+        SetNetworkInterface:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          nsxinterface:
+            '[1]':
+                map_object: true
+                id_: 'mgmt'
+        UpdateNetworkInterface:
+           Type: "Service"
+           TestService: "nsxmanager.[1].nsxinterface.[1]"
+           reconfigure: true
+           mtu: 1499
+        VerifyNetworkInterface:
+           Type: "Service"
+           TestService: "nsxmanager.[1].nsxinterface.[1]"
+           read:
+                'mtu[?]equal_to': 1499
+
+GetHttpdServiceCertificate:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,ApplianceManagement,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "GetHttpdServiceCertificate"
+    Summary: "Get Httpd Service Certificate"
+    Procedure: '1. GET Httpd service certificate on NSXManager'
+    ExpectedResult: 'Verify that GET Httpd REST call succeeds
+                     and certificate exists in response'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ["SetHttpd"]
+        - ["GetHttpdCertificate"]
+
+      SetHttpd:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          httpd_service_cert:
+            '[1]':
+                map_object: true
+                id_: 'httpdservicecert'
+
+      GetHttpdCertificate:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+          read:
+              'service_name[?]equal_to': 'httpd'
+              'service_properties':
+                  'certificate':
+                      'pem_encoded[?]defined': ''
+
+UpdateHttpdServiceCertificate:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "UpdateHttpdServiceCertificate"
+    Summary: "Update Httpd Service Certificate"
+    Procedure: '1. GET Httpd service certificate on NSXManager
+                2. Create a Self Signed Certificate
+                3. Update httpd service certificate with Self Signed Certificate
+                4. Verify httpd service certificate is updated'
+    ExpectedResult: 'Httpd Service Certificate should be updated'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+          - - SetHttpd
+          - - GetHttpdCertificate
+          - - CreateCSR
+          - - CreateSelfSignedCertificate
+          - - VerifySelfSigned
+          - - UpdateHttpdCertificate
+          - - VerifyUpdatedHttpdCertificate
+
+      ExitSequence:
+          - - DeleteSelfSignedCertificate
+          - - DeleteAllCSR
+
+      SetHttpd:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          httpd_service_cert:
+            '[1]':
+                map_object: true
+                id_: 'httpdservicecert'
+
+      GetHttpdCertificate:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+          read:
+              'service_name[?]equal_to': 'httpd'
+              'service_properties':
+                  'certificate[?]defined': ''
+
+      CreateCSR:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          csr:
+              '[1]':
+                  algorithm: "RSA"
+                  key_size: "2048"
+                  subject:
+                    attributes:
+                      - key: CN
+                        value: NSX
+                      - key: O
+                        value: VMware
+                      - key: OU
+                        value: NSBU
+                      - key: C
+                        value: US
+                      - key: ST
+                        value: CA
+                      - key: L
+                        value: PA
+
+      CreateSelfSignedCertificate:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          selfsignedcertificate:
+              '[1]':
+                  csr_id: "nsxmanager.[1].csr.[1]"
+
+      VerifySelfSigned:
+          Type: "Certificate"
+          Testcertificate: "nsxmanager.[1].selfsignedcertificate.[1]"
+          PersistData: "Yes"
+          read:
+            'pem_encoded[?]defined': ''
+
+      UpdateHttpdCertificate:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+          configure_certificate:
+              id_: "nsxmanager.[1].selfsignedcertificate.[1]->id"
+
+      VerifyUpdatedHttpdCertificate:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+          sleepbetweenworkloads: 10
+          read:
+              'service_name[?]equal_to': 'httpd'
+              'service_properties':
+                  'certificate':
+                      'pem_encoded[?]equal_to': "nsxmanager.[1].selfsignedcertificate.[1]->read->pem_encoded"
+
+      DeleteSelfSignedCertificate:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deleteselfsignedcertificate: "nsxmanager.[1].selfsignedcertificate.[-1]"
+          sleepbetweenworkloads: 50
+
+      DeleteAllCSR:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deletecsr: "nsxmanager.[1].csr.[-1]"
+
+VerifyNSXTimeZone:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "VerifyNSXTimeZone"
+    Summary: "Verify default NSX setting"
+    Procedure: '1. Get NSX setting'
+    ExpectedResult: 'Verify default NSX setting'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["VerifyNSXSettings"]
+            - ["UpdateNSXSettings"]
+            - ["VerifyChangedNSXSettings"]
+            - ["SetDefaultNSXSettings"]
+            - ["VerifyDefaultNSXSettings"]
+        VerifyNSXSettings:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            get_setting:
+                'timezone[?]equal_to': 'UTC'
+        UpdateNSXSettings:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            reconfigure_nsx:
+                timezone: 'EST'
+        VerifyChangedNSXSettings:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            get_setting:
+                'timezone[?]equal_to': 'EST'
+        SetDefaultNSXSettings:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            reconfigure_nsx:
+                timezone: 'UTC'
+        VerifyDefaultNSXSettings:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            get_setting:
+                'timezone[?]equal_to': 'UTC'
+
+GetNSXStatus:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "GetNSXStatus"
+    Summary: "Verify default NSX status"
+    Procedure: '1. Get NSX status'
+    ExpectedResult: 'Verify default NSX Status, e.g cpu_cores,swap_used'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["VerifyNSXStatus"]
+        VerifyNSXStatus:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            read_status:
+                'swap_used[?]equal_to': 0
+                'cpu_cores[?]equal_to': 4
+
+GetNSXManagerUptime:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "GetNSXManagerUptime"
+    Summary: "Verify default NSX uptime"
+    Procedure: '1. Get NSX uptime'
+    ExpectedResult: 'Verify NSX uptime'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["VerifyNSXStatus"]
+        VerifyNSXStatus:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            read_status:
+                'uptime[?]>': 120000
+
+GetNSXProcesses:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "GetNSXProcesses"
+    Summary: "Verify all processes on NSXManager"
+    Procedure: '1. Get all processes'
+    ExpectedResult: 'Verify all expected processes'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetServiceId"]
+            - ["VerifyAllProcesses"]
+
+        SetServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            process:
+              '[1]':
+                  map_object: true
+                  id_: 'all'
+        VerifyAllProcesses:
+            Type: "Service"
+            TestService: "nsxmanager.[1].process.[1]"
+            get_processes:
+                'result_count[?]>': 50
+                'results[?]contains':
+                    - process_name: 'init'
+                    - process_name: 'java'
+                    - process_name: 'ntpd'
+
+GetTechSupportBundle:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement,gating_test_cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "GetTechSupportBundle"
+    Summary: "Verify Get Techsupport Bundle is successful"
+    Procedure: '1. Get Techsupport Bundle'
+    ExpectedResult: 'Techsupport Bundle should be fetched and saved as tar.gz'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["FetchTechSupportBundle"]
+            - ["VerifyTechSupportBundle"]
+
+        FetchTechSupportBundle:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            techsupportbundlelog:
+              '[1]':
+                  name: 'supportbundle'
+        VerifyTechSupportBundle:
+            Type: "ComponentLog"
+            TestComponentLog: "nsxmanager.[1].techsupportbundlelog.[1]"
+            read:
+                'result[?]equal_to': true
+
+GetNSXLogs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "GetNSXLogs"
+    Summary: "Verify Get log file is successful"
+    Procedure: '1. Get auth-log file'
+    ExpectedResult: 'Fetching auth-log file should be successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+       Sequence:
+         - ["FetchLog"]
+         - ["VerifyFetchedLog"]
+       FetchLog:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          componentlog:
+             '[1]':
+                 name: 'auth-log'
+       VerifyFetchedLog:
+          Type: "ComponentLog"
+          TestComponentLog: "nsxmanager.[1].componentlog.[1]"
+          check_log:
+             'result[?]equal_to': true
+
+############################### P1 Tests ###############################
+
+GetNetworkInterfaceStatistics:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "GetNetworkInterfaceStatistics"
+    Summary: "Verify Network Interface statistics"
+    Procedure: '1. Get Network Interface statistics'
+    ExpectedResult: 'Verify Network Interface statistics'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetNetworkInterface"]
+            - ["VerifyNetworkInterfaceStats"]
+        SetNetworkInterface:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          nsxinterface:
+            '[1]':
+                map_object: true
+                id_: 'mgmt'
+        VerifyNetworkInterfaceStats:
+           Type: "Service"
+           TestService: "nsxmanager.[1].nsxinterface.[1]"
+           interface_id: 'mgmt'
+           get_interface_stats:
+                  'interface_id[?]equal_to': 'mgmt'
+                  'tx_bytes[?]>': 0
+                  'rx_bytes[?]>': 0
+                  'tx_errors[?]equal_to': 0
+                  'rx_errors[?]equal_to': 0
+
+GetLocalUsers:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "GetLocalUsers"
+    Summary: "Verify Local Users"
+    Procedure: '1. Get Local Users'
+    ExpectedResult: 'Verify Local Users are retrieved successfully'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetLocalUser"]
+            - ["VerifyLocalUser"]
+        SetLocalUser:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          localuser:
+            '[1]':
+                map_object: true
+                id_: 'all'
+        VerifyLocalUser:
+           Type: "User"
+           TestUser: "nsxmanager.[1].localuser.[1]"
+           get_local_user:
+                'result_count[?]equal_to': 2
+                'results[?]contain_once':
+                    - username: 'admin'
+                    - username: 'root'
+
+UpdateLocalUsers:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "UpdateLocalUsers"
+    Summary: "Verify Local Users"
+    Procedure: '1. Update full_name of Local Users
+                2. Get Local Users and verify updated value'
+    ExpectedResult: 'Full_name of local user should be updated'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetLocalUser"]
+            - ["UpdateLocalUser"]
+            - ["VerifyLocalUser"]
+        SetLocalUser:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          localuser:
+            '[1]':
+                map_object: true
+                id_: '1000'
+        UpdateLocalUser:
+           Type: "User"
+           TestUser: "nsxmanager.[1].localuser.[1]"
+           reconfigure: true
+           full_name: 'admin'
+        VerifyLocalUser:
+           Type: "User"
+           TestUser: "nsxmanager.[1].localuser.[1]"
+           get_local_user:
+                'result_count[?]equal_to': 2
+                'results[?]contain_once':
+                    - username: 'admin'
+                      full_name: 'admin'
+                    - username: 'root'
+
+UpdateLocalUsersWithInvalidUsername:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "UpdateLocalUsersWithInvalidUsername"
+    Summary: "Verify updating username with 32+ chars"
+    Procedure: '1. Update userame of Local Users with 32+ chars
+                2. Update username of Local User with 0 char
+                2. Get Local Users and verify old value'
+    ExpectedResult: 'Usernamed of local user should not be updated'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetLocalUser"]
+            - ["UpdateLocalUserWith33Chars"]
+            - ["VerifyLocalUser"]
+
+        SetLocalUser:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          localuser:
+            '[1]':
+                map_object: true
+                id_: '1000'
+        UpdateLocalUserWith33Chars:
+           Type: "User"
+           TestUser: "nsxmanager.[1].localuser.[1]"
+           ExpectedResult:
+                status_code: BAD_REQUEST
+           reconfigure: true
+           username: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+
+        VerifyLocalUser:
+           Type: "User"
+           TestUser: "nsxmanager.[1].localuser.[1]"
+           get_local_user:
+                'result_count[?]equal_to': 2
+                'results[?]contain_once':
+                    - username: 'admin'
+                    - username: 'root'
+
+CheckTechSupportBundle:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Semi-Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "CheckTechSupportBundle"
+    Summary: "Verify Techsupport Bundle "
+    Procedure: '1. Get Techsupport Bundle
+                2. Verify untarring tech support bundle'
+    ExpectedResult: 'Untar tech suport bundle should be successful'
+                   #TODO (mbarve) 'Password check in logs,
+                   #Awaiting bug fix for behavior'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["FetchTechSupportBundle"]
+            - ["VerifyTechSupportBundle"]
+
+        FetchTechSupportBundle:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            techsupportbundlelog:
+              '[1]':
+                  name: 'supportbundle'
+        VerifyTechSupportBundle:
+            Type: "ComponentLog"
+            TestComponentLog: "nsxmanager.[1].techsupportbundlelog.[1]"
+            check_techsupportbundle:
+                'result[?]equal_to': true
+
+UpdateInvalidServiceStatus:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "UpdateInvalidServiceStatus"
+    Summary: "Verify invalid service stop, start fails"
+    Procedure: '1. Stop invalid service
+                2. Start invalid Service'
+    ExpectedResult: 'Verify stop start service fails with error msg'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetServiceId"]
+            - ["StopService"]
+            - ["StartService"]
+        SetServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[1]':
+                  map_object: true
+                  id_: 'xyz'
+        StopService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+               state: 'stop'
+               service_name: 'xxx'
+            ExpectedResult:
+                status_code: NOT_FOUND
+        StartService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+               state: 'start'
+               service_name: 'xxx'
+            ExpectedResult:
+                status_code: NOT_FOUND
+
+ConfigureNSXRoute:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "ConfigureNSXRoute"
+    Summary: "Configure NSX Routes"
+    Procedure: '1. Configure NSX Routes
+                2. Verify NSX Routes are configured'
+    ExpectedResult: 'Routes should get configured successfully'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetRoute"]
+            - ["VerifyDefaultRoute"]
+        ExitSequence:
+            - ["DeleteRoute"]
+
+        SetRoute:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          route:
+            '[1]':
+                route_type: 'static'
+                adapter_interface: 'mgmt'
+                protocol: 'kernel'
+                netmask: '255.255.254.0'
+                destination_ip: '10.15.10.0'
+        VerifyDefaultRoute:
+          Type: "Rules"
+          TestRules: "nsxmanager.[1].route.[1]"
+          get_route_list:
+                'results[?]contains':
+                    - adapter_interface: 'mgmt'
+                      destination_ip: '10.15.10.0'
+        DeleteRoute:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deleteippool: "nsxmanager.[1].route.[1]"
+
+ConfigureDNS:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "ConfigureDNS"
+    Summary: "Configure NSX DNS"
+    Procedure: '1. Configure NSX DNS
+                2. Verify that NSX Routes are configured successfully'
+    ExpectedResult: 'DNS should get configured'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetId"]
+            - ["UpdateDNS"]
+            - ["VerifyDefaultDNS"]
+        ExitSequence:
+            - ["ConfigureDefaultDNS"]
+
+        SetId:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          dns:
+            '[1]':
+                map_object: true
+                id_: 'dns'
+
+        UpdateDNS:
+          Type: "NetworkServices"
+          TestNetworkServices: "nsxmanager.[1].dns.[1]"
+          reconfigure: true
+          name:
+               -  'time.vmware.com'
+
+        VerifyDefaultDNS:
+          Type: "NetworkServices"
+          TestNetworkServices: "nsxmanager.[1].dns.[1]"
+          read:
+              'name[?]equal_to':
+                    - 'time.vmware.com'
+
+        ConfigureDefaultDNS:
+          Type: "NetworkServices"
+          TestNetworkServices: "nsxmanager.[1].dns.[1]"
+          reconfigure: true
+          name:
+               -  ''
+
+GetTechSupportBundleInSuccession:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "GetTechSupportBundleInSuccession"
+    Summary: "Verify Get Techsupport Bundle is successful in quick succession"
+    Procedure: '1. Get Techsupport Bundle simultaneously'
+    ExpectedResult: 'Techsupport Bundle should be fetched for both requests'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["FetchTechSupportBundle1", "FetchTechSupportBundle2"]
+            - ["VerifyTechSupportBundle1"]
+            - ["VerifyTechSupportBundle2"]
+
+        FetchTechSupportBundle1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            techsupportbundlelog:
+              '[1]':
+                  name: 'supportbundle1'
+        FetchTechSupportBundle2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            techsupportbundlelog:
+              '[2]':
+                  name: 'supportbundle2'
+        VerifyTechSupportBundle1:
+            Type: "ComponentLog"
+            TestComponentLog: "nsxmanager.[1].techsupportbundlelog.[1]"
+            read:
+                'result[?]equal_to': true
+        VerifyTechSupportBundle2:
+            Type: "ComponentLog"
+            TestComponentLog: "nsxmanager.[1].techsupportbundlelog.[2]"
+            read:
+                'result[?]equal_to': true
+
+GetTechSupportBundleWhenProtonStopped:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "GetTechSupportBundleWhenProtonStopped"
+    Summary: "Verify Techsupport Bundle when proton is stopped"
+    Procedure: '1. Stop Proton service
+                2. Get Techsupport Bundle'
+    ExpectedResult: 'Download Techsupport bundle is successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetServiceId"]
+            - ["StopService"]
+            - ["VerifyStopServiceStatus"]
+            - ["FetchTechSupportBundle"]
+            - ["VerifyTechSupportBundle"]
+            - ["StartService"]
+            - ["VerifyStartServiceStatus"]
+
+        SetServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[1]':
+                  map_object: true
+                  id_: 'proton'
+
+        StopService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+                state: 'stop'
+                service_name: 'proton'
+
+        VerifyStopServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'stopped'
+
+        FetchTechSupportBundle:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            techsupportbundlelog:
+              '[1]':
+                  name: 'supportbundle'
+
+        VerifyTechSupportBundle:
+            Type: "ComponentLog"
+            TestComponentLog: "nsxmanager.[1].techsupportbundlelog.[1]"
+            read:
+                'result[?]equal_to': true
+
+        StartService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+                state: 'start'
+                service_name: 'proton'
+
+        VerifyStartServiceStatus:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+
+VerifyUserLoginFailureAttempts:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "VerifyUserLoginFailureAttempts"
+    Summary: "Verify Admin User is locked after 3 incorrect login attempts"
+    Procedure: '1. Login admin with incorrect password 3 times
+                2. Login admin with correct password
+                3. Wait for admin user to get unlocked'
+    ExpectedResult: 'Admin User should be locked after 3 incorrect password
+                     attempts, after 5 mins admin should be unlocked'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        <<: *APPMGMT_WORKLOADS
+        Sequence:
+            - - SetServiceId
+            - - FirstLoginWithIncorrectPassword
+            - - SecondLoginWithIncorrectPassword
+            - - ThirdLoginWithIncorrectPassword
+            - - VerifyUserIsLocked
+
+        ExitSequence:
+            - - VerifyUserIsUnLocked
+
+        SecondLoginWithIncorrectPassword:
+            <<: *FIRST_LOGIN_WITH_INCORRECT_PASSWORD
+
+        ThirdLoginWithIncorrectPassword:
+            <<: *FIRST_LOGIN_WITH_INCORRECT_PASSWORD
+
+VerifyCorrectUserIsLocked:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "VerifyCorrectUserIsLocked"
+    Summary: "Verify Correct User is locked for 3 incorrect login attempts"
+    Procedure: '1. Login admin1 with incorrect password 3 times
+                2. Login admin with correct password'
+
+    ExpectedResult: 'Admin User should not be locked after 3 incorrect user attempts'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        <<: *APPMGMT_WORKLOADS
+        Sequence:
+            - - SetServiceId
+            - - FirstLoginWithIncorrectUser
+            - - SecondLoginWithIncorrectUser
+            - - ThirdLoginWithIncorrectUser
+            - - VerifyUserIsNotLocked
+
+        SecondLoginWithIncorrectUser:
+            <<: *FIRST_LOGIN_WITH_INCORRECT_USER
+
+        ThirdLoginWithIncorrectUser:
+            <<: *FIRST_LOGIN_WITH_INCORRECT_USER
+
+        VerifyUserIsNotLocked:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            runtime_params:
+                username: "admin"
+                password: "default"
+            get_service_state:
+               'runtime_state[?]equal_to': 'running'
+
+VerifyGetTechsupportBundleDuringRestore:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "VerifyGetTechsupportBundleDuringRestore"
+    Summary: "Verify Techsupport Bundle when restore is in progress"
+    Procedure: '1. Create Node level Backup
+                2. Start Node level restore and Get Tech support Bundle in parallel
+                3. Create Cluster level Backup
+                4. Start Cluster level restore and Get Tech support Bundle in parallel'
+    ExpectedResult: 'Verify Get Techsupport bundle is successful'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        <<: *NODE_BACKUP_WORKLOADS
+        <<: *CLUSTER_BACKUP_WORKLOADS
+        <<: *APPMGMT_WORKLOADS
+        Sequence:
+            - - CreateNodeLevelBackup1
+            - - GetNodeLevelBackup1
+            - - RestoreNodeLevelBackup1
+              - FetchTechSupportBundleDuringNodeRestore
+            - - VerifyTechSupportBundle
+
+            - - CreateClusterLevelBackup1
+            - - GetClusterLevelBackup1
+            - - DownloadClusterLevelBackup1
+            - - UploadClusterLevelBackup1
+            - - CopyToRestoreFolderBackup1
+            - - RestoreClusterLevelBackup
+              - FetchTechSupportBundleDuringClusterRestore
+            - - ReVerifyTechSupportBundle
+
+        ExitSequence:
+            - - DeleteAllClusterBackups
+            - - DeleteAllNodeBackups
+            - - DeleteClusterBackupFile
+
+        FetchTechSupportBundleDuringNodeRestore:
+            <<: *FETCH_TECH_SUPPORT_BUNDLE
+            sleepbetweenworkloads: 5
+
+        FetchTechSupportBundleDuringClusterRestore:
+            <<: *FETCH_TECH_SUPPORT_BUNDLE
+            techsupportbundlelog:
+              '[2]':
+                  name: 'supportbundle'
+            sleepbetweenworkloads: 5
+
+        ReVerifyTechSupportBundle:
+            <<: *VERIFY_TECH_SUPPORT_BUNDLE
+            TestComponentLog: "nsxmanager.[1].techsupportbundlelog.[2]"

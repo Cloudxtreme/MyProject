@@ -1,0 +1,81 @@
+EBGPSanity:
+    Category: EBGP
+    Component: EBGPRouting
+    ExpectedResult: PASS
+    Summary: "This test case configures ebgp workload"
+    Tags: "DynamicRouting,BAT"
+    TestName: DeploySanity
+    TestbedSpec: OneController_FiveEdgeGW_OneVDREdge_TESTBEDSPEC
+    Version: "2"
+    WORKLOADS:
+        Configure_BGPNeighbor_Edge2:
+            Type: 'Router'
+            TestRouter: 'vsm.[1].gateway.[2]'
+            bgp:
+                '[1]':
+                    localas: '2000'
+                    gracefulrestart: 'disabled'
+                    bgpneighbours:
+                        - remoteas: '1000'
+                          ipaddress: '20.20.20.1'
+                          keepalivetimer: '1'
+                          holddowntimer: '3'
+                    redistribution:
+                        enabled: 'true'
+                        rules:
+                            - id: '0'
+                              action: 'permit'
+                              fromprotocol:
+                                  connected: 'true'
+                                  static: 'true'
+        Configure_OSPF_Edge4:
+            Type: 'Router'
+            TestRouter: 'vsm.[1].gateway.[4]'
+            ospf:
+                '[1]':
+                    enabled: 'true'
+                    gracefulrestart: 'disabled'
+                    ospfareas:
+                        - areaid: '0'
+                        - areaid: '1'
+                          ospfareatype: 'nssa'
+                          authentication:
+                              ospfauthenticationtype: 'password'
+                              ospfpasswordvalue: 'pawan'
+                    ospfinterfaces:
+                        - vnic: '1'
+                          areaid: '0'
+                          hellointerval: '10'
+                          deadinterval: '40'
+                          cost: '1'
+                          priority: '128'
+                    redistribution:
+                        enabled: 'true'
+                        rules:
+                            - id: '0'
+                              action: 'permit'
+                              fromprotocol:
+                                  connected: 'true'
+                                  static: 'true'
+        Enable_ECMP_EDGE_GATEWAY:
+            Type: 'Router'
+            TestRouter: "vsm.[1].gateway.[1]"
+            globalrouteconfig:
+                '[1]':
+                    ecmp: "true"
+        Configure_STATICROUTE1_Edge:
+            Type: 'Router'
+            TestRouter: "vsm.[1].gateway.[1]"
+            staticrouting:
+                '[1]':
+                    staticroutes:
+                        - network: "80.80.80.0/24"
+                          nexthop: "20.20.20.2"
+                          mtu : "1600"
+                        - network: "80.80.80.0/24"
+                          nexthop: "30.30.30.3"
+                          mtu : "1600"
+                        - network: "80.80.80.0/24"
+                          nexthop: "40.40.40.4"
+                          mtu : "1600"
+

@@ -1,0 +1,63 @@
+TestbedSpec_3Hosts_3MP_3CCP:
+    ESX: &TestbedSpec_3Hosts_3MP_3CCP--ESX
+        esx:
+            '[1-3]':
+                vmnic:
+                    '[1-3]':
+                        driver: 'any'
+                configure_package:
+                   execution_type: 'cli'
+                   operation: install
+                   maintenance: 1
+                   signaturecheck: 0
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-3]':
+                host: 'esx.[x]'
+
+    KVM: &TestbedSpec_3Hosts_3MP_3CCP--KVM
+        kvm:
+            '[1-3]':
+                pif:
+                    '[1-3]':
+                        persist_configuration:
+                            bootproto: "none"
+                            onboot: "yes"
+                framework_setup:
+                    - disablefirewall
+                    - createanchor
+                    - copysshkey
+                configure_package:
+                   execution_type: 'cmd'
+                   operation: install
+                bridge:
+                    '[1]':
+                        name: nsxvswitch
+                        switch_fail_mode: secure
+                        external_id:
+                            bridge-id: nsx-managed
+                    '[2]':
+                        name: breth2
+                    '[3]':
+                        name: breth3
+
+        nsxmanager:
+            '[1-3]':
+                'ip': none
+
+        nsxcontroller:
+            '[1-3]': {}
+
+        vm:
+            '[1-3]':
+                host: "kvm.[x]"
+                template: template_kvm_debian
+                vmstate: poweron
+                installtype: fullclone

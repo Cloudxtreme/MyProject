@@ -1,0 +1,3193 @@
+WORKLOADS:
+   DeleteSR1:
+       Type: Root
+       TestNode: 'root.[1]'
+       deletevm: 'nsxedge.[1]'
+
+   DeployVM4:
+       Type: Root
+       TestNode: 'root.[1]'
+       vm:
+         '[4]':
+            template: 'RHEL63_srv_64'
+            host: 'esx.[2]'
+            vmstate: poweroff
+
+   DeployVM5:
+       Type: Root
+       TestNode: 'root.[1]'
+       vm:
+         '[5]':
+            template: 'RHEL63_srv_64'
+            host: 'esx.[2]'
+            vmstate: poweroff
+
+   DeployVM6:
+       Type: Root
+       TestNode: 'root.[1]'
+       vm:
+         '[6]':
+            template: 'RHEL63_srv_64'
+            host: 'esx.[1]'
+            vmstate: poweroff
+
+   RegisterController: &REGISTER_CONTROLLER
+       Type: Controller
+       TestController: 'nsxcontroller.[1]'
+       set_nsx_registration:
+           manager_ip: 'nsxmanager.[1]'
+           manager_thumbprint: 'nsxmanager.[1]'
+           execution_type: 'cli'
+
+   SetManagerOnHost: &SET_MANAGER_ON_HOST
+       Type: Host
+       TestHost: 'esx.[1-2]'
+       set_nsx_manager:
+           manager_ip: 'nsxmanager.[1]'
+           manager_thumbprint: 'nsxmanager.[1]'
+           execution_type: 'cli'
+
+   DiscoverHostNodes: &DISCOVER_HOST_NODES
+       Type: NSX
+       TestNSX: 'nsxmanager.[1]'
+       hostnode:
+           '[1-2]':
+               discover: 'true'
+               ip_addresses: 'esx.[x=hostnode_index]'
+
+   CreateTransportZone: &CREATE_TRANSPORT_ZONE_01
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       transportzone:
+           '[1]':
+               name: autogenerate
+               transport_zone_type: 'OVERLAY' # or VLAN, both case-senstive
+               switch_name: 'nsxvswitch'
+
+   CreateUplinkProfile: &CREATE_UPLINK_PROFILE_01--ESX
+           Type: NSX
+           TestNSX: nsxmanager.[1]
+           UplinkProfile:
+               '[1]':
+                   mtu: 1600
+                   teaming:
+                       active:
+                           - adapter_name: 'uplink1'
+                             adapter_type: 'PNIC'
+                       policy: 'FAILOVER_ORDER'
+                   vlan: '0'
+                   resource_type: 'UplinkHostSwitchProfile'
+
+   CreateTransportNodes: &CREATE_TRANSPORT_NODE_01--ESX
+           Type: NSX
+           TestNSX: nsxmanager.[1]
+           transportnode:
+               '[1-2]':
+                   node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                   host_switches:
+                         - switch_name: 'nsxvswitch'
+                           host_switch_profile_ids:
+                              - key: 'UplinkHostSwitchProfile'
+                                value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                           uplinks:
+                              - device_name: 'vmnic1'
+                                adapter_name: 'uplink1'
+                   transport_zone_endpoint:
+                       - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+   SetControllerOnAllHosts: &SET_CONTROLLLER_ON_ALL_HOSTS
+       - - 'SetControllerOnHost1'
+         - 'SetControllerOnHost2'
+
+   SetControllerOnHost1: &SET_CONTROLLER_ON_HOST1
+       Type: Host
+       TestHost: 'esx.[1]'
+       set_nsx_controller:
+           controller_ip: 'nsxcontroller.[1]'
+           node_id: 'nsxmanager.[1].transportnode.[1]'
+           execution_type: 'cli'
+
+   SetControllerOnHost2: &SET_CONTROLLER_ON_HOST2
+       Type: Host
+       TestHost: 'esx.[2]'
+       set_nsx_controller:
+           controller_ip: 'nsxcontroller.[1]'
+           node_id: 'nsxmanager.[1].transportnode.[2]'
+           execution_type: 'cli'
+
+
+   CreateLogicalSwitch01_FOR_UPLINK_SR1: &CREATE_LOGICALSWITCH_01_FOR_UPLINK_SR1
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       logicalswitch:
+           '[1]':
+               name: 'LogicalSwitch01_ForSR1_Uplink'
+               transport_zone_id: nsxmanager.[1].transportzone.[1]
+               admin_state: UP
+               # replication_mode's value is case sensitive
+               replication_mode: MTEP # source
+
+   CreateLogicalSwitch02_FOR_UPLINK_SR2: &CREATE_LOGICALSWITCH_02_FOR_UPLINK_SR2
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       logicalswitch:
+           '[2]':
+               name: 'LogicalSwitch02_ForSR2_Uplink'
+               transport_zone_id: nsxmanager.[1].transportzone.[1]
+               admin_state: UP
+               # replication_mode's value is case sensitive
+               replication_mode: MTEP # source
+
+   CreateLogicalSwitch03_For_Tier0_Downlink: &CREATE_LOGICALSWITCH_03_FOR_TIER0_DOWNLINK
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       logicalswitch:
+           '[3]':
+               name: 'LogicalSwitch03_ForTier0_Downlink'
+               transport_zone_id: nsxmanager.[1].transportzone.[1]
+               admin_state: UP
+               # replication_mode's value is case sensitive
+               replication_mode: MTEP # source
+
+   CreateLogicalSwitch04_For_Tier1_Downlink: &CREATE_LOGICALSWITCH_04_FOR_TIER1_DOWNLINK
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       logicalswitch:
+           '[4]':
+               name: 'LogicalSwitch04_ForTier1_Downlink'
+               transport_zone_id: nsxmanager.[1].transportzone.[1]
+               admin_state: UP
+               # replication_mode's value is case sensitive
+               replication_mode: MTEP # source
+
+   CreateLogicalSwitch05_For_Tier1_Downlink: &CREATE_LOGICALSWITCH_05_FOR_TIER1_DOWNLINK
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       logicalswitch:
+           '[5]':
+               name: 'LogicalSwitch05_ForTier1_Downlink'
+               transport_zone_id: nsxmanager.[1].transportzone.[1]
+               admin_state: UP
+               # replication_mode's value is case sensitive
+               replication_mode: MTEP # source
+
+   CreateLogicalSwitch06_ForExternalRouter: &CREATE_LOGICALSWITCH_06_FOREXTERNALROUTER
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       logicalswitch:
+           '[6]':
+               name: 'LogicalSwitch06_ForExternalRouter'
+               transport_zone_id: nsxmanager.[1].transportzone.[1]
+               admin_state: UP
+               # replication_mode's value is case sensitive
+               replication_mode: MTEP # source
+
+   Create_5_LogicalPorts: &CREATE_5_LOGICALPORTS
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       sleepbetweenworkloads: "10"
+       logicalport:
+           '[1]':
+               switch_id: nsxmanager.[1].logicalswitch.[1]
+               name: 'logicalport1-on-logicalswitch1'
+               admin_state: UP
+           '[2]':
+               switch_id: nsxmanager.[1].logicalswitch.[2]
+               name: 'logicalport2-on-logicalswitch2'
+               admin_state: UP
+           '[3]':
+               switch_id: nsxmanager.[1].logicalswitch.[3]
+               name: 'logicalport3-on-logicalswitch3'
+               admin_state: UP
+           '[4]':
+               switch_id: nsxmanager.[1].logicalswitch.[4]
+               name: 'logicalport4-on-logicalswitch4'
+               admin_state: UP
+           '[5]':
+               switch_id: nsxmanager.[1].logicalswitch.[5]
+               name: 'logicalport5-on-logicalswitch5'
+               admin_state: UP
+
+
+   #---------- BAT_BGP_Tier0_Tier1_Topology ----------
+   PowerOFFAllVms_BAT_Tier0_Tier1_BGP: &POWER_OFF_ALL_VMS_BAT_TIER0_TIER1_BGP
+      - - 'PowerOffVM3'
+        - 'PowerOffVM4'
+        - 'PowerOffVM6'
+
+   DeleteTestVnicsAllVMs2TierBGP: &DELETE_TEST_VNICS_ALL_VMS_2TIER_BGP
+       - - 'DeleteVnic3'
+       - - 'DeleteVnic4'
+       - - 'DeleteVnic6'
+
+
+   AddRouteAllVMs_BAT_Tier0_Tier1_BGP: &ADD_ROUTE_ALL_VMS_BAT_TIER0_TIER1_BGP
+       - - 'AddRoute1ToVM3_Tier0_Tier1_BGP'
+         - 'AddRoute1ToVM4_Tier1_BGP'
+         - 'AddRoute1ToVM6_Tier1_BGP'
+
+
+   AddRoute1ToVM3_Tier0_Tier1_BGP: &ADDROUTE_1_TO_VM3_TIER0_TIER1_BGP
+       Type:        "NetAdapter"
+       Testadapter: "vm.[3].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0"
+       gateway:     "192.168.60.1"
+
+   AddRoute1ToVM4_Tier1_BGP: &ADDROUTE_1_TO_VM4_TIER1_BGP
+       Type:        "NetAdapter"
+       Testadapter: "vm.[4].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0"
+       gateway:     "192.168.70.1"
+
+   AddRoute1ToVM6_Tier1_BGP: &ADDROUTE_1_TO_VM6_TIER1_BGP
+       Type:        "NetAdapter"
+       Testadapter: "vm.[6].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.60.0, 192.168.70.0"
+       gateway:     "192.168.40.1"
+
+   # check traffic between VM6 TO VM4: External Router to Tier1 VM
+   Traffic_VM6ToVM4: &TRAFFIC_VM6TOVM4
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[6].vnic.[1]"
+       SupportAdapter: "vm.[4].vnic.[1]"
+       TestDuration  : "10"
+
+   # check traffic between VM6 TO VM3: External Router to Tier0 Downlink VM
+   Traffic_VM6ToVM3: &TRAFFIC_VM6TOVM3
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[6].vnic.[1]"
+       SupportAdapter: "vm.[3].vnic.[1]"
+       TestDuration  : "10"
+
+   VifAttachmentAllVMs_BAT_Tier0_Tier1_BGP: &VIFATTACHMENTALLVMS_BAT_TIER0_TIER1_BGP
+      - - 'VIF_ATTACHMENT_VM3'
+      - - 'VIF_ATTACHMENT_VM4'
+      - - 'VIF_ATTACHMENT_VM6'
+
+   PowerOnAllVms_BAT_Tier0_Tier1_BGP: &POWER_ON_ALL_VMS_BAT_TIER0_TIER1_BGP
+      - - 'PowerOnVM3'
+        - 'PowerOnVM4'
+        - 'PowerOnVM6'
+
+   ConfigureIPAllVMVNics_BAT_Tier0_Tier1_BGP: &CONFIGURE_IP_ALL_VM_VNICS_BAT_TIER0_TIER1_BGP
+       - - 'ConfigureVM3Vnic1IP'
+         - 'ConfigureVM4Vnic1IP'
+         - 'ConfigureVM6Vnic1IP'
+
+   Create_LogicalPorts_BAT_BGP_Tier0_Tier1: &CREATE_LOGICALPORTS_BGP_TIER0_TIER1
+      - - 'Create_LogicalPorts_BAT_Tier0_Tier1_Basic'
+      - - 'Create_LogicalPort_Switch6'
+
+   Create_LogicalPort_Switch6: &CREATE_LOGICALPORT_SWITCH6
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       sleepbetweenworkloads: "10"
+       logicalport:
+           '[6]':
+               switch_id: nsxmanager.[1].logicalswitch.[1]
+               name: 'logicalport6-on-logicalswitch6'
+               admin_state: UP
+
+   CLI_Show_IP_BGP_Neighbours_Connected: &CLI_SHOW_IP_BGP_NEIGHBOURS_CONNECTED
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       ip_address: '192.168.50.100'
+       get_ip_bgp_neighbors:
+           'table[?]contain_once':
+               - local_host: '192.168.50.1'
+                 bgp_state: 'established'
+                 remote_host: '192.168.50.100'
+                 bgp_neighbor: '192.168.50.100'
+                 keep_alive_interval: '60'
+                 hold_time: '180'
+                 bgp_status: 'up'
+
+   CLI_Show_Configuration_BGP_Connected: &CLI_SHOW_CONFIGURATION_BGP_CONNECTED
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       sleepbetweenworkloads: "30"
+       execution_type: 'cli'
+       get_configuration_bgp:
+           'bgp[?]contain_once':
+             'gracefulrestart[?]boolean': 'False'
+             'localas[?]equal_to': '100'
+             'enabled[?]boolean': 'True'
+             'neighbors[?]contain_once':
+               - 'holddowntimer[?]equal_to': '180'
+                 'ipaddress[?]equal_to': '192.168.50.100'
+                 'keepalivetimer[?]equal_to': '60'
+                 'remoteas[?]equal_to': '200'
+                 'srcipaddress[?]equal_to': '192.168.50.1'
+                 'name[?]equal_to': 'bgp-neighbour-1'
+                 'weight[?]equal_to': '60'
+
+   CLI_Show_IP_Route_BGP_Connected: &CLI_SHOW_IP_ROUTE_BGP_CONNECTED
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]contain_once':
+               - code: 'S'
+                 network: '192.168.60.0/24'
+                 nexthop: '169.0.0.1'
+                 via: 'via'
+               - code: 'C'
+                 network: '192.168.50.0/24'
+                 nexthop: '192.168.50.1'
+               - code: 'B'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+   #-------------------------------------------------
+
+   #---------- BAT_Tier0_Redistribute_Topology ---------
+   Create_LogicalPorts_BAT_BGP_Tier0_Redistribute: &CREATE_LOGICALPORTS_BAT_BGP_TIER0_REDISTRIBUTE
+      - - 'Create_LogicalPorts_BAT_Tier0_Basic'
+      - - 'Create_LogicalPort_Switch6'
+
+   VifAttachmentAllVMs_BAT_Tier0_BGP_Redistribute: &VIFATTACHMENTALLVMS_BAT_TIER0_BGP_REDISTRIBUTE
+      - - 'Vif_Attachment_Vm3_192_168_60_20'
+      - - 'Vif_Attachment_Vm6_192_168_40_20'
+
+   PowerOnAllVms_BAT_Tier0_BGP_Redistribute: &POWER_ON_ALL_VMS_BAT_TIER0_BGP_REDISTRIBUTE
+      - - 'PowerOnVM3_192_168_60_20'
+        - 'PowerOnVM6_192_168_40_20'
+
+   PowerOFFAllVms_BAT_Tier0_BGP_Redistribute: &POWER_OFF_ALL_VMS_BAT_TIER0_BGP_REDISTRIBUTE
+      - - 'PowerOffVM3'
+        - 'PowerOffVM6'
+
+   ConfigureIPAllVMVNics_BAT_Tier0_BGP_Redistribute: &CONFIGURE_IP_ALL_VM_VNICS_BAT_TIER0_BGP_REDISTRIBUTE
+       - - 'ConfigureVM3Vnic1IP_192_168_60_20'
+         - 'ConfigureVM6Vnic1IP_192_168_40_20'
+
+   AddRouteAllVMs_BAT_Tier0_BGP_Redistribute: &ADD_ROUTE_ALL_VMS_BAT_TIER0_BGP_REDISTRIBUTE
+       - - 'AddRoute1ToVM3_192_168_60_20'
+         - 'AddRoute1ToVM6_192_168_40_20'
+
+   AddRouteRedistribution_Connected_To_BGP: &ADDROUTEREDISTRIBUTION_CONNECTED_TO_BGP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       redistributionconfig:
+           '[1]':
+               redistributionenabled: 'true'
+               rules:
+                   - fromprotocol:
+                         - 'CONNECTED'
+                     toprotocol: 'BGP'
+                     name: 'rule3'
+                     summary: 'Rule 3'
+
+   DeleteTestVnicsAllVMsTier0BGP_Redistribute: &DELETE_TEST_VNICS_ALL_VMS_TIER0_BGP_REDISTRIBUTE
+       - - 'DeleteVnic3'
+       - - 'DeleteVnic6'
+
+   Delete_BGP_Redistribute_Configuration: &DELETE_BGP_REDISTRIBUTE_CONFIGURATION
+       - - 'DeleteAllNeighbours'
+       - - 'DeleteRoutingGlobalConfig'
+       - - 'DeleteRedistributionConfig'
+
+
+   Delete_BGP_Configuration: &DELETE_BGP_CONFIGURATION
+       - - 'DeleteAllNeighbours'
+       - - 'DeleteRoutingGlobalConfig'
+       - - 'DeleteRedistributionConfig'
+       - - 'DeleteRouteAdvertisementsOnTier1'
+
+   DiscoverEdgeVnics_SR1: &DISCOVER_EDGE_VNIC_SR1
+       Type:  VM
+       TestVM: 'nsxedge.[1]'
+       vnic:
+          '[1-3]':
+             discover: 'true'
+
+   DisconnectvNic3_InternalTLS_SR1: &DISCONNECT_VNIC3_INTERNALTLS_SR1
+       Type:  NetAdapter
+       TestAdapter: 'nsxedge.[1].vnic.[3]'
+       reconfigure: 'true'
+       connected:         0
+       startconnected:    0
+       allowguestcontrol: 0
+
+   CLI_Show_IP_Route_Disconnect_TLS: &CLI_SHOW_IP_ROUTE_DISCONNECT_TLS
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]not_contains':
+               - code: 'S'
+                 network: '192.168.60.0/24'
+                 nexthop: '169.0.0.1'
+                 via: 'via'
+
+
+   Create_LogicalPorts_OnLS05: &CREATE_LOGICALPORTS_ONLS05
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       sleepbetweenworkloads: "10"
+       logicalport:
+           '[5]':
+               switch_id: nsxmanager.[1].logicalswitch.[5]
+               name: 'logicalport5-on-logicalswitch5'
+               admin_state: UP
+
+
+   #---------- BAT_Tier0_Basic_Topology ----------
+   Create_LogicalPorts_BAT_Tier0_Basic: &CREATE_LOGICALPORTS_TIER0
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       sleepbetweenworkloads: "10"
+       logicalport:
+           '[1]':
+               switch_id: nsxmanager.[1].logicalswitch.[1]
+               name: 'logicalport1-on-logicalswitch1'
+               admin_state: UP
+           '[3]':
+               switch_id: nsxmanager.[1].logicalswitch.[3]
+               name: 'logicalport3-on-logicalswitch3'
+               admin_state: UP
+
+
+
+   #---------- BAT_Tier0_Tier1_Basic_Topology ----------
+   Create_LogicalPorts_BAT_Tier0_Tier1_Basic: &CREATE_LOGICALPORTS_TIER0_TIER1
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       sleepbetweenworkloads: "10"
+       logicalport:
+           '[1]':
+               switch_id: nsxmanager.[1].logicalswitch.[1]
+               name: 'logicalport1-on-logicalswitch1'
+               admin_state: UP
+           '[3]':
+               switch_id: nsxmanager.[1].logicalswitch.[3]
+               name: 'logicalport3-on-logicalswitch3'
+               admin_state: UP
+           '[4]':
+               switch_id: nsxmanager.[1].logicalswitch.[4]
+               name: 'logicalport4-on-logicalswitch4'
+               admin_state: UP
+
+   #---------- BAT_Tier0_Basic_Topology ----------
+   VifAttachmentAllVMs_BAT_Tier0_Basic: &VIFATTACHMENTALLVMS_BAT_TIER0_BASIC
+      - - 'VIF_ATTACHMENT_VM1'
+      - - 'VIF_ATTACHMENT_VM3'
+
+   #---------- BAT_Tier0_Tier1_Basic_Topology ----------
+   VifAttachmentAllVMs_BAT_Tier0_Tier1_Basic: &VIFATTACHMENTALLVMS_BAT_TIER0_TIER1_BASIC
+      - - 'VIF_ATTACHMENT_VM1'
+      - - 'VIF_ATTACHMENT_VM3'
+      - - 'VIF_ATTACHMENT_VM4'
+
+
+   VifAttachmentAllVMs: &VIFATTACHMENTALLVMS
+      - - 'VIF_ATTACHMENT_VM1'
+      - - 'VIF_ATTACHMENT_VM2'
+      - - 'VIF_ATTACHMENT_VM3'
+      - - 'VIF_ATTACHMENT_VM4'
+      - - 'VIF_ATTACHMENT_VM5'
+      - - 'VIF_ATTACHMENT_VM6'
+      - - 'VIF_ATTACHMENT_VM7'
+
+   VIF_ATTACHMENT_VM1: &VIF_ATTACHMENT_VM1--ESX
+           Type: VM
+           TestVM: 'vm.[1]'
+           vnic:
+              '[1]':
+                  driver: "e1000"
+                  # TODO(gjayavelu): use network instead of portgroup
+                  portgroup: "nsxmanager.[1].logicalswitch.[1]"
+                  connected: 1
+                  startconnected: 1
+
+   VIF_ATTACHMENT_VM2: &VIF_ATTACHMENT_VM2--ESX
+           Type: VM
+           TestVM: 'vm.[2]'
+           vnic:
+              '[1]':
+                  driver: "e1000"
+                  # TODO(gjayavelu): use network instead of portgroup
+                  portgroup: "nsxmanager.[1].logicalswitch.[2]"
+                  connected: 1
+                  startconnected: 1
+
+   VIF_ATTACHMENT_VM3: &VIF_ATTACHMENT_VM3--ESX
+           Type: VM
+           TestVM: 'vm.[3]'
+           vnic:
+              '[1]':
+                  driver: "e1000"
+                  # TODO(gjayavelu): use network instead of portgroup
+                  portgroup: "nsxmanager.[1].logicalswitch.[3]"
+                  connected: 1
+                  startconnected: 1
+
+   VIF_ATTACHMENT_VM4: &VIF_ATTACHMENT_VM4--ESX
+           Type: VM
+           TestVM: 'vm.[4]'
+           vnic:
+              '[1]':
+                  driver: "e1000"
+                  # TODO(gjayavelu): use network instead of portgroup
+                  portgroup: "nsxmanager.[1].logicalswitch.[4]"
+                  connected: 1
+                  startconnected: 1
+
+   VIF_ATTACHMENT_VM5: &VIF_ATTACHMENT_VM5--ESX
+           Type: VM
+           TestVM: 'vm.[5]'
+           vnic:
+              '[1]':
+                  driver: "e1000"
+                  # TODO(gjayavelu): use network instead of portgroup
+                  portgroup: "nsxmanager.[1].logicalswitch.[5]"
+                  connected: 1
+                  startconnected: 1
+
+   VIF_ATTACHMENT_VM6: &VIF_ATTACHMENT_VM6--ESX
+           Type: VM
+           TestVM: 'vm.[6]'
+           vnic:
+              '[1]':
+                  driver: "e1000"
+                  # TODO(gjayavelu): use network instead of portgroup
+                  portgroup: "nsxmanager.[1].logicalswitch.[6]"
+                  connected: 1
+                  startconnected: 1
+
+   VIF_ATTACHMENT_VM7: &VIF_ATTACHMENT_VM7--ESX
+           Type: VM
+           TestVM: 'vm.[7]'
+           vnic:
+              '[1]':
+                  driver: "e1000"
+                  # TODO(gjayavelu): use network instead of portgroup
+                  portgroup: "nsxmanager.[1].logicalswitch.[6]"
+                  connected: 1
+                  startconnected: 1
+
+
+   #---------- BAT_Tier0_Basic_Topology ----------
+   PowerOnAllVms_BAT_Tier0_Basic: &POWER_ON_ALL_VMS_BAT_TIER0_BASIC
+      - - 'PowerOnVM1'
+        - 'PowerOnVM3'
+
+   PowerOFFAllVms_BAT_Tier0_Basic: &POWER_OFF_ALL_VMS_BAT_TIER0_BASIC
+      - - 'PowerOffVM1'
+        - 'PowerOffVM3'
+
+   #---------- BAT_Tier0_Tier1_Basic_Topology ----------
+   PowerOnAllVms_BAT_Tier0_Tier1_Basic: &POWER_ON_ALL_VMS_BAT_TIER0_TIER1_BASIC
+      - - 'PowerOnVM1'
+        - 'PowerOnVM3'
+        - 'PowerOnVM4'
+
+   PowerOFFAllVms_BAT_Tier0_Tier1_Basic: &POWER_OFF_ALL_VMS_BAT_TIER0_TIER1_BASIC
+      - - 'PowerOffVM1'
+        - 'PowerOffVM3'
+        - 'PowerOffVM4'
+
+   PowerOffVM1: &PowerOffVM1
+      Type: VM
+      TestVM: 'vm.[1]'
+      vmstate: poweroff
+
+   PowerOffVM3: &PowerOffVM3
+      Type: VM
+      TestVM: 'vm.[3]'
+      vmstate: poweroff
+
+   PowerOffVM4: &PowerOffVM4
+      Type: VM
+      TestVM: 'vm.[4]'
+      vmstate: poweroff
+
+   PowerOffVM5: &PowerOffVM5
+      Type: VM
+      TestVM: 'vm.[5]'
+      vmstate: poweroff
+
+   PowerOffVM6: &PowerOffVM6
+      Type: VM
+      TestVM: 'vm.[6]'
+      vmstate: poweroff
+
+   PowerOnAllVms: &POWER_ON_ALL_VMS
+      - - 'PowerOnVM1'
+        - 'PowerOnVM2'
+        - 'PowerOnVM3'
+        - 'PowerOnVM4'
+        - 'PowerOnVM5'
+        - 'PowerOnVM6'
+        - 'PowerOnVM7'
+
+   PowerOnVM1: &POWER_ON_VM1
+      Type: VM
+      TestVM: 'vm.[1]'
+      vmstate: poweron
+
+   PowerOnVM2: &POWER_ON_VM2
+      Type: VM
+      TestVM: 'vm.[2]'
+      vmstate: poweron
+
+   PowerOnVM3: &POWER_ON_VM3
+      Type: VM
+      TestVM: 'vm.[3]'
+      vmstate: poweron
+
+   PowerOnVM4: &POWER_ON_VM4
+      Type: VM
+      TestVM: 'vm.[4]'
+      vmstate: poweron
+
+   PowerOnVM5: &POWER_ON_VM5
+      Type: VM
+      TestVM: 'vm.[5]'
+      vmstate: poweron
+
+   PowerOnVM6: &POWER_ON_VM6
+      Type: VM
+      TestVM: 'vm.[6]'
+      vmstate: poweron
+
+   PowerOnVM7: &POWER_ON_VM7
+      Type: VM
+      TestVM: 'vm.[7]'
+      vmstate: poweron
+
+   #---------- BAT_Tier0_Tier1_Basic_Topology ----------
+   ConfigureIPAllVMVNics_BAT_Tier0_Tier1_Basic: &CONFIGURE_IP_ALL_VM_VNICS_BAT_TIER0_TIER1_BASIC
+       - - 'ConfigureVM1Vnic1IP'
+         - 'ConfigureVM3Vnic1IP'
+         - 'ConfigureVM4Vnic1IP'
+
+   AddRouteAllVMs_BAT_Tier0_Tier1_Basic: &ADD_ROUTE_ALL_VMS_BAT_TIER0_TIER1_BASIC
+       - - 'AddRoute1ToVM1_Tier0_Tier1_Basic'
+         - 'AddRoute1ToVM3_Tier0_Tier1_Basic'
+         - 'AddRoute1ToVM4_Tier1_Basic'
+
+   AddRoute1ToVM1_Tier0_Tier1_Basic: &ADDROUTE_1_TO_VM1_TIER0_TIER1_BASIC
+       Type:        "NetAdapter"
+       Testadapter: "vm.[1].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.60.0, 192.168.70.0, 192.168.71.0"
+       gateway:     "192.168.50.1"
+
+   AddRoute1ToVM3_Tier0_Tier1_Basic: &ADDROUTE_1_TO_VM3_TIER0_TIER1_BASIC
+       Type:        "NetAdapter"
+       Testadapter: "vm.[3].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.50.0, 192.168.70.0"
+       gateway:     "192.168.60.1"
+
+   AddRoute1ToVM4_Tier1_Basic: &ADDROUTE_1_TO_VM4_TIER1_BASIC
+       Type:        "NetAdapter"
+       Testadapter: "vm.[4].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.50.0, 192.168.60.0"
+       gateway:     "192.168.70.1"
+
+
+   #---------- BAT_Tier0_Basic_Topology ----------
+   ConfigureIPAllVMVNics_BAT_Tier0_Basic: &CONFIGURE_IP_ALL_VM_VNICS_BAT_TIER0_BASIC
+       - - 'ConfigureVM1Vnic1IP'
+         - 'ConfigureVM3Vnic1IP'
+
+   AddRouteAllVMs_BAT_Tier0_Basic: &ADD_ROUTE_ALL_VMS_BAT_TIER0_BASIC
+       - - 'AddRoute1ToVM1_Tier0_Basic'
+         - 'AddRoute1ToVM3_Tier0_Basic'
+
+   AddRoute1ToVM1_Tier0_Basic: &ADDROUTE_1_TO_VM1_TIER0_BASIC
+       Type:        "NetAdapter"
+       Testadapter: "vm.[1].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.60.0"
+       gateway:     "192.168.50.1"
+
+   AddRoute1ToVM3_Tier0_Basic: &ADDROUTE_1_TO_VM3_TIER0_BASIC
+       Type:        "NetAdapter"
+       Testadapter: "vm.[3].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.50.0"
+       gateway:     "192.168.60.1"
+
+   #-----------------------------------------------------------------------------------
+   ConfigureIPAllVMVNics: &CONFIGURE_IP_ALL_VM_VNICS
+       - - 'ConfigureVM1Vnic1IP'
+         - 'ConfigureVM2Vnic1IP'
+         - 'ConfigureVM3Vnic1IP'
+         - 'ConfigureVM4Vnic1IP'
+         - 'ConfigureVM5Vnic1IP'
+         - 'ConfigureVM6Vnic1IP'
+         - 'ConfigureVM7Vnic1IP'
+
+   AddRouteAllVMs: &ADD_ROUTE_ALL_VMS
+      - - 'AddRoute1ToVM1'
+        - 'AddRoute2ToVM1'
+        - 'AddRoute1ToVM2'
+        - 'AddRoute2ToVM2'
+        - 'AddRoute1ToVM3'
+        - 'AddRoute1ToVM4'
+        - 'AddRoute1ToVM5'
+        - 'AddRoute1ToVM6'
+        - 'AddRoute1ToVM7'
+
+   ConfigureVM1Vnic1IP: &CONFIGURE_VM1_VNIC1_IP
+       Type: NetAdapter
+       TestAdapter: 'vm.[1].vnic.[1]'
+       ipv4:       '192.168.50.20'
+       netmask:    "255.255.255.0"
+
+   AddRoute1ToVM1: &ADDROUTE_1_TO_VM1
+       Type:        "NetAdapter"
+       Testadapter: "vm.[1].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.60.0,192.168.70.0,192.168.71.0"
+       gateway:     "192.168.50.1"
+
+   AddRoute2ToVM1: &ADDROUTE_2_TO_VM1
+       Type:        "NetAdapter"
+       Testadapter: "vm.[1].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0"
+       gateway:     "192.168.50.100"
+
+   ConfigureVM2Vnic1IP: &CONFIGURE_VM2_VNIC1_IP
+       Type: NetAdapter
+       TestAdapter: 'vm.[2].vnic.[1]'
+       ipv4:       '192.168.51.20'
+       netmask:    "255.255.255.0"
+
+   AddRoute1ToVM2: &ADDROUTE_1_TO_VM2
+       Type:        "NetAdapter"
+       Testadapter: "vm.[2].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.60.0,192.168.70.0,192.168.71.0"
+       gateway:     "192.168.51.1"
+
+   AddRoute2ToVM2: &ADDROUTE_2_TO_VM2
+       Type:        "NetAdapter"
+       Testadapter: "vm.[2].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0"
+       gateway:     "192.168.51.100"
+
+   ConfigureVM3Vnic1IP: &CONFIGURE_VM3_VNIC1_IP
+       Type: NetAdapter
+       TestAdapter: 'vm.[3].vnic.[1]'
+       ipv4:       '192.168.60.20'
+       netmask:    "255.255.255.0"
+
+   AddRoute1ToVM3: &ADDROUTE_1_TO_VM3
+       Type:        "NetAdapter"
+       Testadapter: "vm.[3].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0,192.168.50.0,192.168.51.0,192.168.70.0,192.168.71.0"
+       gateway:     "192.168.60.1"
+
+   ConfigureVM4Vnic1IP: &CONFIGURE_VM4_VNIC1_IP
+       Type: NetAdapter
+       TestAdapter: 'vm.[4].vnic.[1]'
+       ipv4:       '192.168.70.20'
+       netmask:    "255.255.255.0"
+
+   AddRoute1ToVM4: &ADDROUTE_1_TO_VM4
+       Type:        "NetAdapter"
+       Testadapter: "vm.[4].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0,192.168.50.0,192.168.51.0,192.168.60.0,192.168.71.0"
+       gateway:     "192.168.70.1"
+
+   ConfigureVM5Vnic1IP: &CONFIGURE_VM5_VNIC1_IP
+       Type: NetAdapter
+       TestAdapter: 'vm.[5].vnic.[1]'
+       ipv4:       '192.168.71.20'
+       netmask:    "255.255.255.0"
+
+   AddRoute1ToVM5: &ADDROUTE_1_TO_VM5
+       Type:        "NetAdapter"
+       Testadapter: "vm.[5].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0,192.168.50.0,192.168.51.0,192.168.60.0,192.168.70.0"
+       gateway:     "192.168.71.1"
+
+   ConfigureVM6Vnic1IP: &CONFIGURE_VM6_VNIC1_IP
+       Type: NetAdapter
+       TestAdapter: 'vm.[6].vnic.[1]'
+       ipv4:       '192.168.40.20'
+       netmask:    "255.255.255.0"
+
+   AddRoute1ToVM6: &ADDROUTE_1_TO_VM6
+       Type:        "NetAdapter"
+       Testadapter: "vm.[6].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.50.0,192.168.60.0,192.168.70.0,192.168.71.0"
+       gateway:     "192.168.40.1"
+
+   ConfigureVM7Vnic1IP: &CONFIGURE_VM7_VNIC1_IP
+       Type: NetAdapter
+       TestAdapter: 'vm.[7].vnic.[1]'
+       ipv4:       '192.168.40.21'
+       netmask:    "255.255.255.0"
+
+   AddRoute1ToVM7: &ADDROUTE_1_TO_VM7
+       Type:        "NetAdapter"
+       Testadapter: "vm.[7].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.51.0,192.168.60.0,192.168.70.0,192.168.71.0"
+       gateway:     "192.168.40.2"
+
+   # check traffic
+   Traffic_VM2ToVM1: &TRAFFIC_VM2TOVM1
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[2].vnic.[1]"
+       SupportAdapter: "vm.[1].vnic.[1]"
+       TestDuration  : "20"
+
+   # check traffic between VM3 TO VM2
+   Traffic_VM3ToVM2: &TRAFFIC_VM3TOVM2
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[3].vnic.[1]"
+       SupportAdapter: "vm.[2].vnic.[1]"
+       TestDuration  : "10"
+
+   # check traffic between VM3 TO VM1
+   Traffic_VM3ToVM1: &TRAFFIC_VM3TOVM1
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[3].vnic.[1]"
+       SupportAdapter: "vm.[1].vnic.[1]"
+       TestDuration  : "10"
+
+   # check traffic between VM3 TO VM1 : Tier0-SR-Tier1-DR traffic
+   Traffic_VM1ToVM4: &TRAFFIC_VM1TOVM4
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[4].vnic.[1]"
+       SupportAdapter: "vm.[1].vnic.[1]"
+       TestDuration  : "10"
+
+   # check traffic between VM3 TO VM4 : Tier0-DR-Tier1-DR traffic
+   Traffic_VM3ToVM4: &TRAFFIC_VM3TOVM4
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[4].vnic.[1]"
+       SupportAdapter: "vm.[3].vnic.[1]"
+       TestDuration  : "10"
+
+
+   #############################################################################
+   # Workload for TIER-0 Creation
+   #############################################################################
+   RegisterEdgeNode1WithNSX: &REGISTER_EDGENODE1_WITH_NSX
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       register_nsx_edge_node:
+           manager_username: 'admin'
+           manager_password: 'default'
+           manager_ip: 'nsxmanager.[1]'
+           manager_thumbprint: 'nsxmanager.[1]'
+           execution_type: 'cli'
+
+   RegisterEdgeNode2WithNSX: &REGISTER_EDGENODE2_WITH_NSX
+       Type: Gateway
+       TestGateway: 'nsxedge.[2]'
+       register_nsx_edge_node:
+           manager_username: 'admin'
+           manager_password: 'default'
+           manager_ip: 'nsxmanager.[1]'
+           manager_thumbprint: 'nsxmanager.[1]'
+           execution_type: 'cli'
+
+   CreateFabricProfile: &CREATE_FABRICPROFILE
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       fabricprofile:
+           '[1]':
+               name: 'Fabric_Profile_1'
+               summary: "Fabric Profile created through automation"
+               resource_type: "FabricProfileClusterKeepAlive"
+               hello_interval: 3000
+               declare_dead_timer: 15000
+
+   DiscoverEdgeNodeId1: &DISCOVER_EDGENODE_ID1
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       edgenode:
+           '[1]':
+               discover: 'true'
+               resource_type: "EdgeNode"
+               ipaddresses:
+                  - 'nsxedge.[1]->management_ip'
+
+   DiscoverEdgeNodeId2: &DISCOVER_EDGENODE_ID2
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       edgenode:
+           '[2]':
+               discover: 'true'
+               resource_type: "EdgeNode"
+               ipaddresses:
+                  - 'nsxedge.[2]->management_ip'
+
+
+   #---------- BAT_Tier0_Basic_Topology ----------
+   CreateEdgeClusterWithEdgeNode_BAT_Tier0_Basic: &CREATE_EDGECLUSTER_WITH_EDGENODE_BAT_TIER0_BASIC
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       edgecluster:
+           '[1]':
+               name: 'Edge_Cluster_1'
+               summary: "Edge Cluster created through automation"
+               members:
+                 - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+               fabric_profile_bindings:
+                 - resource_type: "FabricProfileClusterKeepAlive"
+                   # enter the fabric_profile_id: uuid1
+                   fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+
+   CreateEdgeClusterWithTwoEdgeNode: &CREATE_EDGECLUSTER_WITH_2_EDGENODE
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       edgecluster:
+           '[1]':
+               name: 'Edge_Cluster_1'
+               summary: "Edge Cluster created through automation"
+               members:
+                 - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+                 - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+               fabric_profile_bindings:
+                 - resource_type: "FabricProfileClusterKeepAlive"
+                   # enter the fabric_profile_id: uuid1
+                   fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+   CreateTIER0LogicalRouter: &CREATE_TIER0_LOGICALROUTER
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       # Explicitly sleeping for 1 mintue
+       #sleepbetweenworkloads: "60"
+       logicalrouter:
+           '[1]':
+               name: 'lrouter-tier-0'
+               summary: "LRouter TIER-0 router"
+               # TLR only topology, for PLR it's TIER0
+               router_type: "TIER0"
+               cluster_id: 'nsxmanager.[1].edgecluster.[1]'
+
+   CreateTier0UplinkLogicalRouterPortForSR1: &CREATE_UPLINK_LOGICALROUTERPORT_FOR_SR1
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       sleepbetweenworkloads: "0" #add PR:1396015
+       logicalrouteruplinkport:
+           '[1]':
+               logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+               name: 'TIER0-LRPort-1-UPLINKPORT-FOR-SR1'
+               summary: "TIER0 LRPort Uplink Port1 FOR SR1 created through automation"
+               linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+               resource_type: "LogicalRouterUpLinkPort"
+               gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[1]->member_index'
+               subnets:
+                  - prefixlen: 24
+                    ip_addresses:
+                        - '192.168.50.1'
+
+   CreateTier0UplinkLogicalRouterPortForSR2: &CREATE_UPLINK_LOGICALROUTERPORT_FOR_SR2
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       logicalrouteruplinkport:
+           '[2]':
+               logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+               name: 'TIER0-LRPort-2-UPLINKPORT-FOR-SR2'
+               summary: "TIER0 LRPort Uplink Port2 FOR SR2 created through automation"
+               linked_switch_port_id: nsxmanager.[1].logicalport.[2]->id
+               resource_type: "LogicalRouterUpLinkPort"
+               gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[2]->member_index'
+               subnets:
+                  - prefixlen: 24
+                    ip_addresses:
+                        - '192.168.51.1'
+
+
+   CreateTier0DownlinkLogicalRouterPort: &CREATE_TIER0_DOWNLINK_LOGICALROUTERPORT
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       logicalrouterport:
+           '[3]':
+               logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+               name: 'TIER0-LRPort-3-Downlinkport'
+               summary: "LRPort Downlink Port3 created through automation"
+               linked_switch_port_id: nsxmanager.[1].logicalport.[3]->id
+               resource_type: "LogicalRouterDownLinkPort"
+               subnets:
+                  - prefixlen: 24
+                    ip_addresses:
+                        - '192.168.60.1'
+
+   #############################################################################
+   # Workload for TIER-1 Creation
+   #############################################################################
+   CreateTIER1LogicalRouter: &CREATE_TIER1_LOGICALROUTER
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       sleepbetweenworkloads: "10"
+       logicalrouter:
+           '[2]':
+               name: 'logical-router-tier-1'
+               summary: "LRouter TIER-1 created through automation"
+               # TLR only topology, for PLR it's TIER0
+               router_type: "TIER1"
+
+
+   CreateDownlinkTier1LogicalRouterPortOnLS04: &CREATE_DOWNLINK_TIER1_LOGICALROUTERPORT_ON_LS04
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       logicalrouterport:
+           '[4]':
+               logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+               name: 'TIER1-LRPort-4-Downlinkport'
+               summary: "Logical Router Port 4 for TIER-1 Downlink on LogicalSwitch04"
+               linked_switch_port_id: nsxmanager.[1].logicalport.[4]->id
+               resource_type: "LogicalRouterDownLinkPort"
+               subnets:
+                  - prefixlen: 24
+                    ip_addresses:
+                        - '192.168.70.1'
+
+   CreateDownlinkTier1LogicalRouterPortOnLS05: &CREATE_DOWNLINK_TIER1_LOGICALROUTERPORT_ON_LS05
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       logicalrouterport:
+           '[5]':
+               logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+               name: 'TIER1-LRPort-5-Downlinkport'
+               summary: "Logical Router Port 5 on TIER-1 Downlink on LogicalSwitch05"
+               linked_switch_port_id: nsxmanager.[1].logicalport.[5]->id
+               resource_type: "LogicalRouterDownLinkPort"
+               subnets:
+                  - prefixlen: 24
+                    ip_addresses:
+                        - '192.168.71.1'
+
+   ################################################################################
+   #  Route Adverstisement
+   ################################################################################
+   AdvertiseRouteonTier1: &ROUTEADVERTISEMENT_ON_TIER1
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[2]"
+       routeadvertisements:
+           '[1]':
+               enableadvertisement: 'true'
+               advertise_routes:
+                  - name: 'Route Adverisement for Tier1'
+                    summary: 'Route Adverisement for Tier1'
+                    network:
+                        - '192.168.70.0/24'
+
+   SetRouteAdvertisementsOnTier1: &SET_ROUTEADVERTISEMENTS_ON_TIER1
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[2]"
+       routeadvertisements:
+           '[1]':
+               enableadvertisement: 'true'
+               advertise_routes:
+                  - name: 'Adverisement for Tier1'
+                    summary: 'Adverisement for Tier1'
+                    network:
+                        - '192.168.70.0/24'
+                        - '192.168.71.0/24'
+
+   DeleteRouteAdvertisementsOnTier1: &DELETE_ROUTEADVERTISEMENTS_ON_TIER1
+       Type: Router
+       TestRouter: nsxmanager.[1].logicalrouter.[2]
+       routeadvertisements:
+           '[1]': {}
+
+   #############################################################################
+   # Workload for TIER-0 TIER-1 InterConnection
+   #############################################################################
+   CreateRouterLinkPortOnTIER0Router: &CREATE_ROUTERLINKPORT_ON_TIER0_ROUTER
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       logicalrouterlinkport:
+           '[1]':
+               logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+               name: 'TIER0-RouterLinkPort'
+               summary: "Create a Router Link port on TIER-0 Router"
+               resource_type: "LogicalRouterLinkPort"
+
+   CreateRouterLinkPortOnTIER1Router: &CREATE_ROUTERLINKPORT_ON_TIER1_ROUTER
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       logicalrouterlinkport:
+           '[2]':
+               logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+               linked_router_port_id: nsxmanager.[1].logicalrouterlinkport.[1]->id
+               name: 'TIER1-RouterLinkPort'
+               summary: "Create a Router Link port on TIER-1 Router"
+               resource_type: "LogicalRouterLinkPort"
+
+   ################################################################################
+   #  Routing Global Configuration
+   ################################################################################
+   AddRoutingGlobalConfig: &ADD_ROUTINGGLOBAL_CONFIG
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       routingconfig:
+           '[1]':
+                routerid: "1.1.1.1"
+
+   DeleteRoutingGlobalConfig: &DELETE_ROUTINGGLOBAL_CONFIG
+       Type: Router
+       TestRouter: nsxmanager.[1].logicalrouter.[1]
+       routingconfig:
+           '[1]': {}
+
+   ################################################################################
+   #  BGP Neighbours Configuration
+   ################################################################################
+   UpdateBGPNeighboursTier0: &UPDATE_BGP_NEIGHBOURS_TIER0
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrbgp:
+           '[1]':
+               bgpenabled: 'true'
+               localas: 100
+               gracefulrestart: 'false'
+               bgpneighbours:
+                   - name: 'bgp-neighbour-1'
+                     summary: 'BGP Neighbour 1'
+                     ipaddress: '192.168.50.100'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+
+   DeleteAllNeighbours: &DELETE_ALL_NEIGHBOURS
+       Type: Router
+       TestRouter: nsxmanager.[1].logicalrouter.[1]
+       lrbgp:
+           '[1]': {}
+
+   ################################################################################
+   #  Static Routes Configuration
+   ################################################################################
+   UpdateStaticRoutes: &ADD_STATIC_ROUTES
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrstaticroutes:
+           '[1]':
+               staticroutes:
+                   - name: 'static-route-1'
+                     summary: 'Static route for 192.168.30.0/24'
+                     next_hops:
+                        - '192.168.50.100'
+                        - '192.168.20.1'
+                     network: '192.168.30.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+                   - name: 'static-route-2'
+                     summary: 'Static route for 192.168.40.0/24'
+                     next_hops:
+                         - '192.168.10.1'
+                         - '192.168.20.1'
+                         - '192.168.30.1'
+                     network: '192.168.40.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[2]->id_"
+
+   DeleteAllStaticRoutes: &DELETE_ALL_STATICROUTES
+       Type: Router
+       TestRouter: nsxmanager.[1].logicalrouter.[1]
+       lrstaticroutes:
+           '[1]': {}
+
+   ################################################################################
+   #  Route Redistribution Tier0
+   ################################################################################
+   AddRouteRedistribution: &ADD_ROUTE_REDISTRIBUTION
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       redistributionconfig:
+           '[1]':
+               redistributionenabled: 'true'
+               rules:
+                   - fromprotocol:
+                         - 'CONNECTED'
+                         - 'INTERNAL'
+                     toprotocol: 'BGP'
+                     name: 'rule2'
+                     summary: 'Rule 2'
+
+   DeleteRedistributionConfig: &DELETE_REDISTRIBUTION_CONFIG
+       Type: Router
+       TestRouter: nsxmanager.[1].logicalrouter.[1]
+       redistributionconfig:
+           '[1]': {}
+
+   CleanupNSX: &CLEAN_NSX
+       Type : "NSX"
+       TestNSX : "nsxmanager.[1]"
+       deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+       deletelogicalswitch : "nsxmanager.[1].logicalswitch.[-1]"
+       deletetransportzone: "nsxmanager.[1].transportzone.[-1]"
+       deletetransportnode: "nsxmanager.[1].transportnode.[-1]"
+       deleteuplinkprofile: "nsxmanager.[1].uplinkprofile.[-1]"
+
+
+   UnregisterHosts: &UNREGISTER_HOSTS
+       Type: Host
+       TestHost: 'esx.[-1]'
+       remove_nsx_manager:
+           manager_ip: 'nsxmanager.[1]'
+           manager_thumbprint: 'nsxmanager.[1]'
+
+   DeleteTestVnicsAllVMsTier0: &DELETE_TEST_VNICS_ALL_VMS_TIER0
+       - - 'DeleteVnic1'
+       - - 'DeleteVnic3'
+
+
+   DeleteTestVnicsAllVMs2Tier: &DELETE_TEST_VNICS_ALL_VMS_2TIER
+       - - 'DeleteVnic1'
+       - - 'DeleteVnic3'
+       - - 'DeleteVnic4'
+
+   DeleteVnic1:
+       Type: VM
+       TestVM: 'vm.[1]'
+       deletevnic: 'vm.[1].vnic.[1]'
+
+   DeleteVnic3:
+       Type: VM
+       TestVM: 'vm.[3]'
+       deletevnic: 'vm.[3].vnic.[1]'
+
+   DeleteVnic4:
+       Type: VM
+       TestVM: 'vm.[4]'
+       deletevnic: 'vm.[4].vnic.[1]'
+
+   DeleteVnic5:
+       Type: VM
+       TestVM: 'vm.[5]'
+       deletevnic: 'vm.[5].vnic.[1]'
+
+   DeleteVnic6:
+       Type: VM
+       TestVM: 'vm.[6]'
+       deletevnic: 'vm.[6].vnic.[1]'
+
+
+   CleanupBasicTier0_Tier1: &CLEANUP_BASIC_TIER0_TIER1
+       - - 'DeleteAllLRPorts'
+       - - 'DeleteAllLRUplinkPorts'
+       - - 'DeleteAllLRLinkPorts'
+       - - 'DeleteAllLRs'
+       - - 'DeleteAllLPorts'
+       - - 'DeleteAllLSwitches'
+       - - 'DeleteAllTransportNodes'
+       - - 'DeleteAllUplinkProfiles'
+       - - 'DeleteAllTransportZones'
+
+   CleanupBasicTier0: &CLEANUP_BASIC_TIER0
+       - - 'DeleteAllLRPorts'
+       - - 'DeleteAllLRUplinkPorts'
+       - - 'DeleteAllLRs'
+       - - 'DeleteAllLPorts'
+       - - 'DeleteAllLSwitches'
+       - - 'DeleteAllTransportNodes'
+       - - 'DeleteAllUplinkProfiles'
+       - - 'DeleteAllTransportZones'
+
+   CleanupTemplate: &CLEANUP_TEMPLATE
+       Type : "NSX"
+       TestNSX : "nsxmanager.[1]"
+
+   DeleteAllLRPorts:
+       <<: *CLEANUP_TEMPLATE
+       deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[-1]"
+
+   DeleteAllLRUplinkPorts:
+       <<: *CLEANUP_TEMPLATE
+       deletelogicalrouteruplinkport: "nsxmanager.[1].logicalrouteruplinkport.[-1]"
+
+   DeleteAllLRs:
+       <<: *CLEANUP_TEMPLATE
+       deletelogicalrouter: "nsxmanager.[1].logicalrouter.[-1]"
+
+   DeleteAllLRLinkPorts:
+       <<: *CLEANUP_TEMPLATE
+       deletelogicalrouterlinkport: "nsxmanager.[1].logicalrouterlinkport.[-1]"
+
+   DeleteAllLPorts:
+       <<: *CLEANUP_TEMPLATE
+       deletelogicalport : "nsxmanager.[1].logicalport.[-1]"
+
+   DeleteAllLSwitches:
+       <<: *CLEANUP_TEMPLATE
+       deletelogicalswitch : "nsxmanager.[1].logicalswitch.[-1]"
+
+   DeleteAllTransportNodes:
+       <<: *CLEANUP_TEMPLATE
+       deletetransportnode: "nsxmanager.[1].transportnode.[-1]"
+
+   DeleteAllUplinkProfiles:
+       <<: *CLEANUP_TEMPLATE
+       deleteuplinkprofile: "nsxmanager.[1].uplinkprofile.[-1]"
+
+   DeleteAllTransportZones:
+       <<: *CLEANUP_TEMPLATE
+       deletetransportzone: "nsxmanager.[1].transportzone.[-1]"
+
+   RealizeLogicalports: &REALIZE_LOGICALPORTS
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[1]':
+                discover: true
+                vif: 'vm.[1].vnic.[1]'
+
+   DeleteUplinkProfile: &DELETE_UPLINK_PROFILE
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      deleteuplinkprofile: 'nsxmanager.[-1].uplinkprofile.[-1]'
+
+   DeleteTransportNode: &DELETE_TRANSPORT_NODE--ESX
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       deletetransportnode: 'nsxmanager.[-1].transportnode.[-1]'
+
+   DeleteTransportZone: &DELETE_TRANSPORT_ZONE
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       deletetransportzone: 'nsxmanager.[-1].transportzone.[-1]'
+
+   DeleteLogicalPort: &DELETE_LOGICAL_PORT
+       Type: NSX
+       TestNSX: 'nsxmanager.[1]'
+       deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+
+   DeleteLogicalSwitch: &DELETE_LOGICAL_SWITCH
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       deletelogicalswitch: 'nsxmanager.[-1].logicalswitch.[-1]'
+
+   DeleteLogicalRouter: &DELETE_LOGICAL_ROUTER
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       deletelogicalrouter: "nsxmanager.[1].logicalrouter.[-1]"
+
+   DeleteLogicalRouterPort: &DELETE_LOGICAL_ROUTER_PORT
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[-1]"
+
+   #---------- BAT_Tier0_Static_Topology ---------
+   AddRouteRedistribution_Static_To_BGP: &ADDROUTEREDISTRIBUTION_STATIC_TO_BGP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       redistributionconfig:
+           '[1]':
+               redistributionenabled: 'true'
+               rules:
+                   - fromprotocol:
+                         - 'STATIC'
+                     toprotocol: 'BGP'
+                     name: 'rule4'
+                     summary: 'Rule 4'
+
+
+   VifAttachmentAllVMs_BAT_Tier0_Tier1_BGP_Static: &VIFATTACHMENTALLVMS_BAT_TIER0_TIER1_BGP_STATIC
+      - - 'VIF_ATTACHMENT_VM4'
+      - - 'VIF_ATTACHMENT_VM6'
+
+   ConfigureIPAllVMVNics_BAT_Tier0_Tier1_BGP_Static: &CONFIGURE_IP_ALL_VM_VNICS_BAT_TIER0_TIER1_BGP_STATIC
+       - - 'ConfigureVM4Vnic1IP'
+         - 'ConfigureVM6Vnic1IP'
+
+   PowerOnAllVms_BAT_Tier0_Tier1_BGP_Static: &POWER_ON_ALL_VMS_BAT_TIER0_TIER1_BGP_STATIC
+      - - 'PowerOnVM4'
+        - 'PowerOnVM6'
+
+   PowerOFFAllVms_BAT_Tier0_Tier1_BGP_Static: &POWER_OFF_ALL_VMS_BAT_TIER0_TIER1_BGP_STATIC
+      - - 'PowerOffVM4'
+        - 'PowerOffVM6'
+
+   AddRouteAllVMs_BAT_Tier0_Tier1_BGP_Static: &ADD_ROUTE_ALL_VMS_BAT_TIER0_TIER1_BGP_STATIC
+       - - 'AddRoute1ToVM4_Tier1_BGP'
+         - 'AddRoute1ToVM6_Tier1_BGP'
+
+   Traffic_VM6ToVM4_FAIL: &TRAFFIC_VM6TOVM4_FAIL
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[6].vnic.[1]"
+       SupportAdapter: "vm.[4].vnic.[1]"
+       TestDuration  : "5"
+       connectivitytest: '0'
+       ExpectedResult: 'FAIL'
+
+   Add_Static_Routes_BGP: &ADD_STATIC_ROUTES_BGP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrstaticroutes:
+           '[1]':
+               staticroutes:
+                   - name: 'static-route-1'
+                     summary: 'Static route for 192.168.70.0/24'
+                     next_hops:
+                        - '100.64.1.0'
+                     network: '192.168.70.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+
+   Delete_BGP_Configuration_STATIC: &DELETE_BGP_CONFIGURATION_STATIC
+       - - 'DeleteAllStaticRoutes'
+       - - 'DeleteAllNeighbours'
+       - - 'DeleteRoutingGlobalConfig'
+       - - 'DeleteRedistributionConfig'
+
+#----------------- For testing Purpose----------------------
+   VifAttachmentAllVMs_BAT_Tier0_Tier1_Test: &VIFATTACHMENTALLVMS_BAT_TIER0_TIER1_TEST
+      - - 'VIF_ATTACHMENT_VM1'
+      - - 'VIF_ATTACHMENT_VM3'
+      - - 'VIF_ATTACHMENT_VM4'
+      - - 'VIF_ATTACHMENT_VM5'
+
+   PowerOnAllVms_BAT_Tier0_Tier1_Test: &POWER_ON_ALL_VMS_BAT_TIER0_TIER1_TEST
+      - - 'PowerOnVM1'
+        - 'PowerOnVM3'
+        - 'PowerOnVM4'
+        - 'PowerOnVM5'
+
+   PowerOFFAllVms_BAT_Tier0_Tier1_Test: &POWER_OFF_ALL_VMS_BAT_TIER0_TIER1_TEST
+      - - 'PowerOffVM1'
+        - 'PowerOffVM3'
+        - 'PowerOffVM4'
+        - 'PowerOffVM5'
+
+   ConfigureIPAllVMVNics_BAT_Tier0_Tier1_Test: &CONFIGURE_IP_ALL_VM_VNICS_BAT_TIER0_TIER1_TEST
+       - - 'ConfigureVM1Vnic1IP'
+         - 'ConfigureVM3Vnic1IP'
+         - 'ConfigureVM4Vnic1IP'
+         - 'ConfigureVM5Vnic1IP'
+
+   AddRouteAllVMs_BAT_Tier0_Tier1_Test: &ADD_ROUTE_ALL_VMS_BAT_TIER0_TIER1_BASIC_TEST
+       - - 'AddRoute1ToVM1_Tier0_Tier1_Basic'
+         - 'AddRoute1ToVM3_Tier0_Tier1_Basic'
+         - 'AddRoute1ToVM4_Tier1_Basic'
+         - 'AddRoute1ToVM5_Tier1_Test'
+
+   AddRoute1ToVM5_Tier1_Test: &ADDROUTE_1_TO_VM5_TIER1_TEST
+       Type:        "NetAdapter"
+       Testadapter: "vm.[5].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.50.0, 192.168.60.0"
+       gateway:     "192.168.71.1"
+
+   # check traffic between VM6 TO VM4: External Router to Tier1 VM
+   Traffic_VM1ToVM5: &TRAFFIC_VM1TOVM5
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[5].vnic.[1]"
+       SupportAdapter: "vm.[1].vnic.[1]"
+       TestDuration  : "10"
+
+   DeleteTestVnicsAllVMs2TierTest: &DELETE_TEST_VNICS_ALL_VMS_2TIER_TEST
+       - - 'DeleteVnic1'
+       - - 'DeleteVnic3'
+       - - 'DeleteVnic4'
+       - - 'DeleteVnic6'
+
+
+###########################################################################################################
+#  WORKLOADS RELATED TO STATIC ROUTING
+###########################################################################################################
+   Create_LogicalPorts_BAT_StaticRouting_Tier0_Tier1: &CREATE_LOGICALPORTS_BAT_STATICROUTING_TIER0_TIER1
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       sleepbetweenworkloads: "10"
+       logicalport:
+           '[1]':
+               switch_id: nsxmanager.[1].logicalswitch.[1]
+               name: 'logicalport1-on-logicalswitch1-For-SR1-Uplink'
+               admin_state: UP
+           '[2]':
+               switch_id: nsxmanager.[1].logicalswitch.[2]
+               name: 'logicalport2-on-logicalswitch2-For-SR2-Uplink'
+               admin_state: UP
+           '[4]':
+               switch_id: nsxmanager.[1].logicalswitch.[4]
+               name: 'logicalport4-on-logicalswitch4-For-Tier1-Downlink'
+               admin_state: UP
+           '[5]':
+               switch_id: nsxmanager.[1].logicalswitch.[5]
+               name: 'logicalport5-on-logicalswitch5-For-Tier1-Downlink'
+               admin_state: UP
+           '[6]':
+               switch_id: nsxmanager.[1].logicalswitch.[6]
+               name: 'logicalport6-on-logicalswitch6-For-ExternalRouter-1'
+               admin_state: UP
+           '[7]':
+               switch_id: nsxmanager.[1].logicalswitch.[6]
+               name: 'logicalport7-on-logicalswitch6-For-ExternalRouter-2'
+               admin_state: UP
+
+   Add_Static_Routes_For_SR1_SR2_BAT: &ADD_STATIC_ROUTES_FOR_SR1_SR2_BAT
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrstaticroutes:
+           '[1]':
+               staticroutes:
+                   - name: 'static-route-1-SR-1'
+                     summary: 'Static route for SR-1'
+                     next_hops:
+                        - '192.168.50.100'
+                     network: '192.168.40.0/24'
+                     #lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+                   - name: 'static-route-2-SR-2'
+                     summary: 'Static route for SR-2'
+                     next_hops:
+                        - '192.168.51.100'
+                     network: '192.168.40.0/24'
+                     #lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[2]->id_"
+
+   Modify_Static_Routes_For_SR1_SR2_BAT: &MODIFY_STATIC_ROUTES_FOR_SR1_SR2_BAT
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrstaticroutes:
+           '[1]':
+               staticroutes:
+                   - name: 'static-route-1-SR-1'
+                     summary: 'Static route for SR-1'
+                     next_hops:
+                        - '192.168.50.100'
+                     network: '192.168.90.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+                   - name: 'static-route-2-SR-2'
+                     summary: 'Static route for SR-2'
+                     next_hops:
+                        - '192.168.51.100'
+                     network: '192.168.40.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[2]->id_"
+
+
+   CLI_Show_IP_Route_StaticRoutes_SR1: &CLI_SHOW_IP_ROUTE_STATICROUTES_SR1
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]contain_once':
+               - code: 'S'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+
+   CLI_Show_IP_Route_StaticRoutes_SR2: &CLI_SHOW_IP_ROUTE_STATICROUTES_SR2
+       Type: Gateway
+       TestGateway: 'nsxedge.[2]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]contain_once':
+               - code: 'S'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.51.100'
+                 via: 'via'
+
+
+   After_Modification_CLI_Show_IP_Route_StaticRoutes_SR1: &AFTER_MODIFICATION_CLI_SHOW_IP_ROUTE_STATICROUTES_SR1
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]contain_once':
+               - code: 'S'
+                 network: '192.168.90.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+
+   VifAttachmentAllVMs_BAT_Tier0_Tier1_Static_Routing: &VIFATTACHMENTALLVMS_BAT_TIER0_TIER1_BGP_STATIC_ROUTING
+      - - 'Vif_Attachment_Vm4_192_168_70_20'
+      - - 'Vif_Attachment_Vm5_192_168_71_20'
+      - - 'Vif_Attachment_Vm6_192_168_40_20'
+      - - 'Vif_Attachment_Vm6_192_168_40_21'
+
+   PowerOnAllVms_BAT_Tier0_Tier1_StaticRouting: &POWER_ON_ALL_VMS_BAT_TIER0_TIER1_STATIC_ROUTING
+      - - 'PowerOnVM4_192_168_70_20'
+        - 'PowerOnVM5_192_168_71_20'
+        - 'PowerOnVM6_192_168_40_20'
+        - 'PowerOnVM6_192_168_40_21'
+
+   PowerOFFAllVms_BAT_Tier0_Tier1_StaticRouting: &POWER_OFF_ALL_VMS_BAT_TIER0_TIER1_STATIC_ROUTING
+      - - 'PowerOffVM4_192_168_70_20'
+        - 'PowerOffVM5_192_168_71_20'
+        - 'PowerOffVM6_192_168_40_20'
+        - 'PowerOffVM6_192_168_40_21'
+
+   ConfigureIPAllVMVNics_BAT_Tier0_Tier1_StaticRouting: &CONFIGURE_IP_ALL_VM_VNICS_BAT_TIER0_TIER1_STATIC_ROUTING
+       - - 'ConfigureVM4Vnic1IP_192_168_70_20'
+         - 'ConfigureVM5Vnic1IP_192_168_71_20'
+         - 'ConfigureVM6Vnic1IP_192_168_40_20'
+         - 'ConfigureVM6Vnic1IP_192_168_40_21'
+
+   AddRouteAllVMs_BAT_Tier0_Tier1_StaticRouting: &ADD_ROUTE_ALL_VMS_BAT_TIER0_TIER1_STATIC_ROUTING
+       - - 'AddRoute1ToVM4_192_168_70_20'
+         - 'AddRoute1ToVM5_192_168_71_20'
+         - 'AddRoute1ToVM6_192_168_40_20'
+         - 'AddRoute1ToVM6_192_168_40_21'
+
+   # check traffic between VM6_2 TO VM4: External Router to Tier1 Downlink VM
+   Traffic_VM6_2ToVM4: &TRAFFIC_VM6_2ToVM4
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[7].vnic.[1]"
+       SupportAdapter: "vm.[4].vnic.[1]"
+       TestDuration  : "10"
+
+   # check traffic between VM6_2 TO VM4: External Router to Tier1 Downlink VM
+   Traffic_VM6_2ToVM5: &TRAFFIC_VM6_2ToVM5
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[7].vnic.[1]"
+       SupportAdapter: "vm.[5].vnic.[1]"
+       TestDuration  : "10"
+
+   # check traffic between VM6 TO VM5: External Router to Tier1 Downlink VM
+   Traffic_VM6ToVM5: &Traffic_VM6ToVM5
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[6].vnic.[1]"
+       SupportAdapter: "vm.[5].vnic.[1]"
+       TestDuration  : "10"
+
+   Traffic_VM6ToVM5_FAIL: &TRAFFIC_VM6TOVM5_FAIL
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[6].vnic.[1]"
+       SupportAdapter: "vm.[5].vnic.[1]"
+       TestDuration  : "5"
+       connectivitytest: '0'
+       ExpectedResult: 'FAIL'
+
+   DeleteTestVnicsAllVMs2Tier_StaticRouting: &DELETE_TEST_VNICS_ALL_VMS_2TIER_StaticRouting
+       - - 'DeleteVnic4'
+       - - 'DeleteVnic5'
+       - - 'DeleteVnic6'
+       - - 'DeleteVnic6_2'
+
+   DeleteVnic6_2:
+       Type: VM
+       TestVM: 'vm.[7]'
+       deletevnic: 'vm.[7].vnic.[1]'
+
+   After_Deletion_Show_IP_Route_StaticRoutes_SR1: &AFTER_DELETION_CLI_SHOW_IP_ROUTE_STATICROUTES_SR1
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]not_contains':
+               - code: 'S'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+
+   After_Deletion_Show_IP_Route_StaticRoutes_SR2: &AFTER_DELETION_CLI_SHOW_IP_ROUTE_STATICROUTES_SR2
+       Type: Gateway
+       TestGateway: 'nsxedge.[2]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]not_contains':
+               - code: 'S'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.51.100'
+                 via: 'via'
+
+   Traffic_VM6_2ToVM4_FAIL: &TRAFFIC_VM6_2TOVM4_FAIL
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[7].vnic.[1]"
+       SupportAdapter: "vm.[4].vnic.[1]"
+       TestDuration  : "5"
+       connectivitytest: '0'
+       ExpectedResult: 'FAIL'
+
+   Traffic_VM6_2ToVM5_FAIL: &TRAFFIC_VM6_2TOVM5_FAIL
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[7].vnic.[1]"
+       SupportAdapter: "vm.[5].vnic.[1]"
+       TestDuration  : "5"
+       connectivitytest: '0'
+       ExpectedResult: 'FAIL'
+
+
+###########################################################################################################
+# END OF WORKLOADS REALTED TO STATIC ROUTING
+###########################################################################################################
+
+
+###########################################################################################################
+# WORKLOADS RELATED TO FABRIC PROFILE
+###########################################################################################################
+
+   CreateFabricProfile: &CREATE_FABRIC_PROFILE
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       fabricprofile:
+           '[1]':
+               name: 'Fabric_Profile_1'
+               summary: "Fabric Profile created through automation"
+               resource_type: "FabricProfileClusterKeepAlive"
+               hello_interval: 1000
+               declare_dead_timer: 6000
+
+   ReadFabricProfile: &READ_FABRIC_PROFILE
+       Type: "Gateway"
+       TestGateway: 'nsxmanager.[1].fabricprofile.[1]'
+       read:
+         'name[?]defined': 'Fabric_Profile_1'
+         'summary[?]equal_to': "Fabric Profile created through automation"
+         'id_[?]equal_to': 'nsxmanager.[1].fabricprofile.[1]'
+         'resource_type[?]equal_to': "FabricProfileClusterKeepAlive"
+         'hello_interval[?]equal_to': 1000
+         'declare_dead_timer[?]equal_to': 6000
+
+   UpdateFabricProfile: &UPDATE_FABRICPROFILE
+       Type: "Gateway"
+       TestGateway: "nsxmanager.[1].fabricprofile.[1]"
+       reconfigure: true
+       name: 'Fabric_Profile_1_Update'
+       summary: "Fabric Profile updated through automation"
+       resource_type: "FabricProfileClusterKeepAlive"
+       hello_interval: 3000
+       declare_dead_timer: 4000
+       fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+   ReadFabricProfileAfterUpdate: &READ_FABRICPROFILE_AFTERUPDATE
+       Type: "Gateway"
+       TestGateway: 'nsxmanager.[1].fabricprofile.[1]'
+       sleepbetweenworkloads: "30"
+       read:
+         'name[?]defined': 'Fabric_Profile_1_Update'
+         'summary[?]equal_to': 'Fabric Profile updated through automation'
+         'id_[?]equal_to': 'nsxmanager.[1].fabricprofile.[1]'
+         'resource_type[?]equal_to': "FabricProfileClusterKeepAlive"
+         'hello_interval[?]equal_to': 3000
+         'declare_dead_timer[?]equal_to': 4000
+
+   DeleteFabricProfile: &DELETE_FABRIC_PROFILE
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       deletefabricprofile: "nsxmanager.[1].fabricprofile.[1]"
+
+###########################################################################################################
+# END OF WORKLOADS RELATED TO FABRIC PROFILE
+###########################################################################################################
+
+######################################################################################
+# START OF WORKLOADS RELATED TO ACTIVE FAILOVER
+######################################################################################
+   Create_LogicalPorts_BAT_ActiveFailOver: &CREATE_LOGICALPORTS_BAT_ACTIVEFAILOVER
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       sleepbetweenworkloads: "10"
+       logicalport:
+           '[1]':
+               switch_id: nsxmanager.[1].logicalswitch.[1]
+               name: 'logicalport1-on-logicalswitch1'
+               admin_state: UP
+           '[2]':
+               switch_id: nsxmanager.[1].logicalswitch.[1]
+               name: 'logicalport2-on-logicalswitch1'
+               admin_state: UP
+           '[3]':
+               switch_id: nsxmanager.[1].logicalswitch.[3]
+               name: 'logicalport3-on-logicalswitch3'
+               admin_state: UP
+
+
+   AddStaticRoutesForActiveFailover_SR1: &ADD_STATIC_ROUTES_ACTIVEFAILOVER_SR1
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrstaticroutes:
+           '[1]':
+               staticroutes:
+                   - name: 'static-route-1'
+                     summary: 'Static route for for SR1'
+                     next_hops:
+                        - '192.168.50.200'
+                     network: '1.1.1.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+
+   UpdateStaticRoutesForActiveFailover: &UPDATE_STATIC_ROUTES_ACTIVEFAILOVER_SR2
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrstaticroutes:
+           '[1]':
+               staticroutes:
+                   - name: 'static-route-1'
+                     summary: 'Static route for for SR1'
+                     next_hops:
+                        - '192.168.50.200'
+                     network: '1.1.1.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+                   - name: 'static-route-2'
+                     summary: 'Static route for for SR2'
+                     next_hops:
+                        - '192.168.50.201'
+                     network: '2.2.2.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[2]->id_"
+
+
+   CreateTier0UplinkLogicalRouterPortForSR2_ActiveFailover: &CREATE_UPLINK_LOGICALROUTERPORT_FOR_SR2_ACTIVEFAILOVER
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       #sleepbetweenworkloads: "60"
+       logicalrouteruplinkport:
+           '[2]':
+               logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+               name: 'TIER0-LRPort-2-UPLINKPORT-FOR-SR2'
+               summary: "TIER0 LRPort Uplink Port2 FOR SR2 created through automation"
+               linked_switch_port_id: nsxmanager.[1].logicalport.[2]->id
+               resource_type: "LogicalRouterUpLinkPort"
+               gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[2]->member_index'
+               subnets:
+                  - prefixlen: 24
+                    ip_addresses:
+                        - '192.168.50.2'
+
+
+   CLI_Show_IP_Route_StaticRoutes_SR1_ActiveFailover: &CLI_SHOW_IP_ROUTE_STATICROUTES_SR1_ACTIVEFAILOVER
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]contain_once':
+               - code: 'S'
+                 network: '1.1.1.0/24'
+                 nexthop: '192.168.50.200'
+                 via: 'via'
+
+   CLI_Show_IP_Route_StaticRoutes_SR2_ActiveFailover: &CLI_SHOW_IP_ROUTE_STATICROUTES_SR2_ACTIVEFAILOVER
+       Type: Gateway
+       TestGateway: 'nsxedge.[2]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]contain_once':
+               - code: 'S'
+                 network: '2.2.2.0/24'
+                 nexthop: '192.168.50.201'
+                 via: 'via'
+
+   Update_EdgeCluster_With_EdgeNode2: &UPDATE_EDGE_CLUSTER_WITH_EDGENODE2
+       Type: "Gateway"
+       TestGateway: "nsxmanager.[1].edgecluster.[1]"
+       reconfigure: true
+       name: 'Edge_Cluster_1_update'
+       summary: "Edge Cluster updated through automation"
+       members:
+         - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+         - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+       fabric_profile_bindings:
+         - resource_type: "FabricProfileClusterKeepAlive"
+           fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+   Remove_EdgeNode2_From_EdgeCluster: &REMOVE_EDGENODE2_FROM_EDGECLUSTER
+       Type: "Gateway"
+       TestGateway: "nsxmanager.[1].edgecluster.[1]"
+       reconfigure: true
+       name: 'Edge_Cluster_1_update'
+       summary: "Edge Cluster updated through automation"
+       members:
+         - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+       fabric_profile_bindings:
+         - resource_type: "FabricProfileClusterKeepAlive"
+           fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+   DeleteRouteVM1: &DELETE_ROUTE_VM1
+        Type:        "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        netmask:     "255.255.255.0"
+        route:       "delete"
+        network:     "192.168.60.0"
+        gateway:     "192.168.50.1"
+
+   UpdateRouteVM1: &UPDATE_ROUTE_VM1
+       Type:        "NetAdapter"
+       Testadapter: "vm.[1].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.60.0"
+       gateway:     "192.168.50.2"
+
+   VerifyEdgeClusterStatus: &VERIFY_EDGECLUSTER_STATUS
+       Type: Gateway
+       TestGateway: 'nsxedge.[2]'
+       execution_type: 'cli'
+       get_cluster_status:
+           ha_status[?]equal_to: 'Active'
+           routing_status[?]equal_to: 'Up'
+
+
+   ReadEdgeVMSoutBoundIP_Template: &READ_EDGE_VM_SOUTBOUND_IP_TEMPLATE
+       Type: VM
+       adapter_label: 'Network adapter 3'
+       southbound_subnet: '169.0.0.0'
+       bfd_subnet: '169.255.255.0'
+       PersistData: "Yes"
+       read_edgevnic_southbound_bfd_ips:
+           'southbound_ip[?]defined': ''
+           'bfd_ip[?]defined': ''
+
+
+   ReadEdgeVm1SouthIpBfdIp: &READ_EDGEVM1_SOUTHBOUND_IP_BFDIP
+       <<: *READ_EDGE_VM_SOUTBOUND_IP_TEMPLATE
+       TestVM: 'nsxedge.[1]'
+
+   ReadEdgeVm2SouthIpBfdIp: &READ_EDGEVM2_SOUTHBOUND_IP_BFDIP
+       <<: *READ_EDGE_VM_SOUTBOUND_IP_TEMPLATE
+       TestVM: 'nsxedge.[2]'
+
+   CheckIPMigrationOnSR1: &CHECK_IP_MIGRATION_ON_SR1
+       Type: VM
+       TestVM: 'nsxedge.[1]'
+       sleepbetweenworkloads: "60"
+       adapter_label: 'Network adapter 3'
+       southbound_subnet: '169.0.0.0'
+       bfd_subnet: '169.255.255.0'
+       read_edgevnic_southbound_bfd_ips:
+           'southbound_ip[?]contains': 'nsxedge.[2]->read_edgevnic_southbound_bfd_ips->southbound_ip'
+
+   CheckIPMigrationOnSR2: &CHECK_IP_MIGRATION_ON_SR2
+       Type: VM
+       TestVM: 'nsxedge.[2]'
+       sleepbetweenworkloads: "60"
+       adapter_label: 'Network adapter 3'
+       southbound_subnet: '169.0.0.0'
+       bfd_subnet: '169.255.255.0'
+       read_edgevnic_southbound_bfd_ips:
+           'southbound_ip[?]contains': 'nsxedge.[1]->read_edgevnic_southbound_bfd_ips->southbound_ip'
+
+   CleanupEdge: &CLEANUP_EDGE
+       - - 'DeleteEdgeCluster'
+       - - 'DeleteFabricProfile'
+       - - 'DeleteEdgeNode'
+
+   DeleteEdgeCluster: &DELETE_EDGE_CLUSTER
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       deleteedgecluster: "nsxmanager.[1].edgecluster.[-1]"
+
+   DeleteEdgeNode: &DELETE_EDGE_NODE
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       deleteedgenode: "nsxmanager.[1].edgenode.[-1]"
+
+
+######################################################################################
+# END OF WORKLOADS RELATED TO ACTIVE FAILOVER
+######################################################################################
+
+####################################################################
+# WORKLOADS REALTED TO TIER0-TIER1-BGP
+####################################################################
+
+   CLI_Show_Configuration_BGP: &CLI_SHOW_CONFIGURATION_BGP
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       sleepbetweenworkloads: "30"
+       execution_type: 'cli'
+       get_configuration_bgp:
+           'bgp[?]contain_once':
+             'gracefulrestart[?]boolean': 'False'
+             'localas[?]equal_to': '100'
+             'enabled[?]boolean': 'True'
+             'neighbors[?]contain_once':
+               - 'holddowntimer[?]equal_to': '180'
+                 'ipaddress[?]equal_to': '192.168.50.100'
+                 'keepalivetimer[?]equal_to': '60'
+                 'remoteas[?]equal_to': '200'
+                 'srcipaddress[?]equal_to': '192.168.50.1'
+                 'name[?]equal_to': 'bgp-neighbour-1'
+                 'weight[?]equal_to': '60'
+
+   CLI_Show_IP_Route_BGP: &CLI_SHOW_IP_ROUTE_BGP
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]contain_once':
+               - code: 'S'
+                 network: '192.168.60.0/24'
+                 nexthop: '169.0.0.1'
+                 via: 'via'
+               - code: 'C'
+                 network: '192.168.50.0/24'
+                 nexthop: '192.168.50.1'
+               - code: 'B'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+               - code: 'S'
+                 network: '192.168.70.0/24'
+                 nexthop: '169.0.0.1'
+                 via: 'via'
+####################################################################
+# END WORKLOADS REALTED TO TIER0-TIER1-BGP
+####################################################################
+
+####################################################################
+# EDGE deployment template
+####################################################################
+   EdgeTemplate: &EDGE_TEMPLATE
+      'username' : 'admin'
+      'password' : 'C@shc0w12345'
+      # build for deploying nsx edge
+      'build': 'ob-2488128'     #RTQA11#C2
+      'edgetype': 'compact'
+      # esx host ip
+      'management_network': 'VM Network'
+      'uplink_network': 'VM Network'
+      'internal_network': 'VM Network'
+      'installtype': 'nested'
+      'memory':
+          'size': '4096'
+      'cpus':
+          'cores': '2'
+
+   DeployNSXEdge1: &DEPLOY_NSX_EDGE_1
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       nsxedge:
+           '[1]':
+               'esx': 'esx.[1]'
+               <<: *EDGE_TEMPLATE
+
+   DeployNSXEdge2: &DEPLOY_NSX_EDGE_2
+       Type: 'Root'
+       TestNode: 'root.[1]'
+       nsxedge:
+           '[2]':
+               'esx': 'esx.[2]'
+               <<: *EDGE_TEMPLATE
+#####################################################################
+#  End of Edge Template
+#####################################################################
+
+
+#-----------------------------------------------------------------
+#  PowerON and PowerOff SR's operations
+#-----------------------------------------------------------------
+   PowerOffSR1: &POWER_OFF_SR1
+       sleepbetweenworkloads: "180" # have to put this because it takes time to start traffic for parallel operations
+       Type: VM
+       TestVM: 'nsxedge.[1]'
+       vmstate: poweroff
+
+   PowerOffSR2: &POWER_OFF_SR2
+       sleepbetweenworkloads: "180" # have to put this because it takes time to start traffic for parallel operations
+       Type: VM
+       TestVM: 'nsxedge.[2]'
+       vmstate: poweroff
+
+   PowerONSR1: &POWER_ON_SR1
+       Type: VM
+       TestVM: 'nsxedge.[1]'
+       vmstate: poweron
+
+   PowerONSR2: &POWER_ON_SR2
+       Type: VM
+       TestVM: 'nsxedge.[2]'
+       vmstate: poweron
+
+
+#-----------------------------------------------------------------
+#  ECMP Related Operations
+#-----------------------------------------------------------------
+   Create_LogicalPorts_ECMP: &CREATE_LOGICALPORT_ECMP
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       sleepbetweenworkloads: "10"
+       logicalport:
+           '[1]':
+               switch_id: nsxmanager.[1].logicalswitch.[1]
+               name: 'logicalport1-on-logicalswitch1'
+               admin_state: UP
+           '[2]':
+               switch_id: nsxmanager.[1].logicalswitch.[1]
+               name: 'logicalport2-on-logicalswitch1'
+               admin_state: UP
+           '[4]':
+               switch_id: nsxmanager.[1].logicalswitch.[4]
+               name: 'logicalport4-on-logicalswitch4'
+               admin_state: UP
+
+   AddBGPNeighboursTier0_ECMP: &ADD_BGP_NEIGHBOURS_TIER0_ECMP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrbgp:
+           '[1]':
+               bgpenabled: 'true'
+               localas: 100
+               gracefulrestart: 'false'
+               bgpneighbours:
+                   - name: 'bgp-neighbour-1'
+                     summary: 'BGP Neighbour 1'
+                     ipaddress: '192.168.50.100'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+                   - name: 'bgp-neighbour-2'
+                     summary: 'BGP Neighbour 2'
+                     ipaddress: '192.168.50.101'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+
+   IncreaseWeightBGPNeighboursTier0_ECMP: &INCREASE_WEIGHT_BGP_NEIGHBOURS_TIER0_ECMP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrbgp:
+           '[1]':
+               bgpenabled: 'true'
+               localas: 100
+               gracefulrestart: 'false'
+               bgpneighbours:
+                   - name: 'bgp-neighbour-1'
+                     summary: 'BGP Neighbour 1'
+                     ipaddress: '192.168.50.100'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 65   # Increase the weight
+                   - name: 'bgp-neighbour-2'
+                     summary: 'BGP Neighbour 2'
+                     ipaddress: '192.168.50.101'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+
+   DecreaseWeightBGPNeighboursTier0_ECMP: &DECREASE_WEIGHT_BGP_NEIGHBOURS_TIER0_ECMP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrbgp:
+           '[1]':
+               bgpenabled: 'true'
+               localas: 100
+               gracefulrestart: 'false'
+               bgpneighbours:
+                   - name: 'bgp-neighbour-1'
+                     summary: 'BGP Neighbour 1'
+                     ipaddress: '192.168.50.100'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 50   # Decrease the weight
+                   - name: 'bgp-neighbour-2'
+                     summary: 'BGP Neighbour 2'
+                     ipaddress: '192.168.50.101'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+
+   RevertChangedBGPNeighboursTier0_ECMP: &REVERT_CHANGED_BGP_NEIGHBOURS_TIER0_ECMP
+       <<: *ADD_BGP_NEIGHBOURS_TIER0_ECMP
+
+   ChangeBGPNeighboursTier0_ECMP: &CHANGE_BGP_NEIGHBOURS_TIER0_ECMP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrbgp:
+           '[1]':
+               bgpenabled: 'true'
+               localas: 100
+               gracefulrestart: 'false'
+               bgpneighbours:
+                   - name: 'bgp-neighbour-1'
+                     summary: 'BGP Neighbour 1'
+                     ipaddress: '192.168.50.102' # changing the 192.168.50.100 to 192.168.50.102 which is non-existant
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+                   - name: 'bgp-neighbour-2'
+                     summary: 'BGP Neighbour 2'
+                     ipaddress: '192.168.50.101'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+
+   ChangeBGPNeighboursTier0_SR2_ECMP: &CHANGE_BGP_NEIGHBOURS_TIER0_SR2_ECMP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrbgp:
+           '[1]':
+               bgpenabled: 'true'
+               localas: 100
+               gracefulrestart: 'false'
+               bgpneighbours:
+                   - name: 'bgp-neighbour-1'
+                     summary: 'BGP Neighbour 1'
+                     ipaddress: '192.168.50.100'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+                   - name: 'bgp-neighbour-2'
+                     summary: 'BGP Neighbour 2'
+                     ipaddress: '192.168.50.101'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+                   - name: 'bgp-neighbour-3'
+                     summary: 'BGP Neighbour 3'
+                     ipaddress: '192.168.50.102' # changing the 192.168.50.100 to 192.168.50.102 which is non-existant
+                     source: '192.168.50.2'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+                   - name: 'bgp-neighbour-4'
+                     summary: 'BGP Neighbour 4'
+                     ipaddress: '192.168.50.103' # changing the 192.168.50.101 to 192.168.50.103 which is non-existant
+                     source: '192.168.50.2'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+
+   UpdateBGPNeighboursTier0_ECMP: &UPDATE_BGP_NEIGHBOURS_TIER0_ECMP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrbgp:
+           '[1]':
+               bgpenabled: 'true'
+               localas: 100
+               gracefulrestart: 'false'
+               bgpneighbours:
+                   - name: 'bgp-neighbour-1'
+                     summary: 'BGP Neighbour 1'
+                     ipaddress: '192.168.50.100'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+                   - name: 'bgp-neighbour-2'
+                     summary: 'BGP Neighbour 2'
+                     ipaddress: '192.168.50.101'
+                     source: '192.168.50.1'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+                   - name: 'bgp-neighbour-3'
+                     summary: 'BGP Neighbour 3'
+                     ipaddress: '192.168.50.100'
+                     source: '192.168.50.2'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+                   - name: 'bgp-neighbour-4'
+                     summary: 'BGP Neighbour 4'
+                     ipaddress: '192.168.50.101'
+                     source: '192.168.50.2'
+                     remoteas: 200
+                     keepalivetimer: 60
+                     holddowntimer: 180
+                     weight: 60
+
+   CheckEdgeClusterStatusStandByTemplate: &CHECK_EDGECLUSTER_STATUS_STANDBY_TEMPLATE
+       Type: Gateway
+       sleepbetweenworkloads: "30"
+       execution_type: 'cli'
+       get_cluster_status:
+           ha_status[?]equal_to: 'Standby'
+
+   VerifyEdgeClusterStandbyStatus_SR2: &VERIFY_EDGECLUSTER_STANDBY_STATUS_SR2
+       <<: *CHECK_EDGECLUSTER_STATUS_STANDBY_TEMPLATE
+       TestGateway: 'nsxedge.[2]'
+
+   CheckEdgeClusterStatusTemplate: &CHECK_EDGECLUSTER_STATUS_TEMPLATE
+       Type: Gateway
+       sleepbetweenworkloads: "30"
+       execution_type: 'cli'
+       get_cluster_status:
+           ha_status[?]equal_to: 'Active'
+           routing_status[?]equal_to: 'Up'
+
+   VerifyEdgeClusterStatus_SR2: &VERIFY_EDGECLUSTER_STATUS_SR2
+       <<: *CHECK_EDGECLUSTER_STATUS_TEMPLATE
+       TestGateway: 'nsxedge.[2]'
+
+   VerifyEdgeClusterStatus_SR1: &VERIFY_EDGECLUSTER_STATUS_SR1
+       <<: *CHECK_EDGECLUSTER_STATUS_TEMPLATE
+       TestGateway: 'nsxedge.[1]'
+
+   Show_Configuration_BGP_SR1_ECMP_Increase_Weight: &SHOW_CONFIGURATION_BGP_SR1_ECMP_INCREASE_WEIGHT
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       sleepbetweenworkloads: "30"
+       execution_type: 'cli'
+       get_configuration_bgp:
+           'bgp[?]contain_once':
+             'gracefulrestart[?]boolean': 'False'
+             'localas[?]equal_to': '100'
+             'enabled[?]boolean': 'True'
+             'neighbors[?]contain_once':
+               - 'holddowntimer': '180'
+                 'ipaddress': '192.168.50.100'
+                 'keepalivetimer': '60'
+                 'remoteas': '200'
+                 'srcipaddress': '192.168.50.1'
+                 'name': 'bgp-neighbour-1'
+                 'weight': '65' # check for increase weight
+               - 'holddowntimer': '180'
+                 'ipaddress': '192.168.50.101'
+                 'keepalivetimer': '60'
+                 'remoteas': '200'
+                 'srcipaddress': '192.168.50.1'
+                 'name': 'bgp-neighbour-2'
+                 'weight': '60'
+
+   Show_Configuration_BGP_SR1_ECMP_Decrease_Weight: &SHOW_CONFIGURATION_BGP_SR1_ECMP_DECREASE_WEIGHT
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       sleepbetweenworkloads: "30"
+       execution_type: 'cli'
+       get_configuration_bgp:
+           'bgp[?]contain_once':
+             'gracefulrestart[?]boolean': 'False'
+             'localas[?]equal_to': '100'
+             'enabled[?]boolean': 'True'
+             'neighbors[?]contain_once':
+               - 'holddowntimer': '180'
+                 'ipaddress': '192.168.50.100'
+                 'keepalivetimer': '60'
+                 'remoteas': '200'
+                 'srcipaddress': '192.168.50.1'
+                 'name': 'bgp-neighbour-1'
+                 'weight': '50'  # Check for decrease weight
+               - 'holddowntimer': '180'
+                 'ipaddress': '192.168.50.101'
+                 'keepalivetimer': '60'
+                 'remoteas': '200'
+                 'srcipaddress': '192.168.50.1'
+                 'name': 'bgp-neighbour-2'
+                 'weight': '60'
+
+   Show_Config_BGP_Template: &SHOW_CONFIG_BGP_TEMPLATE
+       Type: Gateway
+       sleepbetweenworkloads: "3"
+       execution_type: 'cli'
+       get_configuration_bgp:
+           'bgp[?]contain_once':
+             'gracefulrestart[?]boolean': 'False'
+             'localas[?]equal_to': '100'
+             'enabled[?]boolean': 'True'
+             'neighbors[?]contain_once':
+               - 'holddowntimer': '180'
+                 'ipaddress': '192.168.50.100'
+                 'keepalivetimer': '60'
+                 'remoteas': '200'
+                 'srcipaddress': '192.168.50.1'
+                 'name': 'bgp-neighbour-1'
+                 'weight': '60'
+               - 'holddowntimer': '180'
+                 'ipaddress': '192.168.50.101'
+                 'keepalivetimer': '60'
+                 'remoteas': '200'
+                 'srcipaddress': '192.168.50.1'
+                 'name': 'bgp-neighbour-2'
+                 'weight': '60'
+
+   CLI_Show_Configuration_BGP_SR1_ECMP: &CLI_SHOW_CONFIGURATION_BGP_SR1_ECMP
+       <<: *SHOW_CONFIG_BGP_TEMPLATE
+       TestGateway: 'nsxedge.[1]'
+
+   CLI_Show_Configuration_BGP_SR2_ECMP: &CLI_SHOW_CONFIGURATION_BGP_SR2_ECMP
+       <<: *SHOW_CONFIG_BGP_TEMPLATE
+       TestGateway: 'nsxedge.[2]'
+
+   Show_IP_Route_SR1_ECMP_Best_Route_After_Increased_Weight: &SHOW_IP_ROUTE_SR1_ECMP_BEST_ROUTE_AFTER_INCREASED_WEIGHT
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]not_contains':
+               - code: 'B'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.101'
+                 via: 'via'
+
+   Show_IP_Forwarding_SR1_ECMP_Best_Route_After_Increased_Weight: &SHOW_IP_FORWARDING_SR1_ECMP_BEST_ROUTE_AFTER_INCREASED_WEIGHT
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       table_name: 'forwarding'
+       get_ip:
+           'table[?]not_contains':
+               - code: 'R>*'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.101'
+                 via: 'via'
+                 vnicname: 'vNic_1'
+
+   Show_IP_Route_SR1_ECMP_Best_Route_After_Decreased_Weight: &SHOW_IP_ROUTE_SR1_ECMP_BEST_ROUTE_AFTER_DECREASED_WEIGHT
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]not_contains':
+               - code: 'B'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+
+   Show_IP_Forwarding_SR1_ECMP_Best_Route_After_Decreased_Weight: &SHOW_IP_FORWARDING_SR1_ECMP_BEST_ROUTE_AFTER_DECREASED_WEIGHT
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       table_name: 'forwarding'
+       get_ip:
+           'table[?]not_contains':
+               - code: 'R>*'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+                 vnicname: 'vNic_1'
+
+   Show_IP_RouteTemplate_ECMP: &SHOW_IP_ROUTE_TEMPLATE_ECMP
+       Type: Gateway
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]contain_once':
+               - code: 'B'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+               - code: 'B'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.101'
+                 via: 'via'
+
+   Show_IP_Route_SR1_ECMP: &SHOW_IP_ROUTE_SR1_ECMP
+       <<: *SHOW_IP_ROUTE_TEMPLATE_ECMP
+       TestGateway: 'nsxedge.[1]'
+
+   Show_IP_Route_SR2_ECMP: &SHOW_IP_ROUTE_SR2_ECMP
+       <<: *SHOW_IP_ROUTE_TEMPLATE_ECMP
+       TestGateway: 'nsxedge.[2]'
+
+   Show_IP_Forwarding_Template_ECMP: &SHOW_IP_FORWARDING_TEMPLATE_ECMP
+       Type: Gateway
+       execution_type: 'cli'
+       table_name: 'forwarding'
+       get_ip:
+           'table[?]contain_once':
+               - code: 'R>*'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+                 vnicname: 'vNic_1'
+               - code: 'R>*'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.101'
+                 via: 'via'
+                 vnicname: 'vNic_1'
+
+
+   Show_IP_Forwarding_SR1_ECMP: &SHOW_IP_FORWARDING_SR1_ECMP
+       <<: *SHOW_IP_FORWARDING_TEMPLATE_ECMP
+       TestGateway: 'nsxedge.[1]'
+
+   Show_IP_Forwarding_SR2_ECMP: &SHOW_IP_FORWARDING_SR2_ECMP
+       <<: *SHOW_IP_FORWARDING_TEMPLATE_ECMP
+       TestGateway: 'nsxedge.[2]'
+
+   AfterChange_Show_IP_Route_SR2_ECMP: &AFTERCHANGE_SHOW_IP_ROUTE_SR2_ECMP
+       Type: Gateway
+       TestGateway: 'nsxedge.[2]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]not_contains':
+               - code: 'B'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+               - code: 'B'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.101'
+                 via: 'via'
+
+   AfterChange_Show_IP_Route_SR1_ECMP: &AFTERCHANGE_SHOW_IP_ROUTE_SR1_ECMP
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]not_contains':
+               - code: 'B'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+
+   AfterChange_Show_IP_Forwarding_SR1_ECMP: &AFTERCHANGE_SHOW_IP_FORWARDING_SR1_ECMP
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       table_name: 'forwarding'
+       get_ip:
+           'table[?]not_contains':
+               - code: 'R>*'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.100'
+                 via: 'via'
+                 vnicname: 'vNic_1'
+
+   Add_Static_Routes_SR1_ECMP: &ADD_STATIC_ROUTES_SR1_ECMP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrstaticroutes:
+           '[1]':
+               staticroutes:
+                   - name: 'static-route-1-SR-1'
+                     summary: 'Static route 1 for SR-1'
+                     next_hops:
+                        - '192.168.50.100'
+                     network: '192.168.40.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+                   - name: 'static-route-2-SR-1'
+                     summary: 'Static route 2 for SR-1'
+                     next_hops:
+                        - '192.168.50.101'
+                     network: '192.168.40.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+
+   Update_Static_Routes_SR2_ECMP: &Update_STATIC_ROUTES_SR2_ECMP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrstaticroutes:
+           '[1]':
+               staticroutes:
+                   - name: 'static-route-1-SR-1'
+                     summary: 'Static route 1 for SR-1'
+                     next_hops:
+                        - '192.168.50.100'
+                     network: '192.168.40.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+                   - name: 'static-route-2-SR-1'
+                     summary: 'Static route 2 for SR-1'
+                     next_hops:
+                        - '192.168.50.101'
+                     network: '192.168.40.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+                   - name: 'static-route-1-SR-2'
+                     summary: 'Static route 1 for SR-2'
+                     next_hops:
+                        - '192.168.50.100'
+                     network: '192.168.40.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[2]->id_"
+                   - name: 'static-route-2-SR-2'
+                     summary: 'Static route 2 for SR-2'
+                     next_hops:
+                        - '192.168.50.101'
+                     network: '192.168.40.0/24'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[2]->id_"
+
+   Add_Default_Static_Routes_SR1_ECMP: &ADD_DEFAULT_STATIC_ROUTES_SR1_ECMP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrstaticroutes:
+           '[1]':
+               staticroutes:
+                   - name: 'static-route-1-SR-1'
+                     summary: 'Static route 1 for SR-1'
+                     next_hops:
+                        - '192.168.50.100'
+                     network: '0.0.0.0/0'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+                   - name: 'static-route-2-SR-1'
+                     summary: 'Static route 2 for SR-1'
+                     next_hops:
+                        - '192.168.50.101'
+                     network: '0.0.0.0/0'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+
+
+   Delete_Static_Routes_For_R2_From_SR1_ECMP: &DELETE_STATIC_ROUTES_FOR_R2_FROM_SR1_ECMP
+       Type: "Router"
+       TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+       lrstaticroutes:
+           '[1]':
+               staticroutes:
+                   - name: 'static-route-1-SR-1'
+                     summary: 'Static route 1 for SR-1'
+                     next_hops:
+                        - '192.168.50.100'
+                     network: '0.0.0.0/0'
+                     lr_port_id: "nsxmanager.[1].logicalrouteruplinkport.[1]->id_"
+
+   After_Show_IP_Route_StaticRoutes_SR1_ECMP: &AFTER_DELETION_CLI_SHOW_IP_ROUTE_STATICROUTES_SR1_ECMP
+       Type: Gateway
+       TestGateway: 'nsxedge.[1]'
+       execution_type: 'cli'
+       sleepbetweenworkloads: "30"
+       get_ip_route:
+           'table[?]not_contains':
+               - code: 'S'
+                 network: '192.168.40.0/24'
+                 nexthop: '192.168.50.101'
+                 via: 'via'
+
+   DiscoverEdgeVnics_SR2: &DISCOVER_EDGE_VNIC_SR2
+       Type:  VM
+       TestVM: 'nsxedge.[2]'
+       vnic:
+          '[1-3]':
+             discover: 'true'
+
+   DisconnectvNic3_InternalTLS_SR2: &DISCONNECT_VNIC3_INTERNALTLS_SR2
+       Type:  NetAdapter
+       TestAdapter: 'nsxedge.[2].vnic.[3]'
+       reconfigure: 'true'
+       connected:         0
+       startconnected:    0
+       allowguestcontrol: 0
+
+   ConnectvNic3_InternalTLS_SR2: &CONNECT_VNIC3_INTERNALTLS_SR2
+       Type:  NetAdapter
+       TestAdapter: 'nsxedge.[2].vnic.[3]'
+       reconfigure: 'true'
+       connected:         1
+       startconnected:    1
+       allowguestcontrol: 1
+
+   ConfigureIPAllVMVNics_ECMP: &CONFIGURE_IP_ALL_VM_VNICS_ECMP
+       - - 'ConfigureVM4Vnic1IP_192_168_70_20'
+       - - 'ConfigureVM4Vnic1IP_192_168_70_21'
+       - - 'ConfigureVM6Vnic1IP_192_168_40_20'
+       - - 'ConfigureVM6Vnic1IP_192_168_40_21'
+
+   VifAttachmentAllVMs_ECMP: &VIFATTACHMENTALLVMS_ECMP
+      - - 'Vif_Attachment_Vm4_192_168_70_20'
+      - - 'Vif_Attachment_Vm4_192_168_70_21'
+      - - 'Vif_Attachment_Vm6_192_168_40_20'
+      - - 'Vif_Attachment_Vm6_192_168_40_21'
+
+   PowerOnAllVms_ECMP: &POWER_ON_ALL_VMS_ECMP
+      - - 'PowerOnVM4_192_168_70_20'
+      - - 'PowerOnVM4_192_168_70_21'
+      - - 'PowerOnVM6_192_168_40_20'
+      - - 'PowerOnVM6_192_168_40_21'
+
+   PowerOffAllVms_ECMP: &POWER_OFF_ALL_VMS_ECMP
+      - - 'PowerOffVM6_192_168_40_20'
+      - - 'PowerOffVM6_192_168_40_21'
+      - - 'PowerOffVM4_192_168_70_20'
+      - - 'PowerOffVM4_192_168_70_21'
+
+   AddRouteAllVMs_ECMP: &ADD_ROUTE_ALL_VMS_ECMP
+       - - 'AddRoute1ToVM4_192_168_70_20'
+       - - 'AddRoute1ToVM4_192_168_70_21'
+       - - 'AddRoute1ToVM6_192_168_40_20'
+       - - 'AddRoute1ToVM6_192_168_40_21'
+
+   DeleteTestVnics_ECMP: &DELETE_TEST_VNICS_ECMP
+       - - 'DeleteVnic4_192_168_70_20'
+       - - 'DeleteVnic4_192_168_70_21'
+       - - 'DeleteVnic6_192_168_40_20'
+       - - 'DeleteVnic6_192_168_40_21'
+
+   DeleteUplinkPort_SR2: &DELETEUPLINKPORT_SR2
+       Type : "NSX"
+       TestNSX : "nsxmanager.[1]"
+       deletelogicalrouteruplinkport: "nsxmanager.[1].logicalrouteruplinkport.[2]"
+
+   UnRegister_SR2: &UNREGISTER_SR2
+       Type: "NSX"
+       TestNSX: "nsxmanager.[1]"
+       deleteedgenode: "nsxmanager.[1].edgenode.[2]"
+
+   DeleteSR2: &DELETE_SR2
+       Type: Root
+       TestNode: 'root.[1]'
+       deletevm: 'nsxedge.[2]'
+#-----------------------------------------------------------------
+#  ECMP Related Operations END
+#-----------------------------------------------------------------
+
+#---------------------------------------------------------------
+# DELETE VNIC's
+#---------------------------------------------------------------
+   DeleteVnic4_192_168_70_20: &DELETEVNIC4_192_168_70_20
+       Type: VM
+       TestVM: 'vm.[4]'
+       deletevnic: 'vm.[4].vnic.[1]'
+
+   DeleteVnic4_192_168_70_21: &DELETEVNIC4_192_168_70_21
+       Type: VM
+       TestVM: 'vm.[42]'
+       deletevnic: 'vm.[42].vnic.[1]'
+
+   DeleteVnic6_192_168_40_20: &DELETEVNIC6_192_168_40_20
+       Type: VM
+       TestVM: 'vm.[6]'
+       deletevnic: 'vm.[6].vnic.[1]'
+
+   DeleteVnic6_192_168_40_21: &DELETEVNIC6_192_168_40_21
+       Type: VM
+       TestVM: 'vm.[62]'
+       deletevnic: 'vm.[62].vnic.[1]'
+
+
+#---------------------------------------------------------------
+# VM POWER ON RELATED OPERATIONS
+#---------------------------------------------------------------
+   PowerOnVM3_192_168_60_20: &POWERONVM3_192_168_60_20
+      Type: VM
+      TestVM: 'vm.[3]'
+      vmstate: poweron
+
+   PowerOnVM6_192_168_40_20: &POWERONVM6_192_168_40_20
+      Type: VM
+      TestVM: 'vm.[6]'
+      vmstate: poweron
+
+   PowerOnVM6_192_168_40_21: &POWERONVM6_192_168_40_21
+      Type: VM
+      TestVM: 'vm.[62]'
+      vmstate: poweron
+
+   PowerOnVM4_192_168_70_20: &POWERONVM4_192_168_70_20
+      Type: VM
+      TestVM: 'vm.[4]'
+      vmstate: poweron
+
+   PowerOnVM4_192_168_70_21: &POWERONVM4_192_168_70_21
+      Type: VM
+      TestVM: 'vm.[42]'
+      vmstate: poweron
+
+   PowerOnVM5_192_168_71_20: &POWERONVM5_192_168_71_20
+      Type: VM
+      TestVM: 'vm.[5]'
+      vmstate: poweron
+
+
+#---------------------------------------------------------------
+# VM POWER OFF RELATED OPERATIONS
+#---------------------------------------------------------------
+   PowerOffVM3_192_168_60_20: &POWEROFFVM3_192_168_60_20
+      Type: VM
+      TestVM: 'vm.[3]'
+      vmstate: poweroff
+
+   PowerOffVM6_192_168_40_20: &POWEROFFVM6_192_168_40_20
+      Type: VM
+      TestVM: 'vm.[6]'
+      vmstate: poweroff
+
+   PowerOffVM6_192_168_40_21: &POWEROFFVM6_192_168_40_21
+      Type: VM
+      TestVM: 'vm.[62]'
+      vmstate: poweroff
+
+   PowerOffVM4_192_168_70_20: &POWEROFFVM4_192_168_70_20
+      Type: VM
+      TestVM: 'vm.[4]'
+      vmstate: poweroff
+
+   PowerOffVM4_192_168_70_21: &POWEROFFVM4_192_168_70_21
+      Type: VM
+      TestVM: 'vm.[42]'
+      vmstate: poweroff
+
+   PowerOffVM5_192_168_71_20: &POWEROFFVM5_192_168_71_20
+      Type: VM
+      TestVM: 'vm.[5]'
+      vmstate: poweroff
+
+
+#---------------------------------------------------------------
+# VM CONFIGURING IP On Vnic's
+#---------------------------------------------------------------
+   ConfigureVM3Vnic1IP_192_168_60_20: &CONFIGURE_VM3_VNIC1_IP_192_168_60_20
+       Type: NetAdapter
+       TestAdapter: 'vm.[3].vnic.[1]'
+       ipv4:       '192.168.60.20'
+       netmask:    "255.255.255.0"
+
+   ConfigureVM4Vnic1IP_192_168_70_20: &CONFIGURE_VM4_VNIC1_IP_192_168_70_20
+       Type: NetAdapter
+       TestAdapter: 'vm.[4].vnic.[1]'
+       ipv4:       '192.168.70.20'
+       netmask:    "255.255.255.0"
+
+   ConfigureVM4Vnic1IP_192_168_70_21: &CONFIGURE_VM4_VNIC1_IP_192_168_70_21
+       Type: NetAdapter
+       TestAdapter: 'vm.[42].vnic.[1]'
+       ipv4:       '192.168.70.21'
+       netmask:    "255.255.255.0"
+
+   ConfigureVM5Vnic1IP_192_168_71_20: &CONFIGURE_VM5_VNIC1_IP_192_168_71_20
+       Type: NetAdapter
+       TestAdapter: 'vm.[5].vnic.[1]'
+       ipv4:       '192.168.71.20'
+       netmask:    "255.255.255.0"
+
+
+   ConfigureVM6Vnic1IP_192_168_40_20: &CONFIGURE_VM6_VNIC1_IP_192_168_40_20
+       Type: NetAdapter
+       TestAdapter: 'vm.[6].vnic.[1]'
+       ipv4:       '192.168.40.20'
+       netmask:    "255.255.255.0"
+
+   ConfigureVM6Vnic1IP_192_168_40_21: &CONFIGURE_VM6_VNIC1_IP_192_168_40_21
+       Type: NetAdapter
+       TestAdapter: 'vm.[62].vnic.[1]'
+       ipv4:       '192.168.40.21'
+       netmask:    "255.255.255.0"
+
+
+#---------------------------------------------------------------
+# ROUTE REALATED OPERARTIONS
+#---------------------------------------------------------------
+   AddRoute1ToVM3_192_168_60_20: &ADDROUTE1TOVM3_192_168_60_20
+       Type:        "NetAdapter"
+       Testadapter: "vm.[3].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0"
+       gateway:     "192.168.60.1"
+
+   AddRoute1ToVM4_192_168_70_20: &ADDROUTE1TOVM4_192_168_70_20
+       Type:        "NetAdapter"
+       Testadapter: "vm.[4].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0"
+       gateway:     "192.168.70.1"
+
+   AddRoute1ToVM4_192_168_70_21: &ADDROUTE1TOVM4_192_168_70_21
+       Type:        "NetAdapter"
+       Testadapter: "vm.[42].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0"
+       gateway:     "192.168.70.1"
+
+   AddRoute1ToVM5_192_168_71_20: &ADDROUTE1TOVM5_192_168_71_20
+       Type:        "NetAdapter"
+       Testadapter: "vm.[5].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.40.0"
+       gateway:     "192.168.71.1"
+
+
+   AddRoute1ToVM6_192_168_40_20: &ADDROUTE1TOVM6_192_168_40_20
+       Type:        "NetAdapter"
+       Testadapter: "vm.[6].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.60.0, 192.168.70.0, 192.168.71.0"
+       gateway:     "192.168.40.1"
+
+   AddRoute1ToVM6_192_168_40_21: &ADDROUTE1TOVM6_192_168_40_21
+       Type:        "NetAdapter"
+       Testadapter: "vm.[62].vnic.[1]"
+       netmask:     "255.255.255.0"
+       route:       "add"
+       network:     "192.168.70.0, 192.168.71.0"
+       gateway:     "192.168.40.2"
+
+
+#---------------------------------------------------------------
+# VIF ATTACHMENTS TO VM's
+#---------------------------------------------------------------
+   Vif_Attachment_Vm3_192_168_60_20: &VIF_ATTACHMENT_VM3_192_168_60_20
+       Type: VM
+       TestVM: 'vm.[3]'
+       vnic:
+          '[1]':
+              driver: "e1000"
+              # TODO(gjayavelu): use network instead of portgroup
+              portgroup: "nsxmanager.[1].logicalswitch.[3]"
+              connected: 1
+              startconnected: 1
+
+   Vif_Attachment_Vm4_192_168_70_20: &VIF_ATTACHMENT_VM4_192_168_70_20
+       Type: VM
+       TestVM: 'vm.[4]'
+       vnic:
+          '[1]':
+              driver: "e1000"
+              # TODO(gjayavelu): use network instead of portgroup
+              portgroup: "nsxmanager.[1].logicalswitch.[4]"
+              connected: 1
+              startconnected: 1
+
+   Vif_Attachment_Vm4_192_168_70_21: &VIF_ATTACHMENT_VM4_192_168_70_21
+       Type: VM
+       TestVM: 'vm.[42]'
+       vnic:
+          '[1]':
+              driver: "e1000"
+              # TODO(gjayavelu): use network instead of portgroup
+              portgroup: "nsxmanager.[1].logicalswitch.[4]"
+              connected: 1
+              startconnected: 1
+
+   Vif_Attachment_Vm5_192_168_71_20: &VIF_ATTACHMENT_VM5_192_168_71_20
+       Type: VM
+       TestVM: 'vm.[5]'
+       vnic:
+          '[1]':
+              driver: "e1000"
+              # TODO(gjayavelu): use network instead of portgroup
+              portgroup: "nsxmanager.[1].logicalswitch.[5]"
+              connected: 1
+              startconnected: 1
+
+   Vif_Attachment_Vm6_192_168_40_20: &VIF_ATTACHMENT_VM6_192_168_40_20
+       Type: VM
+       TestVM: 'vm.[6]'
+       vnic:
+          '[1]':
+              driver: "e1000"
+              # TODO(gjayavelu): use network instead of portgroup
+              portgroup: "nsxmanager.[1].logicalswitch.[6]"
+              connected: 1
+              startconnected: 1
+
+   Vif_Attachment_Vm6_192_168_40_21: &VIF_ATTACHMENT_VM6_192_168_40_21
+       Type: VM
+       TestVM: 'vm.[62]'
+       vnic:
+          '[1]':
+              driver: "e1000"
+              # TODO(gjayavelu): use network instead of portgroup
+              portgroup: "nsxmanager.[1].logicalswitch.[6]"
+              connected: 1
+              startconnected: 1
+
+#---------------------------------------------------------------
+# TRAFFIC BETWEEN VM's
+# check traffic between VM6 TO VM4: External Router to Tier1 VM
+#---------------------------------------------------------------
+   Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_Template: &TRAFFIC_VM6_192_168_40_20_TO_VM4_192_168_70_20_TEMPLATE
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[6].vnic.[1]"
+       SupportAdapter: "vm.[4].vnic.[1]"
+
+   Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_Parallel: &TRAFFIC_VM6_192_168_40_20_TO_VM4_192_168_70_20_PARALLEL
+       <<: *TRAFFIC_VM6_192_168_40_20_TO_VM4_192_168_70_20_TEMPLATE
+       TestDuration  : "200"
+
+   Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20: &TRAFFIC_VM6_192_168_40_20_TO_VM4_192_168_70_20
+       <<: *TRAFFIC_VM6_192_168_40_20_TO_VM4_192_168_70_20_TEMPLATE
+       TestDuration  : "20"
+
+   Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21_Template: &TRAFFIC_VM6_192_168_40_21_TO_VM4_192_168_70_21_TEMPLATE
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[62].vnic.[1]"
+       SupportAdapter: "vm.[42].vnic.[1]"
+
+   Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21: &TRAFFIC_VM6_192_168_40_21_TO_VM4_192_168_70_21
+       <<: *TRAFFIC_VM6_192_168_40_21_TO_VM4_192_168_70_21_TEMPLATE
+       TestDuration  : "20"
+
+   Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21_Parallel: &TRAFFIC_VM6_192_168_40_21_TO_VM4_192_168_70_21_PARALLEL
+       <<: *TRAFFIC_VM6_192_168_40_21_TO_VM4_192_168_70_21_TEMPLATE
+       TestDuration  : "200"
+
+   Traffic_VM6_192_168_40_20_To_VM3_192_168_60_20: &TRAFFIC_VM6_192_168_40_20_TO_VM3_192_168_60_20
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[6].vnic.[1]"
+       SupportAdapter: "vm.[3].vnic.[1]"
+       TestDuration  : "50"
+
+   Traffic_VM6_192_168_40_20_To_VM5_192_168_71_20: &TRAFFIC_VM6_192_168_40_20_To_VM5_192_168_71_20
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[6].vnic.[1]"
+       SupportAdapter: "vm.[5].vnic.[1]"
+       TestDuration  : "50"
+
+   Traffic_VM6_192_168_40_21_To_VM5_192_168_71_20: &Traffic_VM6_192_168_40_21_To_VM5_192_168_71_20
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[62].vnic.[1]"
+       SupportAdapter: "vm.[5].vnic.[1]"
+       TestDuration  : "50"
+
+   Traffic_VM6_192_168_40_21_To_VM4_192_168_70_20: &Traffic_VM6_192_168_40_21_To_VM4_192_168_70_20
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[62].vnic.[1]"
+       SupportAdapter: "vm.[4].vnic.[1]"
+       TestDuration  : "50"
+
+
+   Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_FAIL: &Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_FAIL
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[6].vnic.[1]"
+       SupportAdapter: "vm.[4].vnic.[1]"
+       TestDuration  : "10"
+       connectivitytest: '0'
+       ExpectedResult: 'FAIL'
+
+   Traffic_VM6_192_168_40_20_To_VM5_192_168_71_20_FAIL: &Traffic_VM6_192_168_40_20_To_VM5_192_168_71_20_FAIL
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[6].vnic.[1]"
+       SupportAdapter: "vm.[5].vnic.[1]"
+       TestDuration  : "50"
+       connectivitytest: '0'
+       ExpectedResult: 'FAIL'
+
+   Traffic_VM6_192_168_40_21_To_VM4_192_168_70_20_FAIL: &Traffic_VM6_192_168_40_21_To_VM4_192_168_70_20_FAIL
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[62].vnic.[1]"
+       SupportAdapter: "vm.[4].vnic.[1]"
+       TestDuration  : "50"
+       connectivitytest: '0'
+       ExpectedResult: 'FAIL'
+
+   Traffic_VM6_192_168_40_21_To_VM5_192_168_71_20_FAIL: &Traffic_VM6_192_168_40_21_To_VM5_192_168_71_20_FAIL
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[62].vnic.[1]"
+       SupportAdapter: "vm.[5].vnic.[1]"
+       TestDuration  : "50"
+       connectivitytest: '0'
+       ExpectedResult: 'FAIL'
+
+
+   Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21_FAIL: &TRAFFIC_VM6_192_168_40_21_TO_VM4_192_168_70_21_FAIL
+       Type          : "Traffic"
+       ToolName      : "ping"
+       TestAdapter   : "vm.[62].vnic.[1]"
+       SupportAdapter: "vm.[42].vnic.[1]"
+       TestDuration  : "10"
+       connectivitytest: '0'
+       ExpectedResult: 'FAIL'
+
+#---------------------------------------------------------------
+# VM DEPOLYMENT's
+#---------------------------------------------------------------
+   DeployVM1_192_168_50_20: &DEPLOYVM1_192_168_50_20
+       Type: Root
+       TestNode: 'root.[1]'
+       vm:
+         '[1]':
+            #template: 'RHEL-srv-5.6.0.9-32'
+            template: 'RHEL-srv-6.6.0.2-64'
+            host: 'esx.[1]'
+            vmstate: poweroff
+
+   DeployVM3_192_168_60_20: &DEPLOYVM3_192_168_60_20
+       Type: Root
+       TestNode: 'root.[1]'
+       vm:
+         '[3]':
+            #template: 'RHEL-srv-5.6.0.9-32'
+            template: 'RHEL-srv-6.6.0.2-64'
+            host: 'esx.[2]'
+            vmstate: poweroff
+
+   DeployVM4_192_168_70_20: &DEPLOYVM1_192_168_70_20
+       Type: Root
+       TestNode: 'root.[1]'
+       vm:
+         '[4]':
+            template: 'RHEL-srv-6.6.0.2-64'
+            host: 'esx.[1]'
+            vmstate: poweroff
+
+   DeployVM5_192_168_71_20: &DEPLOYVM5_192_168_71_20
+       Type: Root
+       TestNode: 'root.[1]'
+       vm:
+         '[5]':
+            template: 'RHEL-srv-6.6.0.2-64'
+            host: 'esx.[1]'
+            vmstate: poweroff
+
+   DeployVM6_192_168_40_20: &DEPLOYVM6_192_168_40_20
+       Type: Root
+       TestNode: 'root.[1]'
+       vm:
+         '[6]':
+            template: 'RHEL-srv-6.6.0.2-64'
+            host: 'esx.[1]'
+            vmstate: poweroff
+
+   DeployVM6_192_168_40_21: &DEPLOYVM6_192_168_40_21
+       Type: Root
+       TestNode: 'root.[1]'
+       vm:
+         '[62]':
+            template: 'RHEL-srv-6.6.0.2-64'
+            host: 'esx.[1]'
+            vmstate: poweroff

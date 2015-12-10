@@ -1,0 +1,1525 @@
+!include ../Clustering/MPCommonWorkloads.yaml
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+
+RunShowService:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "mbarve"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxsuite,CLI'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "CLI show services"
+    Summary: "Verify show services command"
+    Procedure: '1. Run show services command'
+    ExpectedResult: 'CLI should return all service names with its state'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        Sequence:
+             - ['SetServiceId']
+             - ['VerifyServices']
+
+        SetServiceId: *SET_SERVICE_ID
+
+        VerifyServices: *VERIFY_SERVICES
+
+StopStartRestartService:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxsuite,CLI'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "StopStartRestartService"
+    Summary: "Verify stop/start/restart service CLI"
+    Procedure: '1. Stop service
+                2. Verify that service is in stopped state
+                3. Start service
+                4. Verify that service is in running state
+                5. Restart running service
+                6. Verify that service is in running state
+                7. Stop service
+                8. Verify that service is in stopped state
+                9. Restart stopped service
+                10. Verify that service is in running state'
+    ExpectedResult: 'CLI should stop/start service'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+    WORKLOADS:
+        Sequence:
+             - ['SetServiceId']
+             - ['StopService']
+             - ['VerifyStoppedService']
+             - ['StartService']
+             - ['VerifyRunningService']
+             - ['RestartService']
+             - ['VerifyRunningService']
+             - ['StopService']
+             - ['VerifyStoppedService']
+             - ['RestartService']
+             - ['VerifyRunningService']
+
+        SetServiceId: *SET_SERVICE_ID
+
+        StopService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+                execution_type: 'cli'
+                state: 'stop'
+                service_name: 'ntp'
+
+        VerifyStoppedService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            execution_type: 'cli'
+            get_service_state:
+                'table[?]contain_once':
+                    - service_name: 'appmgmt'
+                      service_state: 'running'
+                    - service_name: 'httpd'
+                      service_state: 'running'
+                    - service_name: 'ntp'
+                      service_state: 'stopped'
+                    - service_name: 'proton'
+                      service_state: 'running'
+                    - service_name: 'rabbitmq'
+                      service_state: 'running'
+                    - service_name: 'snmp'
+                      service_state: 'running'
+                    - service_name: 'sshd'
+                      service_state: 'running'
+                    - service_name: 'syslog'
+                      service_state: 'running'
+
+        StartService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+                execution_type: 'cli'
+                state: 'start'
+                service_name: 'ntp'
+
+        VerifyRunningService: *VERIFY_SERVICES
+
+        RestartService:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            configure_service_state:
+                execution_type: 'cli'
+                state: 'restart'
+                service_name: 'ntp'
+
+RebootNSXManager:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "RebootNSXManager"
+    Summary: "Reboot NSX manager appliance"
+    Procedure: '1. Reboot NSX Manager appliance
+                2. After 120 seconds verify the NSX Manager services'
+    ExpectedResult: 'CLI should reboot the NSX Manager'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ["SetServiceId"]
+        - ["Reboot"]
+        - ["VerifyServicesAfterReboot"]
+
+      SetServiceId: *SET_SERVICE_ID
+
+      Reboot: *REBOOT
+
+      VerifyServicesAfterReboot:
+            <<: *VERIFY_SERVICES
+            sleepbetweenworkloads: 120
+
+ShowClockNSXManager:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "ShowClockNSXManager"
+    Summary: "Run and Verify NSX manager get clock CLI"
+    Procedure: '1. Run get clock NSX Manager CLI
+                2. Verify output with system date command'
+    ExpectedResult: 'get clock CLI should get executed and
+                    its output should match with system date command'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ['VerifyClockOutput']
+
+      VerifyClockOutput:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            read_clock_output:
+                'clock_difference[?]<': 5
+
+SetVerifyNSXManagerClock:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "SetVerifyNSXManagerClock"
+    Summary: "Set and Verify NSX manager clock"
+    Procedure: '1. Run clock set NSX Manager CLI with provided time
+                2. Use the same provided time to Verify the output and see that
+                 its having accetable time difference
+                3. Reboot nsxmanager to reset clock with current time
+                4. Verify NSXManager services after 2 mins to confirm reboot'
+    ExpectedResult: 'clock set CLI should set the given time and the new clock
+                    should be verified and have the acceptable time difference'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+          - ['SetServiceId']
+          - ['SetClock']
+          - ['VerifySetClock']
+          - ['Reboot']
+          - ['VerifyServicesAfterReboot']
+
+        SetServiceId: *SET_SERVICE_ID
+        SetClock: *SET_CLOCK
+        VerifySetClock: *VERIFY_SET_CLOCK
+        Reboot: *REBOOT
+        VerifyServicesAfterReboot:
+            <<: *VERIFY_SERVICES
+            sleepbetweenworkloads: 120
+
+VerifyListOfCommandsOnDefaultTerminal:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "dgargote"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "VerifyListOfCommandsOnDefaultTerminal"
+    Summary: "Execute list CLI on default terminal and verify output"
+    Procedure: '1. Execute list CLI on default terminal
+                2. Verify the listed CLI on default terminal
+                3. Execute list CLI on configured terminal
+                4. Verify the CLIs from configured terminal are not listed'
+    ExpectedResult: 'list CLI should list the commands of default terminal and not of configured terminal'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ['VerifyListOfCommandsOnDefaultTerminal']
+        - ['VerifyListOfCommandsOnDefaultTerminalForNonExistance']
+
+      VerifyListOfCommandsOnDefaultTerminal:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            terminal: 'false'
+            list_commands:
+                'table[?]contains':
+                    - command: 'configure terminal'
+                    - command: 'copy FILENAME URL'
+                    - command: 'copy URL FILENAME'
+                    - command: 'show clock'
+                    - command: 'show hostname'
+                    - command: 'show api certificate'
+                    - command: 'traceroute WORD'
+                    - command: 'traceroute ip WORD'
+
+      VerifyListOfCommandsOnDefaultTerminalForNonExistance:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            terminal: 'false'
+            list_commands:
+                'table[?]not_contains':
+                    - command: 'banner motd'
+                    - command: 'clock set HH:MM:SS DAY MONTH YEAR'
+                    - command: 'clock set HH:MM:SS MONTH DAY YEAR'
+                    - command: 'end'
+                    - command: 'reboot'
+                    - command: 'reboot force'
+                    - command: 'shutdown'
+                    - command: 'shutdown force'
+                    - command: 'username USERNAME password'
+                    - command: 'username USERNAME password PASSWORD'
+
+VerifyNSXManagerHelp:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "VerifyNSXManagerHelp"
+    Summary: "Run and Verify NSX manager Help CLI"
+    Procedure: '1. Run Help command on NSXManager
+                2. Verify output with string provided'
+    ExpectedResult: 'Help command should run and verified with the user
+                     provided string'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ['VerifyHelp']
+
+      VerifyHelp:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            content_type: 'help'
+            get_content:
+              'content[?]match': 'NSX CLI help is available'
+
+VerifyListOfProcesses:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "dgargote"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "VerifyListOfProcesses"
+    Summary: "Execute show process list CLIand verify output"
+    Procedure: '1. Execute show process list CLI
+                2. Verify currently running processes are getting listed'
+    ExpectedResult: 'Currently running processes should get listed'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ['SetProcessId']
+        - ['VerifyListOfProcesses']
+
+      SetProcessId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            process:
+              '[1]':
+                  map_object: true
+                  id_: 'all'
+
+      VerifyListOfProcesses:
+            Type: "Service"
+            TestService: "nsxmanager.[1].process.[1]"
+            execution_type: 'cli'
+            get_processes:
+                'result_count[?]>': 50
+                'results[?]contains':
+                    - process_name: 'init'
+                    - process_name: 'kthreadd'
+                    - process_name: 'java'
+                    - process_name: 'nsxcli_passwd'
+
+VerifyListOfLogFiles:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "dgargote"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "VerifyListOfLogFiles"
+    Summary: "Execute 'get log ?' CLI and verify output"
+    Procedure: '1. Execute get log ? CLI
+                2. Verify the listed log files'
+    ExpectedResult: 'Log files for CLI, API and GemFire should get listed'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ['VerifyListOfLogFiles']
+
+      VerifyListOfLogFiles:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            terminal: 'true'
+            list_log_files:
+                'file_count[?]equal_to': 8
+                'files[?]contains':
+                    - file_name: 'appmgmt.log'
+                    - file_name: 'auth.log'
+                    - file_name: 'gemfire.log'
+                    - file_name: 'httpd.log'
+                    - file_name: 'kern.log'
+                    - file_name: 'locator.log'
+                    - file_name: 'nsxapi.log'
+                    - file_name: 'syslog'
+
+VerifyShowLogFileNameCommand:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "dgargote"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "VerifyShowLogFileNameCommand"
+    Summary: "Execute show log filename command and verify output"
+    Procedure: '1. Execute CLI: show log filename(cli.log)
+                2. Verify output of log file'
+    ExpectedResult: 'Log file should show appropriate log contents'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ['ExecuteListCommand']
+        - ['VerifyLogFileContents_1']
+        - ['VerifyLogFileContents_2']
+
+      ExecuteListCommand:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            terminal: 'false'
+            list_commands:
+                'table[?]contains':
+                    - command: 'configure terminal'
+                    - command: 'copy FILENAME URL'
+                    - command: 'copy URL FILENAME'
+                    - command: 'show clock'
+                    - command: 'show hostname'
+                    - command: 'show api certificate'
+                    - command: 'traceroute WORD'
+                    - command: 'traceroute ip WORD'
+
+      VerifyLogFileContents_1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            content_type: 'log'
+            file_name: 'cli.log'
+            get_content:
+              'content[?]match': 'list'
+
+      VerifyLogFileContents_2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            content_type: 'log'
+            file_name: 'cli.log'
+            get_content:
+              'content[?]match': 'show log cli.log'
+
+TraceRouteUsingHostName:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "dgargote"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,cat,CLI'
+    Partnerfacing: "Y"
+    Priority: "P2"
+    QCPath: ""
+    TestName: "TraceRouteUsingHostName"
+    Summary: "Execute 'traceroute hostname' CLI and verify output"
+    Procedure: '1. Execute traceroute hostname CLI
+                2. Verify route for specified hostname getting traced'
+    ExpectedResult: 'Output should show system-name and traced route for specified hostname'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ['TraceRouteUsingHostName']
+
+      TraceRouteUsingHostName:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            hostname: 'time.vmware.com'
+            trace_route:
+                'hostname[?]equal_to': 'scrootdc02.vmware.com'
+                'route[?]contains':
+                    - ipaddress: '10.113.60.176'
+
+TraceRouteUsingIPAddress:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "dgargote"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P2"
+    QCPath: ""
+    TestName: "TraceRouteUsingIPAddress"
+    Summary: "Execute 'traceroute ipaddress' CLI and verify output"
+    Procedure: '1. Execute traceroute ipaddress CLI
+                2. Verify route for specified ipaddress getting traced'
+    ExpectedResult: 'Output should show traced route for specified ipaddress'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ['TraceRouteUsingIPAddress']
+
+      TraceRouteUsingIPAddress:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            hostname: '10.16.45.209'
+            trace_route:
+                'hostname[?]equal_to': 'parootdc06.vmware.com'
+                'route[?]contains':
+                    - ipaddress: '10.16.45.209'
+
+TraceRouteUsingIncorrectHostname:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "dgargote"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P2"
+    QCPath: ""
+    TestName: "TraceRouteUsingIncorrectHostname"
+    Summary: "Execute 'traceroute incorrect-hostname' CLI and verify output"
+    Procedure: '1. Execute traceroute incorrect-hostname CLI
+                2. Verify CLI throws appropriate error'
+    ExpectedResult: 'CLI show throw appropriate error'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+      Sequence:
+        - ['TraceRouteUsingIncorrectHostname']
+
+      TraceRouteUsingIncorrectHostname:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            hostname: 'incorrect-hostname'
+            trace_route:
+                'hostname[?]match': 'Name or service not known'
+
+VerifyShowInterfacesCommand:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "dgargote"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "VerifyShowInterfacesCommand"
+    Summary: "Execute 'show interfaces' command and verify output"
+    Procedure: '1. Execute CLI: show interfaces
+                2. Verify output of show interfaces command'
+    ExpectedResult: 'show interfaces comand should show all the interfaces on NSXManager'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetNetworkInterfaceId"]
+            - ["VerifyNetworkInterfaces"]
+
+        SetNetworkInterfaceId:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          nsxinterface:
+            '[1]':
+                map_object: true
+                id_: 'interface'
+
+        VerifyNetworkInterfaces:
+           Type: "Service"
+           TestService: "nsxmanager.[1].nsxinterface.[1]"
+           execution_type: 'cli'
+           get_interface_list:
+                  'interfaces[?]contains':
+                      - name: 'lo'
+                        summary: 'lo'
+                        ipaddress: '127.0.0.1'
+                      - name: 'mgmt'
+                        summary: 'mgmt'
+                        ipaddress: nsxmanager.[1]->manager_ip
+
+SetVerifyHostname:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,cat,CLI'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "SetVerifyHostname"
+    Summary: "Change and Verify NSXManager hostname using CLI"
+    Procedure: '1. Run set hostname HOSTNAME command on NSXManager
+                2. Verify output with get hostname CLI
+                3. Reset the original hostname'
+    ExpectedResult: 'Hostname should get changed by set hostname CLI'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+          - ['GetOriginalHostname']
+          - ['SetNewHostname']
+          - ['VerifySetHostname']
+          - ['ResetOriginalHostname']
+          - ['VerifyOriginalHostname']
+
+        GetOriginalHostname:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            PersistData: 'yes'
+            read_hostname:
+                'hostname[?]defined': ''
+        SetNewHostname:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            set_hostname:
+                hostname: 'testnsxmanager'
+                execution_type: 'cli'
+        VerifySetHostname:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            read_hostname:
+                'hostname[?]equal_to': 'testnsxmanager'
+        ResetOriginalHostname:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            set_hostname:
+                hostname: 'nsxmanager.[1]->read_hostname->hostname'
+                execution_type: 'cli'
+        VerifyOriginalHostname:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'cli'
+            read_hostname:
+                'hostname[?]equal_to': 'nsxmanager.[1]->read_hostname->hostname'
+
+VerifyExitCLI:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "VerifyExitCLI"
+    Summary: "Run exit CLI to exit from configuration mode"
+    Procedure: '1. Execute exit command
+                2. Check for error and return status'
+    ExpectedResult: 'CLI should get exit from configuration mode'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+          - ['ExecuteExitCommand']
+
+        ExecuteExitCommand:
+              Type: "NSX"
+              TestNSX: "nsxmanager.[1]"
+              execution_type: 'cli'
+              command: 'exit'
+              exit_from_terminal:
+                  'status[?]equal_to': 0
+
+RunShowARP:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "RunShowARP"
+    Summary: "Run get arp cli and verify the output"
+    Procedure: '1. Execute get arp cli
+                2. Verify the output'
+    ExpectedResult: 'CLI should show the expected arp details'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+          - ['RunVerifyShowArp']
+
+        RunVerifyShowArp:
+              Type: "NSX"
+              TestNSX: "nsxmanager.[1]"
+              execution_type: 'cli'
+              show_arp:
+                  'table[?]contains':
+                    - protocol: 'Internet'
+                      interface: 'eth0'
+                      type: 'ether'
+
+ShowNSXManagerVersion:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI'
+    Partnerfacing: "Y"
+    Priority: "P2"
+    QCPath: ""
+    TestName: "ShowNSXManagerVersion"
+    Summary: "Run show version CLI"
+    Procedure: '1. Execute show version CLI
+                2. Verify the version'
+    ExpectedResult: 'CLI should show version of NSXManager'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+          - ['ShowVersion']
+
+        ShowVersion:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            execution_type: 'cli'
+            get_version:
+                'version[?]equal_to': 'nsxmanager.[1]->version'
+
+ShowSystemDetails:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "ShowSystemDetails"
+    Summary: 'Verify System Configuration'
+    Procedure: '- Login to NSXManager with default credentials
+                - Execute "get memory-stats" command
+                - Execute "get cpu-stats" command
+                - Execute "get filesystem-stats" command
+                - Execute "get network-stats" command'
+    ExpectedResult: 'The various Memory details are seen. MemTotal should be 12 GB and SwapTotal shuold be 2GB.
+                     The total storage on all the disks for the nsx manager should be as expected.
+                     The number of cpus for the nsx manager should be 4.
+                     The sent and received packets on the nsx manager should be greater than 0'
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+          ip: None
+    WORKLOADS:
+      Sequence:
+        - ["VerifySystemMemory"]
+        - ["VerifySystemCpu"]
+        - ["VerifySystemStorage"]
+        - ["VerifySystemNetworkStats"]
+
+      VerifySystemMemory:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        system_parameter: 'memory-stats'
+        get_system_config:
+          'memory_total[?]equal_to': '12'
+          'swap_total[?]equal_to': '0'
+
+      VerifySystemCpu:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        system_parameter: 'cpu-stats'
+        get_system_config:
+          'total_cpus[?]equal_to': '4'
+
+      VerifySystemStorage:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        system_parameter: 'filesystem-stats'
+        get_system_config:
+          'root_size[?]equal_to': '4.6'
+          'confbak_size[?]equal_to': '3.7'
+          'config_size[?]equal_to': '3.7'
+          'image_size[?]equal_to': '9.3'
+
+      VerifySystemNetworkStats:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        system_parameter: 'network-stats'
+        get_system_config:
+          'packets_received[?]>': '0'
+          'packets_sent[?]>': '0'
+
+ShowSystemUptime:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "ShowSystemUptime"
+    Summary: 'Verify System uptime'
+    Procedure: '- Login to NSXManager with default credentials
+                - Execute "get uptime" command'
+    ExpectedResult: 'get uptime works and verified'
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+          ip: None
+    WORKLOADS:
+      Sequence:
+        - ["VerifySystemUptime"]
+
+      VerifySystemUptime:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        system_parameter: 'uptime'
+        get_system_config:
+          'valid_up_time[?]equal_to': 'True'
+
+RunShowTechSupport:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P2"
+    QCPath: ""
+    TestName: "RunShowTechSupport"
+    Summary: 'Verify tar created by get support-bundle file CLI'
+    Procedure: '1. Execute get support-bundle file <file.tgz> CLI
+                2. Verify support-bundle tar file is created using DIR CLI'
+    ExpectedResult: 'support-bundle tar file should get created and verified'
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+          ip: None
+    WORKLOADS:
+      Sequence:
+        - ["CreateTechSupportTar"]
+        - ["GetDirList"]
+
+      CreateTechSupportTar:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        create_tech_support_tar:
+            file_name: 'support_bundle_logs.tgz'
+            execution_type: 'cli'
+
+      GetDirList:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        get_dir_list:
+          'table[?]contains':
+            - file_name: 'support_bundle_logs.tgz'
+
+PingUsingIP:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,cat,CLI'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "PingUsingIP"
+    Summary: 'Verify ping IP CLI'
+    Procedure: '1. Execute ping IP CLI
+                2. Verify if ping worked as expected'
+    ExpectedResult: 'ping IP CLI gets executed and verified'
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+          ip: None
+    WORKLOADS:
+      Sequence:
+        - ["PingUsingIP"]
+
+      PingUsingIP:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        ip: '10.113.60.176'
+        get_ping_output:
+            status[?]contains: 'ping succeeded'
+            packet_loss[?]<: 2
+
+PingUsingHostname:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,cat,CLI'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "PingUsingHostname"
+    Summary: 'Verify ping Hostname CLI'
+    Procedure: '1. Execute ping HOSTNAME CLI
+                2. Verify if ping worked as expected'
+    ExpectedResult: 'ping HOSTNAME CLI gets executed and verified'
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+          ip: None
+    WORKLOADS:
+      Sequence:
+        - ["PingUsingHostname"]
+
+      PingUsingHostname:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        hostname: 'time.vmware.com'
+        get_ping_output:
+            status[?]contains: 'ping succeeded'
+            packet_loss[?]<: 2
+
+VerifyDebugPacketCapture:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "VerifyDebugPacketCapture"
+    Summary: 'Verify debug packet capture interface CLI'
+    Procedure: '1. Run debug packet capture interface CLI
+                2. Verify that the file is created and present in filestore
+                3. Delete mgmt.pcap file after verfication'
+    ExpectedResult: 'debug packet capture interface CLI create mgmt.pcap file at filestore'
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+          ip: None
+    WORKLOADS:
+      Sequence:
+        - ["DebugPacketCapture"]
+        - ["VerifyDebugFile"]
+        - ["DeleteFile"]
+        - ["VerifyDebugFileNotPresent"]
+
+      DebugPacketCapture:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        debug_packet_capture:
+            vnic_name: 'mgmt'
+            execution_type: 'cli'
+
+      VerifyDebugFile:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        sleepbetweenworkloads: 5
+        execution_type: 'cli'
+        get_dir_list:
+          'table[?]contains':
+            - file_name: 'mgmt.pcap'
+              size[?]>: '0'
+
+      DeleteFile:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        delete_file:
+            file_name: 'mgmt.pcap'
+            execution_type: 'cli'
+
+      VerifyDebugFileNotPresent:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        get_dir_list:
+          'table[?]not_contains':
+            - file_name: 'mgmt.pcap'
+
+RunBannerMotdAndNoBannerMotd:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI'
+    Partnerfacing: "Y"
+    Priority: "P2"
+    QCPath: ""
+    TestName: "RunBannerMotdAndNoBannerMotd"
+    Summary: 'Verify banner motd and no banner motd CLI'
+    Procedure: '1. Run banner motd and set some message
+                2. Verify that the /etc/motd.tail file has newly set message
+                3. Unset message using no banner motd CLI
+                4. Verify that the /etc/motd.tail file does not have message'
+    ExpectedResult: 'Message set using banner motd should get unset using no
+                    banner motd'
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+          ip: None
+    WORKLOADS:
+      Sequence:
+        - ["SetBannerMotd"]
+        - ["VerifyMotdMessage"]
+        - ["RunNoBannerMotd"]
+        - ["VerifyMotdMessageNotPresent"]
+
+      SetBannerMotd:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        set_banner_motd:
+            execution_type: 'cli'
+            message: 'Hello World!!'
+      VerifyMotdMessage:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        get_motd:
+            message[?]match: 'Hello World!!'
+      RunNoBannerMotd:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        command: 'no banner motd'
+        terminal: "true"
+        run_command:
+            status[?]equal_to: 0
+      VerifyMotdMessageNotPresent:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        get_motd:
+            message[?]not_contains: 'Hello World!!'
+
+RunShowProcessMonitor:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "RunShowProcessMonitor"
+    Summary: 'Verify show process monitor CLI output'
+    Procedure: '1. Get system memory and swap memory and persist the values
+                2. Run show process monitor CLI
+                2. Verify output with persisted values'
+    ExpectedResult: 'Show process monitor gets executed without any issue'
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+          ip: None
+    WORKLOADS:
+      Sequence:
+        - ["ShowSystemMemory"]
+        - ["ShowProcessMonitor"]
+
+      ShowSystemMemory:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        PersistData: 'yes'
+        read_system_memory:
+            'memtotal[?]defined': ''
+            'swaptotal[?]defined': ''
+
+      ShowProcessMonitor:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        get_process_monitor:
+            tasks:
+              total[?]>: 0
+            cpu:
+              id[?]>: 0
+            swap:
+              total[?]equal_to: 'nsxmanager.[1]->read_system_memory->swaptotal'
+            mem:
+              total[?]equal_to: 'nsxmanager.[1]->read_system_memory->memtotal'
+
+SetResetIPRoute:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "SetResetIPRoute"
+    Summary: 'Set Reset IP Route'
+    Procedure: '1. Configure ip route
+                2. Verify configured ip route
+                3. Verify configured ip route with CIDR
+                4. Remove configured ip route
+                2. Verify the removed CIDR and ip_address values are not present'
+    ExpectedResult: 'Ip route should get configured and verified'
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+          ip: None
+    WORKLOADS:
+      Sequence:
+        - ["SetIPRoute"]
+        - ["ShowIpRoute"]
+        - ["ShowIpRouteCIDR"]
+
+      ExitSequence:
+        - ["ResetIPRoute"]
+        - ["VerifyResetIPRoute"]
+
+      SetIPRoute:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        configure_ip_route:
+          execution_type: 'cli'
+          cidr: '10.11.12.0/23'
+          manager_ip: 'nsxmanager.[1]'
+
+      ShowIpRoute:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        show_ip_route:
+          'table[?]contains':
+            - 'cidr': '10.11.12.0/23'
+              'ip': 'nsxmanager.[1]->manager_ip'
+
+      ShowIpRouteCIDR:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        cidr: '10.11.12.0/23'
+        show_ip_route:
+          'table[?]contains':
+            - 'cidr': '10.11.12.0/23'
+
+      ResetIPRoute:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        configure_ip_route:
+          execution_type: 'cli'
+          reset: 'yes'
+          cidr: '10.11.12.0/23'
+          manager_ip: 'nsxmanager.[1]'
+
+      VerifyResetIPRoute:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        show_ip_route:
+          'table[?]not_contains':
+            - 'cidr': '10.11.12.0/23'
+              'ip': 'nsxmanager.[1]->manager_ip'
+
+CopyFileToAndFromSpecifiedURL:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "CopyFileToAndFromSpecifiedURL"
+    Summary: 'Copy file to and from given URL using copy CLI'
+    Procedure: '1. Create tech-support log file
+                2. Verify that tech-support log file is created successfully
+                3. Copy file to launcher and verify it
+                4. Delete file on NSXManager
+                5. Verify file is now not present on NSXManager
+                6. Copy file from launcher to NSXManager
+                7. Verify file is now present on NSXManager
+                8. Delete file from NSXManager
+                9. Verify file is deleted successfully'
+    ExpectedResult: 'Tech-support log file should get copied to and from
+                     launcher successfully'
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+          ip: None
+    WORKLOADS:
+      Sequence:
+        - ["CreateTechSupportLogFile"]
+        - ["VerifyFileIsPresentOnNSXManager"]
+        - ["CopyFileToSpecifiedURL"]
+        - ["DeleteFileFromNSXManager"]
+        - ["VerifyFileIsNotPresentOnNSXManager"]
+        - ["CopyFileFromSpecifiedURL"]
+        - ["VerifyFileIsPresentOnNSXManager"]
+        - ["DeleteFileFromNSXManager"]
+        - ["VerifyFileIsNotPresentOnNSXManager"]
+
+      CreateTechSupportLogFile:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        create_tech_support_tar:
+            file_name: 'tech_support.tar.gz'
+            execution_type: 'cli'
+
+      VerifyFileIsPresentOnNSXManager:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        get_dir_list:
+          'table[?]contains':
+            - file_name: 'tech_support.tar.gz'
+
+      CopyFileToSpecifiedURL:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        copy_file:
+          execution_type: 'cli'
+          source_file_name: 'tech_support.tar.gz'
+          ifname: "eth0"
+          path: '/tmp/vdnet/nsxmanager_downloads'
+          username: 'root'
+          password: 'ca$hc0w'
+
+      DeleteFileFromNSXManager:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        delete_file:
+            file_name: 'tech_support.tar.gz'
+            execution_type: 'cli'
+
+      VerifyFileIsNotPresentOnNSXManager:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        get_dir_list:
+          'table[?]not_contains':
+            - file_name: 'tech_support.tar.gz'
+
+      CopyFileFromSpecifiedURL:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        copy_file:
+          execution_type: 'cli'
+          dest_file_name: 'tech_support.tar.gz'
+          ifname: "eth0"
+          delete_file_after_copy: 'yes'
+          path: '/tmp/vdnet/nsxmanager_downloads'
+          username: 'root'
+          password: 'ca$hc0w'
+
+RunShowIPSockets:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "yvhora"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "RunShowIPSockets"
+    Summary: "Run show ip socket cli and verify the output"
+    Procedure: '1. Execute show ip socket cli
+                2. Verify the output'
+    ExpectedResult: 'CLI should show the expected ip socket details'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+          - ['RunVerifyShowIPSockets']
+
+        RunVerifyShowIPSockets:
+              Type: "NSX"
+              TestNSX: "nsxmanager.[1]"
+              execution_type: 'cli'
+              show_ip_sockets:
+                  'table[?]contains':
+                    - proto: 'tcp'
+                    - proto: 'udp'

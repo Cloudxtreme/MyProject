@@ -1,0 +1,4228 @@
+WORKLOADS:
+# Host preparation steps
+
+    RegisterController: &REGISTER_CONTROLLER
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        set_nsx_registration:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    SetManagerOnHost: &SET_MANAGER_ON_HOST
+        Type: Host
+        TestHost: 'esx.[1-3]'
+        set_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    DiscoverHostnodes: &DISCOVER_HOST_NODES
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        hostnode:
+            '[1-3]':
+                discover: 'true'
+                ip_addresses: 'esx.[x=hostnode_index]'
+
+    CreateUplinkProfile:
+        ESX: &CREATE_UPLINK_PROFILE_01--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            UplinkProfile:
+                '[1]':
+                    mtu: 1600
+                    teaming:
+                        active:
+                            - adapter_name: 'uplink1'
+                              adapter_type: 'PNIC'
+                        policy: 'FAILOVER_ORDER'
+                    vlan: '0'
+                    resource_type: 'UplinkHostSwitchProfile'
+                '[2]':
+                    mtu: 1600
+                    teaming:
+                        active:
+                            - adapter_name: 'uplink2'
+                              adapter_type: 'PNIC'
+                        policy: 'FAILOVER_ORDER'
+                    vlan: '20'
+                    resource_type: 'UplinkHostSwitchProfile'
+
+    CreateOverlayTransportZone: &CREATE_OVERLAY_TRANSPORT_ZONE_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[1]':
+                name: autogenerate
+                transport_zone_type: 'OVERLAY'
+                switch_name: 'nsxvswitch1'
+
+    CreateVlanTransportZone: &CREATE_VLAN_TRANSPORT_ZONE_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[2]':
+                name: autogenerate
+                transport_zone_type: 'VLAN'
+                switch_name: 'nsxvswitch2'
+
+    CreateOverlayTransportNodes:
+        ESX: &CREATE_OVERLAY_TRANSPORT_NODES--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[2-3]':
+                    node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                    host_switches:
+                          - switch_name: 'nsxvswitch1'
+                            host_switch_profile_ids:
+                               - key: 'UplinkHostSwitchProfile'
+                                 value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                            uplinks:
+                               - device_name: 'vmnic1'
+                                 adapter_name: 'uplink1'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+    CreateVlanTransportNodes:
+        ESX: &CREATE_VLAN_TRANSPORT_NODES--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[1]':
+                    node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                    host_switches:
+                          - switch_name: 'nsxvswitch1'
+                            host_switch_profile_ids:
+                               - key: 'UplinkHostSwitchProfile'
+                                 value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                            uplinks:
+                               - device_name: 'vmnic1'
+                                 adapter_name: 'uplink1'
+                          - switch_name: 'nsxvswitch2'
+                            host_switch_profile_ids:
+                               - key: 'UplinkHostSwitchProfile'
+                                 value: 'nsxmanager.[1].uplinkprofile.[2]->id'
+                            uplinks:
+                               - device_name: 'vmnic2'
+                                 adapter_name: 'uplink2'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                        - transport_zone_id: nsxmanager.[1].transportzone.[2]
+
+    CreateUplinkLogicalSwitches: &CREATE_UPLINK_LOGICAL_SWITCHES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1-2]':
+                name: 'autogenerate'
+                transport_zone_id: nsxmanager.[1].transportzone.[2]
+                admin_state: UP
+                replication_mode: SOURCE #MTEP # source
+
+    CreateDownlinkLogicalSwitches: &CREATE_DOWNLINK_LOGICAL_SWITCHES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[101-102]':
+                name: 'autogenerate'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP # source
+
+    CreateUplinkLogicalPorts: &CREATE_UPLINK_LPORTS
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[1-2]':
+                switch_id: nsxmanager.[1].logicalswitch.[x=logicalport_index]
+                name: 'lport for PLR uplink'
+
+    CreateDownlinkLogicalPortsPLR: &CREATE_DOWNLINK_LPORTS_PLR
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[101-102]':
+                switch_id: nsxmanager.[1].logicalswitch.[x=logicalport_index]
+                name: 'lport for PLR downlink'
+    CreateDownlinkLogicalPortsTLR: &CREATE_DOWNLINK_LPORTS_TLR
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[11-12]':
+                switch_id: nsxmanager.[1].logicalswitch.[x=logicalport_index]
+                name: 'lport for TLR downlink'
+
+
+
+
+# PLR Creation
+
+    RegisterAllEdgeNodes: &REGISTER_ALL_EDGE_NODES
+        - - 'RegisterEdgeNode01'
+        - - 'RegisterEdgeNode02'
+
+    RegisterEdgeNode: &REGISTER_EDGE_NODE
+        Type: Gateway
+        register_nsx_edge_node:
+            manager_username: 'admin'
+            manager_password: 'default'
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+
+    RegisterEdgeNode01: &REGISTER_EDGE_NODE_01
+        <<: *REGISTER_EDGE_NODE
+        TestGateway: 'nsxedge.[1]'
+    RegisterEdgeNode02: &REGISTER_EDGE_NODE_02
+        <<: *REGISTER_EDGE_NODE
+        TestGateway: 'nsxedge.[2]'
+
+    DiscoverEdgeNodeIds: &DISCOVER_EDGE_NODE_IDS
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        edgenode:
+            '[1]':
+                discover: 'true'
+                resource_type: "EdgeNode"
+                ipaddresses:
+                    - 'nsxedge.[1]->management_ip'
+            '[2]':
+                discover: 'true'
+                resource_type: "EdgeNode"
+                ipaddresses:
+                    - 'nsxedge.[2]->management_ip'
+
+    CreateFabricProfile: &CREATE_FABRIC_PROFILE
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        fabricprofile:
+            '[1]':
+                name: 'Fabric_Profile_PLR_uplink_cluster'
+                summary: "Fabric Profile for PLR uplink edge cluster"
+                resource_type: "FabricProfileClusterKeepAlive" # CLUSTER_KEEPALIVE"
+                hello_interval: 20000
+                declare_dead_timer: 60000
+
+    CreateEdgeCluster: &CREATE_EDGE_CLUSTER
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        sleepbetweenworkloads: '60'
+        edgecluster:
+            '[1]':
+                name: 'edge_cluster_plr1'
+                summary: 'Edge cluster for PLR1 uplinks'
+                members:
+                  - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+                  - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+                fabric_profile_bindings:
+                  - resource_type: "FabricProfileClusterKeepAlive" # CLUSTER_KEEPALIVE"
+                    fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+    CreateProviderLogicalRouter1: &CREATE_PLR_01
+         Type: NSX
+         TestNSX: 'nsxmanager.[1]'
+         sleepbetweenworkloads: '10'
+         logicalrouter:
+             '[1]':
+                 name: 'Tier0-LR-1'
+                 summary: 'Tier0 Logical Router (PLR) - 01'
+                 router_type: 'TIER0'
+                 cluster_id: 'nsxmanager.[1].edgecluster.[1]'
+
+    CreateUplinksPLR1: &CREATE_PLR_01_UPLINKS
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        logicalrouteruplinkport:
+            '[1]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_uplink1'
+                summary: 'Uplink 1 for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+                gateway_cluster_member_index: [0]
+                resource_type: "LogicalRouterUpLinkPort"
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                        - '192.168.50.1'
+            '[2]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_uplink2'
+                summary: 'Uplink 2 for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[2]->id
+                gateway_cluster_member_index: [1]
+                resource_type: "LogicalRouterUpLinkPort"
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                        - '192.168.60.1'
+
+
+    CreateDownlinksPLR1: &CREATE_PLR_01_DOWNLINKS
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        logicalrouterport:
+            '[101]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_downlink lrp 101'
+                summary: 'Downlink for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[101]->id
+                resource_type: "LogicalRouterDownLinkPort"
+                subnets:
+                   - prefixlen: 24
+                     ip_addresses:
+                         - '192.168.1.1'
+            '[102]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_downlink lrp 102'
+                summary: 'Downlink for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[102]->id
+                resource_type: "LogicalRouterDownLinkPort"
+                subnets:
+                   - prefixlen: 24
+                     ip_addresses:
+                         - '192.168.2.1'
+
+# PLR VM setup
+
+    VifAttachmentAllVMsESX: &VIF_ATTACHMENT_ALL_VMS_ESX
+        - - 'VifAttachmentNSVM1'
+          - 'VifAttachmentNSVM2'
+          - 'VifAttachmentNSVM3'
+
+    VIF_ATTACHMENT_NS_VM1:
+        ESX: &VIF_ATTACHMENT_NS_VM1--ESX
+            Type: VM
+            TestVM: 'vm.[1]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: 'vc.[1].dvportgroup.[100]'
+                   connected: 1
+                   startconnected: 1
+
+    VIF_ATTACHMENT_NS_VM2:
+        ESX: &VIF_ATTACHMENT_NS_VM2--ESX
+            Type: VM
+            TestVM: 'vm.[2]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: 'nsxmanager.[1].logicalswitch.[101]'
+                   connected: 1
+                   startconnected: 1
+
+    VIF_ATTACHMENT_NS_VM3:
+        ESX: &VIF_ATTACHMENT_NS_VM3--ESX
+            Type: VM
+            TestVM: 'vm.[3]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: 'nsxmanager.[1].logicalswitch.[102]'
+                   connected: 1
+                   startconnected: 1
+
+    PowerOnAllVMs: &POWER_ON_ALL_VMS
+        - - 'PowerOnVM1'
+          - 'PowerOnVM2'
+          - 'PowerOnVM3'
+
+    PowerOnVM1:
+        Type: VM
+        TestVM: 'vm.[1]'
+        vmstate: poweron
+
+    PowerOnVM2:
+        Type: VM
+        TestVM: 'vm.[2]'
+        vmstate: poweron
+
+    PowerOnVM3:
+        Type: VM
+        TestVM: 'vm.[3]'
+        vmstate: poweron
+
+    ConfigureIPAllVMVNics: &CONFIGURE_IP_ALL_VM_VNICS
+        - - 'ConfigureVM1Vnic1IP'
+          - 'ConfigureVM2Vnic1IP'
+          - 'ConfigureVM3Vnic1IP'
+
+    ConfigureVM1Vnic1IP:
+        Type: NetAdapter
+        TestAdapter: 'vm.[1].vnic.[1]'
+        ipv4:       '192.168.70.10'
+        netmask:    "255.255.255.0"
+
+    ConfigureVM2Vnic1IP:
+        Type: NetAdapter
+        TestAdapter: 'vm.[2].vnic.[1]'
+        ipv4:       '192.168.1.10'
+        netmask:    "255.255.255.0"
+
+    ConfigureVM3Vnic1IP:
+        Type: NetAdapter
+        TestAdapter: 'vm.[3].vnic.[1]'
+        ipv4:       '192.168.2.10'
+        netmask:    "255.255.255.0"
+
+
+    AddRouteAllVMs: &ADD_ROUTE_ALL_VMS
+        - - 'AddRouteVM1'
+          - 'AddRouteVM2'
+          - 'AddRouteVM3'
+    AddRouteVM1:
+        Type:        "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        netmask:     "255.255.0.0"
+        route:       "add"
+        network:     "192.168.0.0"
+        gateway:     "192.168.70.11"
+
+    AddRouteVM2:
+        Type:        "NetAdapter"
+        Testadapter: "vm.[2].vnic.[1]"
+        netmask:     "255.255.0.0"
+        route:       "add"
+        network:     "192.168.0.0"
+        gateway:     "192.168.1.1"
+
+    AddRouteVM3:
+        Type:        "NetAdapter"
+        Testadapter: "vm.[3].vnic.[1]"
+        netmask:     "255.255.0.0"
+        route:       "add"
+        network:     "192.168.0.0"
+        gateway:     "192.168.2.1"
+
+
+# External Router (NSXv6.1) deployment
+    DeployGatewayServicesEDGE1: &DeployGatewayServicesEDGE1
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        gateway:
+            '[1]':
+                name: "AutoGenerate-1"
+                resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                datacenter: "vc.[1].datacenter.[1]"
+                host: "esx.[4]"
+                portgroup: "vc.[1].dvportgroup.[100]"
+                primaryaddress: "192.168.70.11"
+                subnetmask: "255.255.255.0"
+
+    DisableFirewall_EDGE1: &DisableFirewall_EDGE1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        firewall:
+            '[1]':
+                enabled: "false"
+    CreateGatewayInterface1vEDGE1: &CreateGatewayInterface1vEDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vc.[1].dvportgroup.[1]"
+                ipv4address: "192.168.50.11"
+                netmask: "255.255.255.0"
+                type: "uplink"
+
+    CreateGatewayInterface2vEDGE1: &CreateGatewayInterface2vEDGE1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[2]"
+                ipv4address: "192.168.60.11"
+                netmask: "255.255.255.0"
+                type: "uplink"
+
+    Enable_ECMP_vEDGE_GATEWAY1: &Enable_ECMP_vEDGE_GATEWAY1
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        globalrouteconfig:
+            '[1]':
+                ecmp: "true"
+                routerid: "100.1.1.1"
+
+
+    Configure_BGP_vEDGE1: &Configure_BGP_vEDGE1
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1]'
+        bgp:
+            '[1]':
+                localas: '1000'
+                gracefulrestart: 'disabled'
+                bgpneighbours:
+                    - remoteas: '100'
+                      ipaddress: '192.168.50.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                    - remoteas: '100'
+                      ipaddress: '192.168.60.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+
+    Enable_promiscuous_dvpg1: &Enable_promiscuous_dvpg1
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan1"
+
+    Enable_promiscuous_dvpg2: &Enable_promiscuous_dvpg2
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan2"
+
+    Enable_promiscuous_dvpg100: &Enable_promiscuous_dvpg100
+        Type: "Switch"
+        TestSwitch: "vc.[1].vds.[1]"
+        setpromiscuous: "Enable"
+        setforgedtransmit: "Enable"
+        setmacaddresschange: "Enable"
+        dvportgroup: "dvpg-VDS1-vlan100"
+
+    DeployGatewayServicesEDGE2: &DeployGatewayServicesEDGE2
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        gateway:
+            '[2]':
+                name: "AutoGenerate-2"
+                resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+                datacenter: "vc.[1].datacenter.[1]"
+                host: "esx.[4]"
+                portgroup: "vc.[1].dvportgroup.[100]"
+                primaryaddress: "192.168.70.12"
+                subnetmask: "255.255.255.0"
+
+    DisableFirewall_EDGE2: &DisableFirewall_EDGE2
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[2]"
+        firewall:
+            '[1]':
+                enabled: "false"
+    CreateGatewayInterface1vEDGE2: &CreateGatewayInterface1vEDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vc.[1].dvportgroup.[1]"
+                ipv4address: "192.168.50.12"
+                netmask: "255.255.255.0"
+                type: "uplink"
+
+    CreateGatewayInterface2vEDGE2: &CreateGatewayInterface2vEDGE2
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[2]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[2]"
+                ipv4address: "192.168.60.12"
+                netmask: "255.255.255.0"
+                type: "uplink"
+
+    Enable_ECMP_vEDGE_GATEWAY2: &Enable_ECMP_vEDGE_GATEWAY2
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[2]"
+        globalrouteconfig:
+            '[1]':
+                ecmp: "true"
+                routerid: "100.1.1.1"
+
+    Configure_BGP_vEDGE2: &Configure_BGP_vEDGE2
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[2]'
+        bgp:
+            '[1]':
+                localas: '1000'
+                gracefulrestart: 'disabled'
+                bgpneighbours:
+                    - remoteas: '100'
+                      ipaddress: '192.168.50.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                    - remoteas: '100'
+                      ipaddress: '192.168.60.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+
+    AddEdge2NHonVM1: &AddEdge2NHonVM1
+        Type:        "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        netmask:     "255.255.0.0"
+        route:       "add"
+        network:     "192.168.0.0"
+        gateway:     "192.168.70.12"
+
+
+
+# PLR BGP Config
+    AddRoutingGlobalConfig: &ADD_ROUTINGGLOBAL_CONFIG
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        routingconfig:
+            '[1]':
+                 routerid: "1.1.1.10"
+    UpdateBGPwithListenerIP: &UpdateBGPwithListenerIP
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      source: '192.168.50.1'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      source: '192.168.60.1'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+    UpdateBGPwithoutListenerIP: &UpdateBGPwithoutListenerIP
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+
+    AddRouteRedistribution: &ADD_ROUTE_REDISTRIBUTION
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        redistributionconfig:
+            '[1]':
+                redistributionenabled: 'true'
+                rules:
+                    - fromprotocol:
+                          - 'CONNECTED'
+                          - 'INTERNAL'
+                          - 'STATIC'
+                      toprotocol: 'BGP'
+                      name: 'rule2'
+                      summary: 'Rule 2'
+#TLR setup
+    CreateLogicalSwitchforTLRs: &CreateLogicalSwitchforTLRs
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[11-12]':
+                name: 'autogenerate'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP # source
+
+    CreateTLR11: &CreateTLR11
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        sleepbetweenworkloads: "10"
+        logicalrouter:
+            '[11]':
+                name: 'TLR11'
+                summary: "TLR11"
+                router_type: "TIER1"
+    CreateTLR12: &CreateTLR12
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        sleepbetweenworkloads: "10"
+        logicalrouter:
+            '[12]':
+                name: 'TLR12'
+                summary: "TLR12"
+                router_type: "TIER1"
+
+    CreateRouterLinkPortsonPLR: &CreateRouterLinkPortsonPLR
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        logicalrouterlinkport:
+            '[1-2]':
+                logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                name: 'TIER0-RouterLinkPort'
+                summary: "Create a Router Link port on TIER-0 Router"
+                resource_type: "LogicalRouterLinkPort"
+
+    CreateRouterLinkPortsonTLR11: &CreateRouterLinkPortsonTLR11
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        logicalrouterlinkport:
+            '[11]':
+                logical_router_id: "nsxmanager.[1].logicalrouter.[11]"
+                linked_router_port_id: nsxmanager.[1].logicalrouterlinkport.[1]->id
+                name: 'TLR11-RouterLinkPort'
+                summary: "Create a Router Link port on TLR11 Router"
+                resource_type: "LogicalRouterLinkPort"
+
+    CreateRouterLinkPortsonTLR12: &CreateRouterLinkPortsonTLR12
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        logicalrouterlinkport:
+            '[12]':
+                logical_router_id: "nsxmanager.[1].logicalrouter.[12]"
+                linked_router_port_id: nsxmanager.[1].logicalrouterlinkport.[2]->id
+                name: 'TLR12-RouterLinkPort'
+                summary: "Create a Router Link port on TLR12 Router"
+                resource_type: "LogicalRouterLinkPort"
+    CreateDownlinkTier11LogicalRouterPortOnLS11:
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        logicalrouterport:
+            '[11]':
+                logical_router_id: "nsxmanager.[1].logicalrouter.[11]"
+                name: 'Tier11DownlinkLRPort'
+                summary: "Logical Router Port 11 on TIER-11 Downlink on LogicalSwitch11"
+                linked_switch_port_id: nsxmanager.[1].logicalport.[11]->id
+                resource_type: "LogicalRouterDownLinkPort"
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                          - '192.168.10.1'
+
+    CreateDownlinkTier12LogicalRouterPortOnLS12:
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        logicalrouterport:
+            '[12]':
+                logical_router_id: "nsxmanager.[1].logicalrouter.[12]"
+                name: 'Tier11DownlinkLRPort'
+                summary: "Logical Router Port 12 on TIER-12 Downlink on LogicalSwitch12"
+                linked_switch_port_id: nsxmanager.[1].logicalport.[12]->id
+                resource_type: "LogicalRouterDownLinkPort"
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                        - '192.168.20.1'
+    AdvertiseRouteonTLR11: &AdvertiseRouteonTLR11
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[11]"
+        routeadvertisements:
+            '[1]':
+                enableadvertisement: 'true'
+                advertise_routes:
+                    - name: 'Route Advertisement for Tier11'
+                      summary: 'Route Adverisement for Tier11'
+                      network:
+                          - '192.168.10.0/24'
+    DisableAdvertiseRouteonTLR11: &DisableAdvertiseRouteonTLR11
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[11]"
+        reconfigure: "true"
+        routeadvertisements:
+            '[1]':
+                enableadvertisement: 'false'
+                advertise_routes:
+                    - name: 'Route Advertisement for Tier11'
+                      summary: 'Route Adverisement for Tier11'
+                      network:
+                          - '192.168.10.0/24'
+    EnableAdvertiseRouteonTLR11: &EnableAdvertiseRouteonTLR11
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[11]"
+        reconfigure: "true"
+        routeadvertisements:
+            '[1]':
+                enableadvertisement: 'true'
+                advertise_routes:
+                    - name: 'Route Advertisement for Tier11'
+                      summary: 'Route Adverisement for Tier11'
+                      network:
+                          - '192.168.10.0/24'
+
+    AdvertiseRouteonTLR12: &AdvertiseRouteonTLR12
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[12]"
+        routeadvertisements:
+            '[1]':
+                enableadvertisement: 'true'
+                advertise_routes:
+                    - name: 'Route Advertisement for Tier12'
+                      summary: 'Route Adverisement for Tier12'
+                      network:
+                          - '192.168.20.0/24'
+
+# TLR VM setup
+    DeployVM11: &DeployVM11
+        Type: Root
+        TestNode: 'root.[1]'
+        vm:
+           '[11]':
+               template: 'rhel53-srv-32'
+               host: 'esx.[2]'
+               vmstate: poweroff
+
+    DeployVM12: &DeployVM12
+        Type: Root
+        TestNode: 'root.[1]'
+        vm:
+           '[12]':
+               template: 'rhel53-srv-32'
+               host: 'esx.[3]'
+               vmstate: poweroff
+
+    VifAttachmentVM11: &VifAttachmentVM11
+        Type: VM
+        TestVM: 'vm.[11]'
+        vnic:
+            '[1]':
+                driver: "e1000"
+                # TODO(gjayavelu): use network instead of portgroup
+                portgroup: 'nsxmanager.[1].logicalswitch.[11]'
+                connected: 1
+                startconnected: 1
+
+    VifAttachmentVM12: &VifAttachmentVM12
+        Type: VM
+        TestVM: 'vm.[12]'
+        vnic:
+            '[1]':
+                driver: "e1000"
+                # TODO(gjayavelu): use network instead of portgroup
+                portgroup: 'nsxmanager.[1].logicalswitch.[12]'
+                connected: 1
+                startconnected: 1
+
+
+    PowerOnVM11: &PowerOnVM11
+        Type: VM
+        TestVM: 'vm.[11]'
+        vmstate: poweron
+
+    PowerOnVM12: &PowerOnVM12
+        Type: VM
+        TestVM: 'vm.[12]'
+        vmstate: poweron
+
+
+    ConfigureVM11Vnic1IP: &ConfigureVM11Vnic1IP
+        Type: NetAdapter
+        TestAdapter: 'vm.[1].vnic.[1]'
+        ipv4:       '192.168.10.10'
+        netmask:    "255.255.255.0"
+
+    ConfigureVM12Vnic1IP: &ConfigureVM12Vnic1IP
+        Type: NetAdapter
+        TestAdapter: 'vm.[2].vnic.[1]'
+        ipv4:       '192.168.20.10'
+        netmask:    "255.255.255.0"
+
+    AddRouteVM11:
+        Type:        "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        netmask:     "255.255.0.0"
+        route:       "add"
+        network:     "192.168.0.0"
+        gateway:     "192.168.10.1"
+
+    AddRouteVM12:
+        Type:        "NetAdapter"
+        Testadapter: "vm.[2].vnic.[1]"
+        netmask:     "255.255.0.0"
+        route:       "add"
+        network:     "192.168.0.0"
+        gateway:     "192.168.20.1"
+
+
+# Ping Workload
+    PingVM1toVM2: &PingVM1toVM2
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[2].vnic.[1]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "120"
+
+    PingVM1toVM3: &PingVM1toVM3
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[3].vnic.[1]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "120"
+
+    PingVM1toVM2_Fail: &PingVM1toVM2_Fail
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[2].vnic.[1]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "120"
+        Expectedresult: "FAIL"
+
+    PingVM1toVM3_Fail: &PingVM1toVM3_Fail
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[3].vnic.[1]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "120"
+        Expectedresult: "FAIL"
+
+    PingVM1toVM11: &PingVM1toVM11
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[11].vnic.[1]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "120"
+
+    PingVM1toVM12: &PingVM1toVM12
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[12].vnic.[1]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "120"
+
+    PingVM2toVM12: &PingVM2toVM12
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[12].vnic.[1]"
+        SupportAdapter: "vm.[2].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "120"
+
+    PingVM2toVM11_Fail: &PingVM2toVM11_Fail
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[11].vnic.[1]"
+        SupportAdapter: "vm.[2].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "30"
+        Expectedresult: "FAIL"
+
+    PingVM11toVM12_Fail: &PingVM11toVM12_Fail
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[11].vnic.[1]"
+        SupportAdapter: "vm.[12].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "30"
+        Expectedresult: "FAIL"
+
+    PingVM11toVM12: &PingVM11toVM12
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[11].vnic.[1]"
+        SupportAdapter: "vm.[12].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "30"
+
+    PingVM2toVM11: &PingVM2toVM11
+        Type: "Traffic"
+        ToolName: "Ping"
+        TestAdapter: "vm.[11].vnic.[1]"
+        SupportAdapter: "vm.[2].vnic.[1]"
+        NoofOutbound: "1"
+        TestDuration: "30"
+
+# Sleep Workload
+
+    SleepWorkload_10: &SleepWorkload_10
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        sleepbetweenworkloads: "10"
+        staticrouting:
+            '[1]':
+                {}
+
+    SleepWorkload_100: &SleepWorkload_100
+        Type: "Router"
+        TestRouter: "vsm.[1].gateway.[1]"
+        sleepbetweenworkloads: "100"
+        staticrouting:
+            '[1]':
+                {}
+
+# Delete Workloads
+    DeleteBGPConfigonTier0: &DeleteBGPConfigonTier0
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+          '[1]': {}
+
+
+##TestCase1
+
+    VerifyShowBGPConfigonSR1withSrcIP: &VerifyShowBGPConfigonSR1withSrcIP
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer[?]equal_to': '90'
+                      'ipaddress[?]equal_to': '192.168.50.11'
+                      'keepalivetimer[?]equal_to': '30'
+                      'remoteas[?]equal_to': '1000'
+                      'srcipaddress[?]equal_to': '192.168.50.1'
+                      'name[?]equal_to': 'bgp-neighbour-1'
+                      'weight[?]equal_to': '60'
+
+
+    VerifyShowBGPConfigonSR2withSrcIP: &VerifyShowBGPConfigonSR2withSrcIP
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer[?]equal_to': '90'
+                      'ipaddress[?]equal_to': '192.168.60.11'
+                      'keepalivetimer[?]equal_to': '30'
+                      'remoteas[?]equal_to': '1000'
+                      'srcipaddress[?]equal_to': '192.168.60.1'
+                      'name[?]equal_to': 'bgp-neighbour-2'
+                      'weight[?]equal_to': '60'
+
+
+    VerifyBGPneighboronSR1: &VerifyBGPneighboronSR1
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.11'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.50.11'
+                  bgp_neighbor: '192.168.50.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+
+    VerifyBGPneighboronSR2: &VerifyBGPneighboronSR2
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        ip_address: '192.168.60.11'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '192.168.60.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.60.11'
+                  bgp_neighbor: '192.168.60.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+
+    UpdateBGPwithincorrectListenerIP: &UpdateBGPwithincorrectListenerIP
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        expectedresult: "FAIL"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      source: '192.168.90.1'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      source: '192.168.90.1'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+
+
+    VerifyShowBGPConfigonSR1withoutSrcIP: &VerifyShowBGPConfigonSR1withoutSrcIP
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+
+
+
+    VerifyShowBGPConfigonSR2withoutSrcIP: &VerifyShowBGPConfigonSR2withoutSrcIP
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+
+
+    VerifyBGPneighboronSR1withoutSrcIP: &VerifyBGPneighboronSR1withoutSrcIP
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.11'
+        get_ip_bgp_neighbors:
+            'table[?]not_contains':
+                - local_host: '192.168.60.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.60.11'
+                  bgp_neighbor: '192.168.60.11'
+                  keep_alive_interval: '60'
+                  hold_time: '180'
+                  bgp_status: 'up'
+
+    VerifyBGPneighboronSR2withoutSrcIP: &VerifyBGPneighboronSR2withoutSrcIP
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        ip_address: '192.168.60.11'
+        get_ip_bgp_neighbors:
+            'table[?]not_contains':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.50.11'
+                  bgp_neighbor: '192.168.50.11'
+                  keep_alive_interval: '60'
+                  hold_time: '180'
+                  bgp_status: 'up'
+
+# TestCase 345
+    VerifyShowRoutesonSR1: &VerifyShowRoutesonSR1
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  via: 'via'
+
+    VerifyShowRoutesonSR2: &VerifyShowRoutesonSR2
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.60.0/24'
+                  nexthop: '192.168.60.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+
+    VerifyBGProutesonSR1: &VerifyBGProutesonSR1
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+
+    VerifyBGProutesonSR2: &VerifyBGProutesonSR2
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+
+
+# TestCase6
+    UpdateBGPNbrwithIncorrectAS: &UpdateBGPNbrwithIncorrectAS
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        expectedresult: "FAIL"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                expectedresult: "FAIL"
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      source: '192.168.50.1'
+                      remoteas: 100000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      source: '192.168.60.1'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+
+    VerifyBGPneighboronSR1withIncorrectAS: &VerifyBGPneighboronSR1withIncorrectAS
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.11'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '0.0.0.0'
+                  bgp_state: 'active'
+                  remote_host: '192.168.50.11'
+                  bgp_neighbor: '192.168.50.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+    VerifyBGPConfigonSR1withIncorrectAS: &VerifyBGPConfigonSR1withIncorrectAS
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        expectedresult: "FAIL"
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer[?]equal_to': '90'
+                      'ipaddress[?]equal_to': '192.168.50.11'
+                      'keepalivetimer[?]equal_to': '30'
+                      'remoteas[?]equal_to': '100000'
+                      'srcipaddress[?]equal_to': '192.168.50.1'
+                      'name[?]equal_to': 'bgp-neighbour-1'
+                      'weight[?]equal_to': '60'
+
+    UpdateBGPNbrwithNbrIPMismatch: &UpdateBGPNbrwithNbrIPMismatch
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.110'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+
+    VerifyBGPconfigonSR1withNbrIPMismatch: &VerifyBGPconfigonSR1withNbrIPMismatch
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.110'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyBGPconfigonSR2withNbrIPMismatch: &VerifyBGPconfigonSR2withNbrIPMismatch
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.110'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyBGPneighboronSR1withNbrIPMismatch: &VerifyBGPneighboronSR1withNbrIPMismatch
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.11'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.50.11'
+                  bgp_neighbor: '192.168.50.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+    VerifyBGPneighboronSR2withNbrIPMismatch: &VerifyBGPneighboronSR2withNbrIPMismatch
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        ip_address: '192.168.60.110'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '0.0.0.0'
+                  bgp_state: 'active'
+                  remote_host: '192.168.60.110'
+                  bgp_neighbor: '192.168.60.110'
+                  keep_alive_interval: '0'
+                  hold_time: '0'
+                  bgp_status: 'up'
+
+    VerifyNoBGProutesonSR2:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]not_contains':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+
+
+    Configure_BGP_vEDGE1withPasswd: &Configure_BGP_vEDGE1withPasswd
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1]'
+        bgp:
+            '[1]':
+                localas: '1000'
+                gracefulrestart: 'disabled'
+                bgpneighbours:
+                    - remoteas: '100'
+                      ipaddress: '192.168.50.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                      password: 'nsx'
+                    - remoteas: '100'
+                      ipaddress: '192.168.60.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                      password: 'nsx'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+
+    UpdateBGPNbrwithPasswdMismatch: &UpdateBGPNbrwithPasswdMismatch
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                      password: nsx
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                      password: cisco
+
+    VerifyBGPconfigonSR1withPasswdMismatch: &VerifyBGPconfigonSR1withPasswdMismatch
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'password': '****'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'password': '****'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyBGPconfigonSR2withPasswdMismatch: &VerifyBGPconfigonSR2withPasswdMismatch
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'password': '****'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'password': '****'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyBGPneighboronSR1withPasswdMismatch: &VerifyBGPneighboronSR1withPasswdMismatch
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.11'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.50.11'
+                  bgp_neighbor: '192.168.50.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+    VerifyBGPneighboronSR2withPasswdMismatch: &VerifyBGPneighboronSR2withPasswdMismatch
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        ip_address: '192.168.60.11'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '0.0.0.0'
+                  remote_host: '192.168.60.11'
+                  bgp_neighbor: '192.168.60.11'
+                  keep_alive_interval: '0'
+                  hold_time: '0'
+                  bgp_status: 'up'
+
+    UpdateBGPNbrwithPasswdMatch: &UpdateBGPNbrwithPasswdMatch
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                      password: nsx
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                      password: nsx
+
+    VerifyBGPconfigonSR1withPasswdMatch: &VerifyBGPconfigonSR1withPasswdMatch
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'password': '****'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'password': '****'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyBGPconfigonSR2withPasswdMatch: &VerifyBGPconfigonSR2withPasswdMatch
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'password': '****'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'password': '****'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+# EdgeVnics Disocvery
+    DiscoverEdgeVnics: &DISCOVER_EDGE_VNICS
+        - - 'DiscoverEdge1Vnics'
+        - - 'DiscoverEdge2Vnics'
+
+    DiscoverEdge1Vnics:
+        Type:  VM
+        TestVM: 'nsxedge.[1]'
+        vnic:
+            '[1-3]':
+                discover: 'true'
+    DiscoverEdge2Vnics:
+        Type:  VM
+        TestVM: 'nsxedge.[2]'
+        vnic:
+            '[1-3]':
+                discover: 'true'
+    DiscoverEdge3Vnics:
+        Type:  VM
+        TestVM: 'nsxedge.[3]'
+        vnic:
+            '[1-3]':
+                discover: 'true'
+
+
+###
+    RegisterController: *REGISTER_CONTROLLER
+    SetManagerOnHost: *SET_MANAGER_ON_HOST
+    DiscoverHostnodes: *DISCOVER_HOST_NODES
+    CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01--ESX
+    CreateOverlayTransportZone: *CREATE_OVERLAY_TRANSPORT_ZONE_01
+    CreateOverlayTransportNodes: *CREATE_OVERLAY_TRANSPORT_NODES--ESX
+    CreateVlanTransportZone: *CREATE_VLAN_TRANSPORT_ZONE_01
+    CreateVlanTransportNodes: *CREATE_VLAN_TRANSPORT_NODES--ESX
+    CreateUplinkLogicalSwitches: *CREATE_UPLINK_LOGICAL_SWITCHES
+    CreateDownlinkLogicalSwitches: *CREATE_DOWNLINK_LOGICAL_SWITCHES
+    CreateUplinkLogicalPorts: *CREATE_UPLINK_LPORTS
+    CreateDownlinkLogicalPortsPLR: *CREATE_DOWNLINK_LPORTS_PLR
+    RegisterAllEdgeNodes: *REGISTER_ALL_EDGE_NODES
+    DiscoverEdgeNodeIds: *DISCOVER_EDGE_NODE_IDS
+    CreateFabricProfile: *CREATE_FABRIC_PROFILE
+    CreateEdgeCluster: *CREATE_EDGE_CLUSTER
+    CreateProviderLogicalRouter1: *CREATE_PLR_01
+    CreateUplinksPLR1: *CREATE_PLR_01_UPLINKS
+    CreateDownlinksPLR1: *CREATE_PLR_01_DOWNLINKS
+    DiscoverEdgeVnics: *DISCOVER_EDGE_VNICS
+
+    VifAttachmentAllVMsESX: *VIF_ATTACHMENT_ALL_VMS_ESX
+    VifAttachmentNSVM1: *VIF_ATTACHMENT_NS_VM1--ESX
+    VifAttachmentNSVM2: *VIF_ATTACHMENT_NS_VM2--ESX
+    VifAttachmentNSVM3: *VIF_ATTACHMENT_NS_VM3--ESX
+
+    PowerOnAllVMs: *POWER_ON_ALL_VMS
+    ConfigureIPAllVMVNics: *CONFIGURE_IP_ALL_VM_VNICS
+    AddRouteAllVMs: *ADD_ROUTE_ALL_VMS
+
+    Configure_BGP_vEDGE1: *Configure_BGP_vEDGE1
+    Enable_ECMP_vEDGE_GATEWAY1: *Enable_ECMP_vEDGE_GATEWAY1
+    CreateGatewayInterface1vEDGE1: *CreateGatewayInterface1vEDGE1
+    CreateGatewayInterface2vEDGE1: *CreateGatewayInterface2vEDGE1
+
+    AddRouteRedistribution: *ADD_ROUTE_REDISTRIBUTION
+    AddRoutingGlobalConfig: *ADD_ROUTINGGLOBAL_CONFIG
+    UpdateBGPwithoutListenerIP: *UpdateBGPwithoutListenerIP
+    DeployGatewayServicesEDGE1: *DeployGatewayServicesEDGE1
+#    DeployGatewayServicesEDGE2: *DeployGatewayServicesEDGE2
+    DisableFirewall_EDGE1: *DisableFirewall_EDGE1
+#    DisableFirewall_EDGE2: *DisableFirewall_EDGE2
+    Configure_BGP_vEDGE1: *Configure_BGP_vEDGE1
+    Enable_ECMP_vEDGE_GATEWAY1: *Enable_ECMP_vEDGE_GATEWAY1
+    CreateGatewayInterface1vEDGE1: *CreateGatewayInterface1vEDGE1
+    CreateGatewayInterface2vEDGE1: *CreateGatewayInterface2vEDGE1
+    Enable_promiscuous_dvpg1: *Enable_promiscuous_dvpg1
+    Enable_promiscuous_dvpg2: *Enable_promiscuous_dvpg2
+    Enable_promiscuous_dvpg100: *Enable_promiscuous_dvpg100
+
+# TestCase6
+    DeleteBGPConfigonTier0:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+               {}
+
+
+    UpdateBGPNbrwithIncorrectAS:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        expectedresult: "FAIL"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                expectedresult: "FAIL"
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      source: '192.168.50.1'
+                      remoteas: 100000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      source: '192.168.60.1'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+
+    VerifyBGPneighboronSR1withIncorrectAS:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.1'
+        get_ip_bgp_neighbors:
+            'table[?]not_contains':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'active'
+                  remote_host: '192.168.50.11'
+                  bgp_neighbor: '192.168.50.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+    VerifyBGPConfigonSR1withIncorrectAS:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        expectedresult: "FAIL"
+        get_configuration_bgp:
+            'bgp[?]not_contains':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer[?]equal_to': '90'
+                      'ipaddress[?]equal_to': '192.168.50.11'
+                      'keepalivetimer[?]equal_to': '30'
+                      'remoteas[?]equal_to': '100000'
+                      'srcipaddress[?]equal_to': '192.168.50.1'
+                      'name[?]equal_to': 'bgp-neighbour-1'
+                      'weight[?]equal_to': '60'
+    VerifyBGPneighboronSR2withIncorrectAS:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        ip_address: '192.168.60.11'
+        get_ip_bgp_neighbors:
+            'table[?]not_contains':
+                - local_host: '192.168.60.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.60.11'
+                  bgp_neighbor: '192.168.60.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+
+    VerifyBGPConfigonSR2withIncorrectAS:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        expectedresult: "FAIL"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]not_contains':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]not_contains':
+                    - 'holddowntimer[?]equal_to': '90'
+                      'ipaddress[?]equal_to': '192.168.60.11'
+                      'keepalivetimer[?]equal_to': '30'
+                      'remoteas[?]equal_to': '1000'
+                      'srcipaddress[?]equal_to': '192.168.60.1'
+                      'name[?]equal_to': 'bgp-neighbour-2'
+                      'weight[?]equal_to': '60'
+
+#TestCase13
+
+    ConfigureDummyStaticRoute:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrstaticroutes:
+            '[1]':
+                staticroutes:
+                    - name: 'Dummy Static Route'
+                      next_hops:
+                          - '192.168.1.1'
+                      network: '80.80.80.0/24'
+
+    RedistributeConnectedandStatic:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        redistributionconfig:
+            '[1]':
+                redistributionenabled: 'true'
+                rules:
+                    - fromprotocol:
+                          - 'CONNECTED'
+                          - 'INTERNAL'
+                          - 'STATIC'
+                      toprotocol: 'BGP'
+                      name: 'rule2'
+                      summary: 'Rule 2'
+    VerifyonSR1_connected_static_routes:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '80.80.80.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  via: 'via'
+
+    VerifyonSR2_connected_static_routes:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '80.80.80.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  via: 'via'
+
+
+
+    VerifyBGPRedistributedRoutesonSR1:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '80.80.80.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+
+    VerifyBGPRedistributedRoutesonSR2:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '80.80.80.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+
+
+    RemoveStaticRouteRedistribution:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        redistributionconfig:
+            '[1]':
+                redistributionenabled: 'true'
+                rules:
+                    - fromprotocol:
+                          - 'CONNECTED'
+                          - 'INTERNAL'
+                      toprotocol: 'BGP'
+                      name: 'rule2'
+                      summary: 'Rule 2'
+    VerifyBGPRedistributedRoutesonSR1_without_dummy_static_route:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+
+    VerifyBGPRedistributedRoutesonSR2_without_dummy_static_route:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+
+
+    DeleteDummyStaticRoute:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrstaticroutes:
+            '[1]':
+                {}
+
+#TestCase17
+    Change_BGP_vEDGE1_AS:
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1]'
+        bgp:
+            '[1]':
+                localas: '2000'
+                gracefulrestart: 'disabled'
+                bgpneighbours:
+                    - remoteas: '100'
+                      ipaddress: '192.168.50.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                    - remoteas: '100'
+                      ipaddress: '192.168.60.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+
+    UpdateBGPwithoutListenerIP_ChangedRemoteAS:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      remoteas: 2000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      remoteas: 2000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+
+    VerifyShowBGPConfigonSR1withoutSrcIP_ChangedRemoteAS:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '2000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '2000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyShowBGPConfigonSR2withoutSrcIP_ChangedRemoteAS:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '2000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '2000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    Change_BGP_vEDGE1_RemoteAS:
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1]'
+        bgp:
+            '[1]':
+                localas: '1000'
+                gracefulrestart: 'disabled'
+                bgpneighbours:
+                    - remoteas: '200'
+                      ipaddress: '192.168.50.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                    - remoteas: '200'
+                      ipaddress: '192.168.60.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+
+    UpdateBGPwithoutListenerIP_ChangedSelfAS:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 200
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+
+    VerifyShowBGPConfigonSR1withoutSrcIP_ChangedSelfAS:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '200'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyShowBGPConfigonSR2withoutSrcIP_ChangedSelfAS:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '200'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+
+    Delete_BGP_vEDGE1: &Delete_BGP_vEDGE1
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1]'
+        bgp:
+            '[1]':
+                enabled: 'false'
+                localas: '1000'
+
+    CreateGatewayInterface2vEDGE1_diffIP:
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vc.[1].dvportgroup.[1]"
+                ipv4address: "192.168.50.110"
+                netmask: "255.255.255.0"
+                type: "uplink"
+    Configure_BGP_vEDGE1_diffIP:
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1]'
+        bgp:
+            '[1]':
+                localas: '1000'
+                gracefulrestart: 'disabled'
+                bgpneighbours:
+                    - remoteas: '100'
+                      ipaddress: '192.168.50.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                    - remoteas: '100'
+                      ipaddress: '192.168.60.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+    UpdateBGPwithoutListenerIP_diffRemoteIP:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.110'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+
+    VerifyShowBGPConfigonSR1withoutSrcIP_diffRemoteIP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.110'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyShowBGPConfigonSR2withoutSrcIP_diffRemoteIP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.110'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyBGPneighboronSR1withoutSrcIP_diffRemoteIP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.110'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.50.110'
+                  bgp_neighbor: '192.168.50.110'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+    VerifyBGPneighboronSR2withoutSrcIP_diffRemoteIP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        ip_address: '192.168.60.11'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '192.168.60.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.60.11'
+                  bgp_neighbor: '192.168.60.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+    VerifyShowRoutesonSR1_diffRemoteIP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.110'
+                  via: 'via'
+
+    VerifyBGProutesonSR1_diffRemoteIP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.110'
+#TestCase21
+    ChangeSR1BGPHello25:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1'
+                      summary: 'BGP Neighbour 1'
+                      ipaddress: '192.168.50.11'
+                      remoteas: 1000
+                      keepalivetimer: 25
+                      holddowntimer: 75
+                      weight: 60
+                    - name: 'bgp-neighbour-2'
+                      summary: 'BGP Neighbour 2'
+                      ipaddress: '192.168.60.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+
+    VerifyShowBGPConfigonSR1withoutSrcIPHello25:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '75'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '25'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyBGPneighboronSR1withoutSrcIPHello25:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.11'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.50.11'
+                  bgp_neighbor: '192.168.50.11'
+                  keep_alive_interval: '25'
+                  hold_time: '75'
+                  bgp_status: 'up'
+
+    VerifyShowBGPConfigonSR2withoutSrcIPHello25:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '75'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '25'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+#TestCase22:
+    PowerOffEdge1:
+        Type: "VM"
+        TestVM: "nsxedge.[1]"
+        vmstate: "poweroff"
+        sleepbetweenworkloads: "30"
+
+    PowerOffEdge2:
+        Type: "VM"
+        TestVM: "nsxedge.[2]"
+        vmstate: "poweroff"
+        sleepbetweenworkloads: "30"
+
+    PowerOnEdge1:
+        Type: "VM"
+        TestVM: "nsxedge.[1]"
+        vmstate: "poweron"
+        sleepbetweenworkloads: "30"
+
+    PowerOnEdge2:
+        Type: "VM"
+        TestVM: "nsxedge.[2]"
+        vmstate: "poweron"
+        sleepbetweenworkloads: "30"
+
+    RebootEdge1:
+        Type: "VM"
+        TestVM: "nsxedge.[1]"
+        vmstate: "reboot"
+        sleepbetweenworkloads: "30"
+
+    RebootEdge2:
+        Type: "VM"
+        TestVM: "nsxedge.[2]"
+        vmstate: "reboot"
+        sleepbetweenworkloads: "30"
+
+
+
+
+
+#TestCase23:
+
+    ClearIpBGP_SR1:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            clear_ip_bgp:
+                execution_type: 'cli'
+
+    ClearIpBGP_SR2:
+            Type: Gateway
+            TestGateway: 'nsxedge.[2]'
+            clear_ip_bgp:
+                execution_type: 'cli'
+
+
+#TestCase24:
+
+    RebootController:
+        Type: NSX
+        TestNSX: nsxcontroller.[1]
+        reboot:
+            execution_type: cli
+
+    RebootManager:
+        Type: NSX
+        TestNSX: "nsxmanager.[1]"
+        configure_power_state:
+            state: 'reboot'
+            execution_type: 'cli'
+#TestCase27
+    VerifyBGProutesonSR1_ECMP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                - network: '192.168.70.0/24'
+                  nexthop: '192.168.50.12'
+
+    VerifyBGProutesonSR2_ECMP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                - network: '192.168.70.0/24'
+                  nexthop: '192.168.60.12'
+
+    VerifyBGProutesonSR1_ECMP_NovEdge1:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.12'
+
+    VerifyBGProutesonSR2_ECMP_NovEdge1:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.12'
+
+    VerifyShowRoutesonSR1_ECMP_NovEdge1:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                  via: 'via'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.12'
+                  via: 'via'
+
+    VerifyShowRoutesonSR2_ECMP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.60.0/24'
+                  nexthop: '192.168.60.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.12'
+                  via: 'via'
+
+    VerifyShowRoutesonSR2_ECMP_NovEdge1:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.60.0/24'
+                  nexthop: '192.168.60.1'
+                  via: 'via'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.12'
+                  via: 'via'
+
+    VerifyShowRoutesonSR1_ECMP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  via: 'via'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.12'
+                  via: 'via'
+
+
+    VerifyBGPneighboronSR1_E2:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.12'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.50.12'
+                  bgp_neighbor: '192.168.50.12'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+    VerifyBGPneighboronSR1_NovEdge1:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.11'
+        get_ip_bgp_neighbors:
+            'table[?]not_contains':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.50.11'
+                  bgp_neighbor: '192.168.50.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+
+    VerifyBGPneighboronSR2_E2:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        ip_address: '192.168.60.12'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '192.168.60.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.60.12'
+                  bgp_neighbor: '192.168.60.12'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+    VerifyBGPneighboronSR2_NovEdge1:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        ip_address: '192.168.60.11'
+        get_ip_bgp_neighbors:
+            'table[?]not_contains':
+                - local_host: '192.168.60.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.60.11'
+                  bgp_neighbor: '192.168.60.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+    VerifyShowBGPConfigonSR1withoutSrcIP_ECMP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1a'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.12'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1b'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2a'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.12'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2b'
+                      'weight': '60'
+
+    VerifyShowBGPConfigonSR2withoutSrcIP_ECMP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1a'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.12'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1b'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2a'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.12'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2b'
+                      'weight': '60'
+
+    PowerOff_vEDGE1:
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        vmstate: "poweroff"
+
+    PowerOn_vEDGE1:
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        vmstate: "poweron"
+
+    UpdateBGPwithoutListenerIP_ECMP:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+        lrbgp:
+            '[1]':
+                bgpenabled: 'true'
+                localas: 100
+                gracefulrestart: 'false'
+                bgpneighbours:
+                    - name: 'bgp-neighbour-1a'
+                      summary: 'BGP Neighbour 1a'
+                      ipaddress: '192.168.50.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2a'
+                      summary: 'BGP Neighbour 2a'
+                      ipaddress: '192.168.60.11'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-1b'
+                      summary: 'BGP Neighbour 1b'
+                      ipaddress: '192.168.50.12'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+                    - name: 'bgp-neighbour-2b'
+                      summary: 'BGP Neighbour 2b'
+                      ipaddress: '192.168.60.12'
+                      remoteas: 1000
+                      keepalivetimer: 30
+                      holddowntimer: 90
+                      weight: 60
+
+
+#TestCase12
+    VerifySR1vNic2IP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        adapter_name: 'vNic_2'
+        show_interface:
+            'vnic_state[?]equal_to': 'up'
+            'ip4[?]contain_once':
+                - '169.0.0.3'
+
+    VerifySR2vNic2IP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        adapter_name: 'vNic_2'
+        show_interface:
+            'vnic_state[?]equal_to': 'up'
+            'ip4[?]contain_once':
+                - '169.0.0.2'
+
+    VerifyShowRoutesonSR1_noVM2route:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  via: 'via'
+
+
+    VerifyShowRoutesonSR2_noVM2route:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.60.0/24'
+                  nexthop: '192.168.60.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+
+    VerifyBGProutesonSR1_noVM2route:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+
+    VerifyBGProutesonSR2_noVM2route:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+
+    DeletePLRdownlinklportVM2:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deletelogicalrouterport: nsxmanager.[1].logicalrouterport.[102]
+
+    ReconnectPLRdownlinklportVM2:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        logicalrouterport:
+            '[102]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_downlink'
+                summary: 'Downlink for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[102]->id
+                resource_type: "LogicalRouterDownLinkPort"
+                subnets:
+                   - prefixlen: 24
+                     ip_addresses:
+                         - '192.168.2.1'
+#TestCase8a:
+    VerifyShowRoutesonSR1_noSBroutes:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]not_contains':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+
+
+    VerifyBGProutesonSR1_noSBroutes:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]not_contains':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+    DisconnectSR1_TLS: &DisconnectSR1_TLS
+        Type:  NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[3]'
+        reconfigure: 'true'
+        connected: 0
+        startconnected: 0
+        allowguestcontrol: 0
+
+    ReconnectSR1_TLS: &ReconnectSR1_TLS
+        Type:  NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[3]'
+        reconfigure: 'true'
+        connected: 1
+        startconnected: 1
+        allowguestcontrol: 1
+#TestCase8b
+
+
+    DisconnectSR1_vEdge1: &DisconnectSR1_vEdge1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vc.[1].dvportgroup.[1]"
+                ipv4address: "192.168.50.11"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+    DisconnectSR2_vEdge1: &DisconnectSR2_vEdge1
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[2]':
+                name: "vnic2"
+                index: "2"
+                portgroup: "vc.[1].dvportgroup.[2]"
+                ipv4address: "192.168.60.11"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "0"
+
+
+    VerifySR1vNic2IPLost:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        adapter_name: 'vNic_2'
+        show_interface:
+            'ip4[?]not_contains':
+                - '169.0.0.3'
+    VerifySR2vNic2IPwithSR1IP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        adapter_name: 'vNic_2'
+        show_interface:
+            'vnic_state[?]equal_to': 'up'
+            'ip4[?]contain_once':
+                - '169.0.0.2'
+            'ip4[?]contain_once':
+                - '169.0.0.3'
+
+    VerifySR2vNic2IPwithoutSR1IP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        adapter_name: 'vNic_2'
+        show_interface:
+            'vnic_state[?]equal_to': 'up'
+            'ip4[?]not_contains':
+                - '169.0.0.3'
+
+    VerifyBGPneighboronSR1_noBGP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.11'
+        get_ip_bgp_neighbors:
+            'table[?]not_contains':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.50.11'
+                  bgp_neighbor: '192.168.50.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+    VerifyShowRoutesonSR1_noBGP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]not_contains':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  via: 'via'
+
+    VerifyBGProutesonSR1_noBGP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]not_contains':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+
+    ReconnectSR1_vEdge1:
+        Type: "VM"
+        TestVM: "vsm.[1].gateway.[1]"
+        interface:
+            '[1]':
+                name: "vnic1"
+                index: "1"
+                portgroup: "vc.[1].dvportgroup.[1]"
+                ipv4address: "192.168.50.11"
+                netmask: "255.255.255.0"
+                type: "uplink"
+                connected: "1"
+#TestCase8c
+    DisconnectSR1_Mgmt:
+        Type:  NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[1]'
+        reconfigure: 'true'
+        connected: 0
+        startconnected: 0
+        allowguestcontrol: 0
+    ReconnectSR1_Mgmt:
+        Type:  NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[1]'
+        reconfigure: 'true'
+        connected: 1
+        startconnected: 1
+        allowguestcontrol: 1
+#Testcase8e
+    Configure_BGP_vEDGE1_removeSR1peer:
+        Type: 'Router'
+        TestRouter: 'vsm.[1].gateway.[1]'
+        bgp:
+            '[1]':
+                localas: '1000'
+                gracefulrestart: 'disabled'
+                bgpneighbours:
+                    - remoteas: '100'
+                      ipaddress: '192.168.60.1'
+                      keepalivetimer: '30'
+                      holddowntimer: '90'
+                redistribution:
+                    enabled: 'true'
+                    rules:
+                        - id: '0'
+                          action: 'permit'
+                          fromprotocol:
+                              connected: 'true'
+                              static: 'true'
+#Testcase26
+    DeleteUplinksPLR1SR1: &DeleteUplinksPLR1SR1
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        deletelogicalrouterport: "nsxmanager.[1].logicalrouteruplinkport.[1]"
+
+    RemoveSR1FromEdgeCluster: &RemoveSR1FromEdgeCluster
+        Type: "Gateway"
+        TestGateway: "nsxmanager.[1].edgecluster.[1]"
+        reconfigure: "true"
+        sleepbetweenworkloads: '60'
+        name: 'edge_cluster_plr1'
+        summary: 'Edge cluster for PLR1 uplinks'
+        members:
+            - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+        fabric_profile_bindings:
+            - resource_type: "FabricProfileClusterKeepAlive" # CLUSTER_KEEPALIVE"
+              fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+    VerifyBGProutesonSR1_Null: &VerifyBGProutesonSR1_Null
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]not_contains':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+
+    CreateSR3: &CreateSR3
+        Type: Root
+        TestNode: 'root.[1]'
+        nsxedge:
+            '[3]':
+                'username' : 'admin'
+                'password' : 'C@shc0w12345'
+                'build': '2488128'
+                'edgetype': 'compact'
+                'esx': 'esx.[1]'
+                'management_network': 'VM Network'
+                'internal_network': 'VM Network'
+                'uplink_network': 'VM Network'
+                'installtype': 'nested'
+
+    RegisterEdgeNode03: &RegisterEdgeNode03
+        Type: Gateway
+        TestGateway: 'nsxedge.[3]'
+        register_nsx_edge_node:
+            manager_username: 'admin'
+            manager_password: 'default'
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+
+
+    DiscoverEdgeNode3Ids: &DiscoverEdgeNode3Ids
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        edgenode:
+            '[3]':
+                discover: 'true'
+                resource_type: "EdgeNode"
+                ipaddresses:
+                    - 'nsxedge.[3]->management_ip'
+
+
+    UpdateEdgeClusterwithSR3: &UpdateEdgeClusterwithSR3
+        Type: "Gateway"
+        TestGateway: "nsxmanager.[1].edgecluster.[1]"
+        reconfigure: 'true'
+        sleepbetweenworkloads: '60'
+        name: 'edge_cluster_plr1'
+        summary: 'Edge cluster for PLR1 uplinks'
+        members:
+            - edge_node_id: 'nsxmanager.[1].edgenode.[3]'
+            - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+        fabric_profile_bindings:
+            - resource_type: "FabricProfileClusterKeepAlive" # CLUSTER_KEEPALIVE"
+              fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+
+
+    AttachEdge3Vnic2ToUplinkLS1: &AttachEdge3Vnic2ToUplinkLS1
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[3].vnic.[2]'
+        portgroup: nsxmanager.[1].logicalswitch.[1]
+
+
+    CreateUplinksPLR1SR3: &CREATE_PLR_01_UPLINKS_SR3
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        logicalrouteruplinkport:
+            '[3]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_uplink3'
+                summary: 'Uplink 3 for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+                gateway_cluster_member_index: [2]
+                resource_type: "LogicalRouterUpLinkPort"
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                        - '192.168.50.1'
+    DeployVM11:
+        Type: Root
+        TestNode: 'root.[1]'
+        vm:
+            '[11]':
+                template: 'rhel53-srv-32'
+                host: 'esx.[2]'
+                vmstate: poweroff
+
+    DeployVM12:
+        Type: Root
+        TestNode: 'root.[1]'
+        vm:
+            '[12]':
+                template: 'rhel53-srv-32'
+                host: 'esx.[3]'
+                vmstate: poweroff
+#TestCase11
+    VerifyShowRoutesonSR1_TLR: &VerifyShowRoutesonSR1_TLR
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.10.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+
+    VerifyShowRoutesonSR2_TLR: &VerifyShowRoutesonSR2_TLR
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.60.0/24'
+                  nexthop: '192.168.60.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.10.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+
+    VerifyBGProutesonSR1_TLR: &VerifyBGProutesonSR1_TLR
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                - scode: '>'
+                  network: '192.168.10.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+
+    VerifyBGProutesonSR2_TLR: &VerifyBGProutesonSR2_TLR
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                - scode: '>'
+                  network: '192.168.10.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+
+    VerifyShowIpForwardingonSR1_TLR:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.10.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+
+    VerifyShowIpForwardingonSR2_TLR:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.10.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+                  vnicname: 'vNic_1'
+
+
+
+
+
+    VerifyShowRoutesonSR1_TLR12only_noTLR11:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+
+    VerifyShowRoutesonSR2_TLR12only_noTLR11:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.60.0/24'
+                  nexthop: '192.168.60.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+
+    VerifyBGProutesonSR1_TLR12only_noTLR11:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                - scode: '>'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+
+    VerifyBGProutesonSR2_TLR12only_noTLR11:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                - scode: '>'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+
+    VerifyShowIpForwardingonSR1_TLR12only_noTLR11:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  via: 'via'
+                  vnicname: 'vNic_1'
+
+    VerifyShowIpForwardingonSR2_TLR12only_noTLR11:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.20.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+                  vnicname: 'vNic_1'
+
+
+    VerifyShowIpForwardingonSR1:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  vnicname: 'vNic_1'
+
+    VerifyShowIpForwardingonSR2:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+                  vnicname: 'vNic_1'
+
+
+
+    VerifyShowIpForwardingonSR1_noBGP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]not_contains':
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+
+    VerifyShowIpForwardingonSR1_noVM2route:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+            'table[?]not_contains':
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+
+    VerifyShowIpForwardingonSR2_noVM2route:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+                  vnicname: 'vNic_1'
+            'table[?]not_contains':
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+
+
+    VerifyShowIpForwardingonSR1_ECMP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.12'
+
+    VerifyShowIpForwardingonSR1_NovEdge1:
+        Type: Gateway
+        TestGateway: 'nsxedge.[1]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.12'
+
+    VerifyShowIpForwardingonSR2_ECMP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+                  vnicname: 'vNic_1'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.11'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+
+
+    VerifyShowIpForwardingonSR2_NovEdge1:
+        Type: Gateway
+        TestGateway: 'nsxedge.[2]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.60.12'
+                  via: 'via'
+                  vnicname: 'vNic_1'
+#testcase26
+    VerifyShowBGPConfigonSR3withoutSrcIP:
+        Type: Gateway
+        TestGateway: 'nsxedge.[3]'
+        sleepbetweenworkloads: "30"
+        execution_type: 'cli'
+        get_configuration_bgp:
+            'bgp[?]contain_once':
+                'gracefulrestart[?]boolean': 'False'
+                'localas[?]equal_to': '100'
+                'enabled[?]boolean': 'True'
+                'neighbors[?]contain_once':
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.50.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-1'
+                      'weight': '60'
+                    - 'holddowntimer': '90'
+                      'ipaddress': '192.168.60.11'
+                      'keepalivetimer': '30'
+                      'remoteas': '1000'
+                      'name': 'bgp-neighbour-2'
+                      'weight': '60'
+
+    VerifyBGPneighboronSR3:
+        Type: Gateway
+        TestGateway: 'nsxedge.[3]'
+        execution_type: 'cli'
+        ip_address: '192.168.50.11'
+        get_ip_bgp_neighbors:
+            'table[?]contain_once':
+                - local_host: '192.168.50.1'
+                  bgp_state: 'established'
+                  remote_host: '192.168.50.11'
+                  bgp_neighbor: '192.168.50.11'
+                  keep_alive_interval: '30'
+                  hold_time: '90'
+                  bgp_status: 'up'
+
+
+    VerifyShowRoutesonSR3:
+        Type: Gateway
+        TestGateway: 'nsxedge.[3]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: "30"
+        get_ip_route:
+            'table[?]contain_once':
+                - code: 'S'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'S'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                - code: 'C'
+                  network: '192.168.50.0/24'
+                  nexthop: '192.168.50.1'
+                - code: 'B'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+                  via: 'via'
+
+    VerifyBGProutesonSR3:
+        Type: Gateway
+        TestGateway: 'nsxedge.[3]'
+        execution_type: 'cli'
+        table_name: 'bgp'
+        get_ip:
+            'table[?]contain_once':
+                - scode: '>'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                - scode: '>'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+
+
+    VerifyShowIpForwardingonSR3:
+        Type: Gateway
+        TestGateway: 'nsxedge.[3]'
+        execution_type: 'cli'
+        table_name: 'forwarding'
+        get_ip:
+            'table[?]contain_once':
+                - code: 'R>*'
+                  network: '192.168.1.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.2.0/24'
+                  nexthop: '169.0.0.1'
+                  via: 'via'
+                  vnicname: 'vNic_2'
+                - code: 'R>*'
+                  network: '192.168.70.0/24'
+                  nexthop: '192.168.50.11'
+
+
+    PLR_SETUP: &PLR_SETUP
+        - - 'RegisterController'
+        - - 'SetManagerOnHost'
+        - - 'DiscoverHostnodes'
+        - - 'CreateUplinkProfile'
+        - - 'CreateOverlayTransportZone'
+        - - 'CreateVlanTransportZone'
+        - - 'CreateOverlayTransportNodes'
+        - - 'CreateVlanTransportNodes'
+        - - 'CreateUplinkLogicalSwitches'
+        - - 'CreateDownlinkLogicalSwitches'
+        - - 'CreateUplinkLogicalPorts'
+        - - 'CreateDownlinkLogicalPortsPLR'
+
+        - - 'RegisterAllEdgeNodes'
+        - - 'DiscoverEdgeNodeIds'
+        - - 'CreateFabricProfile'
+        - - 'CreateEdgeCluster'
+        - - 'CreateProviderLogicalRouter1'
+        - - 'CreateUplinksPLR1'
+        - - 'CreateDownlinksPLR1'
+
+        - - 'VifAttachmentAllVMsESX'
+        - - 'PowerOnAllVMs'
+        - - 'ConfigureIPAllVMVNics'
+        - - 'AddRouteAllVMs'
+
+        - - 'DeployGatewayServicesEDGE1'
+        - - 'DisableFirewall_EDGE1'
+        - - 'CreateGatewayInterface1vEDGE1'
+        - - 'CreateGatewayInterface2vEDGE1'
+        - - 'Enable_ECMP_vEDGE_GATEWAY1'
+        - - 'Configure_BGP_vEDGE1'
+
+        - - 'Enable_promiscuous_dvpg1'
+        - - 'Enable_promiscuous_dvpg2'
+        - - 'Enable_promiscuous_dvpg100'
+        - - 'AddRoutingGlobalConfig'
+        - - 'UpdateBGPwithoutListenerIP'
+        - - 'AddRouteRedistribution'
+
+    TLR_SETUP: &TLR_SETUP
+        - - 'CreateTLR11'
+        - - 'CreateTLR12'
+        - - 'CreateLogicalSwitchforTLRs'
+        - - 'CreateRouterLinkPortsonPLR'
+        - - 'CreateRouterLinkPortsonTLR11'
+        - - 'CreateRouterLinkPortsonTLR12'
+        - - 'CreateDownlinkLogicalPortsTLR'
+        - - 'CreateDownlinkTier11LogicalRouterPortOnLS11'
+        - - 'CreateDownlinkTier12LogicalRouterPortOnLS12'
+        - - 'AdvertiseRouteonTLR11'
+        - - 'AdvertiseRouteonTLR12'
+
+        - - 'DeployVM11'
+        - - 'DeployVM12'
+        - - 'VifAttachmentVM11'
+        - - 'VifAttachmentVM12'
+        - - 'PowerOnVM11'
+        - - 'PowerOnVM12'
+        - - 'ConfigureVM11Vnic1IP'
+        - - 'AddRouteVM11'
+        - - 'ConfigureVM12Vnic1IP'
+        - - 'AddRouteVM12'
+
+    PLR_CLEANUP: &PLR_CLEANUP
+        - - 'PowerOffAllVMs'
+        - - 'DeleteTestVnicsAllVMs'
+        - - 'CleanupNSX'
+        - - 'UnregisterHost'
+        - - 'DeleteGatewayServicesEDGE1'
+
+    TLR_CLEANUP: &TLR_CLEANUP
+        - - 'PowerOffVM11'
+        - - 'PowerOffVM12'
+        - - 'DeleteVnicVM11'
+        - - 'DeleteVnicVM12'
+    CleanupNSX: &CLEAN_NSX
+        - - 'DeleteAllLRPorts'
+        - - 'DeleteAllLRUplinkPorts'
+        - - 'DeleteAllLRs'
+        - - 'DeleteAllLPorts'
+        - - 'DeleteAllLSwitches'
+        - - 'DeleteAllEdgeClusters'
+        - - 'DeleteAllEdgeNodes'
+        - - 'DeleteAllTransportNodes'
+        - - 'DeleteAllUplinkProfiles'
+        - - 'DeleteAllFabricProfiles'
+        - - 'DeleteAllTransportZones'
+
+    CleanupTemplate: &CLEANUP_TEMPLATE
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+
+
+    DeleteAllLRPorts:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[-1]"
+
+    DeleteAllLRUplinkPorts:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalrouteruplinkport: "nsxmanager.[1].logicalrouteruplinkport.[-1]"
+
+    DeleteAllLRs:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalrouter: "nsxmanager.[1].logicalrouter.[-1]"
+
+    DeleteAllLRLinkPorts:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalrouterlinkport: "nsxmanager.[1].logicalrouterlinkport.[-1]"
+
+    DeleteAllLPorts:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalport : "nsxmanager.[1].logicalport.[-1]"
+
+    DeleteAllLSwitches:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[-1]"
+    DeleteAllTransportNodes:
+        <<: *CLEANUP_TEMPLATE
+        deletetransportnode: "nsxmanager.[1].transportnode.[-1]"
+
+    DeleteAllUplinkProfiles:
+        <<: *CLEANUP_TEMPLATE
+        deleteuplinkprofile: "nsxmanager.[1].uplinkprofile.[-1]"
+
+    DeleteAllTransportZones:
+        <<: *CLEANUP_TEMPLATE
+        deletetransportzone: "nsxmanager.[1].transportzone.[-1]"
+
+    DeleteAllEdgeClusters: &DELETE_ALL_EDGE_CLUSTERS
+        <<: *CLEANUP_TEMPLATE
+        deleteedgecluster: "nsxmanager.[1].edgecluster.[-1]"
+
+    DeleteAllFabricProfiles:
+        <<: *CLEANUP_TEMPLATE
+        deleteuplinkprofile: "nsxmanager.[1].fabricprofile.[-1]"
+
+    DeleteAllEdgeNodes: &DELETE_ALL_EDGE_NODES
+        <<: *CLEANUP_TEMPLATE
+        deleteedgenode: "nsxmanager.[1].edgenode.[-1]"
+
+
+
+    DeleteTestVnicsAllVMs: &DELETE_TEST_VNICS_ALL_VMS
+        - - 'DeleteVnicVM1'
+          - 'DeleteVnicVM2'
+          - 'DeleteVnicVM3'
+    DeleteVnicVM1: &DELETE_VNIC_VM1
+        Type: VM
+        TestVM: 'vm.[1]'
+        deletevnic: 'vm.[1].vnic.[1]'
+
+    DeleteVnicVM2: &DELETE_VNIC_VM2
+        Type: VM
+        TestVM: 'vm.[2]'
+        deletevnic: 'vm.[2].vnic.[1]'
+
+    DeleteVnicVM3: &DELETE_VNIC_VM3
+        Type: VM
+        TestVM: 'vm.[3]'
+        deletevnic: 'vm.[3].vnic.[1]'
+
+    DeleteVnicVM11: &DELETE_VNIC_VM11
+        Type: VM
+        TestVM: 'vm.[11]'
+        deletevnic: 'vm.[11].vnic.[1]'
+
+    DeleteVnicVM12: &DELETE_VNIC_VM12
+        Type: VM
+        TestVM: 'vm.[12]'
+        deletevnic: 'vm.[12].vnic.[1]'
+
+
+    UnregisterHost: &UNREGISTER_HOST
+        Type: Host
+        TestHost: 'esx.[1-3]'
+        remove_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+
+
+    PowerOffAllVMs: &POWER_OFF_ALL_VMS
+        - - 'PowerOffVM1'
+          - 'PowerOffVM2'
+          - 'PowerOffVM3'
+
+    PowerOffVM1: &POWER_OFF_VM1
+        Type: VM
+        TestVM: 'vm.[1]'
+        vmstate: poweroff
+
+    PowerOffVM2: &POWER_OFF_VM2
+        Type: VM
+        TestVM: 'vm.[2]'
+        vmstate: poweroff
+
+    PowerOffVM3: &POWER_OFF_VM3
+        Type: VM
+        TestVM: 'vm.[3]'
+        vmstate: poweroff
+
+    PowerOffVM11:
+        Type: VM
+        TestVM: 'vm.[11]'
+        vmstate: poweroff
+    PowerOffVM12:
+        Type: VM
+        TestVM: 'vm.[12]'
+        vmstate: poweroff
+
+
+
+
+    DeleteGatewayServicesEDGE1:
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        deletegateway: "vsm.[1].gateway.[1]"
+    DeleteGatewayServicesEDGE2:
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        deletegateway: "vsm.[1].gateway.[2]"
+
+    PLR_SETUP: *PLR_SETUP
+    TLR_SETUP: *TLR_SETUP
+    PLR_CLEANUP: *PLR_CLEANUP
+    TLR_CLEANUP: *TLR_CLEANUP
+    CleanupNSX: *CLEAN_NSX
+    CleanupTemplate: *CLEANUP_TEMPLATE
+    DeleteTestVnicsAllVMs: *DELETE_TEST_VNICS_ALL_VMS
+    PowerOffAllVMs: *POWER_OFF_ALL_VMS
+    ConfigureVM11Vnic1IP: *ConfigureVM11Vnic1IP
+    ConfigureVM12Vnic1IP: *ConfigureVM12Vnic1IP
+

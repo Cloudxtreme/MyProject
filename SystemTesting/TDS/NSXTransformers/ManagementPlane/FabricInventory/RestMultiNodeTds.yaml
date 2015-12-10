@@ -1,0 +1,189 @@
+!include ../Clustering/MPCommonWorkloads.yaml
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+
+# All the data used in these test cases are mock
+# Purpose is to test Fabric Inventory REST Apis
+# Test cases with actual data is covered in End2End Tds
+
+MultiNode_Host_POST_API:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "MultiNodeHostPOSTAPI"
+    Version: "2"
+    Summary: "Verify newly registered host gets replicated to all the NSXManager cluster nodes"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Register Host on NSXManager node-1
+                2. Verify newly registered host is available on all the NSXManager cluster nodes'
+    ExpectedResult: 'Newly registered host should be available on all the NSXManager cluster nodes'
+    Duration: '5'
+    Tags: 'nsxmanager,management,inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            - ["RegisterHostOnClusterNode1"]
+            - ["ReadHostOnClusterNode1"]
+            - ["ReadHostOnClusterNode2"]
+            - ["ReadHostOnClusterNode3"]
+        ExitSequence:
+            - ["UnregisterHostOnClusterNode1"]
+
+        RegisterHostOnClusterNode1: *REGISTER_HOST_ON_CLUSTER_NODE1
+        ReadHostOnClusterNode1: *READ_HOST_ON_CLUSTER_NODE1
+        ReadHostOnClusterNode2: *READ_HOST_ON_CLUSTER_NODE2
+        ReadHostOnClusterNode3: *READ_HOST_ON_CLUSTER_NODE3
+        UnregisterHostOnClusterNode1: *Unregister_HOST_ON_CLUSTER_NODE1
+
+MultiNode_Host_PUT_API:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "MultiNodeHostPUTAPI"
+    Version: "2"
+    Summary: "Verify updated host gets replicated to all the NSXManager cluster nodes"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Register Host on NSXManager node-1
+                2. Verify newly registered host is available on all the NSXManager cluster nodes
+                3.Update Host from node2
+                4. Verify updated Host is available on all the NSXManager cluster nodes'
+    ExpectedResult: 'Newly registered host should be available on all the NSXManager cluster nodes'
+    Duration: '5'
+    Tags: 'nsxmanager,management,inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            - ["RegisterHostOnClusterNode1"]
+            - ["ReadHostOnClusterNode1"]
+            - ["ReadHostOnClusterNode2"]
+            - ["ReadHostOnClusterNode3"]
+            - ["UpdateHostOnClusterNode2"]
+            - ["VerifyUpdatedHostOnClusterNode2"]
+            - ["VerifyUpdatedHostOnClusterNode1"]
+            - ["VerifyUpdatedHostOnClusterNode3"]
+        ExitSequence:
+            - ["UnregisterHostOnClusterNode1"]
+
+        RegisterHostOnClusterNode1: *REGISTER_HOST_ON_CLUSTER_NODE1
+        ReadHostOnClusterNode1: *READ_HOST_ON_CLUSTER_NODE1
+        ReadHostOnClusterNode2: *READ_HOST_ON_CLUSTER_NODE2
+        ReadHostOnClusterNode3: *READ_HOST_ON_CLUSTER_NODE3
+        UnregisterHostOnClusterNode1: *Unregister_HOST_ON_CLUSTER_NODE1
+
+        UpdateHostOnClusterNode2:
+            Type: "Host"
+            Testhost: "nsxmanager.[2].hostnode.[1]"
+            reconfigure: true
+            name: "Update-TestESXIHost"
+            summary: "Updated summary"
+
+        VerifyUpdatedHostOnClusterNode2:
+            Type: "Host"
+            TestHost: "nsxmanager.[2].hostnode.[1]"
+            read:
+              'name[?]equal_to': 'Update-TestESXIHost'
+              'summary[?]equal_to': 'Updated summary'
+
+        VerifyUpdatedHostOnClusterNode1:
+            Type: "Host"
+            TestHost: "nsxmanager.[1].hostnode.[1]"
+            read:
+              'name[?]equal_to': 'Update-TestESXIHost'
+              'summary[?]equal_to': 'Updated summary'
+
+        VerifyUpdatedHostOnClusterNode3:
+            Type: "Host"
+            TestHost: "nsxmanager.[3].hostnode.[1]"
+            read:
+              'name[?]equal_to': 'Update-TestESXIHost'
+              'summary[?]equal_to': 'Updated summary'
+
+MultiNode_host_DELETE_API:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "MultiNodeHostPOSTAPI"
+    Version: "2"
+    Summary: "Verify host gets deleted from all the NSXManager cluster nodes"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Register Host on NSXManager node-1
+                2. Verify newly registered host is available on all the NSXManager cluster nodes
+                3. Delete host from cluster node3
+                4. Verify host is deleted from all the cluster nodes'
+    ExpectedResult: 'Host should get deleted from all the NSXManager cluster nodes'
+    Duration: '5'
+    Tags: 'nsxmanager,management,inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            - ["RegisterHostOnClusterNode1"]
+            - ["ReadHostOnClusterNode1"]
+            - ["ReadHostOnClusterNode2"]
+            - ["ReadHostOnClusterNode3"]
+            - ["UnregisterHostOnClusterNode3"]
+            - ["SetHostId"]
+            - ["VerifyHostDeletionOnClusterNode1"]
+            - ["VerifyHostDeletionOnClusterNode2"]
+            - ["VerifyHostDeletionOnClusterNode3"]
+
+        RegisterHostOnClusterNode1: *REGISTER_HOST_ON_CLUSTER_NODE1
+        ReadHostOnClusterNode1: *READ_HOST_ON_CLUSTER_NODE1
+        ReadHostOnClusterNode2: *READ_HOST_ON_CLUSTER_NODE2
+        ReadHostOnClusterNode3: *READ_HOST_ON_CLUSTER_NODE3
+
+        UnregisterHostOnClusterNode3:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[3]"
+            sleepbetweenworkloads: "10"
+            deletehostnode: "nsxmanager.[3].hostnode.[1]"
+
+        SetHostId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            hostnode:
+                '[1]':
+                    map_object: true
+                    id_: 1
+
+        VerifyHostDeletionOnClusterNode1:
+            Type: "Host"
+            TestHost: "nsxmanager.[1].hostnode.[1]"
+            node_type: "HostNode"
+            get_hostnode_list:
+             'result_count[?]equal_to': 0
+
+        VerifyHostDeletionOnClusterNode2:
+            Type: "Host"
+            TestHost: "nsxmanager.[2].hostnode.[1]"
+            node_type: "HostNode"
+            get_hostnode_list:
+             'result_count[?]equal_to': 0
+
+        VerifyHostDeletionOnClusterNode3:
+            Type: "Host"
+            TestHost: "nsxmanager.[3].hostnode.[1]"
+            node_type: "HostNode"
+            get_hostnode_list:
+             'result_count[?]equal_to': 0
+

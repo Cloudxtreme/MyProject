@@ -1,0 +1,792 @@
+Register2EdgeNodeWithNSX:
+    Category: L3
+    Component: Edge
+    Summary: This test case verifies registration of Edgenode with NSX
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: EdgeNodeNSX
+    TestbedSpec:
+        nsxmanager:
+           '[1]':
+               ip: none
+
+        nsxedge:
+            '[1]':
+               ip: none
+
+            '[2]':
+               ip: none
+               register_nsx_edge_node:
+                  manager_username: 'admin'
+                  manager_password: 'default'
+                  manager_ip: 'nsxmanager.[1]'
+                  manager_thumbprint: 'nsxmanager.[1]'
+                  execution_type: 'cli'
+
+    WORKLOADS:
+        Sequence:
+             - ['RegisterEdgenode1_WithNSX']
+             - ['VerifyShowInterfaceCommand']
+
+        RegisterEdgenode1_WithNSX:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            register_nsx_edge_node:
+                manager_username: 'admin'
+                manager_password: 'default'
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+
+        VerifyShowInterfaceCommand:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            adapter_name: 'vNic_0'
+            show_interface:
+               'hwaddr[?]equal_to': '00:0c:29:59:b6:ff'
+               'vnic_state[?]equal_to': 'up'
+               'ip4[?]contain_once':
+                  - '10.110.62.210'
+               'ip6[?]contain_once':
+                  - 'fe80::20c:29ff:fe59:b6ff'
+
+
+Edge_Tier0_Tier1:
+    Category: L3
+    Component: Edge
+    Summary: This test case creates Tier0, Tier1 router and connects it.
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: Tier0-Edge-Operation
+    Procedure: '
+                Pre-Requiste: Create TransportZone, TransportNode,
+                Uplink Profile, 2 Logical Switches, 2 Logical Ports.
+                (refer to L2 sample TDS for the pre-requiste part)
+                Edge has been pre-deployed
+                1. Register the Edge Node with NSX
+                2. Create the Fabric Profile ID
+                3. Discover the Edge-node id
+                4. Create a Edge Cluster with EdgeNode added to it
+                5. Create Tier0 Logical Router
+                6. Create Downlink LogicalRouterPort for Edge
+                7. Create Uplink LogicalRouterPort for Edge
+                8. Create a Logical Switch for TIER1
+                9. Create a Logical Port for TIER1
+                10. Create a TIER1 Logical Router
+                11. Create a Downlink for Tier1 Logical Router Port
+                12. Create a Router Link Port on TIER0 Router
+                13. Create a Router Link Port on TIER1 Router'
+    ExpectedResult: ''
+    TestbedSpec:
+        esx:
+           '[1-2]':
+               vmnic:
+                   '[1]':
+                      driver: 'any'
+
+        nsxmanager:
+           '[1]':
+               ip: none
+
+        nsxedge:
+            '[1]':
+               ip: none
+
+        nsxcontroller:
+            '[1]':
+               ip: none
+
+    WORKLOADS:
+        Sequence:
+             - ["RegisterEdgeNodewithNSX"]
+             - ["CreateFabricProfile"]
+             - ["DiscoverEdgeNodeId"]
+             - ["CreateEdgeClusterWithEdgeNode"]
+             - ["CreateTIER0LogicalRouterForEdge"]
+             - ["CreateDownlinkLogicalRouterPortForEdge"]
+             - ["CreateUplinkLogicalRouterPortForEdge"]
+             - ["CreateLogicalSwitchForTIER1"]
+             - ["CreateLogicalPortForTIER1"]
+             - ["CreateTIER1LogicalRouterForEdge"]
+             - ["CreateDownlinkTier1LogicalRouterPort"]
+             - ["CreateRouterLinkPortOnTIER0Router"]
+             - ["CreateRouterLinkPortOnTIER1Router"]
+
+
+        RegisterEdgeNodewithNSX:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            register_nsx_edge_node:
+                manager_username: 'admin'
+                manager_password: 'default'
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+
+        CreateFabricProfile:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            fabricprofile:
+                '[1]':
+                    name: 'Fabric_Profile_1'
+                    summary: "Fabric Profile created through automation"
+                    resource_type: "FabricProfileClusterKeepAlive"
+                    hello_interval: 20000
+                    declare_dead_timer: 60000
+
+        DiscoverEdgeNodeId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            edgenode:
+                '[1]':
+                    discover: 'true'
+                    resource_type: "EdgeNode"
+                    ipaddresses:
+                       - 'nsxedge.[1]->management_ip'
+
+        CreateEdgeClusterWithEdgeNode:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            edgecluster:
+                '[1]':
+                    name: 'Edge_Cluster_1'
+                    summary: "Edge Cluster created through automation"
+                    members:
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+                    fabric_profile_bindings:
+                      - resource_type: "FabricProfileClusterKeepAlive"
+                        # enter the fabric_profile_id: uuid1
+                        fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        CreateTIER0LogicalRouterForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            sleepbetweenworkloads: "10"
+            logicalrouter:
+                '[1]':
+                    name: 'lrouter-1'
+                    summary: "LRouter created through automation"
+                    # TLR only topology, for PLR it's TIER0
+                    router_type: "TIER0"
+                    cluster_id: 'nsxmanager.[1].edgecluster.[1]'
+
+        CreateUplinkLogicalRouterPortForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouteruplinkport:
+                '[1]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'lrouterport-1-uplinkport'
+                    summary: "LRPort1 uplink port"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[3]->id
+                    resource_type: "LogicalRouterUpLinkPort"
+                    gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[1]->member_index'
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.50.1'
+
+        CreateDownlinkLogicalRouterPortForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouterport:
+                '[1]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'lrouterport-1-downlinkport'
+                    summary: "LRPort1 downlink port"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[4]->id
+                    resource_type: "LogicalRouterDownLinkPort"
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.60.1'
+
+        CreateLogicalSwitchForTIER1:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalswitch:
+                '[3]':
+                    name: 'ls-3'
+                    transport_zone_id: nsxmanager.[1].transportzone.[1]
+                    admin_state: UP
+                    # replication_mode's value is case sensitive
+                    replication_mode: MTEP # source
+
+        CreateLogicalPortForTIER1:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalport:
+                '[5]':
+                    switch_id: nsxmanager.[1].logicalswitch.[3]
+                    name: 'lport-5'
+                    admin_state: UP
+                    attachment:
+                       attachment_type: 'logicalrouter'
+                       id: ''
+
+        CreateTIER1LogicalRouterForEdge:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            sleepbetweenworkloads: "10"
+            logicalrouter:
+                '[2]':
+                    name: 'lrouter-tier-1'
+                    summary: "LRouter TIER-1 created through automation"
+                    # TLR only topology, for PLR it's TIER0
+                    router_type: "TIER1"
+
+
+        CreateDownlinkTier1LogicalRouterPort:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouterport:
+                '[3]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+                    name: 'lrouterport-3-downlinkport'
+                    summary: "Logical Router Port on TIER-1 Downlink"
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[5]->id
+                    resource_type: "LogicalRouterDownLinkPort"
+                    subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                             - '192.168.70.1'
+
+        CreateRouterLinkPortOnTIER0Router:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouterlinkport:
+                '[4]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'TIER0-RouterLinkPort'
+                    summary: "Create a Router Link port on TIER-0 Router"
+                    resource_type: "LogicalRouterLinkPort"
+
+        CreateRouterLinkPortOnTIER1Router:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouterlinkport:
+                '[5]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+                    linked_router_port_id: nsxmanager.[1].logicalrouterlinkport.[4]->id
+                    name: 'TIER1-RouterLinkPort'
+                    summary: "Create a Router Link port on TIER-1 Router"
+                    resource_type: "LogicalRouterLinkPort"
+
+EdgeUIBasic:
+    Category: L3
+    Component: Edge
+    Summary: Test CRUD operation for Edge through UI
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: EdgeUIBasic
+    TestbedSpec: *EDGE_UI_TESTBEDSPEC
+
+    WORKLOADS:
+        Sequence:
+            - ["CreateEdgeNode"]
+            - ["InitializeBrowserSession"]
+            - ["CreateFabricProfile"]
+            - ["UpdateFabricProfile"]
+            - ["CreateEdgeClusterWithProfileOnly"]
+            - ["CreateEdgeClusterWithEdgeNode"]
+        ExitSequence:
+            - ["DeleteFabricProfile"]
+            - ["QuitBrowserSession"]
+            - ["DiscoverEdgeCluster"]
+            - ["DeleteEdgeCluster"]
+            - ["DeleteEdgeNode"]
+
+        InitializeBrowserSession:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            uidriver:
+                '[1]':
+                    nsxmanager_url: 'nsxmanager.[1]->base_url'
+                    username: 'admin'
+                    password: 'vmware'
+                    browser_name: 'chrome'
+                    client_id: 'client-id'
+
+        QuitBrowserSession:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            quituidriver: "nsxmanager.[1].uidriver.[1]"
+
+        CreateFabricProfile:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            fabricprofile:
+                '[1]':
+                    name: 'Fabric_Profile_1'
+                    summary: "Fabric Profile created through UI automation"
+                    resource_type: "FabricProfileClusterKeepAlive"
+                    hello_interval: 20000
+                    declare_dead_timer: 60000
+
+        UpdateFabricProfile:
+            Type: Gateway
+            TestGateway: 'nsxmanager.[1].fabricprofile.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            reconfigure:
+                summary: 'Fabric Profile updated'
+
+        DeleteFabricProfile:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            deletefabricprofile: "nsxmanager.[1].fabricprofile.[1]"
+
+        CreateEdgeClusterWithProfileOnly:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'ui'
+            sleepbetweenworkloads: 10
+            edgecluster:
+                '[1]':
+                    name: 'Edge_Cluster_Profile'
+                    summary: "Edge Cluster created through UI automation"
+                    fabric_profile_bindings:
+                      - resource_type: "FabricProfileClusterKeepAlive"
+                        fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        CreateEdgeClusterWithEdgeNode:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            execution_type: 'ui'
+            sleepbetweenworkloads: 10
+            edgecluster:
+                '[2]':
+                    name: 'Edge_Cluster_Node'
+                    summary: "Edge Cluster created through UI automation"
+                    members:
+                      - edge_node_id: 'edge_node_test'
+                    fabric_profile_bindings:
+                      - resource_type: "FabricProfileClusterKeepAlive"
+                        fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        CreateEdgeNode:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            edgenode:
+                '[1]':
+                    name: 'edge_node_test'
+                    summary: "Edge Node created through automation"
+                    external_id: "biosUuid:564da1b2-d7e7-1d09-5942-5777e7f64b3c;macAddress:00:50:56:bf:40:d3"
+                    msg_client_info:
+                        certificate: "dummy cert"
+                        account_name: "cvn-edge-60655794-4d89-11e4-9621-c684114ffb41"
+                    ipaddresses:
+                        - 192.168.1.2
+                    resource_type: "EDGE_NODE"
+
+        DiscoverEdgeCluster:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            edgecluster:
+                '[3]':
+                    discover: 'true'
+                    name: 'Edge_Cluster_Profile'
+                '[4]':
+                    discover: 'true'
+                    name: 'Edge_Cluster_Node'
+
+        DeleteEdgeNode:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteedgenode: "nsxmanager.[1].edgenode.[1]"
+
+        DeleteEdgeCluster:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteedgecluster: "nsxmanager.[1].edgecluster.[3-4]"
+
+TestShowClis:
+    Category: L3
+    Component: Edge
+    Summary: This test case verifies show cli's
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: TestShowClis
+    TestbedSpec:
+        esx:
+           '[1]':
+               ip: none
+
+        nsxmanager:
+           '[1]':
+               ip: none
+
+        nsxedge:
+            '[1]':
+               ip: none
+
+        nsxcontroller:
+            '[1]':
+               ip: none
+
+    WORKLOADS:
+        Sequence:
+             - ['ShowIPForwarding']
+             - ['ShowIPBGP']
+             - ['ShowConfigurationBGP']
+             - ['ShowIPRoute']
+             - ['ShowIPRouteConnected']
+             - ['ShowIPBGPNeighbor']
+             - ['ClearBGPConfiguration']
+
+
+        ShowIPForwarding:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            table_name: 'forwarding'
+            get_ip:
+                'table[?]contain_once':
+                    - code: 'R>*'
+                      network: '0.0.0.0/0'
+                      nexthop: '10.110.63.253'
+                      via: 'via'
+                      vnicname: 'vNic_0'
+                    - code: 'C>*'
+                      network: '10.110.60.0/22'
+                      nexthop: 'NULL'
+                      via: 'isdirectlyconnected'
+                      vnicname: 'vNic_0'
+
+        ShowIPBGP:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            table_name: 'bgp'
+            get_ip:
+                'table[?]contain_once':
+                    - locprf: '100'
+                      metric: '0'
+                      network: '100.64.1.0/31'
+                      nexthop: '169.0.0.1'
+                      origin: '?'
+                      scode: '>'
+                      weight: '32768'
+                    - locprf: '100'
+                      metric: '0'
+                      network: '192.168.40.0/24'
+                      nexthop: '192.168.50.2'
+                      origin: 'i'
+                      scode: '>'
+                      weight: '60'
+                    - locprf: '100'
+                      metric: '0'
+                      network: '192.168.50.0/24'
+                      nexthop: '192.168.50.2'
+                      origin: 'i'
+                      scode: '>'
+                      weight: '60'
+
+        ShowConfigurationBGP:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            get_configuration_bgp:
+                'bgp[?]contain_once':
+                  'gracefulrestart[?]boolean': 'False'
+                  'localas[?]equal_to': '200'
+                  'enabled[?]boolean': 'True'
+                  'neighbors[?]contain_once':
+                    - 'holddowntimer[?]equal_to': '180'
+                      'ipaddress[?]equal_to': '192.168.50.50'
+                      'keepalivetimer[?]equal_to': '60'
+                      'remoteas[?]equal_to': '200'
+                      'srcipaddress[?]equal_to': '192.168.50.1'
+                      'name[?]equal_to': 'Neighbour 1'
+                      'weight[?]equal_to': '60'
+
+        ShowIPRoute:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            get_ip_route:
+                'table[?]contain_once':
+                    - code: 'S'
+                      network: '100.64.1.0/31'
+                      nexthop: '169.0.0.1'
+                      admindist_metric: '[10/10]'
+                      via: 'via'
+                    - code: 'S'
+                      network: '192.168.60.0/24'
+                      nexthop: '169.0.0.1'
+                      via: 'via'
+                    - code: 'C'
+                      network: '192.168.50.0/24'
+                      nexthop: '192.168.50.1'
+
+        ShowIPRouteConnected:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            route_filter: 'connected'
+            execution_type: 'cli'
+            get_ip_route:
+                'table[?]contain_once':
+                    - code: 'C'
+                      network: '192.168.50.0/24'
+                      nexthop: '192.168.50.1'
+                    - code: 'C'
+                      network: '169.0.0.0/28'
+                      nexthop: '169.0.0.2'
+
+        ShowIPBGPNeighbor:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            ip_address: '192.168.50.2'
+            get_ip_bgp_neighbors:
+                'table[?]contain_once':
+                    - local_host: '192.168.50.1'
+                      bgp_state: 'established'
+                      remote_host: '192.168.50.2'
+                      bgp_neighbor: '192.168.50.2'
+                      keep_alive_interval: '60'
+                      hold_time: '180'
+                      bgp_status: 'up'
+
+        ClearBGPConfiguration:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            clear_ip_bgp:
+                execution_type: 'cli'
+
+TestLLDP:
+    Category: L3
+    Component: Edge
+    Summary: This test case perform CUD operation on LLDP
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: LLDP
+    TestbedSpec:
+        nsxmanager:
+           '[1]':
+               ip: none
+
+    WORKLOADS:
+        Sequence:
+             - ["CreateLLDP"]
+             - ["UpdateLLDP"]
+        ExitSequence:
+             - ["DeleteLLDP"]
+
+        CreateLLDP:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            lldp_profile:
+                '[1]':
+                    name: 'test-lldp-profile-automation'
+                    summary: 'xyz adsadsa new'
+                    send_enabled: true
+                    resource_type: "LldpHostSwitchProfile"
+
+        UpdateLLDP:
+            Type: Profile
+            TestProfile: nsxmanager.[1].lldp_profile.[1]
+            update:
+                name: 'test-lldp-profile-automation modified'
+                summary: 'xyz adsadsa new modified'
+                send_enabled: false
+                resource_type: "LldpHostSwitchProfile"
+
+        DeleteLLDP:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            delete_lldp_profile: nsxmanager.[1].lldp_profile.[1]
+
+TestIPPrefixList:
+    Category: L3
+    Component: Edge
+    Summary: This test case perform CRUD operation on IPPrefix-list
+    Tags: nsx
+    Version: 2
+    TestName: LLDP
+    TestbedSpec:
+        nsxmanager:
+           '[1]':
+               ip: none
+
+    WORKLOADS:
+        Sequence:
+             - ["CreateLR"]
+             - ["CreatePrxList"]
+             - ["UpdatePrefixList"]
+        ExitSequence:
+             - ["DeletePrefixList"]
+             - ["DeleteLogicalRouter"]
+
+        CreateLR:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouter:
+                '[1]':
+                    name: 'lrouter-1'
+                    summary: "LRouter created through automation"
+                    router_type: "TIER0"
+
+        CreatePrxList:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            ip_prefix_list:
+                '[1]':
+                    name: 'test-ip-prefix-list automation'
+                    summary: 'testing ip prefix list'
+                    prefixes:
+                        - network: '10.10.10.10/24'
+                          action: 'PERMIT'
+                          lessthan_equalto: '32'
+                          greaterthan_equalto: '45'
+                        - network: '50.50.5.5/24'
+                          action: 'DENY'
+                          lessthan_equalto: '50'
+                          greaterthan_equalto: '65'
+
+        UpdatePrefixList:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1].ip_prefix_list.[1]
+            update:
+                name: 'Modify IPPrefix list'
+                summary: 'newly modified'
+                prefixes:
+                    - network: '90.90.90.90/24'
+                      action: 'DENY'
+                      lessthan_equalto: '92'
+                      greaterthan_equalto: '99'
+
+        DeletePrefixList:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            delete_ip_prefix_list: nsxmanager.[1].logicalrouter.[1].ip_prefix_list.[1]
+
+        DeleteLogicalRouter:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletelogicalrouter: nsxmanager.[1].logicalrouter.[1]
+
+TestRouteMap:
+    Category: L3
+    Component: Edge
+    Summary: This test case perform CRUD operation on RouteMap
+    Tags: nsx
+    Version: 2
+    TestName: RouteMap
+
+    TestbedSpec:
+        nsxmanager:
+           '[1]':
+               ip: none
+
+    WORKLOADS:
+        Sequence:
+             - ["CreateLR"]
+             - ["CreatePrxList1"]
+             - ["CreatePrxList2"]
+             - ["CreateRouteMap"]
+             - ["UpdateRouteMap"]
+        ExitSequence:
+             - ["DeleteRouteMap"]
+             - ["DeletePrefixList"]
+             - ["DeleteLogicalRouter"]
+
+        CreateLR:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouter:
+                '[1]':
+                    name: 'lrouter-1'
+                    summary: "LRouter created through automation"
+                    router_type: "TIER0"
+
+        CreatePrxList1:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            ip_prefix_list:
+                '[1]':
+                    name: 'test-ip-prefix-list automation'
+                    summary: 'testing ip prefix list'
+                    prefixes:
+                        - network: '10.10.10.10/24'
+                          action: 'PERMIT'
+                          lessthan_equalto: '32'
+                          greaterthan_equalto: '45'
+                        - network: '50.50.5.5/24'
+                          action: 'DENY'
+                          lessthan_equalto: '50'
+                          greaterthan_equalto: '65'
+
+        CreatePrxList2:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            ip_prefix_list:
+                '[2]':
+                    name: 'test-ip-prefix-list automation'
+                    summary: 'testing ip prefix list'
+                    prefixes:
+                        - network: '20.20.20.20/24'
+                          action: 'DENY'
+                          lessthan_equalto: '42'
+                          greaterthan_equalto: '95'
+                        - network: '60.60.6.6/24'
+                          action: 'PERMIT'
+                          lessthan_equalto: '60'
+                          greaterthan_equalto: '99'
+
+        CreateRouteMap:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            route_maps:
+                '[1]':
+                    name: 'test-route-map automation'
+                    summary: 'testing route maps'
+                    route_map_sequence:
+                        - match_criteria:
+                              ip_prefix_id_list:
+                                 - nsxmanager.[1].logicalrouter.[1].ip_prefix_list.[1]->id
+                          set_criteria:
+                              as_path_prepend: 'AS200'
+                          action: 'PERMIT'
+                        - match_criteria:
+                              ip_prefix_id_list:
+                                 - nsxmanager.[1].logicalrouter.[1].ip_prefix_list.[2]->id
+                          set_criteria:
+                              as_path_prepend: 'AS300'
+                          action: 'DENY'
+
+        UpdateRouteMap:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1].route_maps.[1]
+            update:
+                name: 'modify route-map automation'
+                summary: 'Modifying route-maps'
+                route_map_sequence:
+                    - match_criteria:
+                          ip_prefix_id_list:
+                             - nsxmanager.[1].logicalrouter.[1].ip_prefix_list.[1]->id
+                             - nsxmanager.[1].logicalrouter.[1].ip_prefix_list.[2]->id
+                      set_criteria:
+                          as_path_prepend: '500'
+                      action: 'DENY'
+
+        DeleteRouteMap:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            delete_route_maps: nsxmanager.[1].logicalrouter.[1].route_maps.[1]
+
+        DeletePrefixList:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            delete_ip_prefix_list: nsxmanager.[1].logicalrouter.[1].ip_prefix_list.[-1]
+
+        DeleteLogicalRouter:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletelogicalrouter: nsxmanager.[1].logicalrouter.[1]

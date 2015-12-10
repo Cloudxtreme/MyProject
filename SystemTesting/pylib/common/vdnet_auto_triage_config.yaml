@@ -1,0 +1,207 @@
+logfiles :
+    'testcase.log' :
+        #This expression can be used to determine if bug should be filed
+        failure_pattern : '\[FAIL\]'
+
+        log_levels : ['\[ERROR\]','\[WARN\]','\[DEBUG\]','\[INFO\]']
+
+        pattern_type : ['workload_results']
+
+        #This is to limit the matched log messages on bugzilla
+        keyword_log_limit : 3
+
+        workload_results :
+            # format of workload summary
+            format : 'Workload results:(\n.*\n.*\n(\s*[\-\.\w]*\s*\d*\s*\d\s*\d*)*\n)'
+
+            # sort forward / reverse
+            sort_type : 'reverse'
+            # num_times to print workload_results
+            num_times : 1
+
+        keywords :
+            '\[ERROR\]':
+                weight : 5
+                include_in_search : 1
+
+            # Disable unless PR 1429032 is fixed
+            'Compare operation failed for key:(.*)' :
+                weight : 8
+                include_in_search : 0
+
+            'Python method (.*) returned exception:(.*)' :
+                weight : 7
+                include_in_search : 1
+
+        # Match the top x keywords from the keystring
+        max_keywords_match: 1
+
+        print_lines :
+            #Lines around the matched line, to be printed
+            before : 3
+            after  : 3
+
+        logformat :
+
+            #format of testcase directory
+            dirformat : '\d+_\w'
+            delimiter : '_'
+
+            #general format of each log line, used for parsing
+            timestamp : '\d+-\d+ (?:\d+:){4} '
+            filename : '((?:(?:\w+::)+)\w+:\d+)'
+
+            #line denoting negative testing pass
+            negative_key : 'Result:FAIL.*expected result: FAIL'
+
+    'vdnet.log' :
+        failure_pattern : '\[ERROR\]'
+
+        log_levels : ['\[ERROR\]','\[WARN\]','\[DEBUG\]','\[INFO\]','\[TRACE\]']
+
+        pattern_type : []
+
+        keyword_log_limit : 3
+
+        keywords :
+            '\[ERROR\]':
+                weight : 5
+                include_in_search : 1
+
+            '\[WARN\]' :
+                weight : 2
+                include_in_search : 0
+
+            # pattern used in case deployment fails e.g nsxmanager, vsm etc
+            'Failed to deploy (.*)' :
+                weight : 12
+                include_in_search : 1
+
+            # pattern used in case esx , vc, kvm, nsxmanager don't come up
+            'No ip address found for (.*)' :
+                weight : 11
+                include_in_search : 1
+
+        # Match the top x keywords from the keystring
+        max_keywords_match: 3
+
+        print_lines :
+            #Lines around the matched line, to be printed
+            before : 3
+            after  : 3
+
+        logformat :
+            #format of log directory
+            dirformat : ''
+            delimiter : ''
+
+            #general format of each log line, used for parsing
+            timestamp : '\d+-\d+ (?:\d+:){4} '
+            filename : '((?:(?:\w+::)+)\w+:\d+)'
+
+    'launcher.log' :
+        failure_pattern : 'Final result 1'
+        logformat :
+            # NO need to change this line
+            timestamp : '\w+,\s\d+\s\w+\s\d+\s(\d+:?){3}\s\w+\s+'
+
+        log_levels : ['ERROR','\[WARN\]','DEBUG','INFO']
+
+        pattern_type : []
+
+        keyword_log_limit : 3
+
+        keywords :
+            'Final result 1':
+                weight : 10
+                include_in_search : 0
+
+        # Match the top x keywords from the keystring
+        max_keywords_match: 3
+
+        print_lines :
+            #Lines around the matched line, to be printed
+            before : 5
+            after  : 0
+
+    'deploy_testbed.log' :
+        logformat :
+            # NO need to change this line
+            timestamp : '\d+-\d+-\d+\s(\d+:?){3}\s-\d+:'
+
+        log_levels : ['DEBUG','INFO','ERROR']
+
+        pattern_type : []
+
+        keyword_log_limit : 3
+
+        keywords :
+            'Exception':
+                weight : 10
+                include_in_search : 0
+
+        # Match the top x keywords from the keystring
+        max_keywords_match: 3
+
+        print_lines :
+            #Lines around the matched line, to be printed
+            before : 5
+            after  : 0
+
+    'vmware.log' :
+        logformat :
+            # NO need to change this line
+            timestamp : '\d+-\d+-\d+T\d+:\d+:\d+\.\d+Z\|\s\w+-\d+\|\s[A-Z]\d+:'
+
+        log_levels : ['DEBUG','INFO','ERROR']
+
+        pattern_type : []
+
+        keyword_log_limit : 3
+
+        keywords :
+            'ASSERT':
+                weight : 5
+                include_in_search : 1
+
+        # Match the top x keywords from the keystring
+        max_keywords_match: 3
+
+        print_lines :
+            #Lines around the matched line, to be printed
+            before : 3
+            after  : 3
+
+accounts :
+    'bugzilla' :
+        username : 'vdnet-dev'
+        password : 'vdnet-nanny'
+
+    'cat':
+        username : 'eng_vdt_glob_1'
+        password : '.a.YpYzu.eVU@ubU@EH'
+
+present_bugzilla :
+    pattern : '[\-\s\w]*\.([\-\s\w]*)\.([\-\s\w]*)\.([\-\s\w]*)\.'
+    default :
+        product : 'Internal'
+        category : 'VDNet'
+        component : 'Auto-filed'
+
+buginfo :
+    product : ''
+    category : ''
+    component : 'CAT'
+    cc : []
+    summary : ''
+    description : ''
+    priority: 'P1'
+    severity : 'serious'
+    cf_build : ''
+    cf_branch : 'master'
+    cf_change : ''
+    found_in_product : ''
+    found_in_version : ''
+    found_in_phase : ''
+    keywords : ['vdnet-autotriage']
+

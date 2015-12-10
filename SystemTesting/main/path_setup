@@ -1,0 +1,220 @@
+#!/bin/bash
+STAFBASE=$TOOLCHAIN/lin32/staf-3.4.1
+PERLVERSION=5.10.0
+PERLDIR=perl510
+PERLBASE=$TOOLCHAIN/lin32/perl-$PERLVERSION
+ZOOKEEPERBASE=$TOOLCHAIN/lin32/perl-net-zookeeper-0.35
+ZKTREEUTILBASE=$TOOLCHAIN/lin32/zookeeper-3.3.1/zktreeutil
+SSHBASE=$TOOLCHAIN/lin32/openssh-4.7p1
+PERL=$PERLBASE/bin/perl
+PYTHONBASE=$TOOLCHAIN/lin32/python-2.7.9-openssl1.0.1k
+PYTHON=$PYTHONBASE/bin/python
+PEP8BASE=$TOOLCHAIN/noarch/pep8-1.5.7
+AUTOPEP8BASE=$TOOLCHAIN/noarch/autopep8-1.0.3
+PYFLAKESBASE=$TOOLCHAIN/noarch/pyflakes-0.8
+PYCHECKERBASE=$TOOLCHAIN/noarch/pychecker-0.8.19
+LIBVIRTBASE=$TOOLCHAIN/lin32/python-libvirt-1.0.2
+SSLBASE=$TOOLCHAIN/lin32/openssl-0.9.8zf
+GITBASE=$TOOLCHAIN/lin32/git-1.8.0
+MAVENBASE=$TOOLCHAIN/noarch/apache-maven-3.1.0
+LIBXMLBASE=$TOOLCHAIN/lin32/libxml2-2.6.32-1
+LIBXSLTBASE=$TOOLCHAIN/lin32/libxslt-1.1.27
+LXMLBASE=$TOOLCHAIN/lin32/lxml-3.3.1
+CURLBASE=$TOOLCHAIN/lin32/curl-7.38.0
+TREES=${TREES:-/build/trees}
+PROVISION=${PROVISION:-$TREES/nsx-provisioning/avalanche/provision}
+INHERITED_PATH=$PATH
+ENVIRONMENT_LOG=$(mktemp -p /tmp vdnet.env.XXXXX)
+WIRESHARKBASE=$TOOLCHAIN/lin32/wireshark-1.12.2
+function set_ld_lib_path {
+    export LD_LIBRARY_PATH=$ROOT/VDNetLib/CLIB/x86_32/linux
+}
+
+function set_java_path {
+    export JAVA_HOME=$TOOLCHAIN/lin32/jdk-1.7.0_13
+    export PATH=$JAVA_HOME/bin:$PATH
+}
+
+function set_ant_path {
+    export ANT_HOME=$TOOLCHAIN/noarch/apache-ant-1.7.1
+    export PATH=$ANT_HOME/bin:$PATH
+}
+
+function set_zookeeper_path {
+    export PATH=$ZKTREEUTILBASE/bin:$PATH
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TOOLCHAIN/lin32/zlib-1.2.7/lib
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TOOLCHAIN/lin32/zookeeper-3.3.1/lib
+}
+
+function set_git_path {
+    export PATH=$GITBASE/bin:$PATH
+}
+
+function set_ssh_path {
+    export PATH=$SSHBASE/bin:$PATH
+}
+
+function set_ssl_path {
+    export PATH=$SSLBASE/bin:$PATH
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SSLBASE/lib
+}
+
+function set_staf_path {
+    export PATH=$STAFBASE/lib/$PERLDIR:$PATH
+    export PATH=$STAFBASE/bin:$PATH
+    export CLASSPATH=$STAFBASE/lib/JSTAF.jar:$CLASSPATH
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$STAFBASE/lib
+    export STAFCONVDIR=$STAFBASE/codepage
+}
+
+function set_curl_path {
+    export PATH=$CURLBASE/bin:$PATH
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CURLBASE/lib
+}
+
+function set_perl_path {
+    # UNSET PERL5LIB to avoid conflict
+    unset PERL5LIB
+    export PATH=$PERLBASE/bin:$PATH
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PERLBASE/lib/$PERLVERSION/i686-linux-thread-multi-64int/CORE
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$STAFBASE/lib/$PERLDIR
+    export PERLLIB=$ROOT/VDNetLib/CPAN/MODSRC
+    export PERLLIB=$PERLLIB:$ZOOKEEPERBASE/lib/site_perl/$PERLVERSION/i686-linux-thread-multi-64int
+    export PERLLIB=$PERLLIB:$ROOT/VDNetLib/CPAN/5.8.8
+    export PERLLIB=$PERLLIB:$PERLBASE/lib/5.10.0
+    export PERLLIB=$PERLLIB:$PERLBASE/lib/site_perl/5.10.0
+    export PERLLIB=$PERLLIB:$PERLBASE/lib/5.10.0/i686-linux-thread-multi-64int
+    export PERLLIB=$PERLLIB:$PERLBASE/lib/site_perl/5.10.0/i686-linux-thread-multi-64int
+    export PERLLIB=$PERLLIB:$STAFBASE/lib/$PERLDIR
+    export PERLLIB=$PERLLIB:$TOOLCHAIN/lin32/perl-yaml-libyaml-0.41/lib/site_perl/5.10.0/i686-linux-thread-multi-64int
+    export PERLLIB=$PERLLIB:$STAFBASE/bin
+}
+
+function set_maven_path {
+    export PATH=$MAVENBASE/bin:$PATH
+}
+
+function set_pep8_path {
+    export PATH=$AUTOPEP8BASE/bin:$PATH
+    export PATH=$PEP8BASE/bin:$PATH
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PEP8BASE/lib
+}
+
+function set_pyflakes_path {
+    export PATH=$PYFLAKESBASE/bin:$PATH
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PYFLAKESBASE/lib
+}
+
+function set_pychecker_path {
+    export PATH=$PYCHECKERBASE/bin:$PATH
+}
+
+function set_libvirt_path {
+    export PATH=$LIBVIRTBASE/bin:$PATH
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIBVIRTBASE/lib
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TOOLCHAIN/lin32/libapparmor1/usr/lib/i386-linux-gnu
+}
+
+function set_ovftool_path {
+    export PATH=$TOOLCHAIN/lin32/ovftool-4.0.0:$PATH
+}
+
+function set_python_path {
+    export PYTHON_EGG_CACHE=/tmp
+    export PATH=$PYTHONBASE/bin:$PATH
+    export PYTHONPATH=$ROOT:$ROOT/main
+    export PYTHONPATH=$PYTHONPATH:$ROOT/pylib
+    export PYTHONPATH=$PYTHONPATH:$ROOT/pylib/mh
+    export PYTHONPATH=$PYTHONPATH:$ROOT/pylib/common
+    export PYTHONPATH=$PYTHONPATH:$ROOT/pylib/vmware/common
+    export PYTHONPATH=$PYTHONPATH:$ROOT/scripts/auto_gen_python_client_schemas/python
+    export PYTHONPATH=$PYTHONPATH:$ROOT/scripts/auto_gen_python_client_schemas/python/descriptors
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/pytest-2.6.3/lib/python2.7/site-packages
+    export PATH=$PYTHONPATH:$TOOLCHAIN/noarch/pytest-2.6.3/bin:$PATH
+    export PYTHONPATH=$PYTHONPATH:$ROOT/third_party/pyVpx-6.0.0
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/eventlet-0.14.0/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/paramiko-1.10.1/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/lin32/python-2.7.9-openssl1.0.1k/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/lin32/greenlet-0.4.0/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/python-pyyaml-3.11/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/lin32/pycrypto-2.1.0/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/pexpect-2.3/lib/python2.7/site-packages
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TOOLCHAIN/lin32/python-2.7.9-openssl1.0.1k/lib
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TOOLCHAIN/lin32/greenlet-0.4.0/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/beautifulsoup-4.1.3/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/python-pylogsparser-1.2/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/pytz-2013.8/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/ipaddr-2.1.9/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/six-1.8.0/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/lin32/p4python-r14.1/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$PYFLAKESBASE/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$LIBVIRTBASE/lib/python2.7/dist-packages
+    export PYTHONPATH=$PYTHONPATH:$LIBVIRTBASE/lib/pyshared/python2.7
+    export PYTHONPATH=$PYTHONPATH:$ROOT/third_party
+    export PYTHONPATH=$PYTHONPATH:$ROOT/scripts/yaml_utils
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/mock-0.8.0/lib/python2.6/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/argparse-1.1/lib/python2.6/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/lin32/simplejson-2.3.2/lib/python2.6/site-packages
+    export PYTHONPATH=$PYTHONPATH:$PEP8BASE/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$AUTOPEP8BASE/lib/python2.7/site-packages
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/python-protobuf-2.4.1/lib/python2.7/site-packages
+    export PATH=$TOOLCHAIN/noarch/setuptools-15.0/bin:$PATH
+    export PYTHONPATH=$PYTHONPATH:$TOOLCHAIN/noarch/setuptools-15.0/lib/python2.7/site-packages/setuptools-15.0-py2.7.egg
+}
+
+function set_onecloud_path {
+    export PATH=$LIBXMLBASE/bin:$PATH
+    export PATH=$LIBXSLTBASE/bin:$PATH
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIBXMLBASE/lib
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIBXSLTBASE/lib
+    export PYTHONPATH=$PYTHONPATH:$LXMLBASE/lib/python2.7/site-packages
+    if test -d "${PROVISION}"; then
+      export PYTHONPATH=$PYTHONPATH:"${PROVISION}"
+    fi
+}
+
+function set_apache_path {
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TOOLCHAIN/lin32/apache-log4cxx-0.10.0/lib
+}
+
+function set_readline_path {
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TOOLCHAIN/lin32/readline-5.1/lib
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TOOLCHAIN/lin32/readline-6.2/lib
+}
+
+function log_paths {
+    IFS=':' read -ra path_arr <<< "$1"
+    for path in "${path_arr[@]}"; do
+        if ! test  -e "$path"; then
+           printf "ERROR!!! Missing path $path\n"
+        fi
+        printf "$path\n" >> $ENVIRONMENT_LOG
+    done
+}
+
+function log_environment {
+    echo "Logging Environment ..."
+    touch $ENVIRONMENT_LOG
+    cat /dev/null > $ENVIRONMENT_LOG
+    printf "\nPATH:\n" >> $ENVIRONMENT_LOG
+    log_paths $PATH
+    printf "\nPYTHONPATH:\n" >> $ENVIRONMENT_LOG
+    log_paths $PYTHONPATH
+    printf "\nLD_LIBRARY_PATH:\n" >> $ENVIRONMENT_LOG
+    log_paths $LD_LIBRARY_PATH
+    printf "\nPERLLIB:\n" >> $ENVIRONMENT_LOG
+    log_paths $PERLLIB
+    echo "Sourced Environment can be found at $ENVIRONMENT_LOG"
+
+}
+
+function set_wireshark_path {
+    export PATH=$WIRESHARKBASE/bin:$PATH
+    export LD_LIBRARY_PATH=$TOOLCHAIN/lin32/libpcap-1.5.3/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$TOOLCHAIN/lin32/glib-2.34.3-1/lib:$LD_LIBRARY_PATH
+}
+
+# From Python 2.6 and above the compiled .pyc files do not get recompiled after
+# changes are made in code. Using the stale .pyc causes problems.
+# Disabling python code compilation temporarily by seting the following flag.
+export PYTHONDONTWRITEBYTECODE=1

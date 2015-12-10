@@ -1,0 +1,330 @@
+---
+addporttodvportgroup:
+  derived_components:
+    - dvportgroup
+  description: add dv port to dvportgroup
+  format: Integer
+  method: AddPortToDVPG
+  params:
+    - addporttodvportgroup
+  postprocess: ~
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 40
+  type: action
+advanced:
+  allowed_values:
+    - allowed
+    - disabled
+  derived_components:
+    - dvportgroup
+  description: Key that enable/disable the advanced port  Override Policies underdvportgroup
+  format:
+    - advanced
+    - overrideport:
+        TrafficFilterandmarking: string
+  method: ConfigureAdvanced
+  params:
+    - advanced
+  preprocess: PreProcessShiftTypeAPI
+  sample_value:
+    - advanced
+    - overrideport:
+        TrafficFilterandmarking: disabled
+  type: action
+autoExpand:
+  allowed_values:
+    - true
+    - false
+  derived_components:
+    - dvportgroup
+  description: <true> ignores the limit on the number of ports in the portgroup. <false> puts the limit on the number of ports. Used when binding is set to earlybinding
+  format: boolean
+  sample_value: false
+  type: parameter
+binding:
+  allowed_values:
+    - earlyBinding
+    - lateBinding
+    - ephemeral
+  derived_components:
+    - dvportgroup
+  description: is a paramter of dvportgroup
+  format: string
+  sample_value: earlyBinding
+  type: parameter
+configureipfix:
+  allowed_values:
+    - enable
+    - disable
+  derived_components:
+    - dvportgroup
+  description: Configure ipfix for dvportgroup
+  format: string
+  method: ConfigureIpfix
+  params:
+    - configureipfix
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: enable
+  type: action
+configurelag:
+  allowed_values:
+    - enable
+    - disable
+  derived_components:
+    - dvportgroup
+  description: Configure lag version 1 (v2 is configured on vds)
+  format: string
+  method: ConfigureLAG
+  params:
+    - configurelag
+    - mode
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: enable
+  type: action
+dvport:
+  derived_components:
+    - dvportgroup
+  description: create dvport under dvportgroup
+  linkedworkload: PortWorkload
+  method: AddDVPortsToDVPortGroup
+  params:
+    - dvport
+  postprocess: StoreSubComponentObjects
+  preprocess: TransformSubComponentSpec
+  type: component
+failoverorder:
+  allowed_values:
+    - 'vc.[x].vds.[x].lag.[x]'
+    - '<uplinkX>'
+  derived_components:
+    - dvportgroup
+  description: Set dvportgroup uplink failover order
+  format: vdnet index
+  method: SetFailoverOrder
+  params:
+    - failoverorder
+    - failovertype
+  preprocess: PreProcessSetFailoverOrder
+  sample_value: 'vc.[1].vds.[1].lag.[1]'
+  type: action
+failovertype:
+  allowed_values:
+    - active
+    - standby
+  derived_components:
+    - dvportgroup
+  description: type of failover
+  format: string
+  sample_value: active
+  type: parameter
+loadbalancing:
+  allowed_values:
+    - loadbalance_ip
+    - loadbalance_srcmac
+    - loadbalance_srcid
+    - failover_explicit
+    - loadbalance_loadbased
+  derived_components:
+    - dvportgroup
+  description: Set dvportgroup load balancing
+  format: string
+  method: SetLoadBalancing
+  params:
+    - loadbalancing
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: loadbalance_ip
+  type: action
+mode:
+  allowed_values:
+    - active
+    - passive
+  derived_components:
+    - dvportgroup
+  description: Active or Passive mode of Link Aggregation Group
+  format: string
+  sample_value: passive
+  type: parameter
+network:
+  derived_components:
+    - all
+  description: Unique name to identify network/portgroup
+  format: string
+  method: AutogenerateName
+  sample_value: test-11522
+  type: parameter
+nrp:
+  derived_components:
+    - dvportgroup
+  description: is a paramter of dvportgroup
+  format: string
+  sample_value: test-11522
+  type: parameter
+ports:
+  allowed_values: integer
+  derived_components:
+    - dvportgroup
+  description: is a paramter of dvportgroup
+  format: Integer
+  sample_value: 100
+  type: parameter
+promiscous:
+  allowed_values:
+    - Enable
+    - Disable
+  derived_components:
+    - portgroup
+    - dvportgroup
+  description: to enable promiscous mode on the portgroup
+  format: string
+  method: SetPromiscousMode
+  params:
+    - promiscous
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: Enable
+  type: action
+switch:
+  derived_components:
+    - switch
+  description: Get the corresponding switch Obj
+  format: string
+  method: GetOneObjectFromOneTuple
+  sample_value: switch-11522
+  type: parameter
+vds:
+  derived_components:
+    - vds
+  description: Get the corresponding vdswitch Obj
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'vc.[1].vds.[1]'
+  type: parameter
+vlan:
+  allowed_values:
+    - 1-4095
+  derived_components:
+    - portgroup
+    - dvportgroup
+  description: to set vlan on the portgroup
+  format: Integer
+  method: SetVLAN
+  params:
+    - vlan
+    - vlantype
+  postprocess: ~
+  preprocess: PreProcessHashTypeAPI
+  sample_value: 1000
+  type: action
+vlantype:
+  allowed_values:
+    - access
+    - trunk
+    - pvlan
+  derived_components:
+    - portgroup
+  description: tell the type of vlan
+  format: string
+  sample_value: access
+  type: parameter
+vss:
+  derived_components:
+    - vss
+    - portgroup 
+  description: Get the corresponding switch Obj
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'host.[1].vss.[1]'
+  type: parameter
+deletefilter:
+  dependency: ~
+  derived_components:
+    - port
+    - portgroup
+  description: delete filter based on input tuple
+  format: vdnet index
+  method: DeleteFilter
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vc.[1].dvportgroup.[1].filter.[1]'
+  type: component
+filter:
+  derived_components:
+    - dvport
+    - dvportgroup
+  format:
+    - filtername: string
+      rule:
+        - action: string
+          dstip: ip4 address
+          srcip: ip4 address
+    - filtername: dvfilter-generic-vmware1
+  linkedworkload: FilterWorkload
+  method: TransformSubComponentSpecOfParameter
+  sample_value:
+    - filtername: dvfilter-generic-vmware
+      rule:
+        - action: accet
+          dstip: 172.16.1.2
+          srcip: 172.16.1.2
+    - filtername: dvfilter-generic-vmware1
+  subcomponent:
+    rule: RulesWorkload
+  type: parameter
+lldp:
+  derived_components:
+    - vds
+  description: Set lldp on pswitch
+  format: vdnet index
+  method: EnableLLDP
+  params:
+    - lldp
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 'host.[1]'
+  type: action
+migratemgmtnettovss:
+  derived_components:
+    - vds
+  description: Migrates required vmknic from VDS to VSS
+  format: vdnet index
+  method: MigrateManagementNetToVSS
+  params:
+    - migratemgmtnettovss
+    - vmknictuple
+    - vss
+  postprocess: PostProcessMigrateManagementNetKey
+  preprocess: PreProcessMigrateManagementNetKey
+  sample_value: 'host.[1]'
+  type: action
+reconfigure:
+  derived_components:
+    - vds
+  description: configures filter in the/portgroup/port
+  format:
+    - filtername: string
+      rule:
+        - action: string
+          dstip: ip4 address
+          srcip: ip4 address
+    - filtername: dvfilter-generic-vmware1
+  method: AddFilter
+  params:
+    - filter
+  postprocess: StoreNestedObjects
+  preprocess: PreProcessShiftTypeAPI
+  sample_value:
+    - filtername: dvfilter-generic-vmware
+      rule:
+        - action: accet
+          dstip: 172.16.1.2
+          srcip: 172.16.1.2
+    - filtername: dvfilter-generic-vmware1
+  subcomponent:
+    - filter
+  type: action
+vmknictuple:
+  derived_components:
+    - vds
+  description: Paramater to return vmknic obj from vmknic tuple
+  format: vdnet index
+  method: PreProcessVmknicId
+  sample_value: 'host.[1].vmknic.[1]'
+  type: parameter

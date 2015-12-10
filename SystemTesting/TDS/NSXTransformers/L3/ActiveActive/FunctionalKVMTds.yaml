@@ -1,0 +1,302 @@
+{% include 'TDS/NSXTransformers/L3/ActiveActive/TestbedSpec.yaml' %}
+{% include 'TDS/NSXTransformers/L3/ActiveActive/CommonWorkloads.yaml' %}
+{% include 'TDS/NSXTransformers/L3/ActiveActive/NewCommonWorkloads.yaml' %}
+{% include 'TDS/NSXTransformers/L3/ActiveActive/TopoL3-3Hosts-4Edges-1RouterVM.yaml' %}
+{% include 'TDS/NSXTransformers/L3/ActiveActive/TopoL3-3Hosts-4Edges-1RouterVMwith4Ifaces.yaml' %}
+{% include 'TDS/NSXTransformers/Common/Topo_Clusters.yaml' %}
+
+tds_template: &tds_template
+    AutomationLevel: Automated
+    Category: L3
+    Component: ActiveActive
+    Developer: mbindal
+    Duration: 3600
+    ExpectedResult: PASS
+    FullyAutomatable: Y
+    PartnerFacing: N
+    PMT: null
+    Procedure: null
+    Product: NSXTransformers
+    QCPath: KVM
+    Status: Execution Ready
+    TCMSId: null
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Version: 2
+
+p0_template: &p0_template
+    <<: *tds_template
+    Priority: P0
+
+p1_template: &p1_template
+    <<: *tds_template
+    Priority: P1
+
+L3ECMPDRRIB:
+    <<: *p0_template
+    TestName: 'L3ECMPDRRIB'
+    TestbedSpec: *L3_KVM_TESTBEDSPEC_03
+    Summary: 'Verify that a static default route pointing to each SRs is added in
+    the RIB of the DR for PLR when the PLR uplinks are in active-active mode'
+    Tags: 'nsx,l3,ecmp'
+
+    WORKLOADS:
+        <<: *TopoL3-3Hosts-4Edges-1RouterVM4Ifaces
+        <<: *Topo_1MP_3CCP
+        <<: *NEWCOMMONWORKLOADS
+        Sequence:
+            - - 'ClusterSetup'
+            - - 'ClusterVerification'
+            - - 'L2Setup--KVM'
+            - - 'VerifyL2Setup--KVM'
+            - - 'L3Setup'
+            - - 'VMSetup--KVM'
+            - - 'VerifyPLRDRRIB--KVM'
+        ExitSequence:
+            - - 'VMCleanup--KVM'
+            - - 'L3Cleanup'
+            - - 'L2Cleanup--KVM'
+            - - 'ClusterCleanup'
+
+EgressECMPPlrOnly:
+    <<: *p0_template
+    TestName: 'EgressECMPPlrOnly'
+    TestbedSpec: *L3_KVM_TESTBEDSPEC_03
+    Summary: 'Test Egress ECMP for north-south traffic when a PLR has 4 uplinks
+              in active-active mode. (Single Tier topology)'
+    Tags: 'nsx,l3,ecmp'
+
+    WORKLOADS:
+        <<: *TopoL3-3Hosts-4Edges-1RouterVM4Ifaces
+        <<: *Topo_1MP_3CCP
+        <<: *NEWCOMMONWORKLOADS
+        Sequence:
+            - - 'ClusterSetup'
+            - - 'ClusterVerification'
+            - - 'L2Setup--KVM'
+            - - 'VerifyL2Setup--KVM'
+            - - 'L3Setup'
+            - - 'VMSetup--KVM'
+            - - 'RouterVMPrepare'
+            - - 'VerifyECMPPlrOnly--KVM'
+        ExitSequence:
+            - - 'VMCleanup--KVM'
+            - - 'L3Cleanup'
+            - - 'L2Cleanup--KVM'
+            - - 'ClusterCleanup'
+
+EgressECMPPlrTlr:
+    <<: *p0_template
+    TestName: 'EgressECMPPlrTlr'
+    TestbedSpec: *L3_KVM_TESTBEDSPEC_03
+    Summary: 'Test Egress ECMP for north-south traffic when a PLR has 4 uplinks
+              in active-active mode in a 2-Tier topology.'
+    Tags: 'nsx,l3,ecmp'
+
+    WORKLOADS:
+        <<: *TopoL3-3Hosts-4Edges-1RouterVM4Ifaces
+        <<: *Topo_1MP_3CCP
+        <<: *NEWCOMMONWORKLOADS
+        Sequence:
+            - - 'ClusterSetup'
+            - - 'ClusterVerification'
+            - - 'L2Setup--KVM'
+            - - 'VerifyL2Setup--KVM'
+            - - 'L3Setup'
+            - - 'VMSetup--KVM'
+            - - 'RouterVMPrepare'
+            - - 'VerifyECMPPlrTlr--KVM'
+        ExitSequence:
+            - - 'VMCleanup--KVM'
+            - - 'L3Cleanup'
+            - - 'L2Cleanup--KVM'
+            - - 'ClusterCleanup'
+
+IngressECMP:
+    <<: *p0_template
+    TestName: 'IngressECMP'
+    TestbedSpec: *L3_KVM_TESTBEDSPEC_03
+    Summary: 'Test Ingress ECMP for north-south traffic when a PLR has 4 uplinks
+              in active-active mode'
+    Tags: 'nsx,l3,ecmp'
+
+    WORKLOADS:
+        <<: *TopoL3-3Hosts-4Edges-1RouterVM4Ifaces
+        <<: *Topo_1MP_3CCP
+        <<: *NEWCOMMONWORKLOADS
+        Sequence:
+            - - 'ClusterSetup'
+            - - 'ClusterVerification'
+            - - 'L2Setup--KVM'
+            - - 'VerifyL2Setup--KVM'
+            - - 'L3Setup'
+            - - 'VMSetup--KVM'
+            - - 'RouterVMPrepare'
+        ExitSequence:
+            - - 'VMCleanup--KVM'
+            - - 'L3Cleanup'
+            - - 'L2Cleanup--KVM'
+            - - 'ClusterCleanup'
+
+ECMPEdgeVMCrash:
+    <<: *p1_template
+    TestName: 'ECMPEdgeVMCrash'
+    TestbedSpec: *L3_KVM_TESTBEDSPEC_03
+    Summary: 'Verify ECMP behavior when one of the edge node crashes.'
+    Procedure: '- simluate edge vm crash using power off / suspend call using
+    vim cmd.
+    - check that the a GARP is sent by one of the active SRs to take over the
+    failed uplink SR.
+    - check that no failure is signalled to physical network.'
+    Tags: 'nsx,l3,ecmp,completetunnelfailure'
+
+    WORKLOADS:
+        <<: *TopoL3-3Hosts-4Edges-1RouterVM4Ifaces
+        <<: *Topo_1MP_3CCP
+        <<: *NEWCOMMONWORKLOADS
+        Sequence:
+            - - 'ClusterSetup'
+            - - 'ClusterVerification'
+            - - 'L2Setup--KVM'
+            - - 'VerifyL2Setup--KVM'
+            - - 'L3Setup'
+            - - 'VMSetup--KVM'
+            - - 'RouterVMPrepare'
+            # TODO(dbadiani): Add Datapath verifications like checking
+            # route table, arp table etc.
+            # TODO(dbadiani): Add GARP verification in this test case.
+            - - 'GetNextHopVM3VM2--KVM'
+            - - 'ReadNextHopEdgeVM'
+            - - 'ReadStaticRouteForVM2OnEdge'
+            - - 'StartTSharkVM1'
+              - 'SendBackgroundTraffic--KVM'
+              - 'CrashEdgeVM'
+        ExitSequence:
+            - - 'RestoreEdgeVM'
+            - - 'PowerOnNextHopEdgeVM'
+            - - 'VMCleanup--KVM'
+            - - 'L3Cleanup'
+            - - 'L2Cleanup--KVM'
+            - - 'ClusterCleanup'
+
+ECMPMaxUplinks:
+   <<: *p1_template
+   TestName: 'ECMPMaxUplinks'
+   TestbedSpec: *L3_KVM_TESTBEDSPEC_03
+   Summary: 'Verify ECMP behavior when the PLR is configured with 8 uplinks in
+             an edge cluster with 8 edge nodes.'
+   Procedure: '- Send continuous south-north traffic from multiple VMs and
+                 ensure that the traffic is load balanced across all the 8 uplinks.
+               - Ensure that the north-south traffic is load balanced as well
+                 across 8 uplinks by the physical routers with BGP enabled.'
+   Tags: 'nsx,l3,ecmp,dpdk,'
+
+   WORKLOADS:
+       <<: *TopoL3-3Hosts-4Edges-1RouterVM4Ifaces
+       <<: *Topo_1MP_3CCP
+       <<: *NEWCOMMONWORKLOADS
+       Sequence:
+           - - 'ClusterSetup'
+           - - 'ClusterVerification'
+           - - 'L2SetupMaxUplinks--KVM'
+           - - 'VerifyL2Setup--KVM'
+           - - 'L3SetupMaxUplinks'
+           - - 'VMSetupMaxUplinks--KVM'
+           - - 'RouterVMPrepare'
+           - - 'VerifyECMPMaxUplinks--KVM'
+       ExitSequence:
+           - - 'VMCleanupMaxUplinks--KVM'
+           - - 'L3CleanupMaxUplinks'
+           - - 'L2CleanupMaxUplinks--KVM'
+
+ECMPTunnelFailure:
+    <<: *p1_template
+    TestbedSpec: *L3_KVM_TESTBEDSPEC_03_ROUTER_VM
+    TestName: 'ECMPTunnelFailure'
+    Summary: |
+        - Start traffic between two VMs one north of LR and another south of DR.
+          Now figure out which SR the VDR is using to forward the traffic by running
+          net-vdr --route -o resolve -E <src VMs ip> -i <dest VMs ip> <dr uuid>.
+          Let's say this IP corresponds to SR-1.
+        - Now kill SR-1. If the failover has happened correctly, DR will have the
+          neighbor entry for SR-1 pointing to another SR's mac.
+          Pings will continue to work.
+    #Duration: ''
+    Tags: 'nsx,l3,ecmp,partialtunnelfailure'
+
+    WORKLOADS:
+        <<: *TopoL3-3Hosts-4Edges-1RouterVM
+        <<: *Topo_1MP_3CCP
+        <<: *NEWCOMMONWORKLOADS
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - L2Setup--KVM
+            - - VerifyL2Setup--KVM
+            - - L3Setup
+            - - VMSetup--KVM
+            - - RouterVMPrepare
+            - - TrafficForInternalVmAndExternalVm--KVM
+            - - GetNextHopVM3VM2--KVM
+            - - ReadNextHopEdgeVM
+            - - ReadNextHopEdgeVMSouthIpBfdIp
+            - - PowerOffNextHopEdgeVM
+            # waiting for ip migration
+            - - SleepWorkload_180s--KVM
+            - - ReadNextHopEdgeVM
+            - - CheckIPMigrationOnSR2
+            - - TrafficForInternalVmAndExternalVm--KVM
+            - - PowerOnAllEdgeVMs
+        ExitSequence:
+            - - VMCleanup--KVM
+            - - L3Cleanup
+            - - L2Cleanup--KVM
+
+ECMPNoHeartbeat:
+   <<: *p1_template
+   TestName: 'ECMPNoHeartbeat'
+   TestbedSpec: *L3_KVM_TESTBEDSPEC_03_ROUTER_VM
+   Summary: |
+       Verify ECMP behavior when the heartbeat among edge VMs goes down.
+   Procedure: |
+       - check that failover is triggered amongst SRs and ranking mechanism
+         is used to takeover IP address only when all links between SRs are
+         down. This includes management as well.
+   Tags: 'nsx,l3,ecmp,partialtunnelfailure'
+
+   WORKLOADS:
+       <<: *TopoL3-3Hosts-4Edges-1RouterVM
+       <<: *Topo_1MP_3CCP
+       <<: *NEWCOMMONWORKLOADS
+       Sequence:
+           - - ClusterSetup
+           - - ClusterVerification
+           - - L2Setup--KVM
+           - - VerifyL2Setup--KVM
+           - - L3Setup
+           - - VMSetup--KVM
+           - - RouterVMPrepare
+           - - TrafficForInternalVmAndExternalVm--KVM
+           - - GetNextHopVM3VM2--KVM
+           - - ReadNextHopEdgeVM
+           # only disconnect vnic3, verify it's not
+           # enough to trigger failover
+           - - DiscoverNextHopEdgeVnics
+           - - DisconnectNextHopEdgeVnic3
+           - - SleepWorkload_180s--KVM
+           - - FailTrafficVm3toVm2--KVM
+           # disconnect vnic1(mgmt) also, failover
+           # should happend
+           - - DisconnectNextHopEdgeVnic1
+           - - SleepWorkload_180s--KVM
+           - - TrafficForInternalVmAndExternalVm--KVM
+           # reconnect vnic1 & vnic3, traffic should
+           # still work after failover back.
+           - - ConnectNextHopEdgeVnic3
+           - - ConnectNextHopEdgeVnic1
+           - - SleepWorkload_180s--KVM
+           - - TrafficForInternalVmAndExternalVm--KVM
+       ExitSequence:
+           - - VMCleanup--KVM
+           - - L3Cleanup
+           - - L2Cleanup--KVM

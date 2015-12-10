@@ -1,0 +1,301 @@
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/VMWorkload.yaml' %}
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/CommonWorkloads.yaml' %}
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/TestbedSpec.yaml' %}
+
+DHCPRelayESXexternalDHCPServer:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "ESX DHCP IP external DHCP Server"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    QCPath:  'ESX'
+    Summary: "Test client getting an IP from a DHCP server on the external
+              network when DHCP relay is enabled in a ESX only hypervisor
+              based set up"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_ESX_TOPOLOGY_05
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonESXTestSteps
+        <<: *DHCPServerVMConfig1
+        Sequence:
+            - ['TransportZoneSetup']
+            - ['EdgeSetup']
+            - ['L2SetupAndWiringTopo1']
+            - ['L3SetupandWiringTopoNorthSouth1']
+            - ['EdgeWiringNorthSouthTopo1']
+            - ['DHCPServerConfigTopo1']
+            - ['DHCPRelayconfigTopo1']
+            - ['RebootAllCCPNodes']
+            - ['VerifyDHCPRelayEnabledLRPort12cli']
+            - ['StartTSharkDHCPServer1']
+            - ['StartTSharkVM1-2']
+            - ['ConfigureVM1Vif1IP', 'ConfigureVM2Vif1IP']
+            - ['StopTSharkDHCPServer1']
+            - ['StopTSharkVM1-2']
+            - ['VerifyVM1Vif1IP']
+            - ['VerifyVM2Vif1IP']
+        ExitSequence:
+            - ['CleanupTopoNorthSouth1']
+
+DisableDHCPRelayESXexternalDHCPServer:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "Disable DHCP Relay ESX external DHCP Server"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    QCPath:  'ESX'
+    Summary: "Test client not getting an IP from a DHCP server on an external
+              network when DHCP relay is disabled in a ESX only hypervisor
+              based set up"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_ESX_TOPOLOGY_05
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonESXTestSteps
+        <<: *DHCPServerVMConfig1
+        Sequence:
+            - ['TransportZoneSetup']
+            - ['EdgeSetup']
+            - ['L2SetupAndWiringTopo1']
+            - ['L3SetupandWiringTopoNorthSouth1']
+            - ['EdgeWiringNorthSouthTopo1']
+            - ['DHCPServerConfigTopo1']
+            - ['DHCPRelayconfigTopo1']
+            - ['RebootAllCCPNodes']
+            - ['VerifyDHCPRelayEnabledLRPort12cli']
+            - ['StartTSharkDHCPServer1']
+            - ['StartTSharkVM1-2']
+            - ['ConfigureVM1Vif1IP', 'ConfigureVM2Vif1IP']
+            - ['StopTSharkDHCPServer1']
+            - ['StopTSharkVM1-2']
+            - ['VerifyVM1Vif1IP']
+            - ['VerifyVM2Vif1IP']
+            - ['DeleteLRPort1DHCPRelayServiceBinding']
+            - ['RebootAllCCPNodes']
+            - ['VerifyDHCPRelayDisabledLRPort1cli']
+            - ['ConfigureVM1Vif1IP']
+            - ['VerifyNoVM1Vif1IP']
+            - ['DeleteLRPort2DHCPRelayServiceBinding']
+            - ['RebootAllCCPNodes']
+            - ['VerifyDHCPRelayDisabledLRPort2cli']
+            - ['ConfigureVM2Vif1IP']
+            - ['VerifyNoVM2Vif1IP']
+        ExitSequence:
+            - ['CleanupTopoNorthSouth1']
+
+DHCPRelayESXexternalMultipleDHCPServers:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "ESX DHCP Relay Multiple DHCP Servers"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    QCPath:  'ESX'
+    Summary: "Test client leasing IP from a single DHCP server when DHCP relay
+              is configured with multiple DHCP server IP's in a ESX only
+              hypervisor based set up"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_ESX_TOPOLOGY_05
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonESXTestSteps
+        <<: *DHCPServerVMConfigESXNorthSouthTopo2
+        Sequence:
+            - ['TransportZoneSetup']
+            - ['EdgeSetup']
+            - ['L2SetupAndWiringNorthSouthTopo2']
+            - ['DHCPServerConfigNorthSouthTopo2']
+            - ['L3SetupandWiringTopoNorthSouth2']
+            - ['EdgeWiringNorthSouthTopo1']
+            - ['DHCPRelayconfigNorthSouthTopo2']
+            - ['RebootAllCCPNodes']
+            - ['VerifyDHCPRelayEnabledNorthSouthMultiDHCPTLRPort12cliESX']
+            - ['StartTSharkDHCPServer1-3']
+            - ['StartTSharkVM1-2']
+            - ['ConfigureVM1Vif1IP', 'ConfigureVM2Vif1IP']
+            - ['StopTSharkVM1-2']
+            - ['StopTSharkDHCPServer1-3']
+            - ['VerifyVM1Vif1IP']
+            - ['VerifyVM2Vif1IP']
+        ExitSequence:
+            - ['CleanupTopoNorthSouth2']
+        SetStaticBindingDHCP1VM1:
+            Type: 'DHCPServer'
+            TestDHCPServer: "dhcpserver.[1]"
+            configure_dhcp_server:
+               dhcp_type: 'static'
+               adapter_mac: 'vm.[1].vnic.[1]'
+               host_name: 'host1'
+               adapter_ip: '192.168.7.2'
+               option_routers: '192.168.7.1'
+        SetStaticBindingDHCP2VM1:
+            Type: 'DHCPServer'
+            TestDHCPServer: "dhcpserver.[2]"
+            configure_dhcp_server:
+               dhcp_type: 'static'
+               adapter_mac: 'vm.[1].vnic.[1]'
+               host_name: 'host1'
+               adapter_ip: '192.168.7.3'
+               option_routers: '192.168.7.1'
+        SetStaticBindingDHCP3VM1:
+            Type: 'DHCPServer'
+            TestDHCPServer: "dhcpserver.[3]"
+            configure_dhcp_server:
+               dhcp_type: 'static'
+               adapter_mac: 'vm.[1].vnic.[1]'
+               host_name: 'host1'
+               adapter_ip: '192.168.7.5'
+               option_routers: '192.168.7.1'
+        SetStaticBindingDHCP3VM2:
+            Type: 'DHCPServer'
+            TestDHCPServer: "dhcpserver.[3]"
+            configure_dhcp_server:
+               dhcp_type: 'static'
+               adapter_mac: 'vm.[2].vnic.[1]'
+               host_name: 'host2'
+               adapter_ip: '192.168.8.2'
+               option_routers: '192.168.8.1'
+        VerifyVM1Vif1IP:
+            Type: 'VM'
+            TestVM: vm.[1]
+            adapter_name: vm.[1].vnic.[1]->adapter_interface
+            execution_type: 'cmd'
+            sleepbetweenworkloads: 10
+            noofretries: 3
+            timeout: 300
+            get_single_adapter_info:
+               ip[?]ip_range: '192.168.7.0/24'
+        VerifyVM2Vif1IP:
+            Type: 'VM'
+            TestVM: vm.[2]
+            adapter_name: vm.[2].vnic.[1]->adapter_interface
+            execution_type: 'cmd'
+            sleepbetweenworkloads: 10
+            noofretries: 3
+            timeout: 300
+            get_single_adapter_info:
+               ip[?]equal_to: '192.168.8.2'
+
+DHCPRelayESXHybridDHCPServer:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "ESX DHCP IP Hybrid DHCP Server"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    QCPath:  'ESX'
+    Summary: "Test client getting an IP from a DHCP server on the external
+              network or a logical network when DHCP relay is enabled in a
+              ESX only hypervisor based set up"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_ESX_TOPOLOGY_05
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonESXTestSteps
+        <<: *CommonHybridDHCPServerWorkloads
+        <<: *CommonESXHybridDHCPServerWorkloads
+        Sequence:
+            - ['TransportZoneSetup']
+            - ['EdgeSetup']
+            - ['L2SetupAndWiringHybridDHCPServerTopo1']
+            - ['DHCPServerConfigHybridDHCPServerTopo1']
+            - ['L3SetupandWiringHybridDHCPServerTopo1']
+            - ['EdgeWiringHybridNorthSouthTopo1']
+            - ['DHCPRelayconfigHybridDHCPServerTopo1']
+            - ['RebootAllCCPNodes']
+            - ['VerifyDHCPRelayEnabledESXTLRPort12cli', 'VerifyDHCPRelayEnabledESXPLRPort1cli']
+            - ['StartTSharkDHCPServer1-4']
+            - ['StartTSharkVM1-3']
+            - ['ConfigureVM1Vif1IP', 'ConfigureVM2Vif1IP', 'ConfigureVM3Vif1IP']
+            - ['StopTSharkVM1-3']
+            - ['StopTSharkDHCPServer1-4']
+            - ['VerifyVM1Vif1IP']
+            - ['VerifyVM2Vif1IP']
+            - ['VerifyVM3Vif1IP']
+        ExitSequence:
+            - ['CleanupTopoHybridDHCPServer1']
+
+DisableDHCPRelayESXHybridDHCPServer:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "Disable DHCP Relay ESX Hybrid DHCP Server"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    QCPath:  'ESX'
+    Summary: "Test client not getting an IP from a DHCP server on an Hybrid network when DHCP relay is
+              disabled in a ESX only hypervisor based set up"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_ESX_TOPOLOGY_05
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonESXTestSteps
+        <<: *CommonHybridDHCPServerWorkloads
+        <<: *CommonESXHybridDHCPServerWorkloads
+        Sequence:
+            - ['TransportZoneSetup']
+            - ['EdgeSetup']
+            - ['L2SetupAndWiringHybridDHCPServerTopo1']
+            - ['DHCPServerConfigHybridDHCPServerTopo1']
+            - ['L3SetupandWiringHybridDHCPServerTopo1']
+            - ['EdgeWiringHybridNorthSouthTopo1']
+            - ['DHCPRelayconfigHybridDHCPServerTopo1']
+            - ['RebootAllCCPNodes']
+            - ['VerifyDHCPRelayEnabledESXTLRPort12cli', 'VerifyDHCPRelayEnabledESXPLRPort1cli']
+            - ['StartTSharkDHCPServer1-4']
+            - ['StartTSharkVM1-3']
+            - ['ConfigureVM1Vif1IP', 'ConfigureVM2Vif1IP', 'ConfigureVM3Vif1IP']
+            - ['StopTSharkVM1-3']
+            - ['StopTSharkDHCPServer1-4']
+            - ['VerifyVM1Vif1IP']
+            - ['VerifyVM2Vif1IP']
+            - ['VerifyVM3Vif1IP']
+            - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding', 'DeletePLRPort1DHCPRelayServiceBinding']
+            - ['RebootAllCCPNodes']
+            - ['ConfigureVM1Vif1IP', 'ConfigureVM2Vif1IP', 'ConfigureVM3Vif1IP']
+            - ['VerifyNoVM1Vif1IP', 'VerifyNoVM2Vif1IP', 'VerifyNoVM3Vif1IP']
+        ExitSequence:
+            - ['CleanupTopoHybridDHCPServer1']

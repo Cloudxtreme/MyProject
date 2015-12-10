@@ -1,0 +1,217 @@
+AddRuleTest:
+    Product: "NSX"
+    Category: L2
+    Component: Firewall
+    ExpectedResult: PASS
+    Summary: Test adds a firewall rule to the host.
+    Tags: L2, KVM, Firewall, UnitTest
+    TestName: AddRuleTest
+    tcmsid: ''
+    Version: '2'
+    pmt: ''
+    Testcaselevel: "Product"
+    Testcasetype: "Sanity"
+    qcpath: ''
+
+    TestbedSpec:
+        kvm:
+            '[1]':
+               ip: none
+
+    WORKLOADS:
+        Sequence:
+            - [AddRandomRule]
+
+        ExitSequence:
+            - [RemoveRandomRule]
+
+        AddRandomRule:
+            Type: Host
+            TestHost: kvm.[1]
+            firewall_rule:
+                rule_operation: 'add'
+                chain: 'INPUT'
+                destination_ip: kvm.[1]
+                protocol: 'udp'
+                action: 'ACCEPT'
+                protocol_options:
+                    'destination_port': '9191'
+                match_extensions:
+                    'comment_match_ext':
+                        'comment': 'Test Rule'
+
+        RemoveRandomRule:
+            Type: Host
+            TestHost: kvm.[1]
+            firewall_rule:
+                rule_operation: 'remove'
+                chain: 'INPUT'
+                destination_ip: kvm.[1]
+                protocol: 'udp'
+                action: 'ACCEPT'
+                protocol_options:
+                    'destination_port': '9191'
+                match_extensions:
+                    'comment_match_ext':
+                        'comment': 'Test Rule'
+
+VerifyArpTest:
+    Product: "NSX"
+    Category: L2
+    Component: Firewall
+    ExpectedResult: PASS
+    Summary: Test runs a verification workload for ARP table.
+    Tags: L2, KVM, ARPTable, UnitTest
+    TestName: VerifyArpTest
+    tcmsid: ''
+    Version: '2'
+    pmt: ''
+    Testcaselevel: "Product"
+    Testcasetype: "Sanity"
+    qcpath: ''
+
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               ip: none
+        kvm:
+            '[1]':
+               ip: none
+
+    WORKLOADS:
+        Sequence:
+            - [CreateTransportZone]
+            - [CreateLogicalSwitch]
+            - [VerifyArpEntries]
+
+        CreateTransportZone:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportzone:
+                '[1]':
+                    name: autogenerate
+                    transport_zone_type: 'overlay'
+
+        CreateLogicalSwitch:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalswitch:
+                '[1]':
+                    name: autogenerate
+                    transport_zone_id: nsxmanager.[1].transportzone.[1]
+                    admin_state: up
+                    replication_mode: mtep
+
+        VerifyArpEntries:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            get_arp_table[?]contain_once:
+                table:
+                    # TODO(Salman): Convert the following to netadapter vdnet
+                    # index.
+                    # TODO(Salman): Convert the following to vdnet index.
+                    - adapter_ip: "kvm.[1]"
+                      adapter_mac: "kvm.[1]"
+
+VerifyMacTest:
+    Product: "NSX"
+    Category: L2
+    Component: KVM
+    ExpectedResult: PASS
+    Summary: Test runs a verifcation workload for MAC table.
+    Tags: L2, MACTable, UnitTest
+    TestName: VerifyMacTest
+    tcmsid: ''
+    Version: '2'
+    pmt: ''
+    Testcaselevel: "Product"
+    Testcasetype: "Sanity"
+    qcpath: ''
+
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               ip: none
+        kvm:
+            '[1]':
+               ip: none
+
+    WORKLOADS:
+        Sequence:
+            - [CreateTransportZone]
+            - [CreateLogicalSwitch]
+            - [VerifyMacEntries]
+
+        CreateTransportZone:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportzone:
+                '[1]':
+                    name: autogenerate
+                    transport_zone_type: 'overlay'
+
+        CreateLogicalSwitch:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalswitch:
+                '[1]':
+                    name: autogenerate
+                    transport_zone_id: nsxmanager.[1].transportzone.[1]
+                    admin_state: up
+                    replication_mode: mtep
+
+        VerifyMacEntries:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            get_mac_table[?]contain_once:
+                table:
+                    # TODO(Salman): Convert the following to vdnet index.
+                    - vtepip: "192.168.10.2"
+                      adapter_mac: "aa:aa:aa:aa:aa:aa"
+                    - vtepip: "192.167.10.1"
+                      adapter_mac: "bb:bb:bb:bb:bb:bb"
+
+CreateDeleteVTEP:
+    Product: "NSX"
+    Category: L2
+    Component: Firewall
+    ExpectedResult: PASS
+    Summary: Test adds a firewall rule to the host.
+    Tags: L2, KVM, VTEP, UnitTest
+    TestName: CreateDeleteVTEP
+    tcmsid: ''
+    Version: '2'
+    pmt: ''
+    Testcaselevel: "Product"
+    Testcasetype: "Sanity"
+    qcpath: ''
+
+    TestbedSpec:
+        kvm:
+            '[1]':
+               ip: none
+
+    WORKLOADS:
+        Sequence:
+            - [CreateVTEP]
+
+        ExitSequence:
+            - [DeleteVTEP]
+
+        CreateVTEP:
+            Type: Host
+            TestHost: kvm.[1]
+            vtep:
+                '[1]':
+                    name: autogenerate
+
+        DeleteVTEP:
+            Type: Host
+            TestHost: kvm.[1]
+            deletevtep: kvm.[1].vtep.[1]

@@ -1,0 +1,50 @@
+GetAllTrustManagementObjects:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CertificateMgmt"
+    TestName: "GetAllTrustManagementObjects"
+    Version: "2"
+    Summary: "Verify trust-management objects get retrieved"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "dgargote"
+    Procedure: '1. Get trust-management objects
+                2. Verify all trust-management objects get retrieved'
+    ExpectedResult: 'Supported algorithms and their key-sizes should get retrieved'
+    Duration: '5'
+    Tags: 'nsxmanager,management,certmgmt,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetTrustManagementObjectId"]
+            - ["GetAllTrustManagementObjects"]
+
+        SetTrustManagementObjectId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            trustmanagementobject:
+                '[1]':
+                    map_object: true
+                    id_: 'algorithms'
+
+        GetAllTrustManagementObjects:
+            Type: "Certificate"
+            Testcertificate: "nsxmanager.[1].trustmanagementobject.[1]"
+            get_algorithm_list:
+               'supported_algorithms[?]contain_once':
+                   - name: 'RSA'
+                     key_size:
+                         - 2048
+                         - 3072
+                   - name: 'DSA'
+                     key_size:
+                         - 2048

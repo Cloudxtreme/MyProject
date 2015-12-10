@@ -1,0 +1,1093 @@
+
+router_type:
+  description: Type of Logical Router
+  derived_components:
+    - logicalrouter
+  format: String
+  method: GetComponentAttribute
+  allowed_values:
+    - TIER0
+    - TIER1
+  sample_value: TIER0
+  type: parameter
+
+cluster_id:
+  description: UUID of the edge_cluster for this LR
+  derived_components:
+    - logicalrouter
+  format: String
+  sample_value: 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6'
+  method: GetComponentAttribute
+  type: parameter
+
+configuration:
+  description: Logical Router Configuration
+  derived_components:
+    - logicalrouter
+  method: PreProcessNestedParameters
+  format:
+    external_transit_networks: "ref: external_transit_networks"
+    internal_transit_network: "ref: internal_transit_network"
+  sample_value:
+    external_transit_networks:
+      - [192.168.1.1 - 192.168.1.24]
+      - 192.168.1.0/24
+    internal_transit_network:
+      - 192.168.1.0/24
+  type: parameter
+
+external_transit_networks:
+  description: For tier0-tier1 link
+  derived_components:
+    - logicalrouter
+  format: array
+  method: GetMultipleComponentAttributeFromArray
+  sample_value:
+    - [192.168.1.1 - 192.168.1.24]
+    - 192.168.1.0/24
+  type: parameter
+
+internal_transit_network:
+  description: IPs used for internal SR-DR switch/link
+  derived_components:
+    - logicalrouter
+  format: string
+  method: GetComponentAttribute
+  allowed_values:
+    - 192.168.1.0/24
+    - 192.168.1.1-192.168.1.24
+  sample_value:
+    - 192.168.1.0/24
+  type: parameter
+
+log_level:
+  description: Log Level
+  derived_components:
+    - logicalrouter
+  format: string
+  method: GetComponentAttribute
+  allowed_values:
+    - emergency
+    - alert
+    - critical
+    - error
+    - warning
+    - notice
+    - info
+    - debug
+  sample_value: alert
+  type: parameter
+
+nodes_config:
+  description: Logical Router Configuration
+  derived_components:
+    - logicalrouter
+  method: PreProcessNestedParameters
+  format:
+    mode: String
+    subnet: "ref: subnet"
+  sample_value:
+    mode: active_active
+    subnet: 255.255.255.0
+  type: parameter
+
+mode:
+  description: High Availability mode
+  derived_components:
+    - logicalrouter
+  format: string
+  sample_value: active_active
+  type: parameter
+
+subnet:
+  description: Transit Network Subnet
+  derived_components:
+    - logicalrouter
+  format: subnet
+  sample_value: 169.1.1.0/24
+  type: parameter
+
+interface:
+  type: component
+  derived_components:
+    - logicalrouter
+  description: Creates LogicalRouterInterface
+  linkedworkload: NetAdapterWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Interface'
+  params:
+    - interface
+
+deleteinterface:
+  type: component
+  description: Delete LogicalRouterInterface from NSXManager
+  derived_components:
+    - logicalrouter
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Interface'
+  sample_value: 'nsxmanager.[1].logicalrouter.[1].interface.[1]'
+
+node:
+  type: component
+  derived_components:
+    - logicalrouter
+  description: Creates LogicalRouter Node
+  linkedworkload: VMWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Node'
+  params:
+    - node
+
+deletenode:
+  type: component
+  description: Delete LogicalRouterInterface from NSXManager
+  derived_components:
+    - logicalrouter
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Node'
+  sample_value: 'nsxmanager.[1].logicalrouter.[1].node.[1]'
+
+routingconfig:
+  derived_components:
+    - logicalrouter
+  description: routing global config logical router
+  linkedworkload: RouterWorkload
+  preprocess: PreProcessReturnSpecForAutoload
+  method: update_routing_config
+  type: component
+
+routeadvertisements:
+  derived_components:
+    - logicalrouter
+  description: route advertisement config logical router
+  linkedworkload: RouterWorkload
+  preprocess: PreProcessReturnSpecForAutoload
+  method: update_route_advertisement
+  type: component
+
+advertise_routes:
+  description: Array of routes to advertisek
+  format: hash
+  method: ProcessParameters
+  type: parameter
+
+staticrouting:
+  derived_components:
+    - gateway
+    - vse
+  description: configure static route on edge
+  linkedworkload: RouterWorkload
+  method: CreateComponent
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  type: component
+  objtype:
+    gateway : 'VDNetLib::VSM::Gateway::StaticRoute'
+    vse : 'VDNetLib::VSM::Gateway::StaticRoute'
+
+lrstaticroutes:
+  derived_components:
+    - logicalrouter
+  description: configure static routes on logical router
+  linkedworkload: RouterWorkload
+  preprocess: PreProcessReturnSpecForAutoload
+  method: update_static_routes
+  type: component
+  objtype:
+    logicalrouter: 'VDNetLib::NSXManager::Routing::StaticRoutes'
+
+get_static_routes:
+  derived_components:
+    - logicalrouter
+  description: read static routes on logical router
+  linkedworkload: RouterWorkload
+  params:
+    - network
+    - summary
+    - name
+    - next_hops
+    - lr_port_id
+    - get_static_routes
+  preprocess: PreProcessVerification
+  method: get_static_routes
+  objtype:
+    router: 'VDNetLib::NSXManager::Routing::StaticRoutes'
+  type: verification
+
+redistributionconfig:
+  derived_components:
+    - logicalrouter
+  description: configure BGP route redistribution on logical router
+  linkedworkload: RouterWorkload
+  preprocess: PreProcessReturnSpecForAutoload
+  method: update_route_redistribution
+  type: component
+
+enabled: &ENABLED
+  derived_components:
+    - all
+  description: status
+  format: string
+  method: ProcessParameters
+  sample_value: true
+  type: parameter
+
+bgpenabled: *ENABLED
+
+ospfenabled: *ENABLED
+
+redistributionenabled: *ENABLED
+
+enableadvertisement: *ENABLED
+
+staticroutes:
+  description: configure group of route destination network
+  format: hash
+  method: PreProcessNestedParameters
+  type: parameter
+
+network:
+  description: configure route destination network
+  format: ip address/cidr
+  method: GetComponentAttribute
+  type: parameter
+
+nexthop:
+  description: configure nexthop ip address for a route destination
+  format: ip address
+  method: ProcessParameters
+  type: parameter
+
+next_hops:
+  description: configure multiple next hop IP addresses for a route destination
+  format: ip address list
+  method: GetMultipleComponentAttributeFromArray
+  type: parameter
+
+globalrouteconfig:
+  derived_components:
+    - router
+    - gateway
+    - vse
+    - globaldistributedlogicalrouter
+  description: configure global route parameters on edge
+  linkedworkload: GroupingObjectWorkload
+  method: CreateComponent
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    gateway : 'VDNetLib::VSM::Gateway::GlobalRouteConfig'
+    vse : 'VDNetLib::VSM::VSE::GlobalRouteConfig'
+    globaldistributedlogicalrouter : 'VDNetLib::VSM::VSE::GlobalRouteConfig'
+
+ecmp:
+  description:  enable ecmp flag
+  format: boolean
+  method: ProcessParameters
+  type: parameter
+
+routerid:
+  description: configure routerid of edge/vdr vm
+  format: ip address
+  method: GenerateIPUsingEquation
+  type: parameter
+
+bgp:
+  derived_components:
+    - gateway
+    - vse
+    - globaldistributedlogicalrouter
+    - logicalrouter
+  description: configure bgp on edge
+  linkedworkload: RouterWorkload
+  method: CreateComponent
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  type: component
+  objtype:
+    gateway : 'VDNetLib::VSM::Gateway::BGPRoute'
+    vse : 'VDNetLib::VSM::VSE::BGPRoute'
+    globaldistributedlogicalrouter : 'VDNetLib::VSM::VSE::BGPRoute'
+    logicalrouter: 'VDNetLib::NSXManager::Routing::BGP'
+
+localas:
+  description: configure as number on edge
+  format: integer
+  method: ProcessParameters
+  type: parameter
+
+gracefulrestart:
+  description: configure bgp graceful restart on  edge
+  format: boolean
+  method: ProcessParameters
+  type: parameter
+
+defaultoriginate:
+  description: configure default originate on edge
+  format: boolean
+  method: ProcessParameters
+  type: parameter
+
+bgpneighbours:
+  description: configure bgp neighbors on edge
+  method: ProcessParameters
+  format: hash
+  type: parameter
+
+remoteas:
+  description: configure remoteAs number of bgp neighbor
+  format: integer
+  method: ProcessParameters
+  type: parameter
+
+weight:
+  description: configure weight of bgp neighbor
+  format: integer
+  method: ProcessParameters
+  type: parameter
+
+holddowntimer:
+  description: configure hold down timer for neighbor
+  format: integer
+  method: ProcessParameters
+  type: parameter
+
+keepalivetimer:
+  description: configure keep alive timer for neighbor
+  format: integer
+  method: ProcessParameters
+  type: parameter
+
+protocoladdress:
+  description: configure vdr protocol address
+  format: ip address/cidr
+  method: GenerateIPUsingEquation
+  type: parameter
+
+forwardingaddress:
+  description: configure vdr forwarding address
+  format: ip address/cidr
+  method: GenerateIPUsingEquation
+  type: parameter
+
+ipaddress:
+  description: configure bgp neighbor address
+  format: ip address/cidr
+  method: ProcessParameters
+  type: parameter
+
+password:
+  description: configure neighbor password
+  format: string
+  method: ProcessParameters
+  type: parameter
+
+redistribution:
+  description: configure redistribution
+  format:  array
+  method: ProcessParameters
+  type: parameter
+
+rules:
+  description: configure redistribution rules
+  method: ProcessParameters
+  format: hash
+  type: parameter
+
+action:
+  description: configure rule action permit/deny
+  format: boolean
+  method: ProcessParameters
+  type: parameter
+
+fromprotocol:
+  description: configure redistribution rules from protocol
+  method: ProcessParameters
+  format: array
+  type: parameter
+
+static:
+  description: redistribute bgp routes to another protocol
+  format: boolean
+  method: ProcessParameters
+  type: parameter
+
+connected:
+  description: redistribute bgp routes to another protocol
+  format: boolean
+  method: ProcessParameters
+  type: parameter
+
+ospf:
+  derived_components:
+    - gateway
+    - vse
+    - globaldistributedlogicalrouter
+  description: configure ospf on edge
+  linkedworkload: RouterWorkload
+  method: CreateComponent
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  type: component
+  objtype:
+    gateway : 'VDNetLib::VSM::Gateway::OSPFRoute'
+    vse : 'VDNetLib::VSM::VSE::OSPFRoute' 
+    globaldistributedlogicalrouter : 'VDNetLib::VSM::VSE::OSPFRoute'
+ospfareas:
+  description: configure ospf areas on edge
+  method: ProcessParameters
+  format: array
+  type: parameter
+
+ospfareatype:
+  description: configure ospf area type on edge
+  method: ProcessParameters
+  format: array
+  type: parameter
+
+ospfauthenticationtype:
+  description: configure ospf encryption type on edge
+  method: ProcessParameters
+  format: string
+  type: parameter
+
+ospfpasswordvalue:
+  description: configure ospf password value type on edge
+  method: ProcessParameters
+  format: string
+  type: parameter
+
+authentication:
+  description: configure ospf authentication parameter type on edge
+  method: ProcessParameters
+  format: array
+  type: parameter
+
+ospfinterfaces:
+  description: configure ospf interfaces on edge
+  method: ProcessParameters
+  format: hash
+  type: parameter
+
+areaid:
+  description: configure ospf area id on edge
+  method: ProcessParameters
+  format: string
+  type: parameter
+
+hellointerval:
+  description: configure ospf hello interval on edge
+  method: ProcessParameters
+  format: integer
+  type: parameter
+
+deadinterval:
+  description: configure ospf dead interval on edge
+  method: ProcessParameters
+  format: integer
+  type: parameter
+
+cost:
+  description: configure ospf interface cost on edge
+  method: ProcessParameters
+  format: integer
+  type: parameter
+
+mtuignore:
+  description: configure ospf interface mtu ignore on edge
+  method: ProcessParameters
+  format: boolean
+  type: parameter
+
+reconfigure:
+  derived_components:
+    - logicalrouter
+  description: Reconfigures logicalrouter
+  format: boolean
+  method: UpdateComponent
+  params:
+    - name
+    - summary
+    - router_type
+    - configuration
+    - cluster_id
+    - execution_type
+    - reconfigure
+    - tags
+  preprocess: PreProcessHashRefTypeAPI
+  type: action
+  sample_value: true
+
+get_logical_router_ports:
+ description: Get summary of all logical router ports
+ derived_components:
+   - logical_router
+ format:
+   table:
+      - port_id: vdnet index
+      - lrport_uuid: <uuid>
+      - ip_address: string
+      - macaddress: string
+      - dhcp_relay_servers: string
+      - connected_switch: string
+      - overlay_net_id: string
+      - vxlan_control_plane_status: string
+      - multicast_ip: string
+      - port_state: string
+      - mode: string
+      - flags: string
+ method: get_logical_router_ports
+ params:
+   - execution_type
+   - endpoints
+   - logical_router_id
+   - get_logical_router_ports
+   - get_dhcp_relay_info
+   - lrport_uuid
+ preprocess: PreProcessVerification
+ type: verification
+
+get_logical_router_port_info:
+ description: Get summary of a given logical router port
+ derived_components:
+   - logical_router
+ format:
+   table:
+      - port_id: vdnet index
+      - lrport_uuid: <uuid>
+      - ip_address: string
+      - macaddress: string
+      - dhcp_relay_servers: string
+      - connected_switch: string
+      - overlay_net_id: string
+      - vxlan_control_plane_status: string
+      - multicast_ip: string
+      - port_state: string
+      - mode: string
+      - flags: string
+ method: get_logical_router_port_info
+ params:
+   - execution_type
+   - endpoints
+   - logical_router_id
+   - port_id
+   - lrport_uuid
+   - get_logical_router_port_info
+ preprocess: PreProcessVerification
+ type: verification
+
+dhcp_relay_servers:
+ type: parameter
+ description: List of dhcp servers used by relay agent
+ derived_components:
+   - esx
+   - kvm
+   - logicalrouter
+ format: string
+ method: GetComponentAttribute
+ sample_value: "192.168.1.3, 192.168.1.4"
+
+get_dhcp_relay_info: *ENABLED
+
+get_route_table:
+ description: Get the route table of the given logical router
+ derived_components:
+   - logical_router
+ format:
+   table:
+      - destination: vdnet index
+      - mask: vdnet index
+      - next_hop: vdnet index
+      - dr_flags: string
+      - dr_ref: string
+      - origin: string
+      - route_uptime: integer
+      - egress_iface: string
+ method: get_route_table
+ params:
+   - execution_type
+   - endpoints
+   - logical_router_id
+   - get_route_table
+ preprocess: PreProcessVerification
+ type: verification
+
+get_dr_arp_table:
+ description: Get the arp table for the given logical router
+ derived_components:
+   - logical_router
+ format:
+   table:
+      - ip: vdnet index
+      - mac: vdnet index
+ method: get_dr_arp_table
+ params:
+   - execution_type
+   - endpoints
+   - logical_router_id
+   - lr_port_id
+   - get_dr_arp_table
+ preprocess: PreProcessVerification
+ type: verification
+
+firewall:
+  derived_components:
+    - gateway
+    - vse
+  description: configure firewall rule on edge
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  type: component
+  objtype:
+    gateway : 'VDNetLib::VSM::Gateway::Firewall'
+    vse : 'VDNetLib::VSM::Gateway::Firewall'
+
+deletefirewall:
+  derived_components:
+    - gateway
+  description: delete firewall rule on edge
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].gateway.[1].firewall.[1]'
+  type: component
+
+firewall_rules:
+  derived_components:
+    - gateway
+  description: append firewall rule/s on edge
+  linkedworkload: ServiceWorkload
+  format:
+    rules:
+      name: string
+      rule_type: string
+      enabled: boolean
+      logging_enabled: boolean
+      action: string
+  method: CreateComponent
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  type: component
+  objtype:
+    gateway : 'VDNetLib::VSM::Gateway::FirewallRules'
+  sample_value:
+    rules:
+      name: "fw001-Auto-append"
+      rule_type: "USER"
+      enabled: "true"
+      logging_enabled: "true"
+      action: "reject"
+
+deletefirewall_rules:
+  derived_components:
+    - gateway
+  description: delete firewall rule on edge
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].gateway.[1].firewall_rules.[1]'
+  type: component
+
+nat:
+  derived_components:
+    - gateway
+  description: configure NAT on edge
+  linkedworkload: RulesWorkload
+  format:
+    nat_rules:
+      - action: string
+        enabled: boolean
+        description: string
+        edge_interface_index: number
+        original_address: string
+  method: CreateComponent
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  type: component
+  objtype:
+    gateway : 'VDNetLib::VSM::Gateway::NAT'
+  sample_value:
+    nat_rules:
+      - action: "dnat"
+        enabled: "true"
+        description: "Destination NAT"
+        edge_interface_index: 2
+        original_address: "10.10.10.1"
+        translated_address: "172.16.0.2"
+        logging_enabled: "true"
+
+deletenat:
+  derived_components:
+    - gateway
+  description: delete nat rules on edge
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].gateway.[1].nat.[1]'
+  type: component
+
+nat_rules:
+  derived_components:
+    - gateway
+  description: append NAT rule/s on edge
+  linkedworkload: RulesWorkload
+  format:
+    natrule:
+      action: string
+      enabled: boolean
+      description: string
+      edge_interface_index: number
+      original_address: string
+      translated_address: string
+      logging_enabled: boolean
+  method: CreateComponent
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  type: component
+  objtype:
+    gateway : 'VDNetLib::VSM::Gateway::NATRules'
+  sample_value:
+    natrule:
+      action: "dnat"
+      enabled: "true"
+      description: "Destination NAT"
+      edge_interface_index: 2
+      original_address: "10.10.10.1"
+      translated_address: "172.16.0.2"
+      logging_enabled: "true"
+
+deletenat_rules:
+  derived_components:
+    - gateway
+  description: delete nat rules on edge
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].gateway.[1].nat_rules.[1]'
+  type: component
+
+read_next_hop:
+ description: Get the next hop for a packet with given source and destination ip
+ derived_components:
+   - logical_router
+ format:
+   table:
+      - destination: string
+      - mask: string
+      - next_hop: string
+      - dr_flags: string
+      - dr_ref: string
+      - origin: string
+      - route_uptime: integer
+      - egress_iface: string
+ method: read_next_hop
+ params:
+   - execution_type
+   - endpoints
+   - logical_router_id
+   - source_ip
+   - destination_ip
+   - read_next_hop
+   - ip_proto
+   - destination_mac
+   - source_mac
+   - eth_type
+   - vlan_id
+   - dst_port
+   - src_port
+ type: verification
+ preprocess: PreProcessVerification
+
+mtu:
+  derived_components:
+    - nsxinterface
+  description: mtu of an interface
+  format: number
+  sample_value: 1500
+  type: parameter
+
+deletestaticrouting:
+  type: component
+  description: Delete staticrouting on Edge
+  derived_components:
+    - gateway
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  objtype:
+   gateway: 'VDNetLib::VSM::Gateway::StaticRoute'
+  sample_value: "vsm.[1].gateway.[1].staticrouting.[-1]"
+
+deleteospf:
+  type: component
+  description: Delete ospf on edge
+  derived_components:
+    - gateway
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  objtype:
+    gateway: 'VDNetLib::VSM::Gateway::OSPFRoute'
+  sample_value: "vsm.[1].gateway.[1].ospf.[-1]"
+
+deletebgp:
+  type: component
+  description: Delete bgp on edge
+  derived_components:
+    - gateway
+    - logicalrouter
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  objtype:
+    gateway: 'VDNetLib::VSM::Gateway::BGPRoute'
+    logicalrouter: 'VDNetLib::NSXManager::Routing::BGP'
+  sample_value: "vsm.[1].gateway.[1].bgp.[-1]"
+
+arp_cache_size:
+  description: ARP cache size on the router
+  derived_components:
+    - logicalrouter
+  format: integer
+  method: GetComponentAttribute
+  allowed_values:
+    - 2000 - 50000
+  sample_value:
+    - 3000
+  type: parameter
+
+ha_mode:
+  description: High Availability (HA) mode for the router
+  derived_components:
+    - logicalrouter
+  format: string
+  method: GetComponentAttribute
+  allowed_values:
+    - ACTIVE_ACTIVE
+    - ACTIVE_PASSIVE
+  sample_value:
+    - ACTIVE_PASSIVE
+  type: parameter
+
+filter_in_prefixid:
+  type: parameter
+  description: IP perfix list UUID for IN direction filter
+  derived_components:
+    - logicalrouter
+  format: string
+
+filter_out_prefixid:
+  type: parameter
+  description: IP perfix list UUID for OUT direction filter
+  derived_components:
+    - logicalrouter
+  format: string
+
+filter_in_routemapid:
+  type: parameter
+  description: Routemap UUID for IN direction filter
+  derived_components:
+    - logicalrouter
+  format: string
+
+filter_out_routemapid:
+  type: parameter
+  description: Routemap UUID for OUT direction filter
+  derived_components:
+    - logicalrouter
+  format: string
+
+ecmpenabled:
+  type: parameter
+  description: ecmp flag in BGP config
+  derived_components:
+    - logicalrouter
+  format: boolean
+
+hold_up_timer:
+  type: parameter
+  description: hold up timer in BGP config
+  derived_components:
+    - logicalrouter
+  format: integer
+
+ip_prefix_list:
+  derived_components:
+    - logicalrouter
+  description: configure ip prefixlist on logical router
+  format:
+      prefixes:
+          - network: 'ref: network'
+            action: 'ref: action'
+            lessthan_equalto: 'ref: lessthan_equalto'
+  linkedworkload: RouterWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  type: component
+  objtype:
+    logicalrouter: 'VDNetLib::NSXManager::Routing::IPPrefixList'
+  sample_value:
+      prefixes:
+          - network: 10.10.10.10/24
+            lessthan_equalto: 35
+            greaterthan_equalto: 45
+
+delete_ip_prefix_list:
+  derived_components:
+    - logicalrouter
+  description: delete ip prefix list configuration on logical router
+  linkedworkload: RouterWorkload
+  format: vdnet index
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  type: component
+  objtype:
+    logicalrouter: 'VDNetLib::NSXManager::Routing::IPPrefixList'
+  sample_value: 'nsxmanager.[1].logicalrouter.[1].ip_prefix_list.[1]'
+
+lessthan_equalto:
+  description: Configure le for prefix config.
+  format: integer
+  method: ProcessParameters
+  type: parameter
+
+greaterthan_equalto:
+  description: Configure ge for prefix config.
+  format: integer
+  method: ProcessParameters
+  type: parameter
+
+prefixes:
+  derived_components:
+    - logicalrouter
+  description: array of prefixes
+  method: GetMultipleComponentAttributeFromArray
+  type: parameter
+
+update:
+  derived_components:
+    - logicalrouter
+  description: update the component
+  method: UpdateComponent
+  params:
+    - update
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+
+route_maps:
+  derived_components:
+    - logicalrouter
+  description: configure route maps on logical router
+  format:
+    route_map_sequence: 'ref: route_map_sequence'
+    match_criteria: 'ref: match_criteria'
+    ip_prefix_list: 'ref: ip_prefix_list'
+    set_criteria: 'ref: set_criteria'
+    as_path_prepend: 'ref: as_path_prepend'
+    action: 'ref: action'
+  linkedworkload: RouterWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  type: component
+  objtype:
+    logicalrouter: 'VDNetLib::NSXManager::Routing::Route_Maps'
+  sample_value:
+    routemap_sequence:
+        - match_criteria:
+              ip_prefix_list:
+                 - nsxmanager.[1].logicalrouter.[1].ip_prefix_list[1]
+                 - nsxmanager.[1].logicalrouter.[1].ip_prefix_list[2]
+          set_criteria:
+              as_path_prepend: 'AS200'
+          action: 'PERMIT'
+
+delete_route_maps:
+  derived_components:
+    - logicalrouter
+  description: delete route maps configuration on logical router
+  linkedworkload: RouterWorkload
+  format: vdnet index
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  type: component
+  objtype:
+    logicalrouter: 'VDNetLib::NSXManager::Routing::Route_Maps'
+  sample_value: 'nsxmanager.[1].logicalrouter.[1].route_maps.[1]'
+
+route_map_sequence:
+  description: configure group of route map sequence.
+  format: hash
+  method: PreProcessNestedParameters
+  type: parameter
+
+match_criteria:
+  description: route map sequence match criteria.
+  format: hash
+  method: PreProcessNestedParameters
+  type: parameter
+
+set_criteria:
+  description: route map sequence set criteria.
+  format: hash
+  method: PreProcessNestedParameters
+  type: parameter
+
+as_path_prepend:
+  description: Configure AS path prepend.
+  format: string
+  method: ProcessParameters
+  type: parameter
+
+ip_prefix_id_list:
+  description: List of IP Prefix IDs.
+  format: string
+  method: GetMultipleComponentAttributeFromArray
+  type: parameter
+
+enable_routing:
+ description: Enable routing on the given router
+ derived_components:
+   - linuxrouter
+ method: enable_routing
+ params:
+   - execution_type
+   - hostname
+   - password
+   - en_password
+   - enable_routing
+ preprocess: PreProcessVerification  # TODO(dbadiani): Use PreProcessNestedParametersForAction
+ type: action
+
+disable_routing:
+ description: Disable routing on the given router
+ derived_components:
+   - linuxrouter
+ method: disable_routing
+ params:
+   - clear_config
+   - execution_type
+   - disable_routing
+ preprocess: PreProcessVerification  # TODO(dbadiani): Use PreProcessNestedParametersForAction
+ type: action

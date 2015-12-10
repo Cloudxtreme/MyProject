@@ -1,0 +1,168 @@
+VDNET DESIGN DOCUMENT SPECIFICATION:
+------------------------------------
+
+    * 1 VDNet Feature Type
+******************************
+
+               Switch support in the framework, which includes physical switches (cisco, extreme, netgear, force10), VMware Standard Switch, VMware Distributed Switch and possibly cisco nexus 1000V. It will support all the operations
+
+    * 2 Features covered
+*****************************
+
+this covers all the changes required to use vSS, vDS and physical switch.
+
+a) Pretty much every feature needs at least vswitch for networking, currently
+there are very minimal features (like vlan,mtu etc.), this is supposed to
+extend those feature set so that all of the vmkernel networking features
+could be covered, like vSwitch, vmktcpip, netqueue etc.
+
+b)the vDS switch would cover all the features that need vDS, vDS CORE,
+PVLAN, NetIORM, BFN, DVS shaper,LLDP,DVMirror, vDS Netflow etc. to name
+a few. It is to be noted that adding features vDS would need the support
+of VC in VDNet which is a separate task.
+
+c) The physical switch support is required for the features that require
+some specific properties to be enabled on the physical switch. The most
+important use case is in the nic teaming tests to test different failover
+scenarios. Other use cases are checking CDP/LLDP information sent by ESX
+hosts to make sure pswitch shows the correct information. Other use cases
+include adding vlan, setting switchports to different modes. This should
+be capable of handling all the different types of physical switches like
+cisco, extreme, netgear, foundry, force10 to name a few.
+
+    * 3 Command-line changes
+*****************************
+
+  This will add few command line options specially for the physical switch
+part.The mandatory parameter is to provide the physical switch address (which
+could be either the ip address or the hostname of the physical switch. Other
+options include the user name, password, transport, switch port id incase
+of running tests which invlove doing operaions on the specific interface types
+essentially we'll need to add the mapping between a pnic and the physical switch
+and the physical switchport to which the physical nic is connected as this
+will handle the case when two pnics are connected to different physical
+switches.
+
+In addition to above we need to use the network discovery protocol(CDP/LLDP) to
+find the switch address/name and switch ports.
+
+    * 4 Testbed components Involved
+****************************************
+
+This invloves the Switch component. To make the SWITCH part organized the
+existing content of SwithOperations and SwitchWorkloads has been moved to
+a new directory SWITCH inside VDNetLib, keeping the old content same in order
+not to break the existing tests but moving forward all the new stuff should be
+added these new modules.
+
+Another point is to move the creation of objects from Testbed to Switch
+module, the testbed module should hold just the information about the
+switch'es but shouldn't create the objects?
+
+
+    * 5 Pre-Configuration
+****************************************
+
+Some part of interaction with physical switch should be done before running
+the test cases so yes there needs to be a new key which would do all the
+required settings on a specific switch port.
+
+    * 6 List of Operations
+**************************************
+
+The list of operations is endless and would change over the period of time
+so i can not say at the moment what are the options that would be added when
+we have workable code. The number of operations depends upon the feature a
+particular switch supports.
+
+The point is that this design should be able to
+provide users a way to add many new operations which is just writing a method
+on the respective modules.
+
+Also the list of operations would be different for
+the different types of switches for e.g.on the physical you can have operation
+that disables CDP on a specific switch port but that operation won't be
+applicable for vSS and/or vDS. The current list can be seen on the PSWITCH
+package.
+
+1) EnableLLDP (vDS/pswitch)
+2) DisableLLDP (vDS/pswitch)
+3) EnableLLDPAdvertisement(vDS/pswitch)
+4) EnableNetFlow (vDS)
+5) DisableNetFlow (vDS)
+6) CreateMirrorSession (vDS)
+7) RemoveMirrorSession (vDS)
+8) EditMirrorSession (vDS)
+9) DisableMirrorSession (vDS)
+10) EnableMirrorSession (vDS)
+11) EnableNetIORM(vDS)
+12) DisableNetIORM(vDS)
+13) CreateResourcePool(vDS)
+14) SetSharesForResourcePool(vDS)
+15) DeleteResourcePool(vDS)
+16) DisablePort(pswitch)
+17) EnablePort (pswitch)
+18) EnableCDP(pswitch/vswitch/vDS)
+19) DisableCDP(pswitch/vswitch/vDS)
+
+
+    * 7 Keys and Supported Values
+
+This depends upon the different operations and would be answered by the 6)
+above. Some sample stuff
+
+%DisablePort =(
+             Componet => "SWITCH",
+             TestSet  => "NIC Teaming",
+             TestName => "Disable Switch Port",
+             Summary  => "Test to make sure failover works",
+             ExpectedResult => "PASS",
+             PreConfig =>{
+             }
+             WORKLOADS =>{
+                Iterations => "1",
+                Sequence => [['Switch1']],
+                Switch1 => {
+                   Type => "PSWITCH",
+                   port => "x/x",
+                   userName => "admin",
+                   OPT => "disable",
+            }
+         }
+       );
+
+    * 8 Library
+          o 8.1 Package Name(s)
+
+1) VDNetLib::SWITCH::PSWITCH::PSWITCH - for all physical switches.
+2) VDNetLib::SWITCH::SWITCH - Entry point to switches (for vds, physical
+switch, vSS).
+3)VDNetLib::SWITCH::VSSWITCH::VSSWITCH - for operations related to vSS.
+4)VDNetLib::SWITCH::VSSWITCH::PORTGROUP - For operations related to
+vSwitch portgroups.
+5)VDNetLib::SWITCH::VDSWITCH::VDSwitch - for operations related to vDS.
+6)VDNetLib::SWITCH::VDSWITCH::DVPortgroup - for operations related to
+dvPortgroup.
+7)VDNetLib::SWITCH::VDSWITCH::DVPort - For operations related to DVS Port.
+
+
+          o 8.2 List the parent class (if any)
+**********************************
+
+none
+          o 8.3 List all class attributes
+****************************
+
+please see the package VDNetLib::SWITCH::SWITCH. This is where we stands at the
+momentm it is subject to change.
+
+          o 8.4 List all the methods
+**************************************
+Please see VDNetLib::SWITCH::PSWITCH::PSWITCH and VDNetLib::SWITCH::SWITCH. More methods
+will be added in upcoming weeks.
+
+          o 8.5 Link to Package Documentation
+<NIL>
+
+
+

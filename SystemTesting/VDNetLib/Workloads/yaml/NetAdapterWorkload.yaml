@@ -1,0 +1,1401 @@
+---
+address_groups:
+  derived_components:
+    - logicalservicesnodeinterface
+  description: object containg ip address information for dhcp
+  format:
+    primary_ip_address: ip address
+    secondary_ip_addresses:
+      - ip address
+    subnet: subnet mask number
+  method: ProcessParameters
+  sample_value:
+    primary_ip_address: 192.168.2.1
+    secondary_ip_addresses:
+      - 192.168.2.2
+    subnet: 24
+  type: parameter
+addressgroup:
+  derived_components:
+    - lif
+  description: 'To provide multiple ips to an interface '
+  format:
+    - addresstype: string
+      ipv4address: ip address
+      netmask: subnet mask
+  sample_value:
+    - addresstype: primary
+      ipv4address: 192.168.5.1
+      netmask: 255.255.255.0
+  type: parameter
+  method: PreProcessNestedParameters
+addresstype:
+  derived_components:
+    - lif
+  description: 'Option to allow'
+  format: string
+  sample_value: 'primary'
+  type: parameter
+allowguestcontrol:
+  allowed_values:
+    - 0
+    - 1
+  dependency: ~
+  derived_components:
+    - vnic
+  description: Configure guest control for connection state
+  format: integer
+  sample_value: 1
+  type: parameter
+binddvfilter:
+  allowed_values:
+    - 1
+    - 0
+  derived_components:
+    - vmknic
+  description: 'set a vmknic for dvfilter internal communication<0/1>, when it is 0 then it resets the option otherwise it is set to the ip of vmknic'
+  format: boolean
+  method: BindDVFilter
+  params:
+    - binddvfilter
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 1
+  type: action
+capabilitytype:
+  allowed_values:
+    - CAP_ENCAP
+  derived_components:
+    - vmnic
+  description: 'vmnic hardware capability node type, like CAP_ENCAP'
+  format: string
+  sample_value: CAP_ENCAP
+  type: parameter
+configurevmotion:
+  allowed_values:
+    - enable
+    - disable
+  derived_components:
+    - vmknic
+  description: Configure vmotion on the adapter
+  format: string
+  method: SetVMotion
+  params:
+    - configurevmotion
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: enable
+  type: action
+connected:
+  allowed_values:
+    - 0
+    - 1
+  dependency: ~
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+    - lif
+  description: Set the connection state of the adapter
+  format: integer
+  sample_value: 1
+  type: parameter
+deletevlaninterface:
+  derived_components:
+    - vnic
+  description: Remove a vnic on VM
+  format: vdnet index
+  method: DeleteVLANInterface
+  params:
+    - deletevlaninterface
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vm.[1].vnic.[1].vlaninterface.[1]'
+  type: component
+driver:
+  allowed_values:
+    - any
+    - vmxnet2
+    - vmxnet3
+    - ixgbe
+    - e1000
+  derived_components:
+    - vmnic
+    - vnic
+  description: Get the driver name
+  format: string
+  sample_value: vmxnet3
+  type: parameter
+enable_proxy_arp:
+  allowed_values:
+    - 0
+    - 1
+  derived_components:
+    - vnic
+  description: Interface option enable_proxy_arp
+  format: boolean
+  method: GetPythonBoolean
+  sample_value: 0
+  type: parameter
+enable_send_redirects:
+  allowed_values:
+    - 0
+    - 1
+  derived_components:
+    - vnic
+  description: Interface option enable_send_redirects
+  format: boolean
+  method: GetPythonBoolean
+  sample_value: 0
+  type: parameter
+gateway:
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+  description: gateway for both ipv4 and ipv6 routes
+  format: ip address
+  sample_value: 192.168.1.1
+  type: parameter
+  method: GetComponentAttribute
+interface:
+  derived_components:
+    - all
+  description: Unique identifier of an adapter
+  format: string
+  sample_value: vmk1
+  type: parameter
+interface_number:
+  derived_components:
+    - logicalservicesnode
+  description: number of interfaces
+  format: integer
+  method: ProcessParameters
+  sample_value: 1
+  type: parameter
+interface_options:
+  derived_components:
+    - logicalservicesnodeinterface
+  description: logical router interface options
+  format:
+    enable_proxy_arp: boolean
+    enable_send_redirects: boolean
+  method: ProcessParameters
+  sample_value:
+    enable_proxy_arp: 0
+    enable_send_redirects: 0
+  type: parameter
+interface_type:
+  allowed_values:
+    - INTERNAL
+    - UPLINK
+    - TRUNK
+  derived_components:
+    - logicalservicesnodeinterface
+    - interface
+  description: type of interface
+  format: string
+  method: ProcessParameters
+  sample_value: INTERNAL
+  type: parameter
+ipinterface:
+  derived_components:
+    - vnic
+  description: Create sub ip interfaces only on linux vm
+  linkedworkload: NetAdapterWorkload
+  method: CreateIPInterface
+  params:
+    - ipinterface
+  postprocess: StoreSubComponentObjects
+  preprocess: TransformSubComponentSpec
+  type: component
+ipv4:
+  allowed_values:
+    - dhcp
+    - auto
+    - 172.168.1.1
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+  description: Configure IPv4 on the adapter
+  format: ip4 adress
+  method: SetIPv4
+  params:
+    - ipv4
+    - netmask
+  preprocess: IPv4PreProcess
+  sample_value: dhcp
+  type: action
+ipv4address:
+  allowed_values:
+    - 172.31.1.1
+    - dhcp
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+  description: Get the IPv4 address
+  format: string
+  method: ResolveIPv4AddrKey
+  sample_value: 172.31.1.1
+  type: parameter
+ipv6:
+  allowed_values:
+    - add
+    - delete
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+  description: Configure IPv6 on the adapter
+  format: string
+  method: SetIPv6
+  params:
+    - ipv6
+    - ipv6addr
+  postprocess: IPv6PostProcess
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: add
+  type: action
+ipv6addr:
+  allowed_values:
+    - ipv6 address
+    - DHCPV6
+    - ROUTER
+    - PEERDNS
+    - STATIC
+    - DEFAULT
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+  description: Gets the IPv6 address
+  format: string
+  method: ResolveIPv6AddrKey
+  sample_value: 2001::2
+  type: parameter
+limit:
+  dependency: ~
+  derived_components:
+    - vnic
+    - vmknic
+  description: Set the bandwidth limit value for adapter
+  format: Mbps
+  method: ~
+  preprocess: ~
+  sample_value: 1000
+  type: parameter
+macaddress:
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+    - interface
+    - logicalrouterport
+  description: MAC address to be set
+  format: mac address
+  sample_value: 00:50:56:33:44:51
+  type: parameter
+  method: GetComponentAttribute
+mcastaddr:
+  derived_components:
+    - vnic
+  description: multicast ip address
+  format: ip address
+  sample_value: 239.3.1.1
+  type: parameter
+mcastprotocol:
+  allowed_values:
+    - IGMP
+    - MLD
+  derived_components:
+    - vnic
+  description: multicast protocol
+  format: string
+  sample_value: IGMP
+  type: parameter
+mtu:
+  derived_components:
+    - vnic
+    - vmknic
+    - vtep
+  description: Configure mtu on the adapter
+  format: integer
+  method: SetMTU
+  params:
+    - mtu
+  postprocess: MTUPostProcess
+  preprocess: MTUPreProcess
+  sample_value: 1500
+  type: action
+netmask:
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+  description: Subnet mask to be used
+  format: subnet mask
+  sample_value: 255.255.0.0
+  type: parameter
+  method: GetComponentAttribute
+netstack:
+  derived_components:
+    - vmknic
+  description: Get netstack information
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'host.[1].netstack.[1]'
+  type: parameter
+
+network: &network
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+  description: network to which interface belongs
+  format: ip address
+  sample_value: '172.17.0.0,172.31.0.0,172.32.0.0'
+  type: parameter
+
+destination:
+    <<: *network
+    method: GetComponentAttribute
+
+nicplacement:
+  allowed_values:
+    - 1
+    - 0
+    - "vdnet uplink index"
+  derived_components:
+    - vnic
+  description: Verify vnic placement on phy adapter
+  format: vdnet index
+  method: VerifyNIOCPlacement
+  params:
+    - nicplacement
+  preprocess: 'PreProcessPnic'
+  sample_value: 'host.[1].vmnic.[1]'
+  type: action
+
+setlro:
+  allowed_values:
+    - enable
+    - disable
+  derived_components:
+    - vnic
+  description: Configure lro on an adapter
+  format: string
+  method: SetLROStatus
+  params:
+    - setlro
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: enable
+  type: action
+
+nioc:
+  allowed_values:
+    - enable
+    - disable
+  derived_components:
+    - vnic
+  description: Configure NIOC on an adapter (virtual)
+  format: string
+  method: ConfigureNIOC
+  params:
+    - nioc
+    - shares
+    - limits
+    - reservation
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: enable
+  type: action
+niocverification:
+  description: 'Verify vnic bandwidth allocation based on shares, limits and reservation'
+  format: 'reference to array where each element is either vm.[x].vnic.[x] or ft/nfs/iscci/vmotion'
+  method: VerifyEntitlement
+  params:
+    - niocverification
+  preprocess: PreProcessNIOCVerification
+  type: action
+prefixlen:
+  allowed_values:
+    - 1-128
+    - 0-32
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+    - interface
+    - logicalrouterport
+  description: prefix length for the ipv6 address. In case of Logical router interface it is from 0 to 32
+  format: integer
+  sample_value: 28
+  type: parameter
+  method: GetComponentAttribute
+
+update:
+  derived_components:
+    - lif
+  description: 'Reconfigures lif of a vdr , e.g change state, change/delete ip'
+  format:
+    name: 'lif-name'
+    portgroup: "vdnet index"
+    type: "string"
+    connected: "integer (0/1)"
+    addressgroup: 'ref: addressgroup'
+  method: UpdateComponent
+  params:
+    - update
+  preprocess: PreProcessNestedParametersForAction
+  sample_value:
+    name: 'lif-name'
+    portgroup: "vsm.[1].vse.[1].lif.[1]"
+    type: "uplink"
+    connected: 0
+    addressgroup:
+        - addresstype: primary
+          ipv4address: 172.31.1.1
+          netmask: 255.255.0.0
+  type: action
+
+reconfigure:
+  derived_components:
+    - vnic
+    - vmknic
+    - logicalrouterport
+    - interface
+  description: Reconfigure virtual adapter
+  format: boolean
+  method: Reconfigure
+  params:
+    - portgroup
+    - connected
+    - startconnected
+    - allowguestcontrol
+    - reservation
+    - limit
+    - shareslevel
+    - shares
+    - ipv4address
+    - netmask
+    - vlanid
+    - binding
+    - service_bindings
+    - macaddress
+    - network
+    - linked_switch_port_id
+    - linked_router_port_id
+    - subnets
+  postprocess: PostProcessReconfigureAdapter
+  preprocess: PreProcessReconfigureAdapter
+  sample_value: true
+  type: action
+reservation:
+  dependency: ~
+  derived_components:
+    - vnic
+    - vmknic
+  description: Set the bandwidth reservation value for adapter
+  format: Mbps
+  method: ~
+  preprocess: ~
+  sample_value: 100
+  type: parameter
+route:
+  allowed_values:
+    - add
+    - delete
+  dependency:
+    - ipv4
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+  description: 'Add,delete routes via this adapter'
+  format: string
+  method: ConfigureRoute
+  params:
+    - route
+    - gateway
+    - netmask
+    - network
+    - destination
+  preprocess: PreProcessHashTypeAPI
+  sample_value: add
+  type: action
+
+renew_dhcp:
+  type: action
+  description: 'Renew dhcp for the adapter'
+  derived_components:
+    - vtep
+  format:
+    execution_type: string
+  method: renew_dhcp
+  params:
+    - execution_type
+  sample_value:
+    execution_type: 'cli'
+  preprocess: PreProcessShiftTypeAPI
+
+setmacaddr:
+  allowed_values:
+    - "00:50:56:55:55:55"
+    - reset
+  derived_components:
+    - vnic
+    - pcipassthru
+  description: Key to take in MAC address to be set
+  format: mac address
+  method: SetMACAddr
+  params:
+    - setmacaddr
+  postprocess: PostProcessSetMACAddr
+  preprocess: PreProcessSetMACAddr
+  sample_value: "00:50:56:55:55:55"
+  type: action
+
+set_mac_address:
+  allowed_values:
+    - "00:50:56:55:55:55"
+    - reset
+  derived_components:
+    - vif
+  preprocess: PreProcessSetMACAddrAsHash
+  description: Key to take in MAC address to be set
+  format: mac address
+  method: set_mac_address
+  params:
+    - set_mac_address
+  sample_value: "00:50:56:55:55:55"
+  type: action
+
+settcpipstress:
+  allowed_values:
+    - rxDropProb
+    - pktsRxReordered
+    - rxReorderProb
+  derived_components:
+    - vmknic
+  description: set specific value for tcpip stress option
+  format: string
+  method: SetTcpipStressValue
+  params:
+    - settcpipstress
+    - tcpipstressvalue
+  preprocess: PreProcessHashTypeAPI
+  sample_value: rxDropProb
+  type: action
+shares:
+  dependency: ~
+  derived_components:
+    - vnic
+  description: Set the bandwidth shares value for adapter
+  format: integer
+  sample_value: 20
+  type: parameter
+startconnected:
+  allowed_values:
+    - 0
+    - 1
+  dependency: ~
+  derived_components:
+    - vnic
+    - vmknic
+    - ipinterface
+  description: Set the connection state of adapter at power on
+  format: integer
+  sample_value: 1
+  type: parameter
+subipindex:
+  derived_components:
+    - vnic
+  description: 'sub ip address on the adapter, like eth0:1'
+  format: integer
+  sample_value: 1
+  type: parameter
+tagging:
+  allowed_values:
+    - add
+    - remove
+  derived_components:
+    - vmknic
+  description: Add/Remove tagging for the specific interface
+  format: string
+  method: SetTagging
+  params:
+    - tagging
+    - tagname
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: add
+  type: action
+tagname:
+  allowed_values:
+    - Management
+    - VMotion
+    - faultToleranceLogging
+    - vSphereReplication
+    - vSphereReplicationNFC
+  derived_components:
+    - vmknic
+  description: parameter to specify the tag name
+  format: string
+  sample_value: VMotion
+  type: parameter
+tcpipstressvalue:
+  derived_components:
+    - vmknic
+  description: TCP/IP stress value need to be set
+  format: integer
+  sample_value: 13
+  type: parameter
+type:
+  allowed_values:
+    - internal
+    - uplink
+    - trunk
+    - regular
+    - passthrough
+  derived_components:
+    - lif
+    - vnic
+  description: 'Type of adapter. Please note this is NOT vmknic,vnic,vmnic,pnic type but the type interface to that nic. E.g. LIF can be type=internal or type=uplink. vnic can be regular or passthrough'
+  format: string
+  sample_value: internal
+  type: parameter
+verifyarpnegativetimer:
+  derived_components:
+    - vmknic
+  description: Verify whether the ARP timer shows a negative value for hosts that do not exist
+  format: vdnet index
+  method: VerifyARPNegativeTimer
+  params:
+    - verifyarpnegativetimer
+  postprocess: ~
+  preprocess: PreProcessARPCache
+  sample_value: 'host.[1].vmknic.[2]'
+  type: action
+verifyiplearningonhost:
+  description: Verify IP leanring function from vsish vmi info
+  format: 'Hash with following structure: [{   ip       => "<tuple>"    mac      => "<tuple>" }]'
+  method: GetVsishIpLearningEntriesFromHost
+  params:
+    - verifyiplearningonhost
+  preprocess: PreProcessVerifyArpEntry
+  type: verification
+verifymcastfiltermode:
+  description: Verify mcast filter mode through vsish node info
+  format: 'Hash with following structure: [{   mcastfiltermode => "equal_to[::]<string>" }]'
+  method: GetMcastFilterModeFromServer
+  params:
+    - verifymcastfiltermode
+  preprocess: PreProcessVerification
+  type: verification
+verifymcastreportstats:
+  description: Verify mcast report stats through vsish node info
+  format: 'Hash with following structure: [{   mcastprotocol => "equal_to[::]<string>"    mcastversion  => "equal_to[::]<string>"    mcastmode     => "equal_to[::]<string>"    groupaddr     => "equal_to[::]<string>"    sourceaddrs   => "contain_once[::]" }]'
+  method: GetMcastStatsFromServer
+  params:
+    - verifymcastreportstats
+    - mcastprotocol
+    - mcastaddr
+  preprocess: PreProcessVerification
+  type: verification
+verifyvmknicarpcache:
+  derived_components:
+    - vmknic
+  description: Verify whether a newly added neighbor vmknic is displayed in the ARP cache of the SUT host
+  format: vdnet index
+  method: VerifyVmknicArpCache
+  params:
+    - verifyvmknicarpcache
+  postprocess: ~
+  preprocess: PreProcessARPCache
+  sample_value: 'host.[1].vmknic.[2]'
+  type: action
+verifyvmnichwcapability:
+  description: 'Verify vmnic hardware capabilities, like CAP_ENCAP CAP_TSO and so on'
+  format: 'Hash with following structure: [{   value      => "string" }]'
+  method: GetVmnicHardwareCapability
+  params:
+    - verifyvmnichwcapability
+    - capabilitytype
+  preprocess: PreProcessVerification
+  type: verification
+vlan:
+  allowed_values:
+    - 1-4095
+  derived_components:
+    - vinc
+    - pcipassthru
+    - vlaninterface
+    - vmknic
+  description: Key to configure vlan on the given network adapter.
+  format: integer
+  method: ConfigureVLAN
+  params:
+    - vlan
+  postprocess: PostProcessConfigureVLAN
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 100
+  type: action
+vlanid:
+  allowed_values:
+    - 1-4096
+  derived_components:
+    - vlaninterface
+  description: vlan
+  format: integer
+  sample_value: 1
+  type: parameter
+index:
+  derived_components:
+    - interface
+  description: 'Gateway edge vnic index'
+  format: integer
+  sample_value: 1
+  type: parameter
+tunnelid:
+  description: 'tunnel id to used to tag packets for sub interface'
+  derived_components:
+    - subinterface
+  format: integer
+  sample_value: 10
+  type: parameter
+subinterface:
+  derived_components:
+     - interface
+  description: 'subinterface for a trunk interface in gateway edge'
+  format:
+     - name: "Name of the subinterace"
+       ipv4address: "ip address"
+       netmask: "network mask"
+       tunnelid: "Tunnel id for the subinterface (1-4094)"
+       portgroup: "vdnet index"
+  sample_value:
+     subinterface:
+        - name: "sub1"
+          ipv4address: "192.168.1.1"
+          netmask: "255.255.255.0"
+          tunnelid: "5"
+          portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+  type: parameter
+  method: ProcessParameters
+vlaninterface:
+  derived_components:
+    - vnic
+  description: 'Create vlan interface '
+  linkedworkload: NetAdapterWorkload
+  method: CreateVLANInterface
+  params:
+    - vlaninterface
+  postprocess: StoreSubComponentObjects
+  preprocess: TransformSubComponentSpec
+  type: component
+vsan:
+  description: 'Enable/Disable vsan the specific interface'
+  type: action
+  allowed_values:
+    - enable
+    - disable
+  derived_components:
+    - vmknic
+  format: string
+  preprocess: PreProcessShiftTypeAPI
+  method: EnableDisableVSAN
+  params:
+    - vsan
+  sample_value: enable
+virtualfunction:
+  derived_components:
+    - pcipassthru
+  description: 'Enter the virtualfunction ID for SRIOV, the value can be between 0 - 61'
+  format: integer
+  sample_value: 1
+  type: parameter
+  allowed_values:
+    - any
+    - 0
+    - 61
+backing:
+  description: 'Network on which the VIF/VNIC should connect to'
+  type: parameter
+  method: GetOneObjectFromOneTuple
+  format: vdnet index
+  sample_value: 'kvm.[1].bridge.[1]'
+  derived_components:
+    - vif
+networkfeaturestatus:
+  description: 'verify network features enabled for given adapter'
+  method: GetNetworkFeatures
+  preprocess: PreProcessVerification
+  format:
+    - features: string
+  sample_value:
+    - features: 'MAC learning'
+  params:
+    - networkfeaturestatus
+  type: verification
+read_adapter:
+  type: verification
+  derived_components:
+    - vnic
+    - vmknic
+  method: Read
+  preprocess: PreProcessVerification
+  description: 'Used for reading vnic attributes from esxcli'
+  format:
+     'macaddress' : null
+     'portid' : null
+     'vswitch' : null
+     'portgroup' : null
+     'dvportid' : null
+     'ipaddress' : null
+     'teamuplink' : null
+     'uplinkportid' : null
+     'activefilters' : null
+  samplevalue:
+     'macaddress' : ''
+     'portid' : ''
+     'vswitch' : ''
+     'portgroup' : ''
+     'dvportid' : ''
+     'ipaddress' : ''
+     'teamuplink' : ''
+     'uplinkportid' : ''
+     'activefilters' : ''
+  params:
+    - read_adapter
+
+configureservices:
+  description: Enable FTLogging/VMotion/Management on the VMknics
+  type: parameter
+  format:
+    - FTLOGGING: "string"
+  sample_value:
+    - FTLOGGING: "ENABLE"
+  derived_components:
+    - vmknic
+
+dhcp_relay_config_id:
+  description: Identifier for DHCP relay configuartion. Enable DHCP relay on interface if id provided.
+  derived_components:
+    - interface
+  format: String
+  sample_value: TBD
+  type: parameter
+
+binding: &BINDING
+  derived_components:
+    - logicalrouterport
+  description: Service Profile configuration to be attached to a LR port
+  format:
+    - resource_type: "ref: resource_type"
+      profile_id: "ref: profile_id"
+  method: PreProcessNestedParameters
+  sample_value:
+    - resource_type: 'DHCP_RELAY'
+      profile_id: nsxmanager.[1].serviceprofile.[1]
+    - resource_type: 'LOADBALANCER'
+      profile_id: nsxmanager.[1].serviceprofile.[1]
+  type: parameter
+
+service_bindings: *BINDING
+
+logical_router_id:
+  description: Logical Router on which this port is created
+  derived_components:
+    - logicalrouter
+  format: vdnet index
+  method: GetComponentAttribute
+  sample_value: "nsxmanager.[1].logicalrouter.[1]"
+  type: parameter
+
+subnets:
+  description: Logical router port subnets
+  derived_components:
+    - logicalrouterport
+  method: PreProcessNestedParameters
+  format:
+    - prefixlen: "ref: prefixlen"
+      ip_addresses:
+        - "ref: ipaddress"
+  sample_value:
+    - prefixlen: 24
+      ip_addresses:
+        - 10.10.10.1
+  type: parameter
+
+ip_addresses:
+  description: Logical Router port IP addresses
+  derived_components:
+    - logicalrouterport
+  method: PreProcessNestedParameters
+  format:
+    - ipaddress: "ref: ipaddress"
+      is_primary_address: boolean
+  sample_value:
+    - ip_address: 10.10.10.1
+      is_primary_address: true
+    - ip_address: 10.10.10.2
+      is_primary_address: false
+  type: parameter
+
+is_primary_address:
+  description: Is IP Address primary or secondary
+  derived_components:
+    - logicalrouterport
+  format: boolean
+  method: GetComponentAttribute
+  sample_value: true
+  type: parameter
+
+ip_address:
+  description: IP Address
+  derived_components:
+    - logicalrouterport
+  format: string
+  method: GetComponentAttribute
+  sample_value: 10.10.10.1
+  type: parameter
+
+linked_switch_port_id:
+  description: ID/UUID of the port on a logicalSwitch.
+  derived_components:
+    - logicalrouterport
+    - logicalrouteruplinkport
+  format: String
+  sample_value: "9858d43f-c4e9-435a-9e3a-145c4b546127"
+  method: GetComponentAttribute
+  type: parameter
+
+linked_router_port_id:
+  description: ID/UUID of the linked router on a logicalSwitch.
+  derived_components:
+    - logicalrouterlinkport
+  format: String
+  sample_value: "9858d43f-c4e9-435a-9e3a-145c4b546127"
+  method: GetComponentAttribute
+  type: parameter
+
+port_id: &PORT_ID
+  description: Identifier for linked logical router.
+  derived_components:
+    - logicalrouterport
+  format: String
+  sample_value: "9858d43f-c4e9-435a-9e3a-145c4b546127"
+  method: GetComponentAttribute
+  type: parameter
+
+id: *PORT_ID
+
+status:
+  description: status of device
+  type: parameter
+  format:
+    - 'down'
+    - 'up'
+  sample_value:
+    status: 'down'
+
+devicestatus:
+  description: set the device status for vmnic
+  method: SetDeviceStatus
+  type: action
+  derived_component:
+    - esx
+    - kvm
+  preprocess: PreProcessNestedParametersForAction
+  sample_value:
+    - devicestatus: 'down'
+  params:
+     - devicestatus
+     - execution_type
+
+get_team_pnic:
+  type: verification
+  derived_components:
+    - vtep
+  preprocess: PreProcessVerificationAndParameters
+  description: 'verify the current active pnic for vtep'
+  method: get_team_pnic
+  format: 'string'
+  params:
+    - execution_type
+  sample_value:
+    - 'expected_pnic[?]equal_to': 'esx.[1].vmnic.[1]->name'
+
+
+read_adapter_info:
+  type: verification
+  derived_components:
+    - vnic
+    - vmknic
+  method: read_adapter_info
+  preprocess: PreProcessVerification
+  description: 'Used to read adapter ip and mac, this key is for
+                verification module'
+  format:
+     'ip': 'string'
+     'macaddress' : 'string'
+  samplevalue:
+     'ip': ''
+     'macaddress' : ''
+  params:
+    - read_adapter_info
+
+persist_configuration:
+  type: action
+  description: Persists interface configuration.
+  preprocess: PreProcessNestedParametersForAction
+  method: PersistIfaceConfiguration
+  derived_components:
+    - pif
+    - vnic
+  format:
+    persist_configuration:
+        - bootproto: string
+        - onboot: string
+  sample_value:
+    interface_config:
+        - bootproto: "dhcp"
+        - onboot: "yes"
+  params:
+    - persist_configuration
+
+onboot:
+  type: parameter
+  description: Configuration that is persisted for the host's interfaces
+  derived_components:
+    - pif
+    - vnic
+  format: string
+  sample_value: "no"
+
+bootproto:
+  type: parameter
+  description: Configuration that is persisted for the host's interfaces
+  derived_components:
+    - pif
+    - vnic
+  format: string
+  sample_value: "no"
+
+set_cap_vlan_tx:
+  type: action
+  description: Set the hwCapabilities CAP_VLAN_TX vsi node
+  derived_components:
+    - vmnic
+  format:
+    enable: string
+    execution_type: string
+  sample_value:
+    enable: 'true'
+    execution_type: 'cli'
+  params:
+    - enable
+    - execution_type
+  method: set_cap_vlan_tx
+  preprocess: PreProcessNestedParametersForAction
+
+enable:
+  type: parameter
+  description: enable/disable flag
+  derived_components:
+    - vmnic
+    - vnic
+  format: string
+  sample_value: 'true'
+  allowed_values:
+    - 'true'
+    - 'false'
+
+configure_link_properties:
+  type: action
+  description: set speed of NIC and appropriate duplex mode
+  derived_components:
+    - vmnic
+  format:
+    autoconfigure: string
+    duplex: string
+    speed: string
+  sample_value:
+    autoconfigure: 'true'
+    duplex: 'full, half'
+    speed: '10, 100'
+  params:
+    - autoconfigure
+    - duplex
+    - speed
+  method: SetNicSpeedDup
+  preprocess: PreProcessNestedParametersForAction
+
+autoconfigure:
+  type: parameter
+  description: Speed and Duplex mode in Auto negotiation
+  derived_components:
+    - vmnic
+  format: string
+  sample_value: 'true'
+  allowed_values:
+    - 'true'
+    - 'false'
+
+speed:
+  type: parameter
+  description: Speed to be set
+  derived_components:
+    - vmnic
+  format: string
+  sample_value: '100'
+  allowed_values:
+    - '10'
+    - '100'
+
+duplex:
+  type: parameter
+  description: Duplex mode to be set
+  derived_components:
+    - vmnic
+  format: string
+  sample_value: 'full'
+  allowed_values:
+    - 'full'
+    - 'half'
+
+setlromxlgth:
+  derived_components:
+    - vnic
+  description: Configure lro max length on the adapter
+  format: integer
+  method: SetLROMaxLength
+  params:
+    - setlromxlgth
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 8000
+  type: action
+
+
+adapter_mtu:
+  type: parameter
+  description: Set the MTU value on Lif
+  derived_components:
+    - lif
+    - interface
+  format: string
+  sample_value: '1600'
+  method: ProcessParameters
+
+set_queues:
+  type: action
+  description: Configure the max queue of tx or rx
+  derived_components:
+    - vnic
+  format:
+    direction: 'ref: direction'
+    value: 'ref: value'
+  sample_value:
+    direction: 'rx'
+    value: '1,2,3,8'
+  method: SetMaxTxRxQueues
+  preprocess: PreProcessNestedParametersForAction
+
+
+direction:
+  type: parameter
+  description: For receive, use rx; for transmit use tx
+  derived_components:
+    - vnic
+  format: string
+  sample_value: 'rx'
+  allowed_values:
+    - 'rx'
+    - 'tx'
+
+set_ringsize:
+  type: action
+  description: Configure the ring size to tx ,rx1,rx2
+  derived_components:
+    - vnic
+  format:
+    ring_type: 'ref: ring_type'
+    value: 'ref: value'
+  sample_value:
+    ring_type: 'rx1'
+    value: '32,512,4096'
+  method: SetRingSize
+  preprocess: PreProcessNestedParametersForAction
+
+check_tso_support:
+  description: Check the tso support status
+  format: boolean
+  preprocess: PreProcessShiftTypeAPI
+  method: TSOSupported
+  params:
+    - check_tso_support
+  type: action
+  sample_value: 'true'
+
+ring_type:
+  type: parameter
+  description: For receive, use rx1,rx2; for transmit use tx
+  derived_components:
+    - vnic
+  format: string
+  sample_value: 'rx1'
+  allowed_values:
+    - 'tx'
+    - 'rx1'
+    - 'rx2'
+
+configure_offload:
+  type: action
+  description: Configure sg,tso, ufo,gso,tx,rx,lro on the adapter
+  derived_components:
+    - vnic
+    - vmnic
+  format:
+    offload_type: 'ref: offload_type'
+    enable: 'ref :enable'
+  sample_value:
+    offload_type : 'tsoipv4'
+    enable: 'true'
+  method: SetOffload
+  preprocess: PreProcessNestedParametersForAction
+
+offload_type:
+  type: parameter
+  description: Offload can be set on vnic
+  derived_components:
+    - vnic
+  format: string
+  sample_value: 'tsoipv4'
+  allowed_values:
+    - 'tsoipv4'
+    - 'tcptxchecksumipv4'
+    - 'tcprxchecksumipv4'
+    - 'ufo'
+    - 'gso'
+    - 'sg'
+    - 'lro'
+
+reload_driver:
+  allowed_values:
+    - true
+  derived_components:
+    - vnic
+  description: Make driver reload
+  format: string
+  method: DriverReload
+  params:
+    - reload_driver
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: true
+  type: action
+
+check_featuressettings:
+  type: action
+  description: Check the feature setting are the same with value we expected
+  derived_components:
+    - vnic
+    - vmnic
+  format:
+    feature_type: 'ref: feature_type'
+    value: 'ref :value'
+  sample_value:
+    feature_type : 'tsoipv4'
+    value: 'enable'
+  method: VerifyOffload
+  preprocess: PreProcessNestedParametersForAction
+
+feature_type:
+  type: parameter
+  description: The feature that allow to be check the settting vlaue
+  derived_components:
+    - vnic
+    - vmnic
+  format: string
+  sample_value: 'tsoipv4'
+  allowed_values:
+    - 'tsoipv4'
+    - 'tcptxchecksumipv4'
+    - 'tcprxchecksumipv4'
+    - 'ufo'
+    - 'gso'
+    - 'sg'
+    - 'lro'
+    - 'tcpgiantipv4'
+    - 'udptxchecksumipv4'
+    - 'udprxchecksumipv4'
+    - 'iptxchecksumipv4'
+    - 'iprxchecksumipv4'
+    - 'tsoipv6'
+    - 'udptxchecksumipv6'
+    - 'udprxchecksumipv6'
+    - 'tcptxchecksumipv6'
+    - 'tcprxchecksumipv6'
+    - 'tcpgiantipv6'
+    - 'wol'
+    - 'mtu'
+    - 'rss'
+    - 'maxtxqueues'
+    - 'maxrxqueues'
+    - 'txringsize'
+    - 'rx1ringsize'
+    - 'rx2ringsize'
+    - 'vlan'
+    - 'priority'
+    - 'NICStatus'
+
+set_intrmodparams:
+  derived_components:
+    - vnic
+  description: Configure intrmode's params on an adapter
+  format: string
+  method: IntrModParams
+  params:
+    - set_intrmodparams
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 'num_tqs:2::num_rqs:2::share_tx_intr:1'
+  type: action
+
+check_network_hint:
+  derived_components:
+    - vmnic
+  description: check if the network hint on given vmnic contains the given vlan values
+  format: integer
+  method: CheckNetworkHint
+  params:
+    - check_network_hint
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 28
+  type: action
+
+setrss:
+  allowed_values:
+    - enable
+    - disable
+    - rss_ind_table
+  derived_components:
+    - vnic
+  description: Configure rss on an adapter
+  format: string
+  method: SetRSS
+  params:
+    - setrss
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 'num_tqs:2::num_rqs:2::rss_ind_table:0:1:0:0:0:0:0:0:1:0:0:0:0:0:0:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0'
+  type: action
+
+urpf_mode:
+  description: Unicast Reverse Path Forwarding mode for the router port
+  derived_components:
+    - logicalrouterport
+    - logicalrouteruplinkport
+  format: String
+  allowed_values:
+    - STRICT
+    - NONE
+  sample_value:
+    - STRICT
+  method: GetComponentAttribute
+  type: parameter

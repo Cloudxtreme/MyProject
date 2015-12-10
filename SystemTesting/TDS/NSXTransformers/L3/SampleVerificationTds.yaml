@@ -1,0 +1,76 @@
+SampleVerificationTest:
+    Product: "NSX"
+    Category: "BasicRouting"
+    Component: "L3"
+    TestName: "SampleVerificationTest"
+    Version: "2"
+    Tags: "Nsxmanager, Avalanche"
+    Summary: "Demo of verification workload usage"
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "dbadiani"
+    Partnerfacing: "N"
+    TestbedSpec:
+        esx:
+            '1':
+                ip: '10.146.101.160'
+                username: 'root'
+                password: 'ca$hc0w'
+        nsxmanager:
+            '[1]':
+                # Instantiate 1st NSX Manager
+    WORKLOADS:
+        Sequence:
+            - ['CreateLogicalRouter']
+            - ['VerifyLogicalRouters']
+
+        # XXX(Dhaval): This is a dummy workload to get the logicalrouter
+        # object. The actual configuration which is being verified is
+        # preconfigured using net-vdr CLI directly on ESX hosts.
+        CreateLogicalRouter: *CREATE_LOGICALROUTER
+
+        VerifyLogicalRouters:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            endpoints: "esx.[1]"
+            execution_type: 'cli'
+            'get_logical_routers[?]contain_once':
+                table:
+                    - lr_name : 'plr'
+                      control_plane_ip: '0.0.0.0'
+                      num_unique_nexthops: '3'
+                      generation_number: '0'
+                      edge_active: 'no'
+                      lr_state: 'enabled'
+                      lr_id: '3541421628'
+                      number_of_ports: '4'
+                      controller_ip: '0.0.0.0'
+                      control_plane_active: 'no'
+                      number_of_routes: '6'
+                    - lr_name : 'tlr-pepsi'
+                      control_plane_ip: '0.0.0.0'
+                      num_unique_nexthops: '1'
+                      generation_number: '0'
+                      edge_active: 'no'
+                      lr_state: 'enabled'
+                      lr_id: '2734506196'
+                      number_of_ports: '3'
+                      controller_ip: '0.0.0.0'
+                      control_plane_active: 'no'
+                      number_of_routes: '3'
+                    - lr_name : 'tlr-coke'
+                      control_plane_ip: '0.0.0.0'
+                      num_unique_nexthops: '1'
+                      generation_number: '0'
+                      edge_active: 'no'
+                      lr_state: 'enabled'
+                      lr_id: '1927185365'
+                      number_of_ports: '5'
+                      controller_ip: '0.0.0.0'
+                      control_plane_active: 'no'
+                      number_of_routes: '4'

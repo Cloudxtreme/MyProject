@@ -1,0 +1,1236 @@
+# ------------------------------------------------------------------------------
+# This TDS covers P1 Functional tests for Replicator
+# ------------------------------------------------------------------------------
+
+TDSCommonFieldsP0Case: &TDS_COMMON_FIELDS_P1_CASE
+  Product: "vShield"
+  Component: "Replicator"
+  Category: "MultiVC"
+  Version: "2"
+  Tags: "multivc"
+  QCPath: ""
+  ExpectedResult: "PASS"
+  Status: "Execution Ready"
+  AutomationLevel: "Automated"
+  FullyAutomatable: "Y"
+  TestcaseLevel: "Functional"
+  TestcaseType: "Functional"
+  Priority: "P1"
+  Partnerfacing: "N"
+
+
+# ------------------------------------------------------------------------------
+# Failover Tests
+# ------------------------------------------------------------------------------
+
+SlaveDownDuringConfigurationOfULS:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "SlaveDownDuringConfigurationULS"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'Slave node is down, configure 10 ULS on Master node, bring Slave node up
+            Verify configuration is pushed to Slave node. No. of retries by Master on Slave'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2 as secondary
+              3. Shutdown node 2
+              4. Create 10 ULS from master node 1
+              5. Power On node 2
+              6. Read 10 ULS from slave node 2
+              7. Cleanup'
+  ExpectedResult: 'After step 4 - ULS Creation passed from primary node
+                   After step 6 - 10 ULS are observed secondary node'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_L2
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - PowerOffVSM2
+            - - CreateVerifyGlobalVNIPool
+            - - CreateVerifyGlobalMulticastRange
+            - - CreateVerifyGlobalTransportZone
+            - - CreateVerify10GlobalLogicalSwitches
+            - - ReadVerify10GlobalLogicalSwitches
+            - - PowerOnVSM2WithWait
+            - - ReadVerify10GlobalLogicalSwitches_VSM2
+      ExitSequence:
+            - - DeleteAllGlobalLogicalSwitches
+            - - DeleteVerifyGlobalTransportZone
+            - - DeleteVerifyGlobalMulticastRange
+            - - DeleteVerifyGlobalVNIPool
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      PowerOnVSM2WithWait:
+          <<: *POWER_ON_VSM_2
+          sleepbetweenworkloads: 300
+
+BothMasterSlaveDownDuringConfigurationOfULS:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "BothMasterSlaveDownDuringConfigurationOfULS"
+  Developer: "yvhora"
+  Summary: 'Secondary node is down, configure 100 entities on Primary, then Primary goes down
+            Secondary comes back up, Bring up the Primary.
+            Those 10 entities should replicate on Secondary during periodic sync'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2 as secondary
+              3. Shutdown node 2
+              4. Create 100 ULS from master node
+              5. Shutdown node 1
+              6. Power On node 2
+              7. Power On node 1
+              8. Read 100 ULS from slave node
+              9. Cleanup'
+  ExpectedResult: 'After step 4 - ULS Creation passed from master node
+                   After step 8 - 10 ULS are observed slave node'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_L2
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - PowerOffVSM2
+            - - CreateVerifyGlobalVNIPool
+            - - CreateVerifyGlobalMulticastRange
+            - - CreateVerifyGlobalTransportZone
+            - - CreateVerify100GlobalLogicalSwitches
+            - - ReadVerify100GlobalLogicalSwitches
+            - - PowerOffVSM1
+            - - PowerOnVSM2WithWait
+            - - PowerOnVSM1WithWait
+            - - ReadVerify100GlobalLogicalSwitches_VSM2
+            - - DeleteAllGlobalLogicalSwitches
+      ExitSequence:
+            - - DeleteVerifyGlobalTransportZone
+            - - DeleteVerifyGlobalMulticastRange
+            - - DeleteVerifyGlobalVNIPool
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      PowerOnVSM2WithWait:
+          <<: *POWER_ON_VSM_2
+          sleepbetweenworkloads: 300
+
+      PowerOnVSM1WithWait:
+          <<: *POWER_ON_VSM_1
+          sleepbetweenworkloads: 300
+
+ConfigurationsOnMasterDuringFullSync:
+    # Configurations to be done Master During full sync happening
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "ConfigurationsOnMasterDuringFullSync"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'Verify all logical switches are replicated, 100 during slave down & 100 during full sync'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2 as secondary
+              3. Shutdown node 2
+              4. Create 100 ULS from master node
+              5. Power On node 2
+              6. Create 100 ULS from master node when full sync is happening
+              7. Read 200 ULS from slave node
+              8. Create 100 ULS more and force the full sync
+              9. Perform Update and Delete to those newly created ULS during fullsync
+              10. Cleanup'
+  ExpectedResult: 'After step 4 - ULS Creation passed from master node
+                   After step 6 - 100 ULS are created on master node
+                   After step 7 - 200 ULS are created on both master node1 and slave node2
+                   After step 9 - Updated and deleted ULS are replicated on slave node 2'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_L2
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - PowerOffVSM2
+            - - CreateVerifyGlobalVNIPool
+            - - CreateVerifyGlobalMulticastRange
+            - - CreateVerifyGlobalTransportZone
+            - - CreateVerify100GlobalLogicalSwitches
+            - - ReadVerify100GlobalLogicalSwitches
+            - - CreateVerify100GlobalMACSet
+            - - ReadVerify100GlobalMacSet
+            - - PowerOnVSM2WithWait
+            - - ReadReplicatorRoleAsSecondaryOnVSM2WithSleep
+            - - ReplicationStatusOfVSM2InProgress
+            - - CreateVerify101To200GlobalLogicalSwitches
+            - - ReplicationStatusOfVSM2WithSleep
+            - - ReadVerify100GlobalMacSet_VSM2
+            - - ReadVerify101To200GlobalLogicalSwitches
+            - - ReadVerify101To200GlobalLogicalSwitches_VSM2
+            - - ReadVerify100GlobalLogicalSwitches
+            - - ReadVerify100GlobalLogicalSwitches_VSM2
+            - - CreateVerify201To300GlobalLogicalSwitches
+            - - Delete100GlobalLogicalSwitches
+            - - ReadVerifyFirst100GlobalLogicalSwitchesWithFailure
+            - - ReadVerify101To200GlobalLogicalSwitches_VSM2
+            - - ReadVerify201To300GlobalLogicalSwitches_VSM2
+      ExitSequence:
+            - - DeleteAllGlobalLogicalSwitches
+            - - DeleteVerifyGlobalTransportZone
+            - - DeleteVerifyGlobalMulticastRange
+            - - DeleteVerifyGlobalVNIPool
+            - - DeleteGlobalMacSet
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      PowerOnVSM2WithWait:
+          <<: *POWER_ON_VSM_2
+          sleepbetweenworkloads: 300
+
+      ReadReplicatorRoleAsSecondaryOnVSM2WithSleep:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          sleepbetweenworkloads: 60
+
+      CreateVerify101To200GlobalLogicalSwitches:
+          Type: TransportZone
+          TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+          globallogicalswitch:
+              '[101-200]':
+                  controlplanemode: MULTICAST_MODE
+                  name: AutoGenerate
+                  tenantid: AutoGenerate
+          metadata:
+              expectedresultcode: '201'
+
+      ReplicationStatusOfVSM2WithSleep:
+          <<: *REPLICATION_STATUS_VSM_2
+          sleepbetweenworkloads: 60
+
+      ReadVerify101To200GlobalLogicalSwitches:
+          <<: *READ_GLOBAL_LOGICAL_SWITCHES
+          TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[101-200]'
+
+      ReadVerify101To200GlobalLogicalSwitches_VSM2:
+          <<: *READ_GLOBAL_LOGICAL_SWITCHES
+          TestSwitch: 'vsm.[2].globaltransportzone.[1].globallogicalswitch.[101-200]'
+
+      CreateVerify201To300GlobalLogicalSwitches:
+          Type: TransportZone
+          TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+          globallogicalswitch:
+              '[201-300]':
+                  controlplanemode: MULTICAST_MODE
+                  name: AutoGenerate
+                  tenantid: AutoGenerate
+          metadata:
+              expectedresultcode: '201'
+
+      ReadVerifyFirst100GlobalLogicalSwitchesWithFailure:
+        Type: Switch
+        TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-100]'
+        verifyendpointattributes:
+            "isUniversal[?]equal_to": 'true'
+        ExpectedResult: 'Fail'
+
+      ReadVerify201To300GlobalLogicalSwitches:
+          <<: *READ_GLOBAL_LOGICAL_SWITCHES
+          TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[201-300]'
+
+      ReadVerify201To300GlobalLogicalSwitches_VSM2:
+          <<: *READ_GLOBAL_LOGICAL_SWITCHES
+          TestSwitch: 'vsm.[2].globaltransportzone.[1].globallogicalswitch.[201-300]'
+
+ShutdownSlaveDuringFullSync:
+  # Shutdown slave during Full sync
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "ShutdownSlaveDuringFullSync"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: ' Configure large number IPSets. While Full Sync is happening shutdown slave.
+             Start up slave and Full sync should go through again'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2 as secondary
+              3. Create 100 IPSets on master node
+              4. Shutdown node 2
+              5. Power On node 2
+              6. Read 100 IPSets from slave node
+              7. Cleanup'
+  ExpectedResult: 'After step 3 - 100 IPSets Creation passed from master node
+                   After step 6 - 100 IPSets are read on slave node after full sync'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - ["CreateVerify100GlobalIPSet","PowerOffVSM2"]
+            - - ReplicationStatusOfVSM2InProgress
+            - - PowerOnVSM2WithWait
+            - - ReadReplicatorRoleAsSecondaryOnVSM2WithSleep
+            - - ReadVerify100GlobalIPSet
+            - - ReplicationStatusOfVSM2WithSleep
+            - - ReadVerify100GlobalIPSet_VSM2
+      ExitSequence:
+            - - DeleteGlobalIPSet
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      ReadReplicatorRoleAsSecondaryOnVSM2WithSleep:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          sleepbetweenworkloads: 60
+
+      PowerOnVSM2WithWait:
+          <<: *POWER_ON_VSM_2
+          sleepbetweenworkloads: 300
+
+      ReplicationStatusOfVSM2WithSleep:
+          <<: *REPLICATION_STATUS_VSM_2
+          sleepbetweenworkloads: 60
+
+ShutdownMasterDuringFullSync:
+    # Shutdown slave during Full sync
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "ShutdownMasterDuringFullSync"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: ' Configure large number MacSets. While Full Sync is happening shutdown slave.
+             Start up slave and Full sync should go through again'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2 as secondary
+              3. Create 100 MacSets on master node
+              4. Force full sync on primary node
+              5. Shutdown node 1
+              6. Power On node 1
+              7. Read 100 MacSets from slave node
+              8. Cleanup'
+  ExpectedResult: 'After step 3 - 100 MacSets Creation passed from master node
+                   After step 7 - 100 MacSets are read on slave node after full sync'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - ["CreateVerify100GlobalMACSet","PowerOffVSM1"]
+            - - ReplicationStatusOfVSM2InProgress
+            - - PowerOnVSM1WithWait
+            - - ReadReplicatorRoleAsSecondaryOnVSM2WithSleep
+            - - ReadVerify100GlobalMacSet
+            - - ReplicationStatusOfVSM2WithSleep
+            - - ReadVerify100GlobalMacSet_VSM2
+      ExitSequence:
+            - - DeleteGlobalMacSet
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      PowerOnVSM1WithWait:
+          <<: *POWER_ON_VSM_1
+          sleepbetweenworkloads: 300
+
+      ReadReplicatorRoleAsSecondaryOnVSM2WithSleep:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          sleepbetweenworkloads: 60
+
+      ReplicationStatusOfVSM2WithSleep:
+          <<: *REPLICATION_STATUS_VSM_2
+          sleepbetweenworkloads: 60
+
+CreateDeleteULSNotRealized:
+   # Create and delete ULS that was not realized on all Slaves
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "CreateDeleteULSNotRealized"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'Shutdown slave NSX Manager, create ULS and delete'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2 as secondary
+              3. Shutdown node 2
+              4. Create 1000 ULS on master node1
+              5. Delete 1000 ULS on master node1
+              6. Power On node 2
+              7. Read 1000 ULS from slave node
+              8. Cleanup'
+  ExpectedResult: 'After step 4- 1000 ULS Creation passed from master node
+                   After step 5 - 1000 ULS are deleted from master node
+                   After step 7 - No log/proof/realization about ULS creation/deletion on master node'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_L2
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - PowerOffVSM2
+            - - CreateVerifyGlobalVNIPool
+            - - CreateVerifyGlobalMulticastRange
+            - - CreateVerifyGlobalTransportZone
+            - - CreateVerify100GlobalLogicalSwitches
+            - - ReadVerify100GlobalLogicalSwitches
+            - - DeleteAllGlobalLogicalSwitches
+            - - PowerOnVSM2WithWait
+            - - ReadReplicatorRoleAsSecondaryOnVSM2WithSleep
+            - - ReadVerify100GlobalLogicalSwitchesOnSlaveWithFailure
+      ExitSequence:
+            - - DeleteVerifyGlobalTransportZone
+            - - DeleteVerifyGlobalMulticastRange
+            - - DeleteVerifyGlobalVNIPool
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      PowerOnVSM2WithWait:
+          <<: *POWER_ON_VSM_2
+          sleepbetweenworkloads: 300
+
+      ReadVerify100GlobalLogicalSwitchesOnSlaveWithFailure:
+          Type: Switch
+          TestSwitch: 'vsm.[2].globaltransportzone.[1].globallogicalswitch.[1-2]'
+          verifyendpointattributes:
+              "isUniversal[?]equal_to": 'true'
+          ExpectedResult: 'Fail'
+
+      ReadReplicatorRoleAsSecondaryOnVSM2WithSleep:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          sleepbetweenworkloads: 60
+
+NestedReplicationDuringFullSync:
+# Special verification to be done within AuditLogs to check for replication order honoring
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "NestedReplicationDuringFullSync"
+  Developer: "yvhora"
+  Summary: 'Full sync should happen honoring the nested relationships. IPSets linked to SGs should get replicated first'
+  Procedure: '1. Login to the NSX managers
+                2. Create 100 SGs with 100 containing IPsets on master node1
+                3. Do full sync
+                4. Read the IPSets and SGs from Slave node 2
+                5. Cleanup'
+  ExpectedResult: 'After step 4 - 100 SGs and 100 IPsets are replicated without error
+                     Verify the replication order is honored during fullsync using Audit Logs'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsPrimary
+            - - CreateVerify100GlobalIPSet
+            - - CreateVerify100GlobalMACSet
+            - - CreateVerify10GlobalSecurityGroup
+            - - ReadVerify100GlobalIPSet
+            - - ReadVerify100GlobalIPSet_VSM2
+            - - ReadVerify100GlobalMacSet
+            - - ReadVerify100GlobalMacSet_VSM2
+            - - ReadVerify10GlobalSecurityGroup
+            - - ReadVerify10GlobalSecurityGroup_VSM2
+      ExitSequence:
+            - - DeleteGlobalSecurityGroup
+            - - DeleteGlobalMacSet
+            - - DeleteGlobalIPSet
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+NestedReplicationAfterAddingSlave:
+# Special verification to be done within AuditLogs to check for replication order honoring
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "NestedReplicationAfterAddingSlave"
+  Developer: "yvhora"
+  Summary: 'Full sync should happen honoring the nested relationships. IPSets linked to SGs should get replicated first'
+  Procedure: '1. Login to the NSX managers
+                2. Create 100 SGs with 100 containing IPsets on master node1
+                3. Register slave node 2 to master node 1
+                4. Read the IPSets and SGs from Slave node 2
+                5. Cleanup'
+  ExpectedResult: 'After step 4 - 100 SGs and 10 IPsets are replicated without error
+                     Verify the replication order is honored during fullsync using Audit Logs'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - CreateVerify100GlobalIPSet
+            - - CreateVerify100GlobalMACSet
+            - - CreateVerify10GlobalSecurityGroup
+            - - ReadVerify100GlobalIPSet
+            - - ReadVerify100GlobalMacSet
+            - - ReadVerify10GlobalSecurityGroup
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsSecondaryOnVSM2WithSleep
+            - - ReadVerify100GlobalIPSet_VSM2
+            - - ReadVerify100GlobalMacSet_VSM2
+            - - ReadVerify10GlobalSecurityGroup_VSM2
+      ExitSequence:
+            - - DeleteGlobalSecurityGroup
+            - - DeleteGlobalMacSet
+            - - DeleteGlobalIPSet
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      ReadReplicatorRoleAsSecondaryOnVSM2WithSleep:
+          <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+          sleepbetweenworkloads: 60
+
+NestedReplicationAfterBringupSlave:
+# Special verification to be done within AuditLogs to check for replication order honoring
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "NestedReplicationAfterBringupSlave"
+  Developer: "yvhora"
+  Summary: 'Full sync should happen honoring the nested relationships. IPSets linked to SGs should get replicated first'
+  Procedure: '1. Login to the NSX managers
+                2. Register slave node 2 to master node 1
+                3. Shutdown slave node 2
+                4. Create 100 SGs with 100 containing IPsets on master node1
+                5. Power on slave node 2
+                6. Read the IPSets and SGs from Slave node 2
+                5. Cleanup'
+  ExpectedResult: 'After step 4 - 100 SGs and 10 IPsets are replicated without error
+                     Verify the replication order is honored during fullsync using Audit Logs'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - PowerOffVSM2
+            - - CreateVerify100GlobalIPSet
+            - - CreateVerify100GlobalMACSet
+            - - CreateVerify10GlobalSecurityGroup
+            - - ReadVerify100GlobalIPSet
+            - - ReadVerify100GlobalMacSet
+            - - ReadVerify10GlobalSecurityGroup
+            - - PowerOnVSM2WithWait
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - ReadVerify100GlobalIPSet_VSM2
+            - - ReadVerify100GlobalMacSet_VSM2
+            - - ReadVerify10GlobalSecurityGroup_VSM2
+            - - ReplicationStatusOfVSM2
+      ExitSequence:
+            - - DeleteGlobalSecurityGroup
+            - - DeleteGlobalMacSet
+            - - DeleteGlobalIPSet
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      PowerOnVSM2WithWait:
+          <<: *POWER_ON_VSM_2
+          sleepbetweenworkloads: 300
+
+# ------------------------------------------------------------------------------
+# Switching Master
+# ------------------------------------------------------------------------------
+
+ChangeMasterInToplogy:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "ChangeMasterInToplogy"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'Switching to new master in the topology'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2, node 3 as secondary
+              3. Unregister slave node 2 and slave node 3 and set them to standalone
+              4. Set master node 1 to standalone
+              5. Set node 2 to primary
+              6. Register node1 and node3 to newly assigned master node2
+              7. Create IPSet from master node 2
+              8. Read IPSet from slave nodes - node1 and node 3
+              9. Cleanup'
+  ExpectedResult: 'After step 5 - node 2 is successfully assigned new primary
+                   After step 6 - node 3 and node 1 are successfully registered to primary node 2
+                   After step 7 - Verify IPSet is synced on slave nodes - node 1 and node 3'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - RegisterSlaveNSXWithMaster
+            - - RegisterSlaveNSX_VSM3_WithMaster_VSM1
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - ReadReplicatorRoleAsSecondaryOnVSM3
+            - - UnRegisterAllSlaves
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - SetMasterNSXReplicatorAsPrimary_VSM2
+            - - RegisterSlaveNSX_VSM1_WithMaster_VSM2
+            - - RegisterSlaveNSX_VSM3_WithMaster_VSM2
+            - - ReadReplicatorRoleAsSecondaryOnVSM1
+            - - ReadReplicatorRoleAsSecondaryOnVSM3
+            - - CreateVerifyGlobalIPSetOnNewMaster
+            - - ReadVerifyGlobalIPSetOnNewMaster
+            - - ReadVerifyGlobalIPSetOnSlaveVSM1
+            - - ReadVerifyGlobalIPSetOnSlaveVSM3
+      ExitSequence:
+            - - DeleteGlobalIPSetOnNewMaster
+            - - SetMasterNSXReplicatorAsStandalone_VSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - ReadNSXReplicatorServiceStatusStoppedOnVSM2
+
+      RegisterSlaveNSX_VSM3_WithMaster_VSM2:
+          Type: NSX
+          TestNSX: vsm.[2]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[2]':
+                  ipaddress: 'vsm.[3]'
+                  username: 'vsm.[3]'
+                  password: 'vsm.[3]'
+                  cert_thumbprint: 'vsm.[3]'
+          metadata:
+              expectedresultcode: '201'
+
+      CreateVerifyGlobalIPSetOnNewMaster:
+          <<: *CREATE_UNIVERSAL_IPSET
+          TestNSX: 'vsm.[2]'
+
+      ReadVerifyGlobalIPSetOnNewMaster:
+          <<: *READ_UPDATED_GLOBAL_IPSET
+          TestGroupingObject: "vsm.[2].globalipset.[1]"
+
+      ReadVerifyGlobalIPSetOnSlaveVSM1:
+          <<: *READ_UPDATED_GLOBAL_IPSET
+          TestGroupingObject: "vsm.[1].globalipset.[1]"
+
+      ReadVerifyGlobalIPSetOnSlaveVSM3:
+          <<: *READ_UPDATED_GLOBAL_IPSET
+          TestGroupingObject: "vsm.[3].globalipset.[1]"
+
+      ReadNSXReplicatorServiceStatusStoppedOnVSM2:
+          <<: *READ_NSX_REPLICATOR_STATUS_MASTER_STOPPED
+          TestNSX: vsm.[2]
+
+      DeleteGlobalIPSetOnNewMaster:
+          Type: 'NSX'
+          TestNSX: 'vsm.[2]'
+          deleteglobalipset: "vsm.[2].globalipset.[-1]"
+
+MakeSlaveAsMaster:
+  # Convert Slave NSX Manager to Master NSX Manager
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "MakeSlaveAsMaster"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'Shutdown master and convert another slave to master
+            Check if the configurations from new master are moving to slaves'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2, node 3 as secondary
+              3. Shutdown node1
+              4. Set slave node 2 to standalone
+              5. Set slave node 2 to primary
+              6. Register node 3 to node 2
+              7. Create IPSet from master node 2
+              8. Read IPSet from slave node 3
+              9. Cleanup'
+  ExpectedResult: 'After step 5 - node 2 is successfully assigned new primary
+                   After step 6 - node 3 is successfully registered to primary masternnode 2
+                   After step 7 - Verify ULS is synced on slave node 3'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - RegisterSlaveNSXWithMaster
+            - - RegisterSlaveNSX_VSM3_WithMaster_VSM1
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - ReadReplicatorRoleAsSecondaryOnVSM3
+            - - PowerOffVSM1
+            - - SetSlaveNSXReplicatorAsStandalone
+            - - SetSlaveNSXReplicatorAsStandalone_VSM3
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - SetMasterNSXReplicatorAsPrimary_VSM2
+            - - RegisterSlaveNSX_VSM3_WithMaster_VSM2
+            - - ReadReplicatorRoleAsSecondaryOnVSM3
+            - - CreateVerifyGlobalIPSetOnNewMaster
+            - - ReadVerifyGlobalIPSetOnNewMaster
+            - - ReadVerifyGlobalIPSetOnSlaveVSM3
+      ExitSequence:
+            - - DeleteGlobalIPSetOnNewMaster
+            - - PowerOnVSM1
+            - - ReadNSXReplicatorServiceStatusRunningWithWait
+            - - SetMasterNSXReplicatorAsStandalone_VSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - ReadNSXReplicatorServiceStatusStoppedOnVSM2
+
+      RegisterSlaveNSX_VSM3_WithMaster_VSM2:
+          Type: NSX
+          TestNSX: vsm.[2]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[2]':
+                  ipaddress: 'vsm.[3]'
+                  username: 'vsm.[3]'
+                  password: 'vsm.[3]'
+                  cert_thumbprint: 'vsm.[3]'
+          metadata:
+              expectedresultcode: '201'
+
+      CreateVerifyGlobalIPSetOnNewMaster:
+          <<: *CREATE_UNIVERSAL_IPSET
+          TestNSX: 'vsm.[2]'
+
+      ReadVerifyGlobalIPSetOnNewMaster:
+          <<: *READ_UPDATED_GLOBAL_IPSET
+          TestGroupingObject: "vsm.[2].globalipset.[1]"
+
+      ReadVerifyGlobalIPSetOnSlaveVSM3:
+          <<: *READ_UPDATED_GLOBAL_IPSET
+          TestGroupingObject: "vsm.[3].globalipset.[1]"
+
+      ReadNSXReplicatorServiceStatusStoppedOnVSM2:
+          <<: *READ_NSX_REPLICATOR_STATUS_MASTER_STOPPED
+          TestNSX: vsm.[2]
+
+      DeleteGlobalIPSetOnNewMaster:
+          Type: 'NSX'
+          TestNSX: 'vsm.[2]'
+          deleteglobalipset: "vsm.[2].globalipset.[-1]"
+
+      ReadNSXReplicatorServiceStatusRunningWithWait:
+          <<: *READ_NSX_REPLICATOR_STATUS_MASTER_RUNNING
+          sleepbetweenworkloads: 300
+
+SwitchMasterSlaveRetainingObjects:
+  # Swap Master Slave configurations keeping objects on slave
+  # TODO: TRANSIT CASE
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "SwitchMasterSlaveRetainingObjects"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'Make Master as secondary and slave node to standalone keeping objects.
+            Check if you are able to make the slave node to primary and the retained objects are replicated'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2 & create 100 IPSet, 1UTZ and 10 ULS
+              3. Set master node 1 to standalone
+              4. Set slave node 2 to standalone along with retaining objects
+              5. Set slave node 2 to primary and register node 1 to new master node 2
+              6. Create 100 Universal SGs in the Global SGs retained on node 2
+              7. Read 100 SGs from node 1
+              8. Cleanup'
+  ExpectedResult: 'After step 3 - node 1 is set to standalone
+                   After step 4 - slave node 2 is set to standalone
+                   After step 5 - slave node 2 is set to new primary and node 1 is secondary
+                   After step 7 - Verify 100 Universal IPsets are created within Global SGs and read on slave node 1'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_L2
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - CreateVerifyGlobalVNIPool
+            - - CreateVerifyGlobalMulticastRange
+            - - CreateVerifyGlobalTransportZone
+            - - CreateVerify10GlobalLogicalSwitches
+            - - ReadVerify10GlobalLogicalSwitches
+            - - CreateVerify100GlobalIPSet
+            - - ReadVerify100GlobalIPSet
+            - - ReadVerify100GlobalIPSet_VSM2
+            - - SetMasterNSXReplicatorAsStandalone
+            - - SetSlaveNSXReplicatorAsStandalone
+            - - SetMasterNSXReplicatorAsPrimary_VSM2
+            - - ReadReplicatorRoleAsPrimaryOnVSM2
+            - - RegisterSlaveNSX_VSM1_WithMaster_VSM2
+            - - ReadReplicatorRoleAsSecondaryOnVSM1
+            - - ReadVerify100GlobalIPSet
+            - - ReplicationStatusOfVSM1
+            - - CreateVerify10GlobalSecurityGroupOnNewMaster
+            - - ReadVerify10GlobalSecurityGroupOnNewMaster
+            - - ReadVerify10GlobalSecurityGroupOnNewSlave
+      ExitSequence:
+            - - DeleteGlobalSecurityGroupOnNewMaster
+            - - DeleteGlobalIPSetOnNewMaster
+            - - DeleteAllGlobalLogicalSwitchesOnNewMaster
+            - - DeleteVerifyGlobalTransportZoneOnNewMaster
+            - - DeleteVerifyGlobalMulticastRangeOnNewMaster
+            - - DeleteVerifyGlobalVNIPoolOnNewMaster
+            - - UnRegisterSlavesOfVSM2
+            - - SetMasterNSXReplicatorAsStandalone_VSM2
+            - - ReadNSXReplicatorServiceStatusStoppedOnVSM2
+
+      ReplicationStatusOfVSM1:
+        Type: 'NSX'
+        TestNSX: 'vsm.[2]'
+        read_replication_status:
+            'syncState[?]equal_to': 'IN_SYNC'
+            'nsxManagersStatusList[?]contain_once':
+              - vsmId: 'vsm.[1]->id'
+                syncState: 'IN_SYNC'
+
+      CreateVerify10GlobalSecurityGroupOnNewMaster:
+        Type: 'NSX'
+        TestNSX: 'vsm.[2]'
+        globalsecuritygroup:
+            '[1-10]':
+                name: AutoGenerate
+                description: 'SecurityGroups'
+                type:
+                    typename: 'SecurityGroup'
+                scope:
+                    id: 'universalroot-0'
+                    objecttypename: 'UniversalRoot'
+                    name: 'Universal'
+                member:
+                    - grouping_object_id: 'vsm.[2].globalipset.[1-10]'
+                      isuniversal: 'true'
+                    - grouping_object_id: 'vsm.[2].globalmacset.[1-10]'
+                      isuniversal: 'true'
+        metadata:
+            expectedresultcode: '201'
+
+      ReadVerify10GlobalSecurityGroupOnNewSlave:
+        <<: *READ_GLOBAL_SECURITY_GROUP
+        TestGroupingObject: "vsm.[1].globalsecuritygroup.[1-10]"
+
+      ReadVerify10GlobalSecurityGroupOnNewMaster:
+        <<: *READ_GLOBAL_SECURITY_GROUP
+        TestGroupingObject: "vsm.[2].globalsecuritygroup.[1-10]"
+
+      DeleteGlobalSecurityGroupOnNewMaster:
+        Type: 'NSX'
+        TestNSX: 'vsm.[2]'
+        deleteglobalsecuritygroup: "vsm.[2].globalsecuritygroup.[-1]"
+
+      DeleteGlobalIPSetOnNewMaster:
+        Type: 'NSX'
+        TestNSX: 'vsm.[2]'
+        deleteglobalipset: "vsm.[2].globalipset.[-1]"
+
+      DeleteAllGlobalLogicalSwitchesOnNewMaster:
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+        deletegloballogicalswitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[-1]'
+        metadata:
+            expectedresultcode: '200'
+
+      DeleteVerifyGlobalTransportZoneOnNewMaster:
+        Type: NSX
+        TestNSX: vsm.[2]
+        deleteglobaltransportzone: vsm.[2].globaltransportzone.[1]
+        metadata:
+            expectedresultcode: '200'
+
+      DeleteVerifyGlobalMulticastRangeOnNewMaster:
+        Type: NSX
+        TestNSX: vsm.[2]
+        deleteglobalmulticastiprange: vsm.[1].globalmulticastiprange.[1]
+        metadata:
+            expectedresultcode: '200'
+
+      DeleteVerifyGlobalVNIPoolOnNewMaster:
+        Type: NSX
+        TestNSX: vsm.[2]
+        deleteglobalvnipool: vsm.[2].globalvnipool.[1]
+        metadata:
+            expectedresultcode: '200'
+
+      ReadNSXReplicatorServiceStatusStoppedOnVSM2:
+        <<: *READ_NSX_REPLICATOR_STATUS_MASTER_STOPPED
+        TestNSX: vsm.[2]
+
+TwoMastersInOneTopology:
+   # Two master nodes in one topology
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "TwoMastersInOneTopology"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'NSX master has gone down due to host failure, and recovers while user
+            started operation for a slave to be master and the original master
+            recovers and resumes'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2, node 3 as secondary
+              3. Shutdown node1
+              4. Set slave node 2 to standalone
+              5. Set slave node 2 to primary
+              6. Register node 3 to node 2
+              7. Power on node 1
+              8. Create SG1 from master node 1
+              9. Create IPset from master node 2
+              10. Read IPset from slave node 3
+              11. Cleanup'
+  ExpectedResult: 'After step 5 - node 2 is successfully assigned new primary
+                   After step 6 - node 3 is successfully registered to primary masternnode 2
+                   After step 8 - Verify SG1 replication fails.
+                   After step 9 - Verify SG2 is synced on slave node 3'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - RegisterSlaveNSXWithMaster
+            - - RegisterSlaveNSX_VSM3_WithMaster_VSM1
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - ReadReplicatorRoleAsSecondaryOnVSM3
+            - - PowerOffVSM1
+            - - SetSlaveNSXReplicatorAsStandalone
+            - - SetSlaveNSXReplicatorAsStandalone_VSM3
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - SetMasterNSXReplicatorAsPrimary_VSM2
+            - - RegisterSlaveNSX_VSM3_WithMaster_VSM2
+            - - ReadReplicatorRoleAsSecondaryOnVSM3
+            - - PowerOnVSM1WithWait
+            - - ReadNSXReplicatorServiceStatusRunningWithWait
+            - - ReadReplicatorRoleAsPrimary
+            - - CreateVerifyGlobalIPSet
+            - - CreateVerifyGlobalMACSet
+            - - CreateVerifyGlobalSecurityGroup
+            - - ReadVerifyGlobalSecurityGroup
+            - - ReadVerifyGlobalSecurityGroupOnVSM2Failed
+            - - ReplicationStatusOfVSM2Failed
+            - - CreateVerifyGlobalIPSetOnNewMaster
+            - - ReadVerifyGlobalIPSetOnNewMaster
+            - - ReadVerifyGlobalIPSetOnSlaveVSM3
+      ExitSequence:
+            - - DeleteGlobalIPSetOnNewMaster
+            - - DeleteGlobalSecurityGroup
+            - - DeleteGlobalMacSet
+            - - DeleteGlobalIPSet
+            - - ReadNSXReplicatorServiceStatusRunningWithWait
+            - - SetMasterNSXReplicatorAsStandalone_VSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - ReadNSXReplicatorServiceStatusStoppedOnVSM2
+
+      PowerOnVSM1WithWait:
+          <<: *POWER_ON_VSM_1
+          sleepbetweenworkloads: 300
+
+      RegisterSlaveNSX_VSM3_WithMaster_VSM2:
+          Type: NSX
+          TestNSX: vsm.[2]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[2]':
+                  ipaddress: 'vsm.[3]'
+                  username: 'vsm.[3]'
+                  password: 'vsm.[3]'
+                  cert_thumbprint: 'vsm.[3]'
+          metadata:
+              expectedresultcode: '201'
+
+      ReadVerifyGlobalSecurityGroupOnVSM2Failed:
+          Type: GroupingObject
+          TestGroupingObject: "vsm.[1].globalsecuritygroup.[1]"
+          verifyendpointattributes:
+              "description[?]equal_to": 'SecurityGroups'
+          ExpectedResult: 'Fail'
+
+      CreateVerifyGlobalIPSetOnNewMaster:
+          <<: *CREATE_UNIVERSAL_IPSET
+          TestNSX: 'vsm.[2]'
+
+      ReadVerifyGlobalIPSetOnNewMaster:
+          <<: *READ_UPDATED_GLOBAL_IPSET
+          TestGroupingObject: "vsm.[2].globalipset.[1]"
+
+      ReadVerifyGlobalIPSetOnSlaveVSM3:
+          <<: *READ_UPDATED_GLOBAL_IPSET
+          TestGroupingObject: "vsm.[3].globalipset.[1]"
+
+      ReadNSXReplicatorServiceStatusStoppedOnVSM2:
+          <<: *READ_NSX_REPLICATOR_STATUS_MASTER_STOPPED
+          TestNSX: vsm.[2]
+
+      ReadNSXReplicatorServiceStatusRunningWithWait:
+          <<: *READ_NSX_REPLICATOR_STATUS_MASTER_RUNNING
+          sleepbetweenworkloads: 300
+
+      DeleteGlobalIPSetOnNewMaster:
+          Type: 'NSX'
+          TestNSX: 'vsm.[2]'
+          deleteglobalipset: "vsm.[2].globalipset.[-1]"
+
+
+ReRegisterSlaveWithMaster:
+  #TODO : TRANSIT CASE
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "ReRegisterSlaveWithMaster"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'Topology with one master one slaves. Verify reregisteration of slave with master'
+  Procedure: '1. Login to the NSX managers
+              3. Set the replication role to Master for node1 ==> PRIMARY
+              4. Register the node 2 to node 1
+              5. Create 100 Universal MacSets from master node1
+              6. Read 100 Universal MacSets from slave node 2
+              7. Unregister slave node 2 from node 1 keeping the objects
+              8. Re-register node2 to master node 1
+              9. Update the properties from already created Universal MacSets on master node 1
+              10. Read the updated Universal MacSets from slave node 2
+              11. Cleanup'
+  ExpectedResult: 'After step 3 - node 1 has primary replication role
+                   After step 6 - 100 MacSets are read from slave node 2
+                   After step 7 - Unregistration is succesful where slave node 2 is set to standalone
+                   After step 10 - Updated properties with Universal Macsets are read from slave node 2'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - CreateVerify100GlobalMACSet
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - ReadVerify100GlobalMacSet
+            - - ReadVerify100GlobalMacSet_VSM2
+            - - ReplicationStatusOfVSM2
+            - - UnRegisterAllSlaves
+            - - ReadReplicatorRoleAsStandaloneOnVSM2      #TODO: CHANGE TO TRANSIT FROM RTQA5
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - UpdateVerifyGlobalMacSet
+            - - ReadVerifyUpdatedGlobalMacSet
+            - - ReadVerifyUpdatedGlobalMacSet_VSM2
+      ExitSequence:
+            - - DeleteGlobalMacSet
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+SlaveDownWhileSettingMasterStandalone:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "SlaveDownWhileSettingMasterStandalone"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'Secondary is unreachable while making primary to standalone'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2
+              3. Set slave node 2 to poweroff as soon as master node1 is being set to standalone
+              4. Bring slave node 2 up again by powering on the VM
+              5. Cleanup'
+  ExpectedResult: 'After step 3 - node 1 is set to standalone by configuring (ignore exceptions)
+                   After step 4 - node 2 is still working as secondary.'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - ["PowerOffVSM2","SetSlaveNSXReplicatorAsStandalone"]
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - PowerOnVSM2WithWait
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+      ExitSequence:
+            - - UnRegisterAllSlaves
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      PowerOnVSM2WithWait:
+          <<: *POWER_ON_VSM_2
+          sleepbetweenworkloads: 300
+
+VerifyGVNIisUsedInULSCreation:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "VerifyGVNIisUsedInULSCreation"
+  Developer: "yvhora"
+  Summary: 'Topology with one master one slave. CRUD operations on ULS is synced to slave'
+  Procedure: '1. Login to the NSX managers
+              2. Set node 1 as primary while node 2 as secondary
+              3. Set GVNI Pool on primary node
+              4. Create global logical switch ULS1 from primary node with GVNI Pool configured
+              5. Read the global logical switch ULS1 from secondary node for the UTZ
+              6. Cleanup'
+  ExpectedResult: 'After step 3 - GVNI gets created isUniversal flag set to true
+                   After step 4 - ULS1 is created on primary node with VNI used from GVNI Pool
+                   After step 5 - ULS1 read from secondary node is having same VNI'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_L2
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - CreateVerifyGlobalVNIPoolInRange
+            - - CreateVerifyGlobalMulticastRange
+            - - CreateVerifyGlobalTransportZone
+            - - CreateVerify2GlobalLogicalSwitches
+            - - ReadVerifyGlobalLogicalSwitches             #TODO : Add verification for specific GVNI (vdnId)
+            - - ReadVerifyGlobalLogicalSwitches_VSM2
+      ExitSequence:
+            - - DeleteAllGlobalLogicalSwitches
+            - - DeleteVerifyGlobalTransportZone
+            - - DeleteVerifyGlobalMulticastRange
+            - - DeleteVerifyGlobalVNIPool
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      CreateVerifyGlobalVNIPoolInRange:
+        Type: NSX
+        TestNSX: vsm.[1]
+        globalvnipool:
+            '[1]':
+                name: AutoGenerate
+                begin: 10000
+                end: 10001
+        metadata:
+            expectedresultcode: '201'
+
+VerifyUniqueNodeID:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "VerifyUniqueNodeID"
+  Developer: "yvhora"
+  Summary: 'Verify Node id is used in ULS Creation'
+  Procedure: '1. Login to the NSX managers
+                2. Set master node 1 as primary while slave node 2 as secondary
+                3. Create ULS from master node 1
+                4. Read ULS from primary and slave nodes - node1 and node 2
+                5. Cleanup'
+  ExpectedResult: 'After step 3 - ULS is created successfully on node 1
+                     After step 4 - Verify ULS is synced on slave node 2 and has unique Node Id'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_L2
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - CreateVerifyGlobalVNIPool
+            - - CreateVerifyGlobalMulticastRange
+            - - CreateVerifyGlobalTransportZone
+            - - CreateVerify2GlobalLogicalSwitches
+            - - ReadVerifyGlobalLogicalSwitches             #TODO : Add verification for getting UUID
+            - - ReadVerifyGlobalLogicalSwitches_VSM2
+      ExitSequence:
+            - - DeleteAllGlobalLogicalSwitches
+            - - DeleteVerifyGlobalTransportZone
+            - - DeleteVerifyGlobalMulticastRange
+            - - DeleteVerifyGlobalVNIPool
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+UniversalApplicationAndApplicationGroupObjects:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "UniversalApplicationAndApplicationGroupObjects"
+  Developer: "yvhora"
+  Summary: 'Verify Universal Application and Application Grouping Objects, taken from ReplicatorSampleTds'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - CreateVerifyGlobalApplication
+            - - ReadVerifyGlobalApplicationService
+            - - ReadEntitySyncStatus_ApplicationService
+            - - CreateVerifyGlobalApplicationGroup
+            - - ReadVerifyGlobalApplicationServiceGroup
+            - - ReadEntitySyncStatus_ApplicationServiceGroup
+            - - ReplicationStatusOfVSM2
+            - - AddMemberToApplicationGroup
+      ExitSequence:
+            - - DeleteMemberFromApplicationGroup
+            - - DeleteGlobalApplicationService
+            - - DeleteGlobalApplicationServiceGroup
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      ReadEntitySyncStatus_ApplicationService:
+        <<: *READ_ENTITY_SYNC_STATUS_SECURITY_GROUP
+        object_id: 'vsm.[1].globalapplicationservice.[1]'
+        object_type: 'Application'
+        read_entity_replication_status:
+            'objectId[?]equal_to': 'vsm.[1].globalapplicationservice.[1]->id'
+            'isInSync': 'true'
+            'elements':
+                - vsmId: 'PRIMARY'
+                  objectExists: 'true'
+                - vsmId: 'vsm.[2]->id'
+                  objectExists: 'true'
+
+      ReadEntitySyncStatus_ApplicationServiceGroup:
+        <<: *READ_ENTITY_SYNC_STATUS_SECURITY_GROUP
+        object_id: 'vsm.[1].globalapplicationservicegroup.[1]'
+        object_type: 'Application'
+        read_entity_replication_status:
+            'objectId[?]equal_to': 'vsm.[1].globalapplicationservicegroup.[1]->id'
+            'isInSync': 'true'
+            'elements':
+                - vsmId: 'PRIMARY'
+                  objectExists: 'true'
+                - vsmId: 'vsm.[2]->id'
+                  objectExists: 'true'
+
+TranslationLookupForSecurityGroups:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "TranslationLookupForSecurityGroups"
+  Developer: "yvhora"
+  Summary: 'Verify Translation Lookup For SGs, taken from ReplicatorSampleTds'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+          - - ReadNSXReplicatorServiceStatusRunning
+          - - RegisterSlaveNSXWithMaster
+          - - CreateVerifyGlobalMACSet
+          - - CreateVerifyGlobalIPSet
+          - - CreateVerifyGlobalIPSet-2
+          - - CreateVerifyGlobalSecurityGroup_1
+          - - ReadVerifyGlobalSecurityGroup
+          - - ReadVerifyGlobalSecurityGroup_VSM2
+          - - TranslateSecurityGroupForIPSet
+          - - LookupSecurityGroupsForIPSet
+          - - TranslateSecurityGroupForMACSet
+      ExitSequence:
+          - - DeleteGlobalSecurityGroup
+          - - DeleteGlobalMacSet
+          - - DeleteGlobalIPSet
+          - - UnRegisterAllSlaves
+          - - SetMasterNSXReplicatorAsStandalone
+          - - ReadNSXReplicatorServiceStatusStopped
+
+      CreateVerifyGlobalSecurityGroup_1:
+          <<: *CREATE_UNIVERSAL_SECURITY_GROUP
+          globalsecuritygroup:
+              '[1]':
+                  <<: *GLOBAL_SECURITY_GROUP_1
+                  member:
+                      - grouping_object_id: 'vsm.[1].globalipset.[1]'
+                        isuniversal: 'true'
+                      - grouping_object_id: 'vsm.[1].globalipset.[2]'
+                        isuniversal: 'true'
+                      - grouping_object_id: 'vsm.[1].globalmacset.[1]'
+                        isuniversal: 'true'
+
+      ReadVerifyGlobalIPSet_VSM2:
+          <<: *READ_GLOBAL_IPSET
+          TestGroupingObject: "vsm.[2].globalipset.[1]"
+
+      ReadVerifyGlobalMacSet_VSM2:
+          <<: *READ_GLOBAL_MACSET
+          TestGroupingObject: "vsm.[2].globalmacset.[1]"
+
+      ReadVerifyGlobalSecurityGroup_VSM2:
+          <<: *READ_GLOBAL_SECURITY_GROUP
+          TestGroupingObject: "vsm.[2].globalsecuritygroup.[1]"
+
+      CreateVerifyGlobalIPSet-2:
+          <<: *CREATE_UNIVERSAL_IPSET
+          globalipset:
+              '[2]':
+                  name: 'UniversalIPSet-2'
+                  value: '192.168.2.1'
+                  description: 'IPs'
+          metadata:
+              expectedresultcode: '201'

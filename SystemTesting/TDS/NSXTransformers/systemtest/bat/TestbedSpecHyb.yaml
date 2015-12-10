@@ -1,0 +1,117 @@
+# 2nd in YAML file merge
+
+#---------------------------------------
+# ESX TESTBED SPEC
+#---------------------------------------
+
+# 12/8/2014 9:09:33 AM
+# copied from bat L2/TestbedSpec.yaml
+# L2EsxTestbedSpec02: &L2_ESX_TOPOLOGY_02
+
+BatTestbedSpecHyb: &BAT_TESTBED_SPEC_HYB
+
+   'esx':
+        '[1-6]':
+            configure_package:
+                execution_type: 'cli'
+                operation: install
+                maintenance: true
+                signaturecheck: false
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+            vmnic:
+                '[1]':
+                    driver: 'any'
+
+   'kvm':
+        '[1-4]':
+            pif:
+                '[1]':
+                    persist_configuration:
+                        bootproto: "dhcp"
+                        onboot: "yes"
+            framework_setup:
+                - disablefirewall
+                - createanchor
+                - copysshkey
+            configure_package:
+               execution_type: 'cmd'
+               operation: install
+            bridge:
+                '[1]':
+                    name: nsxvswitch
+                    switch_fail_mode: secure
+                    # XXX(salmanm): The product expects a hard coded bridge-id
+                    # in external-ids column of the integration bridge to be
+                    # set to "nsx-managed". Bugzilla #1314847.
+                    external_id: nsx-managed
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+
+#   'nsxmanager':
+#        '[1]':
+#            ip: none
+#            fabrichost:
+#                '[2,4,5,7,8,10,11]':  # last host is dedicated for Edge
+#                    discover: 'true'
+#                    hypervisor_info:
+#                        ip_addresses: 'esx.[x=fabrichost_index]'
+#
+#   'nsxcontroller':
+#        '[1]':
+#            ip: none
+#            set_nsx_registration:
+#                manager_ip: 'nsxmanager.[1]'
+#                manager_thumbprint: 'nsxmanager.[1]'
+#                execution_type: 'cli'
+
+#   'nsxedge':
+#        '[1-2]':
+#            ip: none
+
+   'vm':
+#        '[1]':
+#            host: 'kvm.[1]'
+#            template: template_kvm_debian
+#            installtype: fullclone
+#            vmstate: poweron
+        '[2]':
+            host: 'esx.[2]'
+            vmstate: poweron
+#        '[3]':
+#            host: 'kvm.[3]'
+#            template: template_kvm_debian
+#            installtype: fullclone
+#            vmstate: poweron
+#        '[4-5]':
+#            host: 'esx.[4]'
+#            vmstate: poweron
+#        '[6]':
+#            host: 'esx.[5]'
+#            vmstate: poweron
+#        '[7-9]':
+#            host: 'kvm.[6]'
+#            template: template_kvm_debian
+#            installtype: fullclone
+#            vmstate: poweron
+#        '[10-12]':
+#            host: 'esx.[7]'
+#            vmstate: poweron
+#        '[13]':
+#            host: 'esx.[8]'
+#            vmstate: poweron
+#        '[14-15]':
+#            host: 'kvm.[9]'
+#            template: template_kvm_debian
+#            installtype: fullclone
+#            vmstate: poweron
+#        '[16]':
+#            host: 'esx.[10]'
+#            vmstate: poweron
+
+# //++/++//////////////////////////////
+# last line is empty no spaces, nada, so yaml files join happens correctly

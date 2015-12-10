@@ -1,0 +1,215 @@
+MPClusteringL3Workloads: &MPClusteringL3Workloads
+
+  CreateLR1:
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    sleepbetweenworkloads: 10
+    logicalrouter:
+      '[1]':
+        name: lrouter-1
+        router_type: TIER0
+        summary: LRouter1 created through automation
+        cluster_id: 'nsxmanager.[1].edgecluster.[1]'
+
+  CreateLR1P1:
+    TestNSX: nsxmanager.[1]
+    Type: NSX
+    logicalrouteruplinkport:
+      '[1]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+        name: 'lrouterport-1'
+        summary: "LRPort1 created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[3]->id
+        resource_type: "LogicalRouterUpLinkPort"
+        gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[1]->member_index'
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  CreateLR1P2:
+    TestNSX: nsxmanager.[1]
+    Type: NSX
+    logicalrouterport:
+      '[2]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+        name: 'lrouterport-2'
+        summary: "LRPort2 created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[4]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.2.1'
+
+  DeleteLR1:
+    TestNSX: nsxmanager.[1]
+    Type: NSX
+    deletelogicalrouter: nsxmanager.[1].logicalrouter.[1]
+
+  DeleteLR1P1:
+    TestNSX: nsxmanager.[1]
+    Type: NSX
+    deletelogicalrouteruplinkport: nsxmanager.[1].logicalrouteruplinkport.[1]
+
+  DeleteLR1P2:
+    TestNSX: nsxmanager.[1]
+    Type: NSX
+    deletelogicalrouterport: nsxmanager.[1].logicalrouterport.[2]
+
+  AddRouteVM1ToVM2:
+    Type:        NetAdapter
+    Testadapter: vm.[1].vnic.[1]
+    netmask:     255.255.255.0
+    route:       add
+    network:     192.168.2.0
+    gateway:     192.168.1.1
+
+  AddRouteVM2ToVM1:
+    Type:        NetAdapter
+    Testadapter: vm.[2].vnic.[1]
+    netmask:     255.255.255.0
+    route:       add
+    network:     192.168.1.0
+    gateway:     192.168.2.1
+
+  RegisterEdgeNode1WithNSXManager:
+    Type: Gateway
+    TestGateway: 'nsxedge.[1]'
+    register_nsx_edge_node:
+      manager_username: 'admin'
+      manager_password: 'default'
+      manager_ip: 'nsxmanager.[1]'
+      manager_thumbprint: 'nsxmanager.[1]'
+      execution_type: 'cli'
+
+  CreateFabricProfileForEdge:
+    Type: "NSX"
+    TestNSX: "nsxmanager.[1]"
+    fabricprofile:
+      '[2]':
+        name: 'Fabric_Profile_1'
+        summary: "Fabric Profile created through automation"
+        resource_type: "FabricProfileClusterKeepAlive"
+        hello_interval: 3000
+        declare_dead_timer: 15000
+
+  DiscoverEdgeNodeId1:
+    Type: "NSX"
+    TestNSX: "nsxmanager.[1]"
+    edgenode:
+      '[1]':
+        discover: 'true'
+        resource_type: "EdgeNode"
+        ipaddresses:
+          - 'nsxedge.[1]->management_ip'
+
+  CreateEdgeCluster:
+    Type: "NSX"
+    TestNSX: "nsxmanager.[1]"
+    edgecluster:
+      '[1]':
+        name: 'Edge_Cluster_1'
+        summary: "Edge Cluster created through automation"
+        members:
+          - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+        fabric_profile_bindings:
+          - resource_type: "CLUSTER_KEEPALIVE"
+            fabric_profile_id: 'nsxmanager.[1].fabricprofile.[2]'
+
+  DeleteEdgeCluster:
+    Type: "NSX"
+    TestNSX: "nsxmanager.[1]"
+    deleteedgecluster: "nsxmanager.[1].edgecluster.[-1]"
+
+  CreateLogicalRouter01FromNode1: &CREATE_LOGICALROUTER_01_ON_NODE1
+    Type: "NSX"
+    TestNSX: "nsxmanager.[1]"
+    sleepbetweenworkloads: "10"
+    logicalrouter:
+      '[1]':
+        name: 'lrouter-1'
+        summary: "LRouter created through automation"
+        router_type: "TIER1"
+
+  ReadLogicalRouter01FromNode1: &READ_LOGICALROUTER_01_FROM_NODE1
+    Type: 'Router'
+    TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+    read:
+      'name[?]equal_to': 'lrouter-1'
+
+  ReadLogicalRouter01FromNode2:
+    <<: *READ_LOGICALROUTER_01_FROM_NODE1
+    TestRouter: 'nsxmanager.[2].logicalrouter.[1]'
+
+  ReadLogicalRouter01FromNode3:
+    <<: *READ_LOGICALROUTER_01_FROM_NODE1
+    TestRouter: 'nsxmanager.[3].logicalrouter.[1]'
+
+  CreateLogicalRouter02FromNode2: &CREATE_LOGICALROUTER_02_ON_NODE2
+    Type: "NSX"
+    TestNSX: "nsxmanager.[2]"
+    sleepbetweenworkloads: "10"
+    logicalrouter:
+      '[2]':
+        name: 'lrouter-2'
+        summary: "LRouter created through automation"
+        router_type: "TIER1"
+
+  ReadLogicalRouter02FromNode1: &READ_LOGICALROUTER_02_FROM_NODE1
+    Type: 'Router'
+    TestRouter: 'nsxmanager.[1].logicalrouter.[2]'
+    read:
+      'name[?]equal_to': 'lrouter-2'
+
+  ReadLogicalRouter02FromNode2:
+    <<: *READ_LOGICALROUTER_02_FROM_NODE1
+    TestRouter: 'nsxmanager.[2].logicalrouter.[2]'
+
+  ReadLogicalRouter02FromNode3:
+    <<: *READ_LOGICALROUTER_02_FROM_NODE1
+    TestRouter: 'nsxmanager.[3].logicalrouter.[2]'
+
+  CreateLogicalRouter03FromNode1: &CREATE_LOGICALROUTER_03_ON_NODE1
+    Type: "NSX"
+    TestNSX: "nsxmanager.[1]"
+    sleepbetweenworkloads: "10"
+    logicalrouter:
+      '[3]':
+        name: 'lrouter-3'
+        summary: "LRouter created through automation"
+        router_type: "TIER1"
+
+  ReadLogicalRouter03FromNode1: &READ_LOGICALROUTER_03_FROM_NODE1
+    Type: 'Router'
+    TestRouter: 'nsxmanager.[1].logicalrouter.[3]'
+    read:
+      'name[?]equal_to': 'lrouter-3'
+
+  ReadLogicalRouter03FromNode2:
+    <<: *READ_LOGICALROUTER_03_FROM_NODE1
+    TestRouter: 'nsxmanager.[2].logicalrouter.[3]'
+
+  ReadLogicalRouter03FromNode3:
+    <<: *READ_LOGICALROUTER_03_FROM_NODE1
+    TestRouter: 'nsxmanager.[3].logicalrouter.[3]'
+
+  CleanupLogicalRouter:
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletelogicalrouter: "nsxmanager.[1].logicalrouter.[-1]"
+
+  DeleteLogicalRouter01FromNode1: &DELETE_LOGICALROUTER_01_FROM_NODE1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletelogicalrouter: "nsxmanager.[1].logicalrouter.[1]"
+
+  DeleteLogicalRouter02FromNode1: &DELETE_LOGICALROUTER_02_FROM_NODE1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletelogicalrouter: "nsxmanager.[1].logicalrouter.[2]"
+
+  DeleteLogicalRouter03FromNode1: &DELETE_LOGICALROUTER_03_FROM_NODE1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletelogicalrouter: "nsxmanager.[1].logicalrouter.[3]"

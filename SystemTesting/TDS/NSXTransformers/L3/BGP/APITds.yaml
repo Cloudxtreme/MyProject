@@ -1,0 +1,168 @@
+AddBGPNeighboursPlr:
+    Category: L3
+    Component: BGP
+    Summary: Test RUD for BGP
+    Tags: nsx,avalanche
+    Version: 2
+    FullyAutomatable: yes
+    PartnerFacing: null
+    PMT: null
+    Priority: 'P0'
+    Procedure: '1. Create Logical Router
+                2. Add BGP neighbours
+                3. Cleanup the setup'
+    Product: NSX
+    QCPath: null
+    Status: Draft
+    Tags: null
+    TCMSId: null
+    Summary: 'Verify that BGP neihbours can be added to Plr'
+    TestcaseLevel: Product
+    TestcaseType: Functional
+    TestName: AddBGPNeighboursPlr
+
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+                'ip': none
+
+    WORKLOADS:
+        Sequence:
+            - ['CreateTransportZone']
+            - ['CreateLogicalSwitch']
+            - ['CreateLogicalPort']
+            - ['CreateLogicalRouterT0']
+            - ['CreateLogicalRouterT1']
+            - ['CreateLRPort_T1LR']
+            - ['UpdateBGPNeighbours']
+            - ['SetRouteRedistribution']
+            - ['UpdateRoutingGlobalConfig']
+            - ['SetRouteAdvertisements']
+
+        ExitSequence:
+            - ['DeleteRouteAdvertisements']
+            - ['DeleteRedistributionConfig']
+            - ['DeleteAllNeighbours']
+            - ['DeleteLRPort']
+            - ['DeleteLogicalRouter']
+            - ['DeleteLogicalPort']
+            - ['DeleteLogicalSwitch']
+            - ['DeleteTransportZone']
+
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH
+        CreateLogicalPort: *CREATE_LPORT
+
+        CreateLogicalRouterT0: *CREATE_LOGICALROUTER_T0
+
+        CreateLogicalRouterT1: *CREATE_LOGICALROUTER_T1
+
+        CreateLRPort_T1LR:
+             Type: "NSX"
+             TestNSX: "nsxmanager.[1]"
+             logicalrouterport:
+                 '[1]':
+                     logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+                     name: 't1-lrouterport-1'
+                     summary: "LRPort1 for T1 logical router"
+                     linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+                     resource_type: "LogicalRouterDownLinkPort"
+                     subnets:
+                        - prefixlen: 24
+                          ip_addresses:
+                             - '172.16.10.1'
+                        - prefixlen: 24
+                          ip_addresses:
+                             - '172.16.11.1'
+
+        SetRouteAdvertisements:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[2]"
+            routeadvertisements:
+                '[1]':
+                    enableadvertisement: 'true'
+                    advertise_routes:
+                        - name: 'Adverisement for subnet 10,11'
+                          summary: 'Adverisement for subnet 10,11'
+                          network:
+                              - '172.16.10.0/24'
+                              - '172.16.11.0/24'
+
+        SetRouteRedistribution:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            redistributionconfig:
+                '[1]':
+                    redistributionenabled: 'true'
+                    rules:
+                        - fromprotocol:
+                              - 'STATIC'
+                          toprotocol: 'bgp'
+                          name: 'rule1'
+                          summary: 'Rule 1'
+                        - fromprotocol:
+                              - 'CONNECTED'
+                          toprotocol: 'bgp'
+                          name: 'rule2'
+                          summary: 'Rule 2'
+
+        UpdateRoutingGlobalConfig:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            routingconfig:
+                '[1]':
+                    routerid: "1.1.1.1"
+
+        UpdateBGPNeighbours:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            lrbgp:
+                '[1]':
+                    bgpenabled: 'true'
+                    localas: 2000
+                    gracefulrestart: 'false'
+                    bgpneighbours:
+                        - name: 'neighbour-1'
+                          summary: 'BGP Neighbour 1'
+                          ipaddress: '20.20.20.3'
+                          source: '20.20.20.1'
+                          remoteas: 1000
+                          keepalivetimer: 100
+                          holddowntimer: 3
+                          weight: 70
+                        - name: 'neighbour-2'
+                          summary: 'BGP Neighbour 2'
+                          ipaddress: '20.20.20.4'
+                          source: '20.20.20.1'
+                          remoteas: 3000
+                          keepalivetimer: 100
+                          holddowntimer: 3
+                          weight: 20
+
+        DeleteRouteAdvertisements:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[2]
+            routeadvertisements:
+                '[1]': {}
+
+        DeleteRedistributionConfig:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            redistributionconfig:
+                '[1]': {}
+
+        DeleteAllNeighbours:
+            Type: Router
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            lrbgp:
+                '[1]': {}
+
+        DeleteLogicalRouter: *DELETELOGICALROUTER
+
+        DeleteTransportZone: *DELETETRANSPORTZONE
+
+        DeleteLRPort: *DELETELRPORT
+
+        DeleteLogicalSwitch: *DELETELOGICALSWITCH
+
+        DeleteLogicalPort: *DELETELOGICALPORT

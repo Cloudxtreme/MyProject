@@ -1,0 +1,1943 @@
+!include ../IDAS/IPAM/CommonWorkloads.yaml
+!include CommonWorkloads.yaml
+
+ConfigureSyslog:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "ConfigureSyslog"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Post Syslog config '
+    ExpectedResult: 'Syslog should be configured successfully '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+       Sequence:
+         - ["ConfigureSyslogServer"]
+         - ["ReadSyslogConfiguration"]
+         - ["DeleteSyslogConfiguration"]
+       ConfigureSyslogServer :
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "info"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "UDP"
+                  server: "10.33.76.173"
+       ReadSyslogConfiguration :
+          Type: "LogServer"
+          Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+          read:
+              'id_[?]equal_to': 'syslogCollector-1'
+       DeleteSyslogConfiguration :
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deletesyslogserver: "nsxmanager.[1].syslogserver.[1]"
+
+GetAllSyslogConfig:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "GetAllSyslogConfig"
+    Version: "2"
+    Summary: "Verify syslog exporter configuration on NSX"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Post Syslog config
+                2. Get Syslog exporter config'
+    ExpectedResult: 'Syslog should be configured successfully '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+       Sequence:
+         - ["ConfigureSyslog-1"]
+         - ["ConfigureSyslog-2"]
+         - ["GetAllSyslogConfigs"]
+         - ["DeleteSyslogConfiguration-1"]
+         - ["DeleteSyslogConfiguration-2"]
+       ConfigureSyslog-1 :
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "info"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "UDP"
+                  server: "10.33.76.173"
+       ConfigureSyslog-2 :
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          syslogserver:
+            '[2]':
+                  id_ : 'syslogCollector-2'
+                  level: "info"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "UDP"
+                  server: "10.112.11.8"
+       GetAllSyslogConfigs :
+          Type: "LogServer"
+          Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+          get_syslog_list:
+                 'result_count[?]equal_to': 2
+                 'results[?]contain_once':
+                       - id_ : 'syslogCollector-1'
+                       - id_ : 'syslogCollector-2'
+       DeleteSyslogConfiguration-1 :
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deletesyslogserver: "nsxmanager.[1].syslogserver.[1]"
+       DeleteSyslogConfiguration-2 :
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deletesyslogserver: "nsxmanager.[1].syslogserver.[2]"
+
+GetCategoryOfLogs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "GetCategoryOfLogs"
+    Version: "2"
+    Summary: "Fetch categories of logs from NSX MP node"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. GET log categories'
+    ExpectedResult: 'Log categories should be fetched succesfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+       Sequence:
+         - ["FetchLogCategories"]
+         - ["VerifyLogCategories"]
+       FetchLogCategories:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          componentlog:
+             '[1]':
+                 map_object: true
+                 id_: 1
+       VerifyLogCategories:
+          Type: "ComponentLog"
+          TestComponentLog: "nsxmanager.[1].componentlog.[1]"
+          get_log_categories:
+             'result_count[?]equal_to': 7
+             'results[?]contain_once':
+                 - id_ : 'syslog'
+                 - id_ : 'appliance-management-log'
+                 - id_ : 'auth-log'
+                 - id_ : 'gemfire-log'
+                 - id_ : 'kern-log'
+                 - id_ : 'nsxapi-log'
+                 - id_ : 'httpd-log'
+
+VerifySyslogFileDetails:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "VerifySyslogFileDetails"
+    Version: "2"
+    Summary: "Fetch syslog file details "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. GET log file details'
+    ExpectedResult: 'syslog file details should be fetched succesfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+       Sequence:
+         - ["SetSyslogId"]
+         - ["VerifySyslogDetails"]
+       SetSyslogId:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          componentlog:
+             '[1]':
+                 map_object: true
+                 id_: 'syslog'
+       VerifySyslogDetails:
+          Type: "ComponentLog"
+          TestComponentLog: "nsxmanager.[1].componentlog.[1]"
+          read:
+             'id_[?]equal_to': 'syslog'
+             'log_size[?]defined': ''
+
+ConfigureSyslogTCP:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "ConfigureSyslogTCP"
+    Version: "2"
+    Summary: "Configure Syslog exporter using TCP protocol"
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Configure syslog exporter using TCP protocol'
+    ExpectedResult: 'Syslog exporter should be configured '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+        nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+       Sequence:
+         - ["ConfigureSyslogServerTCP"]
+         - ["ReadSyslogConfiguration"]
+         - ["DeleteSyslogConfiguration"]
+       ConfigureSyslogServerTCP :
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "info"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "TCP"
+                  server: "10.33.76.173"
+       ReadSyslogConfiguration :
+          Type: "LogServer"
+          Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+          read:
+              'id_[?]equal_to': 'syslogCollector-1'
+       DeleteSyslogConfiguration :
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deletesyslogserver: "nsxmanager.[1].syslogserver.[1]"
+
+ConfigureSyslogUDP:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "ConfigureSyslogUDP"
+    Version: "2"
+    Summary: "Verify that syslog configuration work for UDP"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1.Configure syslog exporter using UDP protocol'
+    ExpectedResult: 'Syslog exporter should be configured'
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+        nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+       Sequence:
+         - ["ConfigureSyslogServerUDP"]
+         - ["ReadSyslogConfiguration"]
+         - ["DeleteSyslogConfiguration"]
+       ConfigureSyslogServerUDP :
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "info"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "UDP"
+                  server: "10.112.11.74"
+       ReadSyslogConfiguration :
+          Type: "LogServer"
+          Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+          read:
+              'id_[?]equal_to': 'syslogCollector-1'
+       DeleteSyslogConfiguration :
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deletesyslogserver: "nsxmanager.[1].syslogserver.[1]"
+
+CrudIPPoolWithAuditLogs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "CrudIPPoolWithAuditLogs"
+    Version: "2"
+    Summary: "Verify that Audit log for IP Pool CRUD is going to syslog server"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "AuditingAndEventing"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Create one IPPool
+                2. Verify IPPool gets created successfully
+                3. Update IPPool'
+    ExpectedResult: 'IPPool should get created successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "N"
+    TestbedSpec:
+      nsxmanager:
+        '[1]':
+           'ip': None
+      logserver:
+        '[1]':
+           'ip': None
+    WORKLOADS:
+      Sequence:
+        - ["ConfigureSyslogServer"]
+        - ["CreateIPPool"]
+        - ["VerifyCreateAuditLog"]
+        - ["ReadIPPool"]
+        - ["VerifyReadAuditLog"]
+        - ["UpdateIPPool"]
+        - ["VerifyUpdateAuditLog"]
+      ExitSequence:
+        - ["DeleteIPPool"]
+        - ["VerifyDeleteAuditLog"]
+        - ["DeleteSyslogConfiguration"]
+
+      ConfigureSyslogServer : *CONFIGURE_SYSLOG_EXPORTER
+
+      CreateIPPool: *CREATE_IPPOOL
+
+      VerifyCreateAuditLog:
+        Type: LogServer
+        TestLogServer: "logserver.[1]"
+        verify_audit_logs:
+          filter_keys:
+            manager_ip: "nsxmanager.[1]"
+            user_name: "admin"
+            module_name: "Ipam"
+            operation: "createIpPool"
+            operation_status: "success"
+            log_type: "AUDIT"
+            count: "1"
+            interval: "10"
+
+      ReadIPPool:
+        Type: "GroupingObject"
+        Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+        read:
+          'name[?]defined': ''
+          'summary[?]equal_to': "IPPool created through automation"
+
+      VerifyReadAuditLog:
+        Type: LogServer
+        TestLogServer: "logserver.[1]"
+        verify_audit_logs:
+          filter_keys:
+            manager_ip: "nsxmanager.[1]"
+            user_name: "admin"
+            module_name: "Ipam"
+            operation: "readIpPool"
+            operation_status: "success"
+            log_type: "AUDIT"
+            count: "1"
+            interval: "10"
+
+      UpdateIPPool:
+        Type: "GroupingObject"
+        Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+        reconfigure: true
+        name: "Auto-IPPool-1"
+        summary: "Updated summary"
+
+      VerifyUpdateAuditLog:
+        Type: LogServer
+        TestLogServer: "logserver.[1]"
+        verify_audit_logs:
+          filter_keys:
+            manager_ip: "nsxmanager.[1]"
+            user_name: "admin"
+            module_name: "Ipam"
+            operation: "updateIpPool"
+            operation_status: "success"
+            log_type: "AUDIT"
+            count: "1"
+            interval: "10"
+
+      DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+      VerifyDeleteAuditLog:
+        Type: LogServer
+        TestLogServer: "logserver.[1]"
+        verify_audit_logs:
+          filter_keys:
+            manager_ip: "nsxmanager.[1]"
+            user_name: "admin"
+            module_name: "Ipam"
+            operation: "deleteIpPool"
+            operation_status: "success"
+            log_type: "AUDIT"
+            count: "1"
+            interval: "10"
+
+      DeleteSyslogConfiguration : *DELETE_SYSLOG_EXPORTER
+
+AuditLogNSXUserLogin:
+    Product: "NSXTrasformers"
+    Category: "ManagementPlane"
+    Component: "AuditLog"
+    TestName: "AuditLogNSXUserLogin"
+    Version: "2"
+    Summary: "Verify that audit log is raised for user login into any nsx "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Login into NSX using rest call for any node
+                2. Fetch audit log and then check that NSX node
+                   user login audit log is raised for logged in user.'
+    ExpectedResult: 'Audit log should be raised for NSX node user login. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+      nsxmanager:
+          '[1]':
+             'ip': None
+      logserver:
+          '[1]':
+             'ip': None
+    WORKLOADS:
+      Sequence:
+        - ["ConfigureSyslog"]
+        - ["VerifyAuditLogUserLogin"]
+
+      ExitSequence:
+        - ["DeleteSyslogConfig"]
+
+      ConfigureSyslog : *CONFIGURE_SYSLOG_EXPORTER
+
+      VerifyAuditLogUserLogin:
+        Type: LogServer
+        TestLogServer: "logserver.[1]"
+        verify_audit_logs:
+          filter_keys:
+            manager_ip: "nsxmanager.[1]"
+            user_name: "admin"
+            module_name: "ACCESS_CONTROL"
+            operation: "LOGIN"
+            operation_status: "success"
+            log_type: "AUDIT"
+            count: "1"
+            interval: "10"
+
+      DeleteSyslogConfig : *DELETE_SYSLOG_EXPORTER
+
+LogAlertLevel:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "LogAlertLevel"
+    Version: "2"
+    Summary: "Verify that logs are raised for alart level logs "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Perform some activity on nsx which generates Alrt level logs
+                2. Check in log file that Alert level logs are generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+      nsxmanager:
+          '[1]':
+             'ip': None
+    WORKLOADS:
+      Sequence:
+          - ["ConfigureSyslogAlertLevel"]
+          - ["ReadAndVerifySyslogConfig"]
+      ExitSequence:
+          - ["DeleteSyslogConfig"]
+
+      ConfigureSyslogAlertLevel:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "alert"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "TCP"
+                  server: "10.112.11.57"
+
+      ReadAndVerifySyslogConfig :
+         Type: "LogServer"
+         Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+         read:
+              'id_[?]equal_to': 'syslogCollector-1'
+              'level[?]equal_to': 'alert'
+
+      DeleteSyslogConfig : *DELETE_SYSLOG_EXPORTER
+
+LogWarningSeverityLevel:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "LogWarningSeverityLevel"
+    TestName: "LogWarningSeverityLevel"
+    Version: "2"
+    Summary: "Verify that logs are raised for Warning Severity  logs"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "aghaisas"
+    Procedure: '1. Perform some activity on nsx which generates Warning level logs
+                2. Check in log file that Warning level logs are generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+      nsxmanager:
+          '[1]':
+             'ip': None
+    WORKLOADS:
+      Sequence:
+          - ["ConfigureSyslogWarningLevel"]
+          - ["ReadAndVerifySyslogConfig"]
+      ExitSequence:
+          - ["DeleteSyslogConfig"]
+
+      ConfigureSyslogWarningLevel:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "warning"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "TCP"
+                  server: "10.112.11.57"
+
+      ReadAndVerifySyslogConfig :
+         Type: "LogServer"
+         Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+         read:
+              'id_[?]equal_to': 'syslogCollector-1'
+              'level[?]equal_to': 'warning'
+
+      DeleteSyslogConfig : *DELETE_SYSLOG_EXPORTER
+
+LogCriticalSeverityLevel:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "LogCriticalSeverityLevel"
+    Version: "2"
+    Summary: "Verify that logs are raised for Critical Severity level "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Perform some activity on nsx which generates Alrt level logs
+                2. Check in log file that Critical level logs are generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+      nsxmanager:
+          '[1]':
+             'ip': None
+    WORKLOADS:
+      Sequence:
+          - ["ConfigureSyslogCriticalLevel"]
+          - ["ReadAndVerifySyslogConfig"]
+      ExitSequence:
+          - ["DeleteSyslogConfig"]
+
+      ConfigureSyslogCriticalLevel:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "crit"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "TCP"
+                  server: "10.112.11.57"
+
+      ReadAndVerifySyslogConfig :
+         Type: "LogServer"
+         Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+         read:
+              'id_[?]equal_to': 'syslogCollector-1'
+              'level[?]equal_to': 'crit'
+
+      DeleteSyslogConfig : *DELETE_SYSLOG_EXPORTER
+
+LogErrorSeverityLevel:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "LogErrorSeverityLevel"
+    Version: "2"
+    Summary: "Verify that logs are raised for Critical Severity  logs "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Perform some activity on nsx which generates Alrt level logs
+                2. Check in log file that Error level logs are generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+      nsxmanager:
+          '[1]':
+             'ip': None
+    WORKLOADS:
+      Sequence:
+          - ["ConfigureSyslogErrorLevel"]
+          - ["ReadAndVerifySyslogConfig"]
+      ExitSequence:
+          - ["DeleteSyslogConfig"]
+
+      ConfigureSyslogErrorLevel:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "err"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "TCP"
+                  server: "10.112.11.57"
+
+      ReadAndVerifySyslogConfig :
+         Type: "LogServer"
+         Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+         read:
+              'id_[?]equal_to': 'syslogCollector-1'
+              'level[?]equal_to': 'err'
+
+      DeleteSyslogConfig : *DELETE_SYSLOG_EXPORTER
+
+LogNoticeSeverityLevel:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "LogNoticeSeverityLevel"
+    Version: "2"
+    Summary: "Verify that logs are raised for Notice Severity  logs "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "aghaisas"
+    Procedure: '1. Perform some activity on nsx which generates Alrt level logs
+                2. Check in log file that Notice level logs are generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+      nsxmanager:
+          '[1]':
+             'ip': None
+    WORKLOADS:
+      Sequence:
+          - ["ConfigureSyslogNoticeLevel"]
+          - ["ReadAndVerifySyslogConfig"]
+      ExitSequence:
+          - ["DeleteSyslogConfig"]
+
+      ConfigureSyslogNoticeLevel:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "notice"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "TCP"
+                  server: "10.112.11.57"
+
+      ReadAndVerifySyslogConfig :
+         Type: "LogServer"
+         Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+         read:
+              'id_[?]equal_to': 'syslogCollector-1'
+              'level[?]equal_to': 'notice'
+
+      DeleteSyslogConfig : *DELETE_SYSLOG_EXPORTER
+
+LogInformationalSeverityLevel:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "LogInformationalSeverityLevel"
+    Version: "2"
+    Summary: "Verify that logs are raised for Critical Severity  logs "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "aghaisas"
+    Procedure: '1. Perform some activity on nsx which generates Alrt level logs
+                2. Check in log file that Alert level logs are generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+      nsxmanager:
+          '[1]':
+             'ip': None
+    WORKLOADS:
+      Sequence:
+          - ["ConfigureSyslogInformationLevel"]
+          - ["ReadAndVerifySyslogConfig"]
+      ExitSequence:
+          - ["DeleteSyslogConfig"]
+
+      ConfigureSyslogInformationLevel:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "info"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "TCP"
+                  server: "10.112.11.57"
+
+      ReadAndVerifySyslogConfig :
+         Type: "LogServer"
+         Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+         read:
+              'id_[?]equal_to': 'syslogCollector-1'
+              'level[?]equal_to': 'info'
+
+      DeleteSyslogConfig : *DELETE_SYSLOG_EXPORTER
+
+LogDebugSeverityLevel:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "LogDebugSeverityLevel"
+    Version: "2"
+    Summary: "Verify that logs are raised for Critical Severity  logs "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "aghaisas"
+    Procedure: '1. Perform some activity on nsx which generates Debug level logs
+                2. Check in log file that Debug level logs are generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+      nsxmanager:
+          '[1]':
+             'ip': None
+    WORKLOADS:
+      Sequence:
+          - ["ConfigureSyslogDebugLevel"]
+          - ["ReadAndVerifySyslogConfig"]
+      ExitSequence:
+          - ["DeleteSyslogConfig"]
+
+      ConfigureSyslogDebugLevel:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "debug"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "TCP"
+                  server: "10.112.11.57"
+
+      ReadAndVerifySyslogConfig :
+         Type: "LogServer"
+         Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+         read:
+              'id_[?]equal_to': 'syslogCollector-1'
+              'level[?]equal_to': 'debug'
+
+      DeleteSyslogConfig : *DELETE_SYSLOG_EXPORTER
+
+LogEmergencySeverityLevel:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "AuditLogEmergencySeverityLevel"
+    Version: "2"
+    Summary: "Verify that logs are raised for emergency severity logs "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. POST global configuration (NTP etc)
+                2. Fetch audit log and check that audit log is raised.'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog,cat'
+    Partnerfacing: "Y"
+    TestbedSpec:
+      nsxmanager:
+          '[1]':
+             'ip': None
+    WORKLOADS:
+      Sequence:
+          - ["ConfigureSyslogEmergencyLevel"]
+          - ["ReadAndVerifySyslogConfig"]
+      ExitSequence:
+          - ["DeleteSyslogConfig"]
+
+      ConfigureSyslogEmergencyLevel:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         syslogserver:
+            '[1]':
+                  id_ : 'syslogCollector-1'
+                  level: "emerg"
+                  msgids:
+                     - "AUDIT"
+                  port: 514
+                  protocol: "TCP"
+                  server: "10.112.11.57"
+
+      ReadAndVerifySyslogConfig :
+         Type: "LogServer"
+         Testlogserver: "nsxmanager.[1].syslogserver.[1]"
+         read:
+              'id_[?]equal_to': 'syslogCollector-1'
+              'level[?]equal_to': 'emerg'
+
+      DeleteSyslogConfig : *DELETE_SYSLOG_EXPORTER
+
+AuditLogNSXNodeJoining:
+    Product: "NSXTrasformers"
+    Category: "ManagementPlane"
+    Component: "AuditLog"
+    TestName: "AuditLogNSXNodeJoining"
+    Version: "2"
+    Summary: "Verify that audit log is raised for NSX node joining"
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Register a node into NSX cluster
+                2. Fetch audit log and then check that NSX node
+                   joining audit log is raised.'
+    ExpectedResult: 'Audit log should be raised for NSX node joining'
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+        nsxmanager:
+          '[1]':
+            'ip' : None
+    WORKLOADS:
+        Sequence:
+          - ["RegisterNSXNode"]
+          - ["GetAuditLog"]
+          - ["VerifyAuditLog"]
+        RegisterNSXNode:
+        GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1].syslogserver.[1]"
+        VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1].syslogserver.[1]"
+
+AuditLogNSXNodeRemoval:
+    Product: "NSXTrasformers"
+    Category: "ManagementPlane"
+    Component: "AuditLog"
+    TestName: "AuditLogNSXNodeRemoval"
+    Version: "2"
+    Summary: "Verify that audit log is raised for NSX node removal"
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Remove any existing node from NSX cluster
+                2. Fetch audit log and then check that NSX node
+                   removal audit log is raised.'
+    ExpectedResult: 'Audit log should be raised for NSX node removal'
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["JoinNodeToCluster"]
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      JoinNodeToCluster:
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1].syslogserver.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1].syslogserver.[1]"
+
+AuditLogNSXUserLogout:
+    Product: "NSXTrasformers"
+    Category: "ManagementPlane"
+    Component: "AuditLog"
+    TestName: "AuditLogNSXUserLogout"
+    Version: "2"
+    Summary: "Verify that audit log is raised for user Logout from any node "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Logout from NSX GUI
+                2. Fetch audit log and then check that NSX node
+                   user Logout audit log is raised.'
+    ExpectedResult: 'Audit log should be raised for NSX node user Logout is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["userLogout"]
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      userLogout:
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1].syslogserver.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1].syslogserver.[1]"
+
+AuditLogNSXSyslogConfig:
+    Product: "NSXTrasformers"
+    Category: "ManagementPlane"
+    Component: "AuditLog"
+    TestName: "AuditLogNSXSyslogConfig"
+    Version: "2"
+    Summary: "Verify that audit log is raised for syslog config from any node "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. POST syslog configuration
+                2. Fetch audit log and check that audit log is raised.'
+    ExpectedResult: 'Audit log should be raised for syslog configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["SyslogConfigure"]
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+
+      SyslogConfigure:
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+AuditLogUserTenentIDPairLogging:
+    Product: "NSXTrasformers"
+    Category: "ManagementPlane"
+    Component: "AuditLog"
+    TestName: "AuditLogUserTenentIDPairLogging"
+    Version: "2"
+    Summary: "Verify that audit log is raised for user Logout from any node "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Logout from NSX GUI
+                2. Fetch audit log and then check that NSX node
+                   user Logout audit log is raised.'
+    ExpectedResult: 'Audit log should be raised for NSX node user Logout is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["JoinNodeToCluster"]
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      JoinNodeToCluster:
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+AuditLogNSXCategories:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "AuditLogNSXCategories"
+    Version: "2"
+    Summary: "Verify that audit log is raised for global config "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. POST global configuration (NTP etc)
+                2. Fetch audit log and check that audit log is raised.'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+AuditLogCheckDateAndTimeStamp:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "AuditLogCheckDateAndTimeStamp"
+    Version: "2"
+    Summary: "Verify that audit log is raised and check date and timestamp "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1.Fetch audit log and check date and time stamp of audit log'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+AuditLogVerifyLogPath:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "AuditLogVerifyLogPath"
+    Version: "2"
+    Summary: "Verify that audit log is raised and check log path on nsx appliance "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "aghaisas"
+    Procedure: '1. Fetch audit log and log in to appliance
+                2. Check that audit log is listed under /var/log/nsx'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+AuditLogVerifyLogFileTamperProof:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "AuditLogVerifyLogFileTamperProof"
+    Version: "2"
+    Summary: "Verify that audit log is raised and check log path on nsx appliance "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "aghaisas"
+    Procedure: '1. Fetch audit log and log in to appliance
+                2. Check that audit log is listed under /var/log/nsx
+                3. Try to edit the log file'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+LogFileNoSourceCodeNumber:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "LogFileNoSourceCodeNumber"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+SystemEventForNodeFailure:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "SystemEventForNodeFailure"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+SystemEventForSystemUpgrade:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "SystemEventForSystemUpgrade"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+SystemEventForSystemAlarms:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "SystemEventForSystemAlarms"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+SystemEventForNodeFailure:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuditLog"
+    TestName: "SystemEventForNodeFailure"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,auditLog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+    WORKLOADS:
+      Sequence:
+        - ["GetAuditLog"]
+        - ["VerifyAuditLog"]
+      GetAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifyAuditLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+SyslogRedirectionForNetworkLog:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "SyslogRedirectionForNetworkLog"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+SyslogRedirectionForFirewallLog:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "SyslogRedirectionForFirewallLog"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+SyslogRedirectionForGeneralLog:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "SyslogRedirectionForFirewallLog"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+MultipleSyslogsSameLevelLogs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "MultipleSyslogsSameLevelLogs"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+MultipleSyslogsDifferentLevelLogs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "MultipleSyslogsSameDifferentLevelLogs"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+DifferentNTPSettingsOnNodesCheckSyslogTimeStamp:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "DifferentNTPSettingsOnNodesCheckSyslogTimeStamp"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+ConfigureSyslogTLS:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "ConfigureSyslogTLS"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+SyslogSpooling:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "SyslogSpooling"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+AuditLogsAndSystemEventRedirectedToSyslog:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "AuditLogsAndSystemEventRedirectedToSyslog"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+AuditLogsAndSystemEventRedirectedToSyslogFromDifferentNSXNodes:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "AuditLogsAndSystemEventRedirectedToSyslogFromDifferentNSXNodes"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["ConfigureSyslog-1"]
+        - ["ConfigureSyslog-2"]
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      ConfigureSyslog-1:
+      ConfigureSyslog-2:
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+AuditLogsAndSystemEventRedirectedToSyslogWhenOneNodeFailes:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "AuditLogsAndSystemEventRedirectedToSyslogWhenOneNodeFailes"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["ConfigureSyslog-1"]
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      ConfigureSyslog-1:
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+ConfigureSyslogOnNonStandardPort :
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "ConfigureSyslogOnNonStandardPort"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["ConfigureSyslog-1"]
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      ConfigureSyslog-1:
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+SyslogServerDisconnectedForSomeTimeAndComesBackAgain :
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "SyslogServerDisconnectedForSomeTimeAndComesBackAgain"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["ConfigureSyslog-1"]
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      ConfigureSyslog-1:
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+MaximumAllowedSyslogServersConfigured :
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "MaximumAllowedSyslogServersConfigured"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["ConfigureSyslog-1"]
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      ConfigureSyslog-1:
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+
+MaximumAllowedSyslogServersConfiguredAndCheckLongivity :
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "SyslogInfrastructure"
+    TestName: "MaximumAllowedSyslogServersConfiguredAndCheckLongivity"
+    Version: "2"
+    Summary: "Verify that general logs exception does not contain source code numbers "
+    ExpectedResult: "PASS"
+    Status: "Draft"
+    AutomationLevel: "Manual"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "aghaisas"
+    Procedure: '1. Check in log file that no source code number is generated'
+    ExpectedResult: 'Audit log should be raised for global configuration  is raised. '
+    Duration: '5'
+    Tags: 'nsxmanager,management,syslog'
+    Partnerfacing: "Y"
+    TestbedSpec:
+       nsxmanager:
+          '[1]' :
+              'ip' : None
+    WORKLOADS:
+      Sequence:
+        - ["ConfigureSyslog-1"]
+        - ["GetSysLog"]
+        - ["VerifySysLog"]
+      ConfigureSyslog-1:
+      GetSysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+      VerifySysLog:
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"

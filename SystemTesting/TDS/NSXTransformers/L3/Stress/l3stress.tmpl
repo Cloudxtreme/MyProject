@@ -1,0 +1,109 @@
+tds_template: &tds_template
+    AutomationLevel: Draft
+    Category: L3
+    Component: Stress
+    Duration: 3600
+    ExpectedResult: PASS
+    FullyAutomatable: Y
+    PartnerFacing: N
+    PMT: null
+    Procedure: null
+    Product: NSXTransformers
+    QCPath: ESX
+    Status: Not Automated
+    SubRelease: Bumblebee
+    Tags: nsxtransformers,l3,stress
+    TCMSId: null
+    TestcaseLevel: Stress
+    TestcaseType: Stress
+    Version: 2
+
+p2_template: &p2_template
+    <<: *tds_template
+    Priority: P2
+
+{%- for daemon in config['DAEMONS'] %}
+
+StressRestart{{ daemon.name }}Daemon:
+    <<: *p2_template
+    Developer: miriyalak
+    TestName: StressRestart{{ daemon.name }}Daemon
+    TestbedSpec: TestBed_L3All
+    Summary: |
+{%- for daemon_op in config['DAEMON_OPS'] %}
+        - Verify the following after {{ daemon.desc }} {{ daemon_op.desc }}
+            - All traffic resumes after {{ daemon.desc}} {{ daemon_op.desc }}
+{%- if daemon.notaffected %}
+            - {{ daemon.notaffected }} traffic is not affected during the {{ daemon_op.name }} operation
+{%- endif %}
+{%- endfor %}
+    WORKLOADS: {}
+{%- endfor %}
+
+{%- for mpccpop in config['MPCCP_OPS'] %}
+
+Stress{{ mpccpop.name }}:
+    <<: *p2_template
+    Developer: miriyalak
+    TestName: Stress{{ mpccpop.name }}
+    TestbedSpec: TestBed_L3All
+    Summary: |
+        - Verify the following when {{ mpccpop.desc }}
+{%- for v in mpccpop.variations %}
+            - {{ v }}
+{%- endfor %}
+            - All traffic resumes after {{ mpccpop.desc }}
+            - Verify that traffic is not affected when {{ mpccpop.desc }}
+    WORKLOADS: {}
+
+
+{%- endfor %}
+
+
+{%- for traffic in config['TRAFFIC'] %}
+
+Stress{{ traffic.name }}:
+    <<: *p2_template
+    Developer: miriyalak
+    TestName: Stress{{ traffic.name }}
+    TestbedSpec: TestBed_L3All
+    Summary: |
+        - Verify that the traffic works for all possible variations as follows,
+{%- for v in traffic.variations %}
+            - {{ v }}
+{%- endfor %}
+    WORKLOADS: {}
+{%- endfor %}
+
+{%- for logicalops in config['LOGICALOPS'] %}
+
+Stress{{ logicalops.name }}:
+    <<: *p2_template
+    Developer: dbadiani
+    TestName: Stress{{ logicalops.name }}
+    TestbedSpec: TestBed_L3All
+    Summary: |
+        - Add {{ logicalops.desc }}
+            - Verify all existing traffic is uninterrupted and traffic from the new entity flows through correctly.
+        - Delete the new entity and verify that there is no impact on traffic other than itself.
+        - Repeat the operation {{ logicalops.count }} times
+    WORKLOADS: {}
+{%- endfor %}
+
+{%- for infraops in config['INFRAOPS'] %}
+
+Stress{{ infraops.name }}:
+    <<: *p2_template
+    Developer: dbadiani
+    TestName: Stress{{ infraops.name }}
+    TestbedSpec: TestBed_L3All
+    Summary: |
+{%- for node in infraops.nodes %}
+        - Check that traffic converges after {{ infraops.desc }} on {{ node }}
+{%- for v in infraops.variations %}
+            - {{ v }}
+{%- endfor %}
+        - Verify the status of all the daemons (status|CPU|Mem) on the affected {{ node }} after the {{ infraops.desc }}
+{%- endfor %}
+    WORKLOADS: {}
+{%- endfor %}

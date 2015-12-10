@@ -1,0 +1,566 @@
+# Basic L2 ESX setup for Avalanche
+# Note: parameter names will go through a change
+
+L2EsxTestbedSpec: &L2_ESX_TOPOLOGY_01
+    esx:
+        '[1-2]':
+            configure_package:
+                operation: install
+                resource:
+                    - '<url that comes from userinput yaml>'
+                maintenance: true
+                signaturecheck: false
+
+            vmnic:
+                '[1]':
+                    driver: 'any'
+
+            nsxvswitch:
+                '[1]':
+                    name: 'nsxvswitch'
+                    configureuplinks: 'add'
+                    # Todo: finalize the function to refer to index at different
+                    # levels
+                    uplink: 'esx.[x=esx_index].vmnic.[1]'
+
+            # a new cli is exposed (which needs to be testbed obviously) to
+            # represent vtep as a new component on ESX. It doesn't support all
+            # functionalities of vmknic
+            vtep:
+                '[1]':
+                    ipv4address: dhcp
+                    # netmask in case of static ip
+                    # netmask:
+
+            configure_nsx_manager:
+                operation: set
+                # from the manager node, get the ip and thumbprint
+                # and do something like nsxcli manager <ip> <thumbprint>
+                # This will make MPA attempt to connect to MP but it won't
+                # because MP doesn't know about this host yet
+                nsx_ip: nsxmanager.[1]
+                nsx_thumbprint: nsxmanager.[1]
+            configure_nsx_registration:
+                # Host can be registered on the MP using a CLI.
+                # This cli will internally invoke an API call to the MP
+                # with parameters api username and password.
+                nsx_api_user: nsxmanager.[1]
+                nsx_thumbprint: nsxmanager.[1]
+                # Another way to register host on MP is directly using the API.
+                # But it is preferred to use the CLI since it ensures both api
+                # and cli works
+
+
+    nsxmanager:
+        '[1]':
+            # For L2, there is no dependency on ippool since controller,
+            # vtep creation is all manual unlike nsx-v where these components
+            # are installed by manager (which uses ippool)
+            vnipool:
+                '[1]':
+                    begin: 5000
+                    end: 16777215
+            # Creating both management and control cluster.
+            # In Avalanche, there will be separate VMs for nsx manager
+            # and controller. In future, it might be just one VM, where
+            # the role of each VM can be configured.
+            # Until that happens, to form a control cluster with 3
+            # nodes and manager cluster with 3 nodes, there will be
+            # 6 different VMs.
+            clusternode:
+                '[1-3]':
+                    mgrroleconfig:
+                        id: nsxmanager.[x]
+                '[4-6]':
+                    controllerroleconfig:
+                        type: AddControllerNodeSpec
+                        hostmsgclientinfo:
+                            id: nsxcontroller.[x:vdnetmod:3]
+
+        '[2-3]':
+            # instantiate 2nd and 3rd nsx manager
+
+
+    nsxcontroller:
+        '[1-3]':
+            installtype: 'ovf' # TODO: iso, pxe
+            # TODO: confirm with dev if any additional packages need be
+            # installed after ovf deployment, may be for iso?
+            package:
+                operation: install
+                resource:
+                    - 'ovfurl_1'
+
+            configure_nsx_manager:
+                operation: set
+                # from the manager node, get the ip and thumbprint
+                # and do something like manager <ip> <thumbprint>
+                # This will trigger MPA to connect to MP. But the connection
+                # would fail because MP doesn't know about this host yet.
+                # MPA will keep re-trying to connect to MP
+                nsx_ip: nsxmanager.[1]
+                nsx_thumbprint: nsxmanager.[1]
+            configure_nsx_registration:
+                # Host can be registered on the MP using a CLI.
+                # This cli will internally invoke an API call to the MP
+                # with parameters api username and password.
+                nsx_api_user: nsxmanager.[1]
+                nsx_thumbprint: nsxmanager.[1]
+                # Another way to register host on MP is directly using the API.
+                # But it is preferred to use the CLI since it ensures both api
+                # and cli works
+    vm:
+        '[1-2]':
+            host: 'esx.[x]'
+            vnic:
+                '[1]':
+                    # set the external uuid while creating vnic.
+                    # This workflow is similar to openstack where the uuids are
+                    # maintained by openstack, not ESX or VC.
+                    # The reason to set external id is to keep the workflow
+                    # similar between ESX and KVM, where logical port is created
+                    # by user (and not automatically by MP for ESX case)
+                    external_id: 'auto'
+
+L2EsxTestbedSpec02: &L2_ESX_TOPOLOGY_02
+    # vdnet bug, esx [1-2] not working. so split
+    esx:
+        '[1-2]':
+            vmnic:
+                '[1]':
+                    driver: 'any'
+            configure_package:
+               execution_type: 'cli'
+               operation: install
+               maintenance: 1
+               signaturecheck: 0
+
+    nsxmanager:
+        '[1-3]':
+            ip: none
+
+    nsxcontroller:
+        '[1-3]': {}
+
+    vm:
+        '[1-2]':
+            host: 'esx.[x]'
+
+L2KvmTestbedSpec01: &L2_KVM_TOPOLOGY_01
+    kvm:
+        '[1-2]':
+            pif:
+                '[1]':
+                    persist_configuration:
+                        bootproto: "none"
+                        onboot: "yes"
+            framework_setup:
+                - disablefirewall
+                - createanchor
+                - copysshkey
+            configure_package:
+               execution_type: 'cmd'
+               operation: install
+
+    nsxmanager:
+        '[1-3]':
+            'ip': none
+
+    nsxcontroller:
+        '[1-3]': {}
+
+    vm:
+        '[1-2]':
+            host: 'kvm.[x]'
+            template: template_kvm_debian
+            vmstate: poweron
+            installtype: fullclone
+
+#OneNsxmanager_OneController_TwoEsx_TwoVMs
+Functional_Topology_1: &FUNCTIONAL_TOPOLOGY_1
+    esx:
+        '[1-2]':
+            vmnic:
+                '[0]':
+                    interface: 'vmnic0'
+
+        '[3-4]':
+            configurePackage:
+                operation: 'install'
+                resource:
+                    - 'url'
+                maintenance: true
+                signaturecheck: false
+
+            vmnic:
+                '[1]':
+                    driver: any
+
+            nsxvswitch:
+                '[1]':
+                    name: 'nsxvswitch'
+                    configureuplinks: 'add'
+                    uplink: 'esx.[x=esx_index].vmnic.[1]'
+            vtep:
+                '[1]':
+                    ipv4address: dhcp
+
+            configure_nsx_manager:
+                operation: 'set'
+                nsx: 'nsxmanager.[1]'
+            configure_nsx_registration:
+                nsxAPIUser: 'nsxmanager.[1]'
+                nsxThumbprint: 'nsxmanager.[1]'
+
+    nsxmanager:
+        '[1]':
+            host: esx.[1]
+            vnipool:
+                '[1]':
+                    start: '5000'
+                    end: '16777215'
+        clusternode:
+            '[1]':
+                mgrroleconfig:
+                    id: nsxmanager.[x]
+            '[1]':
+                controllerroleconfig:
+                    type: AddControllerNodeSpec
+                    hostmsgclientinfo:
+                        id: nsxcontroller.[1]
+
+    nsxcontroller:
+        '[1]':
+            installtype: 'ovf'
+            package:
+                operation: 'install'
+                resource:
+                    - 'ovfurl_1'
+            configure_nsx_manager:
+                operation: 'set'
+                nsx: 'nsxmanager.[1]'
+            configure_nsx_registration:
+                nsxAPIUser: 'nsxmanager.[1]'
+                nsxThumbprint: 'nsxmanager.[1]'
+            host: esx.[2]
+
+    vm:
+        '[3-4]':
+            host: 'esx.[3]'
+            vmstate: poweroff
+        '[5-6]':
+            host: 'esx.[4]'
+            vmstate: poweroff
+
+#ThreeNsxmanager_ThreeController_FourEsx_EightVMs
+Functional_Topology_2: &FUNCTIONAL_TOPOLOGY_2
+    esx:
+        '[1-2]':
+            vmnic:
+                '[0]':
+                    interface: 'vmnic0'
+        '[3-6]':
+            configure_package:
+               execution_type: 'cli'
+               operation: install
+               maintenance: 1
+               signaturecheck: 0
+            vmnic:
+                '[1]':
+                    driver: any
+            nsxvswitch:
+                '[1]':
+                    name: 'nsxvswitch'
+                    configureuplinks: 'add'
+                    uplink: 'esx.[x=esx_index].vmnic.[1]'
+            vtep:
+                '[1]':
+                    ipv4address: dhcp
+
+            configure_nsx_manager:
+                operation: 'set'
+                nsx: 'nsxmanager.[1]'
+            configure_nsx_registration:
+                nsxAPIUser: 'nsxmanager.[1]'
+                nsxThumbprint: 'nsxmanager.[1]'
+
+    nsxmanager:
+        '[1]':
+            host: esx.[1]
+            vnipool:
+                '[1]':
+                    start: '5000'
+                    end: '16777215'
+        clusternode:
+            '[1-3]':
+                mgrroleconfig:
+                    id: nsxmanager.[x]
+            '[4-6]':
+                controllerroleconfig:
+                    type: AddControllerNodeSpec
+                    hostmsgclientinfo:
+                        id: nsxcontroller.[x:vdnetmod:3]
+
+    nsxcontroller:
+        '[1-3]':
+            installtype: 'ovf'
+            package:
+                operation: 'install'
+                resource:
+                    - 'ovfurl_1'
+            configure_nsx_manager:
+                operation: 'set'
+                nsx: 'nsxmanager.[1]'
+            configure_nsx_registration:
+                nsxAPIUser: 'nsxmanager.[1]'
+                nsxThumbprint: 'nsxmanager.[1]'
+            host: esx.[2]
+
+    vm:
+        '[3-4]':
+            host: 'esx.[3]'
+            vmstate: poweroff
+        '[5-6]':
+            host: 'esx.[4]'
+            vmstate: poweroff
+        '[7-8]':
+            host: 'esx.[5]'
+            vmstate: poweroff
+        '[9-10]':
+            host: 'esx.[6]'
+            vmstate: poweroff
+
+#OneNsxmanager_OneController_FourEsx_EightVMs
+Functional_Topology_2_rtqa1: &FUNCTIONAL_TOPOLOGY_2_RTQA1
+
+    nsxmanager:
+        '[1]':
+            'ip': none
+
+    nsxcontroller:
+        '[1]':
+            'ip': none
+
+    esx:
+        '[3-6]':
+            configure_package:
+               execution_type: 'cli'
+               operation: install
+               maintenance: 1
+               signaturecheck: 0
+            vmnic:
+                '[1]':
+                    driver: any
+
+    vm:
+        '[3-4]':
+            host: 'esx.[3]'
+            vmstate: poweroff
+        '[5-6]':
+            host: 'esx.[4]'
+            vmstate: poweroff
+        '[7-8]':
+            host: 'esx.[5]'
+            vmstate: poweroff
+        '[9-10]':
+            host: 'esx.[6]'
+            vmstate: poweroff
+
+#ThreeNsxmanager_ThreeControllers_FourEsx_EightVMsTeaming
+Functional_Topology_3: &FUNCTIONAL_TOPOLOGY_3
+    esx:
+        '[1-2]':
+            vmnic:
+                '[0]':
+                    interface: 'vmnic0'
+        '[3-6]':
+            configurePackage:
+                operation: 'install'
+                resource:
+                    - 'url'
+                maintenance: true
+                signaturecheck: false
+
+            vmnic:
+                '[1-2]':
+                    driver: any
+
+            pswitchport:
+                '[1]':
+                    vmnic: esx.[x=esx_index].vmnic.[1]
+                '[2]':
+                    vmnic: esx.[x=esx_index].vmnic.[2]
+
+            nsxvswitch:
+                '[1]':
+                    name: 'nsxvswitch'
+                    configureuplinks: 'add'
+                    uplink: 'esx.[x=esx_index].vmnic.[1-2]'
+            vtep:
+                '[1-2]':
+                    ipv4address: dhcp
+
+            configure_nsx_manager:
+                operation: 'set'
+                nsx: 'nsxmanager.[1]'
+            configure_nsx_registration:
+                nsxAPIUser: 'nsxmanager.[1]'
+                nsxThumbprint: 'nsxmanager.[1]'
+
+    nsxmanager:
+        '[1]':
+            host: esx.[1]
+            vnipool:
+                '[1]':
+                    start: '5000'
+                    end: '16777215'
+        clusternode:
+            '[1-3]':
+                mgrroleconfig:
+                    id: nsxmanager.[x]
+            '[4-6]':
+                controllerroleconfig:
+                    type: AddControllerNodeSpec
+                    hostmsgclientinfo:
+                        id: nsxcontroller.[x:vdnetmod:3]
+
+    nsxcontroller:
+        '[1-3]':
+            installtype: 'ovf'
+            package:
+                operation: 'install'
+                resource:
+                    - 'ovfurl_1'
+            configure_nsx_manager:
+                operation: 'set'
+                nsx: 'nsxmanager.[1]'
+            configure_nsx_registration:
+                nsxAPIUser: 'nsxmanager.[1]'
+                nsxThumbprint: 'nsxmanager.[1]'
+            host: esx.[2]
+
+    vm:
+        '[3-4]':
+            host: 'esx.[3]'
+            vmstate: poweroff
+        '[5-6]':
+            host: 'esx.[4]'
+            vmstate: poweroff
+        '[7-8]':
+            host: 'esx.[5]'
+            vmstate: poweroff
+        '[9-10]':
+            host: 'esx.[6]'
+            vmstate: poweroff
+
+
+#ThreeNsxmanager_ThreeController_NineEsx_EighteenVMs
+Functional_Topology_4: &FUNCTIONAL_TOPOLOGY_4
+    esx:
+        '[1-2]':
+            vmnic:
+                '[0]':
+                    interface: 'vmnic0'
+        '[3-11]':
+            configurePackage:
+                operation: 'install'
+                resource:
+                    - 'url'
+                maintenance: true
+                signaturecheck: false
+
+            vmnic:
+                '[1]':
+                    driver: any
+            nsxvswitch:
+                '[1]':
+                    name: 'nsxvswitch'
+                    configureuplinks: 'add'
+                    uplink: 'esx.[x=esx_index].vmnic.[1]'
+            vtep:
+                '[1]':
+                    ipv4address: dhcp
+
+            configure_nsx_manager:
+                operation: 'set'
+                nsx: 'nsxmanager.[1]'
+            configure_nsx_registration:
+                nsxAPIUser: 'nsxmanager.[1]'
+                nsxThumbprint: 'nsxmanager.[1]'
+
+    nsxmanager:
+        '[1]':
+            host: esx.[1]
+            vnipool:
+                '[1]':
+                    start: '5000'
+                    end: '16777215'
+        clusternode:
+            '[1-3]':
+                mgrroleconfig:
+                    id: nsxmanager.[x]
+            '[4-6]':
+                controllerroleconfig:
+                    type: AddControllerNodeSpec
+                    hostmsgclientinfo:
+                        id: nsxcontroller.[x:vdnetmod:3]
+
+    nsxcontroller:
+        '[1-3]':
+            installtype: 'ovf'
+            package:
+                operation: 'install'
+                resource:
+                    - 'ovfurl_1'
+            configure_nsx_manager:
+                operation: 'set'
+                nsx: 'nsxmanager.[1]'
+            configure_nsx_registration:
+                nsxAPIUser: 'nsxmanager.[1]'
+                nsxThumbprint: 'nsxmanager.[1]'
+            host: esx.[2]
+
+    vm:
+        '[3-4]':
+            host: 'esx.[3]'
+            vmstate: poweroff
+        '[5-6]':
+            host: 'esx.[4]'
+            vmstate: poweroff
+        '[7-8]':
+            host: 'esx.[5]'
+            vmstate: poweroff
+        '[9-10]':
+            host: 'esx.[6]'
+            vmstate: poweroff
+        '[11-12]':
+            host: 'esx.[7]'
+            vmstate: poweroff
+        '[13-14]':
+            host: 'esx.[8]'
+            vmstate: poweroff
+        '[15-16]':
+            host: 'esx.[9]'
+            vmstate: poweroff
+        '[17-18]':
+            host: 'esx.[10]'
+            vmstate: poweroff
+        '[19-20]':
+            host: 'esx.[11]'
+            vmstate: poweroff
+
+BASIC_TESTBEDSPEC: &BASIC_TESTBEDSPEC
+    esx:
+       '[1]':
+            vmnic:
+                '[1]':
+                    driver: any
+
+L2UITestbedSpec: &L2_UI_TESTBEDSPEC
+    nsxmanager:
+        '[1]':
+            'ip': none
+            'ui_ip': 'nsx_uidriver.[1]->ip'
+    nsx_uidriver:
+        '[1]':
+            'ip': none

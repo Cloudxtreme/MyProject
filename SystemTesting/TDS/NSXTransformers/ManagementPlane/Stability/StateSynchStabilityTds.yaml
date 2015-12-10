@@ -1,0 +1,663 @@
+!include ../Clustering/L2Workloads.yaml
+!include ../Clustering/MPCommonWorkloads.yaml
+!include ../Clustering/MPVerticalWorkloads.yaml
+!include ../Clustering/TestbedSpec.yaml
+
+StateSynchStabilityTest_1:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchStabilityTest_1'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P1'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify state synch functionality remains stable after this test'
+    Procedure: '1. Create setup with three NSXManagers, three NSXControllers and two ESX servers
+                2. Create one logical switch-1 and one logical port-1 from NSXManager-1
+                3. Find designated state synch node
+                4. Reboot designated state synch node
+                5. Wait for designed state synch node to come up
+                6. Create logical port-2 from NSXManager-2
+                7. Create logical port-3 from NSXManager-3
+                8. Verify all three logical ports are realized on all three NSXController nodes
+                9. Delete all logical ports and logical switch
+                10. Repeat above procedure 500 times'
+    ExpectedResult: 'State synch functionality should remain stable after this test'
+    Duration: '604800'
+    Tags: 'nsx,management,statesync,stability'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        Iterations: 500
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_for_cluster_status_STABLE_on_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateLP01OnLS01FromNode1
+            - - VerifyLogicalSwitchPort01InfoOnCCPNode1
+            - - VerifyLogicalSwitchPort01InfoOnCCPNode2
+            - - VerifyLogicalSwitchPort01InfoOnCCPNode3
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - RestartStateSynchNode
+            - - Wait_for_cluster_status_STABLE_on_Node1_After_Restart
+            - - Wait_For_Cluster_Status_Stable_On_Node2
+            - - Wait_For_Cluster_Status_Stable_On_Node3
+            - - CreateLogicalPort02FromNode2
+            - - CreateLogicalPort03FromNode3
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode1
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode2
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode3
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+        ExitSequence:
+            - - CleanupLogicalPorts
+            - - CleanupLogicalSwitch
+
+        Wait_for_cluster_status_STABLE_on_Node1:
+            <<: *WAIT_STABLE_NODE_1
+            sleepbetweenworkloads: 20
+
+        Wait_for_cluster_status_STABLE_on_Node1_After_Restart:
+            <<: *WAIT_STABLE_NODE_1
+            sleepbetweenworkloads: 120
+
+        CreateLogicalPort02FromNode2:
+            <<: *CREATE_LP02_ON_LS01_FROM_NODE1
+            TestNSX: nsxmanager.[2]
+
+        CreateLogicalPort03FromNode3:
+            <<: *CREATE_LP03_ON_LS01_FROM_NODE1
+            TestNSX: nsxmanager.[3]
+
+        VerifyLogicalSwitchPort01InfoOnCCPNode1:
+            <<: *VERIFY_LP01_ON_CCP
+
+        VerifyLogicalSwitchPort01InfoOnCCPNode2:
+            <<: *VERIFY_LP01_ON_CCP
+            Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+        VerifyLogicalSwitchPort01InfoOnCCPNode3:
+            <<: *VERIFY_LP01_ON_CCP
+            Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode1:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode2:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode3:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+        CleanupLogicalPorts:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+            expectedResult: ignore
+
+        CleanupLogicalSwitch:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[-1]'
+            expectedResult: ignore
+
+StateSynchStabilityTest_2:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchStabilityTest_2'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P1'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify state synch functionality remains stable after this test'
+    Procedure: '1. Create setup with three NSXManagers, three NSXControllers and two ESX servers
+                2. Create one logical switch-1 from NSXManager-1
+                3. Poweroff MP cluster
+                4. Poweroff CCP cluster
+                5. Start CCP cluster
+                6. Start MP cluster
+                7. Wait for MP and CCP cluster to become stable
+                8. Create logical port-1 from NSXManager-1
+                9. Create logical port-2 from NSXManager-2
+                10. Create logical port-3 from NSXManager-3
+                11. Verify all three logical ports are realized on all three NSXController nodes
+                12. Delete all logical ports and logical switch
+                13. Repeat above procedure 500 times'
+    ExpectedResult: 'State synch functionality should remain stable after this test'
+    Duration: '604800'
+    Tags: 'nsx,management,statesync,stability'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        Iterations: 500
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_for_cluster_status_STABLE_on_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - CreateLogicalSwitch01From_Node1
+            - - PowerOffMP_Node1
+            - - PowerOffMP_Node2
+            - - PowerOffMP_Node3
+            - - Poweroff_CCP_Node1
+            - - Poweroff_CCP_Node2
+            - - Poweroff_CCP_Node3
+            - - Poweron_CCP_Node3
+            - - Poweron_CCP_Node2
+            - - Poweron_CCP_Node1
+            - - PowerOnMP_Node3_With_Delay
+            - - PowerOnMP_Node2
+            - - PowerOnMP_Node1
+            - - Wait_for_cluster_status_STABLE_on_Node1_After_Restart
+            - - VerifyCCPClusterStatusAfterRestart
+            - - CreateLogicalPort01FromNode1
+            - - CreateLogicalPort02FromNode2
+            - - CreateLogicalPort03FromNode3
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode1
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode2
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode3
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+        ExitSequence:
+            - - CleanupLogicalPorts
+            - - CleanupLogicalSwitch
+
+        Wait_for_cluster_status_STABLE_on_Node1:
+            <<: *WAIT_STABLE_NODE_1
+            sleepbetweenworkloads: 20
+
+        PowerOnMP_Node3_With_Delay:
+            <<: *POWER_ON_MP_NODE_3
+            sleepbetweenworkloads: 120
+
+        Wait_for_cluster_status_STABLE_on_Node1_After_Restart:
+            <<: *WAIT_STABLE_NODE_1
+            sleepbetweenworkloads: 180
+
+        VerifyCCPClusterStatusAfterRestart:
+            <<: *VERIFY_THREE_NODE_CCP_CLUSTER_STATUS
+
+        CreateLogicalPort01FromNode1:
+            <<: *CREATE_LP01_ON_LS01_FROM_NODE1
+
+        CreateLogicalPort02FromNode2:
+            <<: *CREATE_LP02_ON_LS01_FROM_NODE1
+            TestNSX: nsxmanager.[2]
+
+        CreateLogicalPort03FromNode3:
+            <<: *CREATE_LP03_ON_LS01_FROM_NODE1
+            TestNSX: nsxmanager.[3]
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode1:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode2:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode3:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+        CleanupLogicalPorts:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+            expectedResult: ignore
+
+        CleanupLogicalSwitch:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[-1]'
+            expectedResult: ignore
+
+StateSynchStabilityTest_3:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchStabilityTest_3'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P1'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify state synch functionality remains stable after this test'
+    Procedure: '1. Create setup with three NSXManagers, three NSXControllers and two ESX servers
+                2. Create one logical switch-1 from NSXManager-1
+                3. Poweroff NSXController-1
+                4. Network partition NSXController-2 from MP cluster
+                5. Create logical port-1 from NSXManager-1
+                6. Create logical port-2 from NSXManager-2
+                7. Create logical port-3 from NSXManager-3
+                8. Poweron NSXController-1
+                9. Reset network partition between NSXController-2 and MP cluster
+                10. Verify all three logical ports are realized on all three NSXController nodes
+                11. Delete all logical ports and logical switch
+                12. Repeat above procedure 500 times'
+    ExpectedResult: 'State synch functionality should remain stable after this test'
+    Duration: '604800'
+    Tags: 'nsx,management,statesync,stability'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        Iterations: 500
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_for_cluster_status_STABLE_on_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - CreateLogicalSwitch01From_Node1
+            - - Poweroff_CCP_Node1
+            - - BlockNSXController2TrafficFromNSXManager1
+            - - BlockNSXController2TrafficFromNSXManager2
+            - - BlockNSXController2TrafficFromNSXManager3
+            - - CreateLogicalPort01FromNode1
+            - - CreateLogicalPort02FromNode2
+            - - CreateLogicalPort03FromNode3
+            - - Poweron_CCP_Node1
+            - - UnblockNSXController2TrafficFromNSXManager1
+            - - UnblockNSXController2TrafficFromNSXManager2
+            - - UnblockNSXController2TrafficFromNSXManager3
+            - - VerifyCCPClusterStatusAfterRestart
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode1
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode2
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode3
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+        ExitSequence:
+            - - Poweron_CCP_Node1
+            - - UnblockNSXController2TrafficFromNSXManager1
+            - - UnblockNSXController2TrafficFromNSXManager2
+            - - UnblockNSXController2TrafficFromNSXManager3
+            - - CleanupLogicalPorts
+            - - CleanupLogicalSwitch
+
+        Wait_for_cluster_status_STABLE_on_Node1:
+            <<: *WAIT_STABLE_NODE_1
+            sleepbetweenworkloads: 20
+
+        VerifyCCPClusterStatusAfterRestart:
+            <<: *VERIFY_THREE_NODE_CCP_CLUSTER_STATUS
+            sleepbetweenworkloads: 120
+            noofretries: 3
+            sleepbetweenretry: 60
+
+        CreateLogicalPort01FromNode1:
+            <<: *CREATE_LP01_ON_LS01_FROM_NODE1
+
+        CreateLogicalPort02FromNode2:
+            <<: *CREATE_LP02_ON_LS01_FROM_NODE1
+            TestNSX: nsxmanager.[2]
+
+        CreateLogicalPort03FromNode3:
+            <<: *CREATE_LP03_ON_LS01_FROM_NODE1
+            TestNSX: nsxmanager.[3]
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode1:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            noofretries: 3
+            sleepbetweenretry: 60
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode2:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+            noofretries: 3
+            sleepbetweenretry: 60
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode3:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+            noofretries: 3
+            sleepbetweenretry: 60
+
+        BlockNSXController2TrafficFromNSXManager2:
+           <<: *BlockNSXController2TrafficFromNSXManager1
+           TestNSX: nsxmanager.[2]
+
+        BlockNSXController2TrafficFromNSXManager3:
+           <<: *BlockNSXController2TrafficFromNSXManager1
+           TestNSX: nsxmanager.[3]
+
+        UnblockNSXController2TrafficFromNSXManager2:
+           <<: *UnblockNSXController2TrafficFromNSXManager1
+           TestNSX: nsxmanager.[2]
+
+        UnblockNSXController2TrafficFromNSXManager3:
+           <<: *UnblockNSXController2TrafficFromNSXManager1
+           TestNSX: nsxmanager.[3]
+
+        CleanupLogicalPorts:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+            expectedResult: ignore
+
+        CleanupLogicalSwitch:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[-1]'
+            expectedResult: ignore
+
+StateSynchStabilityTest_4:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchStabilityTest_4'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify state synch functionality remains stable after this test'
+    Procedure: '1. Create setup with three NSXManagers, three NSXControllers
+                   and two ESX servers
+                2. Create logical switch-1 from NSXManager-1
+                3. Block NSXManager-1 traffic to all NSXController nodes
+                4. Create logical port-1 from NSXManager-1
+                5. Verify logical port-1 getting realized on all NSXController
+                   nodes
+                6. Unblock NSXManager-1 traffic to all NSXController nodes
+                7. Block NSXManager-2 traffic to all NSXController nodes
+                8. Create logical port-2 from NSXManager-2
+                9. Verify logical port-2 getting realized on all NSXController
+                   nodes
+                10. Unblock NSXManager-2 traffic to all NSXController nodes
+                11. Block NSXManager-3 traffic to all NSXController nodes
+                12. Create logical port-3 from NSXManager-3
+                13. Verify logical port-3 getting realized on all NSXController
+                   nodes
+                14. Unblock NSXManager-3 traffic to all NSXController nodes
+                15. Delete all logical ports and logical switch
+                16. Repeat above procedure 500 times'
+    ExpectedResult: 'State synch functionality should remain stable after this test'
+    Duration: '604800'
+    Tags: 'nsx,management,statesync,stability'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        Iterations: 500
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_for_cluster_status_STABLE_on_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - CreateLogicalSwitch01From_Node1
+            - - BlockNSXController1TrafficFromNSXManager1
+            - - BlockNSXController2TrafficFromNSXManager1
+            - - BlockNSXController3TrafficFromNSXManager1
+            - - CreateLogicalPort01FromNode1
+            - - GetClients
+            - - VerifyClientList
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - VerifyLogicalSwitchPort01InfoOnCCPNode1
+            - - VerifyLogicalSwitchPort01InfoOnCCPNode2
+            - - VerifyLogicalSwitchPort01InfoOnCCPNode3
+            - - UnblockNSXController1TrafficFromNSXManager1
+            - - UnblockNSXController2TrafficFromNSXManager1
+            - - UnblockNSXController3TrafficFromNSXManager1
+            - - BlockNSXController1TrafficFromNSXManager2
+            - - BlockNSXController2TrafficFromNSXManager2
+            - - BlockNSXController3TrafficFromNSXManager2
+            - - CreateLogicalPort02FromNode2
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - VerifyLogicalSwitchPort0102InfoOnCCPNode1
+            - - VerifyLogicalSwitchPort0102InfoOnCCPNode2
+            - - VerifyLogicalSwitchPort0102InfoOnCCPNode3
+            - - UnblockNSXController1TrafficFromNSXManager2
+            - - UnblockNSXController2TrafficFromNSXManager2
+            - - UnblockNSXController3TrafficFromNSXManager2
+            - - BlockNSXController1TrafficFromNSXManager3
+            - - BlockNSXController2TrafficFromNSXManager3
+            - - BlockNSXController3TrafficFromNSXManager3
+            - - CreateLogicalPort03FromNode3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode1
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode2
+            - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode3
+            - - UnblockNSXController1TrafficFromNSXManager3
+            - - UnblockNSXController2TrafficFromNSXManager3
+            - - UnblockNSXController3TrafficFromNSXManager3
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+        ExitSequence:
+            - - UnblockNSXController1TrafficFromNSXManager1
+            - - UnblockNSXController2TrafficFromNSXManager1
+            - - UnblockNSXController3TrafficFromNSXManager1
+            - - UnblockNSXController1TrafficFromNSXManager2
+            - - UnblockNSXController2TrafficFromNSXManager2
+            - - UnblockNSXController3TrafficFromNSXManager2
+            - - UnblockNSXController1TrafficFromNSXManager3
+            - - UnblockNSXController2TrafficFromNSXManager3
+            - - UnblockNSXController3TrafficFromNSXManager3
+            - - CleanupLogicalPorts
+            - - CleanupLogicalSwitch
+
+        Wait_for_cluster_status_STABLE_on_Node1:
+            <<: *WAIT_STABLE_NODE_1
+            sleepbetweenworkloads: 20
+
+        VerifyCCPClusterStatusAfterRestart:
+            <<: *VERIFY_THREE_NODE_CCP_CLUSTER_STATUS
+            sleepbetweenworkloads: 120
+
+        CreateLogicalPort01FromNode1:
+            <<: *CREATE_LP01_ON_LS01_FROM_NODE1
+
+        CreateLogicalPort02FromNode2:
+            <<: *CREATE_LP02_ON_LS01_FROM_NODE1
+            TestNSX: nsxmanager.[2]
+
+        CreateLogicalPort03FromNode3:
+            <<: *CREATE_LP03_ON_LS01_FROM_NODE1
+            TestNSX: nsxmanager.[3]
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode1:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode2:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode3:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+        BlockNSXController1TrafficFromNSXManager2:
+           <<: *BlockNSXController1TrafficFromNSXManager1
+           TestNSX: nsxmanager.[2]
+
+        BlockNSXController2TrafficFromNSXManager2:
+           <<: *BlockNSXController2TrafficFromNSXManager1
+           TestNSX: nsxmanager.[2]
+
+        BlockNSXController3TrafficFromNSXManager2:
+           <<: *BlockNSXController3TrafficFromNSXManager1
+           TestNSX: nsxmanager.[2]
+
+        BlockNSXController1TrafficFromNSXManager3:
+           <<: *BlockNSXController1TrafficFromNSXManager1
+           TestNSX: nsxmanager.[3]
+
+        BlockNSXController2TrafficFromNSXManager3:
+           <<: *BlockNSXController2TrafficFromNSXManager1
+           TestNSX: nsxmanager.[3]
+
+        BlockNSXController3TrafficFromNSXManager3:
+           <<: *BlockNSXController3TrafficFromNSXManager1
+           TestNSX: nsxmanager.[3]
+
+        UnblockNSXController1TrafficFromNSXManager2:
+           <<: *UnblockNSXController1TrafficFromNSXManager1
+           TestNSX: nsxmanager.[2]
+
+        UnblockNSXController2TrafficFromNSXManager2:
+           <<: *UnblockNSXController2TrafficFromNSXManager1
+           TestNSX: nsxmanager.[2]
+
+        UnblockNSXController3TrafficFromNSXManager2:
+           <<: *UnblockNSXController3TrafficFromNSXManager1
+           TestNSX: nsxmanager.[2]
+
+        UnblockNSXController1TrafficFromNSXManager3:
+           <<: *UnblockNSXController1TrafficFromNSXManager1
+           TestNSX: nsxmanager.[3]
+
+        UnblockNSXController2TrafficFromNSXManager3:
+           <<: *UnblockNSXController2TrafficFromNSXManager1
+           TestNSX: nsxmanager.[3]
+
+        UnblockNSXController3TrafficFromNSXManager3:
+           <<: *UnblockNSXController3TrafficFromNSXManager1
+           TestNSX: nsxmanager.[3]
+
+        VerifyLogicalSwitchPort01InfoOnCCPNode1:
+            <<: *VERIFY_LP01_ON_CCP
+            noofretries: 3
+            sleepbetweenretry: 60
+
+        VerifyLogicalSwitchPort01InfoOnCCPNode2:
+            <<: *VERIFY_LP01_ON_CCP
+            noofretries: 3
+            sleepbetweenretry: 60
+            Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+        VerifyLogicalSwitchPort01InfoOnCCPNode3:
+            <<: *VERIFY_LP01_ON_CCP
+            noofretries: 3
+            sleepbetweenretry: 60
+            Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+        VerifyLogicalSwitchPort0102InfoOnCCPNode1:
+            <<: *VERIFY_LP01AND02_ON_CCP
+            noofretries: 3
+            sleepbetweenretry: 60
+
+        VerifyLogicalSwitchPort0102InfoOnCCPNode2:
+            <<: *VERIFY_LP01AND02_ON_CCP
+            noofretries: 3
+            sleepbetweenretry: 60
+            Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+        VerifyLogicalSwitchPort0102InfoOnCCPNode3:
+            <<: *VERIFY_LP01AND02_ON_CCP
+            noofretries: 3
+            sleepbetweenretry: 60
+            Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode1:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            noofretries: 3
+            sleepbetweenretry: 60
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode2:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            noofretries: 3
+            sleepbetweenretry: 60
+            Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+        VerifyLogicalSwitchPort0102And03InfoOnCCPNode3:
+            <<: *VERIFY_LP0102AND03_ON_CCP
+            noofretries: 3
+            sleepbetweenretry: 60
+            Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+        CleanupLogicalPorts:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+            expectedResult: ignore
+
+        CleanupLogicalSwitch:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[-1]'
+            expectedResult: ignore

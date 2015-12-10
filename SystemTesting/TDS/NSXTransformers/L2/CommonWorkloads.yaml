@@ -1,0 +1,2159 @@
+WORKLOADS:
+
+    CONSTANTS:
+        - &MANAGER_USERNAME admin
+        - &MANAGER_PASSWORD default
+        - &NETPERF_SENDMSG_SIZE 60000  # Bug: 1428732
+        - &NUM_RETRIES_QUERY_CONTROLLER 3
+
+    WORKLOAD_CONSTANTS:
+        - &L2LogicalPortDiscoveryRetries 10
+
+    RegisterControllersToMP:
+        Type: Controller
+        TestController: 'nsxcontroller.[1-3]'
+        set_nsx_registration:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    AddMPNode1ToCluster: &ADD_MPNODE_1_TO_CLUSTER
+        Type: NSX
+        TestNSX: "nsxmanager.[1]"
+        clusternode:
+            '[1]':
+                mgr_role_config:
+                    username: *MANAGER_USERNAME
+                    password: *MANAGER_PASSWORD
+                    node_type: 'AddManagementNodeSpec'
+                    manager_ip: "nsxmanager.[1]"
+                    manager_thumbprint: "nsxmanager.[1]"
+
+    AddMPNode2ToCluster: &ADD_MPNODE_2_TO_CLUSTER
+        <<: *ADD_MPNODE_1_TO_CLUSTER
+        clusternode:
+            '[2]':
+                mgr_role_config:
+                    username: *MANAGER_USERNAME
+                    password: *MANAGER_PASSWORD
+                    node_type: 'AddManagementNodeSpec'
+                    manager_ip: "nsxmanager.[2]"
+                    manager_thumbprint: "nsxmanager.[2]"
+
+    AddMPNode3ToCluster: &ADD_MPNODE_3_TO_CLUSTER
+        <<: *ADD_MPNODE_1_TO_CLUSTER
+        clusternode:
+            '[3]':
+                mgr_role_config:
+                    username: *MANAGER_USERNAME
+                    password: *MANAGER_PASSWORD
+                    node_type: 'AddManagementNodeSpec'
+                    manager_ip: "nsxmanager.[3]"
+                    manager_thumbprint: "nsxmanager.[3]"
+
+    MapNSXManager1ToCluster: &MAP_NSXMANAGER_1_TO_CLUSTER
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        cluster:
+            '[1]':
+                map_object: true
+                id_: 1
+
+    MapNSXManager2ToCluster: &MAP_NSXMANAGER_2_TO_CLUSTER
+        <<: *MAP_NSXMANAGER_1_TO_CLUSTER
+        TestNSX: 'nsxmanager.[2]'
+        cluster:
+            '[1]':
+                map_object: true
+                id_: 1
+
+    MapNSXManager3ToCluster: &MAP_NSXMANAGER_3_TO_CLUSTER
+        <<: *MAP_NSXMANAGER_1_TO_CLUSTER
+        TestNSX: 'nsxmanager.[3]'
+        cluster:
+            '[1]':
+                map_object: true
+                id_: 1
+
+    AddControllersToCluster:
+        - ['SetSecurityOnController1']
+        - ['InitializeController1']
+        - ['JoinController1ToCluster']
+        - ['SetSecurityOnController2']
+        - ['JoinController2ToCluster']
+        - ['SetSecurityOnController3']
+        - ['JoinController3ToCluster']
+        - ['ActivateController2']
+        - ['ActivateController3']
+
+    Form3NodeMPCluster: &FORM_3_NODE_MP_CLUSTER
+        - ['AddMPNode1ToCluster']
+        - ['MapNSXManager1ToCluster']
+        - ['AddMPNode2ToCluster']
+        - ['MapNSXManager2ToCluster']
+        - ['AddMPNode3ToCluster']
+        - ['MapNSXManager3ToCluster']
+
+    Register3ControllersAndFormCluster: &REGISTER_3_CONTROLLERS_AND_FORM_CLUSTER
+        - ['RegisterControllersToMP']
+        - ['AddControllersToCluster']
+
+    Create3NodeMPAnd3NodeCCPCluster: &CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        - ['Form3NodeMPCluster']
+        - ['Register3ControllersAndFormCluster']
+
+    NumControllerCheckRetries: &NUM_CONTROLLER_CHECK_RETRIES
+        '10'
+
+    Verify3NodeCCPCluster: &VERIFY_3_NODE_CCP_CLUSTER_STATUS
+           Type: "ClusterNode"
+           Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+           noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+           execution_type: 'cli'
+           'get_cluster_node':
+               'in_majority[?]equal_to': "true"
+               'cluster_nodes[?]contain_once':
+                   - controller_ip: "nsxcontroller.[1]"
+                     id_: "nsxcontroller.[1].clusternode.[1]"
+                     status: "active"
+                   - controller_ip: "nsxcontroller.[2]"
+                     id_: "nsxcontroller.[1].clusternode.[2]"
+                     status: "active"
+                   - controller_ip: "nsxcontroller.[3]"
+                     id_: "nsxcontroller.[1].clusternode.[3]"
+                     status: "active"
+
+    VerifyClusterStatusFromAllNodes: &VERIFY_CLUSTER_STATUS_FROM_ALL_NODES
+      Type: 'Cluster'
+      TestCluster: 'nsxmanager.[-1].cluster.[1]'
+      cluster_status:
+        'control_cluster_status':
+          'status[?]equal_to': 'STABLE'
+        'mgmt_cluster_status':
+          'status[?]equal_to': 'STABLE'
+
+    VerifyClusterStatusStability: &VERIFY_CLUSTER_STATUS_Stability
+      Type: 'Cluster'
+      TestCluster: 'nsxmanager.[-1].cluster.[1]'
+      cluster_status:
+        'control_cluster_status':
+          'status[?]equal_to': 'STABLE'
+        'mgmt_cluster_status':
+          'status[?]equal_to': 'STABLE'
+
+    VerifyClusterMembers_3MP_3CCP: &VERIFY_CLUSTER_MEMBERS_3MP_3CCP
+      Type: "Cluster"
+      TestCluster:  "nsxmanager.[-1].clusternode.[1]"
+      get_cluster_members:
+        'result_count[?]equal_to': 6
+        'results[?]contain_once':
+           - 'id_': 'nsxmanager.[1].clusternode.[1]'
+             'manager_role':
+               'node_type': 'ManagementClusterRoleConfig'
+           - 'id_': 'nsxmanager.[1].clusternode.[2]'
+             'manager_role':
+               'node_type': 'ManagementClusterRoleConfig'
+           - 'id_': 'nsxmanager.[1].clusternode.[3]'
+             'manager_role':
+               'node_type': 'ManagementClusterRoleConfig'
+           - 'id_': 'nsxcontroller.[1].clusternode.[1]'
+             'controller_role':
+               'node_type': 'ControllerClusterRoleConfig'
+           - 'id_': 'nsxcontroller.[1].clusternode.[2]'
+             'controller_role':
+               'node_type': 'ControllerClusterRoleConfig'
+           - 'id_': 'nsxcontroller.[1].clusternode.[3]'
+             'controller_role':
+               'node_type': 'ControllerClusterRoleConfig'
+
+    Verify3NodeMPAnd3NodeCCPCluster: &VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        - ['VerifyClusterStatusStability']
+        - ['VerifyClusterMembers_3MP_3CCP']
+        - ['Verify3NodeCCPCluster']
+
+    StartController1Service:
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        configure_service_state:
+            state: 'start'
+            service_name: 'controller'
+
+    StopController1: &STOP_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        configure_service_state:
+            state: 'stop'
+            service_name: 'controller'
+
+    StopController2: &STOP_CONTROLLER_2
+        <<: *STOP_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    StopController3: &STOP_CONTROLLER_3
+        <<: *STOP_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    RemoveCCPNode3FromCluster:
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        remove_ccp_cluster_node:
+            controller_ip: 'nsxcontroller.[3]'
+            execution_type: 'cli'
+
+    RemoveCCPNode2FromCluster:
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        remove_ccp_cluster_node:
+            controller_ip: 'nsxcontroller.[2]'
+            execution_type: 'cli'
+
+    DeleteClusterNode1FromMP:
+          Type: NSX
+          TestNSX: 'nsxmanager.[1]'
+          deleteclusternode: 'nsxcontroller.[1].clusternode.[1]'
+
+    DeleteClusterNode2FromMP:
+          Type: NSX
+          TestNSX: 'nsxmanager.[1]'
+          deleteclusternode: 'nsxcontroller.[1].clusternode.[2]'
+
+    DeleteClusterNode3FromMP:
+          Type: NSX
+          TestNSX: 'nsxmanager.[1]'
+          deleteclusternode: 'nsxcontroller.[1].clusternode.[3]'
+
+    SetProtonServiceIdFor_Node1: &SET_PROTON_SERVICE_ID_FOR_NODE_1
+      Type: "NSX"
+      TestNSX: "nsxmanager.[1]"
+      nsxservice:
+        '[1]':
+          map_object: true
+          id_: 'proton'
+
+    SetProtonServiceIdFor_Node2: &SET_PROTON_SERVICE_ID_FOR_NODE_2
+      <<: *SET_PROTON_SERVICE_ID_FOR_NODE_1
+      TestNSX: "nsxmanager.[2]"
+
+    SetProtonServiceIdFor_Node3: &SET_PROTON_SERVICE_ID_FOR_NODE_3
+      <<: *SET_PROTON_SERVICE_ID_FOR_NODE_1
+      TestNSX: "nsxmanager.[3]"
+
+    SetProtonServiceIdFor_Node4: &SET_PROTON_SERVICE_ID_FOR_NODE_4
+      <<: *SET_PROTON_SERVICE_ID_FOR_NODE_1
+      TestNSX: "nsxmanager.[4]"
+
+    StopProtonServiceOn_Node1: &STOP_PROTON_SERVICE_ON_NODE_1
+      Type: "Service"
+      TestService: "nsxmanager.[1].nsxservice.[1]"
+      configure_service_state:
+        state: 'stop'
+        service_name: 'proton'
+
+    StopProtonServiceOn_Node2: &STOP_PROTON_SERVICE_ON_NODE_2
+      <<: *STOP_PROTON_SERVICE_ON_NODE_1
+      TestService: "nsxmanager.[2].nsxservice.[1]"
+
+    StopProtonServiceOn_Node3: &STOP_PROTON_SERVICE_ON_NODE_3
+      <<: *STOP_PROTON_SERVICE_ON_NODE_1
+      TestService: "nsxmanager.[3].nsxservice.[1]"
+
+    StopProtonServiceOn_Node4: &STOP_PROTON_SERVICE_ON_NODE_4
+      <<: *STOP_PROTON_SERVICE_ON_NODE_1
+      TestService: "nsxmanager.[4].nsxservice.[1]"
+
+    RemoveMP_Node2: &REMOVE_MP_NODE_2
+      Type : "NSX"
+      TestNSX : "nsxmanager.[1]"
+      deleteclusternode:  "nsxmanager.[1].clusternode.[2]"
+
+    RemoveMP_Node3: &REMOVE_MP_NODE_3
+      Type : "NSX"
+      TestNSX : "nsxmanager.[1]"
+      deleteclusternode:  "nsxmanager.[1].clusternode.[3]"
+
+    WORKAROUNDRestartProtonServiceOn_Node1: &RESTART_PROTON_SERVICE_ON_NODE_1
+      Type: "Service"
+      TestService: "nsxmanager.[1].nsxservice.[1]"
+      configure_service_state:
+        state: 'restart'
+        service_name: 'proton'
+
+    DeleteDataOnMPNode2: &DELETE_DATA_ON_MP_NODE
+      Type: 'NSX'
+      TestNSX: 'nsxmanager.[2]'
+      delete_backend_file:
+          file_name: '*'
+          execution_type: 'cli'
+          path: '/common/nsxapi/data/self'
+
+    DeleteConfigOnMPNode2: &DELETE_CONFIG_ON_MP_NODE
+      Type: 'NSX'
+      TestNSX: 'nsxmanager.[2]'
+      delete_backend_file:
+          file_name: '*'
+          execution_type: 'cli'
+          path: '/home/secureall/secureall/nsxapi/config/self'
+
+    DeleteDataOnMPNode1:
+      <<: *DELETE_DATA_ON_MP_NODE
+      TestNSX: 'nsxmanager.[1]'
+
+    DeleteConfigOnMPNode1:
+        <<: *DELETE_CONFIG_ON_MP_NODE
+        TestNSX: 'nsxmanager.[1]'
+
+    DeleteDataOnMPNode3:
+        <<: *DELETE_DATA_ON_MP_NODE
+        TestNSX: 'nsxmanager.[3]'
+
+    DeleteConfigOnMPNode3:
+        <<: *DELETE_CONFIG_ON_MP_NODE
+        TestNSX: 'nsxmanager.[3]'
+
+    DeleteNode2FromClusterNode1: &DELETE_NODE_2_FROM_CLUSTER_NODE_1
+      - ["SetProtonServiceIdFor_Node2"]
+      - ["StopProtonServiceOn_Node2"]
+      - ["VerifyStopProtonServiceStatusFor_Node2"]
+      - ["RemoveMP_Node2"]
+
+    DeleteNode3FromClusterNode1: &DELETE_NODE_3_FROM_CLUSTER_NODE_1
+      - ["SetProtonServiceIdFor_Node3"]
+      - ["StopProtonServiceOn_Node3"]
+      - ["VerifyStopProtonServiceStatusFor_Node3"]
+      - ["RemoveMP_Node3"]
+
+    DeleteDataAndConfigFileFromNode1:
+      - ["DeleteDataOnMPNode1"]
+      - ["DeleteConfigOnMPNode1"]
+
+    DeleteDataAndConfigFileFromNode2: &DELETE_DATA_AND_CONFIG_FILE_FROM_NODE_2
+      - ["DeleteDataOnMPNode2"]
+      - ["DeleteConfigOnMPNode2"]
+
+    DeleteDataAndConfigFileFromNode3:
+      - ["DeleteDataOnMPNode3"]
+      - ["DeleteConfigOnMPNode3"]
+
+    StartProtonServiceOn_Node1: &START_PROTON_SERVICE_ON_NODE_1
+      Type: "Service"
+      TestService: "nsxmanager.[1].nsxservice.[1]"
+      configure_service_state:
+        state: 'start'
+        service_name: 'proton'
+
+    StartProtonServiceOn_Node2: &START_PROTON_SERVICE_ON_NODE_2
+      <<: *START_PROTON_SERVICE_ON_NODE_1
+      TestService: "nsxmanager.[2].nsxservice.[1]"
+
+    StartProtonServiceOn_Node3: &START_PROTON_SERVICE_ON_NODE_3
+      <<: *START_PROTON_SERVICE_ON_NODE_1
+      TestService: "nsxmanager.[3].nsxservice.[1]"
+
+    VerifyStartProtonServiceStatusFor_Node1: &VERFIY_START_PROTON_SERVICE_STATUS_FOR_NODE_1
+      Type: "Service"
+      TestService: "nsxmanager.[1].nsxservice.[1]"
+      get_service_state:
+        'runtime_state[?]equal_to': 'running'
+
+    VerifyStartProtonServiceStatusFor_Node2: &VERFIY_START_PROTON_SERVICE_STATUS_FOR_NODE_2
+      <<: *VERFIY_START_PROTON_SERVICE_STATUS_FOR_NODE_1
+      TestService: "nsxmanager.[2].nsxservice.[1]"
+
+    VerifyStartProtonServiceStatusFor_Node3: &VERFIY_START_PROTON_SERVICE_STATUS_FOR_NODE_3
+      <<: *VERFIY_START_PROTON_SERVICE_STATUS_FOR_NODE_1
+      TestService: "nsxmanager.[3].nsxservice.[1]"
+
+    VerifyStopProtonServiceStatusFor_Node1: &VERFIY_STOP_PROTON_SERVICE_STATUS_FOR_NODE_1
+      Type: "Service"
+      TestService: "nsxmanager.[1].nsxservice.[1]"
+      get_service_state:
+        'runtime_state[?]equal_to': 'stopped'
+
+    VerifyStopProtonServiceStatusFor_Node2: &VERFIY_STOP_PROTON_SERVICE_STATUS_FOR_NODE_2
+      <<: *VERFIY_STOP_PROTON_SERVICE_STATUS_FOR_NODE_1
+      TestService: "nsxmanager.[2].nsxservice.[1]"
+
+    VerifyStopProtonServiceStatusFor_Node3: &VERFIY_STOP_PROTON_SERVICE_STATUS_FOR_NODE_3
+      <<: *VERFIY_STOP_PROTON_SERVICE_STATUS_FOR_NODE_1
+      TestService: "nsxmanager.[3].nsxservice.[1]"
+
+    Wait_For_Cluster_Status_Stable_On_Node1: &WAIT_STABLE_NODE_1
+      Type: 'Cluster'
+      TestCluster: 'nsxmanager.[1].cluster.[1]'
+      wait_for_required_cluster_status:
+        'required_status': 'STABLE'
+        'time_to_monitor': '300'
+
+    Wait_For_Cluster_Status_Stable_On_Node2: &WAIT_STABLE_NODE_2
+      <<: *WAIT_STABLE_NODE_1
+      TestCluster: 'nsxmanager.[2].cluster.[1]'
+
+    Wait_For_Cluster_Status_Stable_On_Node3: &WAIT_STABLE_NODE_3
+      <<: *WAIT_STABLE_NODE_1
+      TestCluster: 'nsxmanager.[3].cluster.[1]'
+
+    VerifyClusterMembers_1MP_From_Node1:
+      Type: "Cluster"
+      TestCluster:  "nsxmanager.[1].clusternode.[1]"
+      get_cluster_members:
+        'result_count[?]equal_to': 1
+        'results[?]contain_once':
+           - 'id_': 'nsxmanager.[1].clusternode.[1]'
+             'manager_role':
+               'node_type': 'ManagementClusterRoleConfig'
+
+    VerifyClusterMembers_1MP_From_Node2:
+      Type: "Cluster"
+      TestCluster:  "nsxmanager.[2].clusternode.[2]"
+      get_cluster_members:
+        'result_count[?]equal_to': 1
+        'results[?]contain_once':
+           - 'id_': 'nsxmanager.[2].clusternode.[2]'
+             'manager_role':
+               'node_type': 'ManagementClusterRoleConfig'
+
+    VerifyClusterMembers_1MP_From_Node3:
+      Type: "Cluster"
+      TestCluster:  "nsxmanager.[3].clusternode.[3]"
+      get_cluster_members:
+        'result_count[?]equal_to': 1
+        'results[?]contain_once':
+           - 'id_': 'nsxmanager.[3].clusternode.[3]'
+             'manager_role':
+               'node_type': 'ManagementClusterRoleConfig'
+
+    CleanupNode2ForReuse: &CLEANUP_NODE_2_FOR_REUSE
+      - ["DeleteNode2FromClusterNode1"]
+      - ["DeleteDataAndConfigFileFromNode2"]
+      - ["StartProtonServiceOn_Node2"]
+      - ["VerifyStartProtonServiceStatusFor_Node2"]
+      - ["MapNSXManager2ToCluster"]
+      - ["Wait_For_Cluster_Status_Stable_On_Node2"]
+
+    CleanupNode3ForReuse: &CLEANUP_NODE_3_FOR_REUSE
+      - ["DeleteNode3FromClusterNode1"]
+      - ["DeleteDataAndConfigFileFromNode3"]
+      - ["StartProtonServiceOn_Node3"]
+      - ["VerifyStartProtonServiceStatusFor_Node3"]
+      - ["MapNSXManager3ToCluster"]
+      - ["Wait_For_Cluster_Status_Stable_On_Node3"]
+
+    Cleanup3NodesMPCluster: &CLEANUP_3_NODES_MP_CLUSTER
+        - ["CleanupNode2ForReuse"]
+        - ["CleanupNode3ForReuse"]
+        - ["VerifyClusterStatusFromAllNodes"]
+        - ["VerifyClusterMembers_1MP_From_Node1"]
+
+    Cleanup3NodesCCPCluster: &CLEANUP_3_NODES_CCP_CLUSTER
+        - ['RemoveNSXController3FromCluster']
+        - ['RemoveNSXController2FromCluster']
+        - ['StopController1']
+        - ['DeleteClusterNode1FromMP']
+        - ['StopMootOnController1']
+        - ['ClearController1']
+        - ['DeleteMootServerOnController1']
+        - ['DeleteBootStrapOnController1']
+        - ['DeleteControllerNodeUUIDFileOnController1']
+        - ['StartMootOnController1']
+
+    RemoveNSXController3FromCluster: &REMOVE_NSXCONTROLLER3_FROM_CLUSTER
+        - ['StopController3']
+        - ['RemoveCCPNode3FromCluster']
+        - ['DeleteClusterNode3FromMP']
+        - ['StopMootOnController3']
+        - ['ClearController3']
+        - ['DeleteMootServerOnController3']
+        - ['DeleteBootStrapOnController3']
+        - ['DeleteControllerNodeUUIDFileOnController3']
+        - ['StartMootOnController3']
+
+    RemoveNSXController2FromCluster: &REMOVE_NSXCONTROLLER2_FROM_CLUSTER
+        - ['StopController2']
+        - ['RemoveCCPNode2FromCluster']
+        - ['DeleteClusterNode2FromMP']
+        - ['StopMootOnController2']
+        - ['ClearController2']
+        - ['DeleteMootServerOnController2']
+        - ['DeleteBootStrapOnController2']
+        - ['DeleteControllerNodeUUIDFileOnController2']
+        - ['StartMootOnController2']
+
+    Cleanup3NodesCCPAnd3NodesMPCluster: &CLEANUP_3_NODES_CCP_AND_3_NODES_MP_CLUSTER
+        - ['Cleanup3NodesCCPCluster']
+        - ['Cleanup3NodesMPCluster']
+
+    CreateTransportZone: &CREATE_TRANSPORT_ZONE_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[1]':
+                name: autogenerate
+                transport_zone_type: 'OVERLAY' # or VLAN, both case-senstive
+                switch_name: 'nsxvswitch'
+
+    CreateUplinkProfile:
+        ESX: &CREATE_UPLINK_PROFILE_01--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            UplinkProfile:
+                '[1]':
+                    mtu: 1600
+                    teaming:
+                        active:
+                            - adapter_name: 'uplink1'
+                              adapter_type: 'PNIC'
+                        policy: 'FAILOVER_ORDER'
+                    vlan: '0'
+                    resource_type: 'UplinkHostSwitchProfile'
+        KVM: &CREATE_UPLINK_PROFILE_01--KVM
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            UplinkProfile:
+                '[1]':
+                    mtu: 1600
+                    teaming:
+                        active:
+                            - adapter_name: 'uplink1'
+                              adapter_type: 'PNIC'
+                        policy: 'FAILOVER_ORDER'
+                    vlan: '0'
+                    resource_type: 'UplinkHostSwitchProfile'
+
+    DeleteUplinkProfile: &DELETE_UPLINK_PROFILE_01
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       deleteuplinkprofile: nsxmanager.[1].uplinkprofile.[1]
+
+    IPDiscoveryProfileResoruce: &IPDISCOVERY_RPOFILE_RESOURCE
+        "IpDiscoverySwitchingProfile"
+
+    CreateIPDiscoveryProfile: &CREATE_IP_DISCOVERY_PROFILE
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        ipdiscovery_profile:
+            '[1]':
+                name: "autogenerate"
+                arp_snooping_enabled: "true"
+                dhcp_snooping_enabled: "true"
+                resource_type: *IPDISCOVERY_RPOFILE_RESOURCE
+
+    DeleteAllIPDiscoveryProfiles: &DELETE_ALL_IPDISCOVERY_PROFILES
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        deleteipdiscovery_profile: "nsxmanager.[1].ipdiscovery_profile.[-1]"
+
+    CreateTransportNodes:
+        ESX: &CREATE_TRANSPORT_NODE_01--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            sync: true
+            transportnode:
+                '[1-2]':
+                    node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                    host_switches:
+                          - switch_name: 'nsxvswitch'
+                            host_switch_profile_ids:
+                               - key: 'UplinkHostSwitchProfile'
+                                 value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                            uplinks:
+                               - device_name: 'vmnic1'
+                                 adapter_name: 'uplink1'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+        KVM: &CREATE_TRANSPORT_NODE_01--KVM
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            sync: true
+            transportnode:
+                '[1-2]':
+                    node_id: nsxmanager.[1].hostnode.[x=transportnode_index]
+                    host_switches:
+                          - switch_name: 'nsxvswitch'
+                            host_switch_profile_ids:
+                                - key: 'UplinkHostSwitchProfile'
+                                  value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                            uplinks:
+                               - device_name: "eth1"
+                                 adapter_name: "uplink1"
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+    DeleteTransportNodes: &DELETE_TRANSPORT_NODE_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        sync: true
+        deletetransportnode: 'nsxmanager.[-1].transportnode.[-1]'
+
+    DeleteTransportZones: &DELETE_TRANSPORT_ZONE_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletetransportzone: 'nsxmanager.[-1].transportzone.[-1]'
+
+    CreateLogicalSwitch: &CREATE_LOGICAL_SWITCH_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        sync: true
+        logicalswitch:
+            '[1]':
+                name: 'ls-demo'  # display_name in product schema
+                summary: '1st logical Switch'  # description in product schema
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP  # switch_admin_state in product schema
+                # replication_mode's value is case sensitive
+                replication_mode: MTEP # source
+                switching_profile_ids:
+                    - switching_profile_value: nsxmanager.[1].ipdiscovery_profile.[1]->id
+                      switching_profile_key: *IPDISCOVERY_RPOFILE_RESOURCE
+
+    DeleteLogicalSwitch: &DELETE_LOGICAL_SWITCH_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        sync: true
+        deletelogicalswitch: 'nsxmanager.[-1].logicalswitch.[-1]'
+
+    CleanupNSX: &CLEAN_NSX
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletetransportzone: "nsxmanager.[1].transportzone.[-1]"
+        deletetransportnode: "nsxmanager.[1].transportnode.[-1]"
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[-1]"
+
+    VIF_ATTACHMENT_01:
+        KVM: &VIF_ATTACHMENT_01--KVM
+            # In Transformers, logical port is not under logicalswitch.
+            # This design is driven by Vmware API (vAPI) team
+            #
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalport:
+                '[1]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    attachment:
+                        attachment_type: 'VIF'
+                        id_: vm.[1].vif.[1]->uuid
+                    admin_state: UP
+                '[2]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    attachment:
+                        attachment_type: 'VIF'
+                        id_: vm.[2].vif.[1]->uuid
+                    admin_state: UP
+
+        ESX: &VIF_ATTACHMENT_01--ESX
+
+            # There are 2 types of workflow for creating logical ports in MP
+            # w.r.t ESX.
+            # 1. Automatic logical port creation
+            #    When a logical switch is created on MP, it would automatically
+            #    create nsxnetwork (opaque network) on ESX using message bus,
+            #    hostd. When vnic backing is changed to this nsxnetwork,
+            #    hostd will make ipc call to nsx agent which will dial out
+            #    to MP via message bus and create a logical port and
+            #    do vif attachment automatically.
+            # 2. Manually creating logical port
+            #    When vnic is added, a special property called external_vif_id
+            #    can be set (openstack does this too).
+            #    When a logical switch is created on MP, nsxnetwork would be
+            #    automatically created. A logical port can be created explicitly
+            #    on MP using the same external_vif_id for vif.
+            #    Now, when vnic on ESX is reconfigured to use nsxnetwork, MP would
+            #    look up if there is already a port with external_vif_id.
+            #    In this case, it would find one and skip another logical port
+            #    creation.
+            #
+            Type: VM
+            TestVM: 'vm.[1-2]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: "nsxmanager.[1].logicalswitch.[1]"
+                   connected: 1
+                   startconnected: 1
+
+    VIF_DETACHMENT_01:
+        ESX: &VIF_DETACHMENT_01--ESX
+            Type: NetAdapter
+            TestAdapter: 'vm.[1-2].vnic.[1]'
+            reconfigure: true
+            connected: 0
+            startconnected: 0
+
+    VIF_ATTACHMENT_02:
+        KVM: &VIF_ATTACHMENT_02--KVM
+            # In Transformers, logical port is not under logicalswitch.
+            # This design is driven by Vmware API (vAPI) team
+            #
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalport:
+                '[1]':
+                    switch_id: nsxmanager.[1].logicalswitch.[2]
+                    id_: vm.[1].vif.[1]->uuid
+                    admin_state: UP
+                '[2]':
+                    switch_id: nsxmanager.[1].logicalswitch.[2]->uuid
+                    id_: vm.[2].vif.[1]
+                    admin_state: UP
+
+        ESX: &VIF_ATTACHMENT_02--ESX
+            Type: VM
+            TestVM: 'vm.[1-2]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: "nsxmanager.[1].logicalswitch.[2]"
+                   connected: 1
+                   startconnected: 1
+
+
+    SetManagerOnHost: &SET_MANAGER_ON_HOST
+        Type: Host
+        TestHost: 'esx.[3]'
+        set_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    SetManagerOnHost3to6: &SET_MANAGER_ON_HOST_3_TO_6
+        <<: *SET_MANAGER_ON_HOST
+        TestHost: 'esx.[3-6]'
+
+    SetManagerOnHost3to11: &SET_MANAGER_ON_HOST_3_TO_11
+        <<: *SET_MANAGER_ON_HOST
+        TestHost: 'esx.[3-11]'
+
+    RegisterHost3to6: &REGISTER_HOST_3_TO_6
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        hostnode:
+            '[3-6]':
+                hypervisor_info:
+                     ip_addresses: 'esx.[x=hostnode_index]'
+                     external_id: 'esx.[x=hostnode_index]->id'
+                     # TODO(gjayavelu): check why user needs to pass host
+                     # type
+                     os_type: 'ESXI'
+                host_msg_client_info:
+                     account_name: 'esx.[x=hostnode_index]'
+                     # TODO(gjayavelu): hard-coded value for RTQA#1
+                     # find what should be the right value
+                     shared_secret: 'cvn-1-2-3'
+                     certificate: 'iaWCS2wJhrhXGz0e7iFk7zFO9fM='
+
+    RegisterHost3to11: &REGISTER_HOST_3_TO_11
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        hostnode:
+            '[3-11]':
+                hypervisor_info:
+                     ip_addresses: 'esx.[x=hostnode_index]'
+                     external_id: 'esx.[x=hostnode_index]->id'
+                     # TODO(gjayavelu): check why user needs to pass host
+                     # type
+                     os_type: 'ESXI'
+                host_msg_client_info:
+                     account_name: 'esx.[x=hostnode_index]'
+                     # TODO(gjayavelu): hard-coded value for RTQA#1
+                     # find what should be the right value
+                     shared_secret: 'cvn-1-2-3'
+                     certificate: 'iaWCS2wJhrhXGz0e7iFk7zFO9fM='
+
+    RegisterController1: &REGISTER_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        set_nsx_registration:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    SetController1OnHost3: &SET_CONTROLLER_1_ON_HOST_3
+        Type: Host
+        TestHost: 'esx.[3]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[3]'
+            execution_type: 'cli'
+
+    SetController1OnHost4: &SET_CONTROLLER_1_ON_HOST_4
+        Type: Host
+        TestHost: 'esx.[4]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[4]'
+            execution_type: 'cli'
+
+    SetController1OnHost5: &SET_CONTROLLER_1_ON_HOST_5
+        Type: Host
+        TestHost: 'esx.[5]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[5]'
+            execution_type: 'cli'
+
+    SetController1OnHost6: &SET_CONTROLLER_1_ON_HOST_6
+        Type: Host
+        TestHost: 'esx.[6]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[6]'
+            execution_type: 'cli'
+
+    SetController1OnHost7: &SET_CONTROLLER_1_ON_HOST_7
+        Type: Host
+        TestHost: 'esx.[7]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[7]'
+            execution_type: 'cli'
+
+    SetController1OnHost8: &SET_CONTROLLER_1_ON_HOST_8
+        Type: Host
+        TestHost: 'esx.[8]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[8]'
+            execution_type: 'cli'
+
+    SetController1OnHost9: &SET_CONTROLLER_1_ON_HOST_9
+        Type: Host
+        TestHost: 'esx.[9]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[9]'
+            execution_type: 'cli'
+
+    SetController1OnHost10: &SET_CONTROLLER_1_ON_HOST_10
+        Type: Host
+        TestHost: 'esx.[10]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[10]'
+            execution_type: 'cli'
+
+    SetController1OnHost11: &SET_CONTROLLER_1_ON_HOST_11
+        Type: Host
+        TestHost: 'esx.[11]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[11]'
+            execution_type: 'cli'
+
+    CreateTransportNodes3to6InTZ1: &CREATE_TRANSPORT_NODES_3_TO_6_IN_TZ_1
+        ESX: &CREATE_TRANSPORT_NODES_3_TO_6_IN_TZ_1--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[3]':
+                    node_id: 'nsxmanager.[1].hostnode.[3]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[4]':
+                    node_id: 'nsxmanager.[1].hostnode.[4]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[5]':
+                    node_id: 'nsxmanager.[1].hostnode.[5]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[6]':
+                    node_id: 'nsxmanager.[1].hostnode.[6]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+
+    NSXVSWITCH_SEQUENCE: &NSXVSWITCH_SEQUENCE
+        - ['CreateNSXVSwitch']
+
+    CreateNSXVSwitch: &CreateNSXVSwitch
+        Type: "Host"
+        TestHost: "esx.[1]"
+        nsxvswitch:
+           '[1]':
+              name: 'test'
+    ReadOriginalNSXVSwitch: &ReadOriginalNSXVSwitch
+        Type: "Switch"
+        TestSwitch: "esx.[1].nsxvswitch.[1]"
+        PersistData: Yes
+        read:
+           'name[?]defined': ''
+    UpdateNSXVSwitch: &UpdateNSXVSwitch
+        Type: "Switch"
+        TestSwitch: "esx.[1].nsxvswitch.[1]"
+        reconfigure: true
+        name: 'test_v2'
+    ReadModifiediNSXVSwitch: &ReadModifiediNSXVSwitch
+        Type: "Switch"
+        TestSwitch: "esx.[1].nsxvswitch.[1]"
+        PersistData: Yes
+        read:
+           'name[?]not_equal_to': 'esx.[1].nsxvswitch.[1]->read->name'
+    AddUplinksNSXVSwitch: &AddUplinksNSXVSwitch
+        Type: "Switch"
+        TestSwitch: "esx.[1].nsxvswitch.[1]"
+        configureuplinks: 'add'
+        uplink: 'esx.[1].vmnic.[1]'
+    DeleteNSXVSwitch: &DeleteNSXVSwitch
+        Type: "Host"
+        TestHost: "esx.[1]"
+        deletensxvswitch: "esx.[1].nsxvswitch.[1]"
+
+    driver: &AVALANCHE_L2_VNIC_DRIVER
+        vmxnet3
+
+    PoweronVM3: &POWER_ON_VM_3
+        Type: VM
+        TestVM: vm.[3]
+        vmstate: poweron
+
+    PoweronVM4: &POWER_ON_VM_4
+        Type: VM
+        TestVM: vm.[4]
+        vmstate: poweron
+
+    PoweronVM5: &POWER_ON_VM_5
+        Type: VM
+        TestVM: vm.[5]
+        vmstate: poweron
+
+    PoweronVM6: &POWER_ON_VM_6
+        Type: VM
+        TestVM: vm.[6]
+        vmstate: poweron
+
+    PoweronVM7: &POWER_ON_VM_7
+        Type: VM
+        TestVM: vm.[7]
+        vmstate: poweron
+
+    PoweronVM8: &POWER_ON_VM_8
+        Type: VM
+        TestVM: vm.[8]
+        vmstate: poweron
+
+    PoweronVM9: &POWER_ON_VM_9
+        Type: VM
+        TestVM: vm.[9]
+        vmstate: poweron
+
+    PoweronVM10: &POWER_ON_VM_10
+        Type: VM
+        TestVM: vm.[10]
+        vmstate: poweron
+
+    PoweronVM11: &POWER_ON_VM_11
+        Type: VM
+        TestVM: vm.[11]
+        vmstate: poweron
+
+    PoweronVM12: &POWER_ON_VM_12
+        Type: VM
+        TestVM: vm.[12]
+        vmstate: poweron
+
+    PoweronVM13: &POWER_ON_VM_13
+        Type: VM
+        TestVM: vm.[13]
+        vmstate: poweron
+
+    PoweronVM14: &POWER_ON_VM_14
+        Type: VM
+        TestVM: vm.[14]
+        vmstate: poweron
+
+    PoweronVM15: &POWER_ON_VM_15
+        Type: VM
+        TestVM: vm.[15]
+        vmstate: poweron
+
+    PoweronVM16: &POWER_ON_VM_16
+        Type: VM
+        TestVM: vm.[16]
+        vmstate: poweron
+
+    PoweronVM17: &POWER_ON_VM_17
+        Type: VM
+        TestVM: vm.[17]
+        vmstate: poweron
+
+    PoweronVM18: &POWER_ON_VM_18
+        Type: VM
+        TestVM: vm.[18]
+        vmstate: poweron
+
+    PoweronVM19: &POWER_ON_VM_19
+        Type: VM
+        TestVM: vm.[19]
+        vmstate: poweron
+
+    PoweronVM20: &POWER_ON_VM_20
+        Type: VM
+        TestVM: vm.[20]
+        vmstate: poweron
+
+    PoweroffAllVMs: &POWER_OFF_ALL_VM
+        Type: VM
+        TestVM: vm.[-1]
+        vmstate: poweroff
+
+    CreateVM3Vnic1: &CREATE_VM3_VNIC1
+        Type: VM
+        TestVM: vm.[3]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM4Vnic1: &CREATE_VM4_VNIC1
+        Type: VM
+        TestVM: vm.[4]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM5Vnic1: &CREATE_VM5_VNIC1
+        Type: VM
+        TestVM: vm.[5]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM6Vnic1: &CREATE_VM6_VNIC1
+        Type: VM
+        TestVM: vm.[6]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM7Vnic1: &CREATE_VM7_VNIC1
+        Type: VM
+        TestVM: vm.[1]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM8Vnic1: &CREATE_VM8_VNIC1
+        Type: VM
+        TestVM: vm.[8]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM9Vnic1: &CREATE_VM9_VNIC1
+        Type: VM
+        TestVM: vm.[9]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM10Vnic1: &CREATE_VM10_VNIC1
+        Type: VM
+        TestVM: vm.[10]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM11Vnic1: &CREATE_VM11_VNIC1
+        Type: VM
+        TestVM: vm.[11]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM12Vnic1: &CREATE_VM12_VNIC1
+        Type: VM
+        TestVM: vm.[12]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM13Vnic1: &CREATE_VM13_VNIC1
+        Type: VM
+        TestVM: vm.[13]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM14Vnic1: &CREATE_VM14_VNIC1
+        Type: VM
+        TestVM: vm.[14]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM15Vnic1: &CREATE_VM15_VNIC1
+        Type: VM
+        TestVM: vm.[15]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM16Vnic1: &CREATE_VM16_VNIC1
+        Type: VM
+        TestVM: vm.[16]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM17Vnic1: &CREATE_VM17_VNIC1
+        Type: VM
+        TestVM: vm.[17]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM18Vnic1: &CREATE_VM18_VNIC1
+        Type: VM
+        TestVM: vm.[1]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM19Vnic1: &CREATE_VM19_VNIC1
+        Type: VM
+        TestVM: vm.[19]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateVM20Vnic1: &CREATE_VM20_VNIC1
+        Type: VM
+        TestVM: vm.[20]
+        vnic:
+            '[1]':
+                driver: vmxnet3
+                connected: 1
+                startconnected: 1
+                allowguestcontrol: 1
+                external_uuid: 'auto'
+
+    CreateLogicalPort3VM3LSwitch1: &CREATE_LOGICAL_PORT3_VM3_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[3]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[3].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort4VM4LSwitch1: &CREATE_LOGICAL_PORT4_VM4_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[4]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[4].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort5VM5LSwitch1: &CREATE_LOGICAL_PORT5_VM5_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[5]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[5].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort6VM6LSwitch1: &CREATE_LOGICAL_PORT6_VM6_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[6]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[6].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort7VM7LSwitch1: &CREATE_LOGICAL_PORT7_VM7_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[7]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[7].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort8VM8LSwitch1: &CREATE_LOGICAL_PORT8_VM8_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[8]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[8].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort9VM9LSwitch1: &CREATE_LOGICAL_PORT9_VM9_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[9]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[9].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort10VM10LSwitch1: &CREATE_LOGICAL_PORT10_VM10_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[10]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[10].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort11VM11LSwitch1: &CREATE_LOGICAL_PORT11_VM11_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[11]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[11].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort12VM12LSwitch1: &CREATE_LOGICAL_PORT12_VM12_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[12]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[12].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort13VM13LSwitch1: &CREATE_LOGICAL_PORT13_VM13_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[13]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[13].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort14VM14LSwitch1: &CREATE_LOGICAL_PORT14_VM14_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[14]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[14].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort15VM15LSwitch1: &CREATE_LOGICAL_PORT15_VM15_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[15]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[15].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort16VM16LSwitch1: &CREATE_LOGICAL_PORT16_VM16_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[16]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[16].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort17VM17LSwitch1: &CREATE_LOGICAL_PORT17_VM17_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[17]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[17].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort18VM18LSwitch1: &CREATE_LOGICAL_PORT18_VM18_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[18]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[18].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort19VM19LSwitch1: &CREATE_LOGICAL_PORT19_VM19_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[19]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[19].vnic.[1]
+                adminState: up
+
+    CreateLogicalPort20VM20LSwitch1: &CREATE_LOGICAL_PORT20_VM20_LSWITCH1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+        '[20]':
+                logicalSwitchId: nsxmanager.[1].logicalswitch.[1]
+                vif: vm.[20].vnic.[1]
+                adminState: up
+
+    DeleteVM3Vnic1InExitSeq: &DELETE_VM3_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[3]
+        deletevnic: vm.[3].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM4Vnic1InExitSeq: &DELETE_VM4_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[4]
+        deletevnic: vm.[4].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM5Vnic1InExitSeq: &DELETE_VM5_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[5]
+        deletevnic: vm.[5].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM6Vnic1InExitSeq: &DELETE_VM6_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[6]
+        deletevnic: vm.[6].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM7Vnic1InExitSeq: &DELETE_VM7_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[7]
+        deletevnic: vm.[7].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM8Vnic1InExitSeq: &DELETE_VM8_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[8]
+        deletevnic: vm.[8].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM9Vnic1InExitSeq: &DELETE_VM9_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[9]
+        deletevnic: vm.[9].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM10Vnic1InExitSeq: &DELETE_VM10_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[10]
+        deletevnic: vm.[10].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM11Vnic1InExitSeq: &DELETE_VM11_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[11]
+        deletevnic: vm.[11].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM12Vnic1InExitSeq: &DELETE_VM12_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[12]
+        deletevnic: vm.[12].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM13Vnic1InExitSeq: &DELETE_VM13_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[13]
+        deletevnic: vm.[13].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM14Vnic1InExitSeq: &DELETE_VM14_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[14]
+        deletevnic: vm.[14].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM15Vnic1InExitSeq: &DELETE_VM15_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[15]
+        deletevnic: vm.[15].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM16Vnic1InExitSeq: &DELETE_VM16_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[16]
+        deletevnic: vm.[16].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM17Vnic1InExitSeq: &DELETE_VM17_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[17]
+        deletevnic: vm.[17].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM18Vnic1InExitSeq: &DELETE_VM18_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[18]
+        deletevnic: vm.[18].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM19Vnic1InExitSeq: &DELETE_VM19_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[19]
+        deletevnic: vm.[19].vnic.[1]
+        expectedResult: ignore
+
+    DeleteVM20Vnic1InExitSeq: &DELETE_VM20_VNIC1_IN_EXIT_SEQ
+        Type: VM
+        TestVM: vm.[20]
+        deletevnic: vm.[20].vnic.[1]
+        expectedResult: ignore
+
+    DisconnectCCPAndWaitForEntriesTimeout: &DISCONNECT_CCP_WAIT_ENTRIES_TIMEOUT
+        Type: "NetAdapter"
+        TestAdapter: "esx.[2].vmnic.[0]"
+        devicestatus: "down"
+        sleepbetweenworkloads: 20
+
+    ConnectCCPInExitSeq: &CONNECT_CCP_IN_EXIT_SEQ
+        Type: "NetAdapter"
+        TestAdapter: "esx.[2].vmnic.[0]"
+        devicestatus: "up"
+
+    ChangeVM3Vnic1BackingLogicalSwitch1: &CHANGE_VM3_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[3].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM4Vnic1BackingLogicalSwitch1: &CHANGE_VM4_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[4].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM5Vnic1BackingLogicalSwitch1: &CHANGE_VM5_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[5].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM6Vnic1BackingLogicalSwitch1: &CHANGE_VM6_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[6].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM7Vnic1BackingLogicalSwitch1: &CHANGE_VM7_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[7].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM8Vnic1BackingLogicalSwitch1: &CHANGE_VM8_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[8].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM9Vnic1BackingLogicalSwitch1: &CHANGE_VM9_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[9].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM10Vnic1BackingLogicalSwitch1: &CHANGE_VM10_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[10].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM11Vnic1BackingLogicalSwitch1: &CHANGE_VM11_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[11].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM12Vnic1BackingLogicalSwitch1: &CHANGE_VM12_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[12].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM13Vnic1BackingLogicalSwitch1: &CHANGE_VM13_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[13].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM14Vnic1BackingLogicalSwitch1: &CHANGE_VM14_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[14].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM15Vnic1BackingLogicalSwitch1: &CHANGE_VM15_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[15].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM16Vnic1BackingLogicalSwitch1: &CHANGE_VM16_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[16].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM17Vnic1BackingLogicalSwitch1: &CHANGE_VM17_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[17].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM18Vnic1BackingLogicalSwitch1: &CHANGE_VM18_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[18].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM19Vnic1BackingLogicalSwitch1: &CHANGE_VM19_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[19].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ChangeVM20Vnic1BackingLogicalSwitch1: &CHANGE_VM20_VNIC1_BACKING_LOGICAL_SWTICH1
+        Type: NetAdapter
+        TestAdapter: vm.[20].vnic.[1]
+        network: nsxmanager.[1].logicalswitch.[1]
+
+    ConfigureVM3Vnic1IP: &CONFIGURE_VM3_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[3].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM4Vnic1IP: &CONFIGURE_VM4_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[4].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM5Vnic1IP: &CONFIGURE_VM5_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[5].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM6Vnic1IP: &CONFIGURE_VM6_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[6].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM7Vnic1IP: &CONFIGURE_VM7_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[7].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM8Vnic1IP: &CONFIGURE_VM8_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[8].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM9Vnic1IP: &CONFIGURE_VM9_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[9].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM10Vnic1IP: &CONFIGURE_VM10_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[10].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM11Vnic1IP: &CONFIGURE_VM11_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[11].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM12Vnic1IP: &CONFIGURE_VM12_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[12].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM13Vnic1IP: &CONFIGURE_VM13_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[13].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM14Vnic1IP: &CONFIGURE_VM14_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[14].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM15Vnic1IP: &CONFIGURE_VM15_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[15].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM16Vnic1IP: &CONFIGURE_VM16_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[16].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM17Vnic1IP: &CONFIGURE_VM17_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[17].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM18Vnic1IP: &CONFIGURE_VM18_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[18].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM19Vnic1IP: &CONFIGURE_VM19_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[19].vnic.[1]
+        IPv4: auto
+
+    ConfigureVM20Vnic1IP: &CONFIGURE_VM20_VNIC1_IP
+        Type: NetAdapter
+        TestAdapter: vm.[20].vnic.[1]
+        IPv4: auto
+
+    CreateTransportNodes3to11InTZ1: &CREATE_TRANSPORT_NODES_3_TO_11_IN_TZ_1
+        ESX: &CREATE_TRANSPORT_NODES_3_TO_11_IN_TZ_1--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[3]':
+                    node_id: 'nsxmanager.[1].hostnode.[3]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[4]':
+                    node_id: 'nsxmanager.[1].hostnode.[4]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[5]':
+                    node_id: 'nsxmanager.[1].hostnode.[5]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[6]':
+                    node_id: 'nsxmanager.[1].hostnode.[6]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[7]':
+                    node_id: 'nsxmanager.[1].hostnode.[7]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[8]':
+                    node_id: 'nsxmanager.[1].hostnode.[8]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[9]':
+                    node_id: 'nsxmanager.[1].hostnode.[9]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[10]':
+                    node_id: 'nsxmanager.[1].hostnode.[10]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                '[11]':
+                    node_id: 'nsxmanager.[1].hostnode.[11]'
+                    host_switches:
+                          - switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+                            uplink_profile_id: 'd4c70b3e-e0a5-479c-b3cb-dbfbc68624f3'
+                            uplinks:
+                               - link_speed: "1000"
+                                 adapter_id: "vmnic1"
+                            vteps:
+                               - adapter_name: 'vmk10'
+                                 pinned_pnic: 1
+                                 ip:
+                                    is_primary_address: 'true'
+                                    ip_address: 'DHCP'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+                          switch_id: 'b6 92 12 50 38 2c 99 5d-2a e4 56 c5 c6 fb e6 05'
+
+    CreateMTEPLogicalSwitch1InTZ1: &CREATE_MTEP_LOGICAL_SWITCH_1_IN_TZ_1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1]':
+                name: autogenerate
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP # source
+
+    CreateSourceLogicalSwitch2InTZ1: &CREATE_SOURCE_LOGICAL_SWITCH_2_IN_TZ_1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[2]':
+                name: autogenerate
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: SOURCE # source
+
+    AttachVM3toSwitch1: &ATTACH_VM3_TO_SWTCH_1
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[3]
+
+    AttachVM5toSwitch1: &ATTACH_VM5_TO_SWTCH_1
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[5]
+
+    AttachVM7toSwitch1: &ATTACH_VM7_TO_SWTCH_1
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[7]
+
+    AttachVM9toSwitch1: &ATTACH_VM9_TO_SWTCH_1
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[9]
+
+    AttachVM11toSwitch1: &ATTACH_VM11_TO_SWTCH_1
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[11]
+
+    AttachVM3toSwitch2: &ATTACH_VM3_TO_SWTCH_2
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[3]
+
+    AttachVM5toSwitch2: &ATTACH_VM5_TO_SWTCH_2
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[5]
+
+    AttachVM7toSwitch2: &ATTACH_VM7_TO_SWTCH_2
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[7]
+
+    AttachVM9toSwitch2: &ATTACH_VM9_TO_SWTCH_2
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[9]
+
+    AttachVM11toSwitch1: &ATTACH_VM11_TO_SWTCH_11
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[11]
+
+    AttachVM13toSwitch1: &ATTACH_VM13_TO_SWTCH_1
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[13]
+
+    AttachVM15toSwitch1: &ATTACH_VM15_TO_SWTCH_1
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[15]
+
+    AttachVM17toSwitch1: &ATTACH_VM17_TO_SWTCH_1
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[17]
+
+    AttachVM19toSwitch1: &ATTACH_VM19_TO_SWTCH_1
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[19]
+
+    AttachVM4toSwitch2: &ATTACH_VM4_TO_SWTCH_2
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[4]
+        vnic:
+            '[1]':
+                portgroup: "nsxmanager.[1].logicalswitch.[2]"
+
+    AttachVM6toSwitch2: &ATTACH_VM6_TO_SWTCH_2
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[6]
+        vnic:
+            '[1]':
+                portgroup: "nsxmanager.[1].logicalswitch.[2]"
+
+    AttachVM8toSwitch2: &ATTACH_VM8_TO_SWTCH_2
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[8]
+        vnic:
+            '[1]':
+                portgroup: "nsxmanager.[1].logicalswitch.[2]"
+
+    AttachVM10toSwitch2: &ATTACH_VM10_TO_SWTCH_2
+        <<: *VIF_ATTACHMENT_01--ESX
+        TestVM: vm.[10]
+        vnic:
+            '[1]':
+                portgroup: "nsxmanager.[1].logicalswitch.[2]"
+
+    ControllerSecurityPassword: &CONTROLLER_SECURITY_PASSWORD
+        "12345"
+
+    ControllerSecurityType: &CONTROLLER_SECURITY_TYPE
+        "password"
+
+    JoinController1ToCluster: &JOIN_CONTROLLER_1_TO_CLUSTER
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clusternode:
+            '[1]':
+                controller_ip: 'nsxcontroller.[1]'
+                control_cluster_thumbprint: 'nsxcontroller.[1]'
+                execution_type: 'cli'
+
+    JoinController2ToCluster: &JOIN_CONTROLLER_2_TO_CLUSTER
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clusternode:
+            '[2]':
+                controller_ip: 'nsxcontroller.[2]'
+                control_cluster_thumbprint: 'nsxcontroller.[2]'
+                execution_type: 'cli'
+
+    JoinController3ToCluster: &JOIN_CONTROLLER_3_TO_CLUSTER
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clusternode:
+            '[3]':
+                controller_ip: 'nsxcontroller.[3]'
+                control_cluster_thumbprint: 'nsxcontroller.[3]'
+                execution_type: 'cli'
+
+    ActivateController2: &ACTIVATE_CONTROLLER_2
+        Type: Controller
+        TestController: 'nsxcontroller.[2]'
+        configure_service_state:
+            state: 'activate'
+            service_name: 'control-cluster'
+        execution_type: 'cli'
+
+    WAIT_FOR_MOOT: &WAIT_FOR_MOOT_STATUS
+        '30'
+
+    ActivateController3: &ACTIVATE_CONTROLLER_3
+        Type: Controller
+        TestController: 'nsxcontroller.[3]'
+        configure_service_state:
+            state: 'activate'
+            service_name: 'control-cluster'
+        execution_type: 'cli'
+
+    DeactivateController2: &DEACTIVATE_CONTROLLER_2
+        Type: Controller
+        TestController: 'nsxcontroller.[2]'
+        configure_service_state:
+            state: 'deactivate'
+            service_name: 'control-cluster'
+        execution_type: 'cli'
+
+    DeactivateController3: &DEACTIVATE_CONTROLLER_3
+        Type: Controller
+        TestController: 'nsxcontroller.[3]'
+        configure_service_state:
+            state: 'deactivate'
+            service_name: 'control-cluster'
+        execution_type: 'cli'
+
+    InitializeController1: &INITIALIZE_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        configure_service_state:
+            state: 'initialize'
+            service_name: 'control-cluster'
+        execution_type: 'cli'
+
+    SetSecurityOnController1: &SET_SECURITY_ON_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        set_security:
+            security_type: *CONTROLLER_SECURITY_TYPE
+            value: *CONTROLLER_SECURITY_PASSWORD
+        execution_type: 'cli'
+
+    SetSecurityOnController2: &SET_SECURITY_ON_CONTROLLER_2
+        <<: *SET_SECURITY_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    SetSecurityOnController3: &SET_SECURITY_ON_CONTROLLER_3
+        <<: *SET_SECURITY_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    DeleteMootServerOnController1: &DELETE_MOOT_SERVER_ON_CONTROLLER_1
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[1]'
+        delete_backend_file:
+            file_name: '*'
+            execution_type: 'cmd'
+            path: '/var/moot-server'
+
+    DeleteMootServerOnController2: &DELETE_MOOT_SERVER_ON_CONTROLLER_2
+        <<: *DELETE_MOOT_SERVER_ON_CONTROLLER_1
+        TestNSX: 'nsxcontroller.[2]'
+
+    DeleteMootServerOnController3: &DELETE_MOOT_SERVER_ON_CONTROLLER_3
+        <<: *DELETE_MOOT_SERVER_ON_CONTROLLER_1
+        TestNSX: 'nsxcontroller.[3]'
+
+    ClearController1: &CLEAR_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clear_controller:
+            execution_type: 'cmd'
+
+    ClearController2: &CLEAR_CONTROLLER_2
+        <<: *CLEAR_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    ClearController3: &CLEAR_CONTROLLER_3
+        <<: *CLEAR_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    StartMootOnController1: &START_MOOT_ON_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        configure_service_state:
+            state: 'start'
+            service_name: 'moot-server'
+            execution_type: 'cmd'
+
+    StartMootOnController2: &START_MOOT_ON_CONTROLLER_2
+        <<: *START_MOOT_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    StartMootOnController3: &START_MOOT_ON_CONTROLLER_3
+        <<: *START_MOOT_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    StopMootOnController1: &STOP_MOOT_ON_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        configure_service_state:
+            state: 'stop'
+            service_name: 'moot-server'
+            execution_type: 'cmd'
+
+    StopMootOnController2: &STOP_MOOT_ON_CONTROLLER_2
+        <<: *STOP_MOOT_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    StopMootOnController3: &STOP_MOOT_ON_CONTROLLER_3
+        <<: *STOP_MOOT_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    DeleteBootStrapOnController3: &DELETE_BOOT_STRAP_ON_CONTROLLER3
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[3]'
+        delete_backend_file:
+            file_name: 'bootstrap-config'
+            execution_type: 'cmd'
+            path: '/opt/vmware/etc'
+
+    DeleteControllerNodeUUIDFileOnController3: &DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER3
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[3]'
+        delete_backend_file:
+            file_name: 'node-uuid'
+            execution_type: 'cmd'
+            path: '/opt/vmware/etc'
+
+    DeleteBootStrapOnController2: &DELETE_BOOT_STRAP_ON_CONTROLLER2
+        <<: *DELETE_BOOT_STRAP_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[2]'
+
+    DeleteControllerNodeUUIDFileOnController2: &DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER2
+        <<: *DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[2]'
+
+    DeleteBootStrapOnController1: &DELETE_BOOT_STRAP_ON_CONTROLLER1
+        <<: *DELETE_BOOT_STRAP_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[1]'
+
+    DeleteControllerNodeUUIDFileOnController1: &DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER1
+        <<: *DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[1]'

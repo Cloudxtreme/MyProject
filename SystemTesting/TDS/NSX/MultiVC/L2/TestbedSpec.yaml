@@ -1,0 +1,782 @@
+# Basic L2 setup for MultiVC
+
+L2TestbedSpec: &L2_TOPOLOGY_01
+    esx:
+        '[1]': {}
+            # Host on which vxlan controller will be deployed
+        '[2-5]':
+            # 2 hosts in 1 VC site and 2 hosts in other VC site
+            vmnic:
+                '[1-2]':
+                    driver: 'any'
+
+    vsm:
+        '[1]':
+            # reconfigure action key will register this VSM with
+            # its corresponding VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            set_node_id: "true"
+            VDNCluster:
+                '[1]':
+                    cluster     : "vc.[1].datacenter.[1].cluster.[2]"
+                    vibs        : "install"
+                    switch      : "vc.[1].vds.[1]"
+                    vlan        : "19"
+                    mtu         : "1600"
+                    vmkniccount : "1"
+                    teaming     : "FAILOVER_ORDER"
+            # This IP Pool is used for NSX Controller
+            ippool:
+                '[1]':
+                    name: AutoGenerate
+                    gateway: x.x.x.x
+                    ipranges:
+                      - a.a.a.a-b.b.b.b
+                    prefixlength: yy
+            # TODO: Enable this after first P0 test has stabilized. We can make use
+            # of cache testbed and save lot of time by not deploying NSX
+            # Controller and VIB installl again and again in each test
+            vxlancontroller:
+                '[1]':
+                    name: AutoGenerate
+                    host: 'esx.[1]'
+                    ippool: 'vsm.[1].ippool.[1]'
+                    resourcepool: 'vc.[1].datacenter.[1].cluster.[1]'
+        '[2]':
+            # Register respective VSM with its VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            set_node_id: "true"
+            VDNCluster:
+               '[1]':
+                  cluster     : "vc.[2].datacenter.[1].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[1]"
+                  vlan        : "18"
+                  mtu         : "1600"
+                  vmkniccount : "1"
+                  teaming     : "FAILOVER_ORDER"
+               '[2]':
+                  cluster     : "vc.[2].datacenter.[2].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[2]"
+                  vlan        : "20"
+                  mtu         : "1600"
+                  vmkniccount : "1"
+                  teaming     : "FAILOVER_ORDER"
+    vc:
+        '[1]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            # Cluster and host on which nsx controller will be
+                            # deployed
+                            name: Master-Controller-Cluster
+                            host: 'esx.[1]'
+                        '[2]':
+                            # Both ESX hosts are in same cluster
+                            name: Master-Compute-Cluster
+                            host: 'esx.[2-3]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[1].datacenter.[1]'
+                    numuplinkports: 1
+                    # Both ESX hosts are in same VDS
+                    configurehosts: add
+                    host: 'esx.[2-3]'
+                    vmnicadapter: 'esx.[2-3].vmnic.[1]'
+            dvportgroup:
+                '[1]':
+                    name: master-dvpg-VDS1-mgmt
+                    vds: 'vc.[1].vds.[1]'
+        '[2]':
+            #This site has two data centers
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Datacenter-1-Compute-Cluster-1
+                            host: 'esx.[4]'
+                '[2]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Datacenter-2-Compute-Cluster-1
+                            host: 'esx.[5]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[2].datacenter.[1]'
+                    numuplinkports: 1
+                    configurehosts: add
+                    host: 'esx.[4]'
+                    vmnicadapter: 'esx.[4].vmnic.[1]'
+                '[2]':
+                    name: VDS-2
+                    datacenter: 'vc.[2].datacenter.[2]'
+                    numuplinkports: 1
+                    configurehosts: add
+                    host: 'esx.[5]'
+                    vmnicadapter: 'esx.[5].vmnic.[1]'
+            dvportgroup:
+                '[1]':
+                    name: slave-dvpg-VDS1-mgmt
+                    vds: 'vc.[2].vds.[1]'
+                '[2]':
+                    name: slave-dvpg-VDS2-mgmt
+                    vds: 'vc.[2].vds.[2]'
+    vm:
+        '[2-5]':
+            # There is no VM 1
+            # 4 VMs [2-5] are on respective 4 ESX hosts. They will be used
+            # for same VC site and different VC site testing
+            host: 'esx.[x]'
+            vmstate: 'poweron'
+
+L2TestbedSpec: &L2_TOPOLOGY_02
+    esx:
+        '[1]': {}
+            # Host on which vxlan controller will be deployed
+        '[2-5]':
+            # 2 hosts in 1 VC site and 2 hosts in other VC site
+            vmnic:
+                '[1-2]':
+                    driver: 'any'
+
+    vsm:
+        '[1]':
+            # reconfigure action key will register this VSM with
+            # its corresponding VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            set_node_id: "true"
+            VDNCluster:
+                '[1]':
+                    cluster     : "vc.[1].datacenter.[1].cluster.[2]"
+                    vibs        : "install"
+                    switch      : "vc.[1].vds.[1]"
+                    vlan        : "19"
+                    mtu         : "1600"
+                    vmkniccount : "1"
+                    teaming     : "FAILOVER_ORDER"
+            # This IP Pool is used for NSX Controller
+            ippool:
+                '[1]':
+                    name: AutoGenerate
+                    gateway: x.x.x.x
+                    ipranges:
+                      - a.a.a.a-b.b.b.b
+                    prefixlength: yy
+            # TODO: Enable this after first P0 test has stabilized. We can make use
+            # of cache testbed and save lot of time by not deploying NSX
+            # Controller and VIB installl again and again in each test
+            vxlancontroller:
+                '[1]':
+                    name: AutoGenerate
+                    host: 'esx.[1]'
+                    ippool: 'vsm.[1].ippool.[1]'
+                    resourcepool: 'vc.[1].datacenter.[1].cluster.[1]'
+        '[2]':
+            # Register respective VSM with its VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            set_node_id: "true"
+            VDNCluster:
+               '[1]':
+                  cluster     : "vc.[2].datacenter.[1].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[1]"
+                  vlan        : "18"
+                  mtu         : "1600"
+                  vmkniccount : "1"
+                  teaming     : "FAILOVER_ORDER"
+               '[2]':
+                  cluster     : "vc.[2].datacenter.[2].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[2]"
+                  vlan        : "20"
+                  mtu         : "1600"
+                  vmkniccount : "1"
+                  teaming     : "FAILOVER_ORDER"
+    vc:
+        '[1]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            # Cluster and host on which nsx controller will be
+                            # deployed
+                            name: Master-Controller-Cluster
+                            host: 'esx.[1]'
+                        '[2]':
+                            # Both ESX hosts are in same cluster
+                            name: Master-Compute-Cluster
+                            host: 'esx.[2-3]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[1].datacenter.[1]'
+                    numuplinkports: 1
+                    # Both ESX hosts are in same VDS
+                    configurehosts: add
+                    host: 'esx.[2-3]'
+                    vmnicadapter: 'esx.[2-3].vmnic.[1]'
+            dvportgroup:
+                '[1]':
+                    name: master-dvpg-VDS1-mgmt
+                    vds: 'vc.[1].vds.[1]'
+        '[2]':
+            #This site has two data centers
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Datacenter-1-Compute-Cluster-1
+                            host: 'esx.[4]'
+                '[2]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Datacenter-2-Compute-Cluster-1
+                            host: 'esx.[5]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[2].datacenter.[1]'
+                    numuplinkports: 1
+                    configurehosts: add
+                    host: 'esx.[4]'
+                    vmnicadapter: 'esx.[4].vmnic.[1]'
+                '[2]':
+                    name: VDS-2
+                    datacenter: 'vc.[2].datacenter.[2]'
+                    numuplinkports: 1
+                    configurehosts: add
+                    host: 'esx.[5]'
+                    vmnicadapter: 'esx.[5].vmnic.[1]'
+            dvportgroup:
+                '[1]':
+                    name: slave-dvpg-VDS1-mgmt
+                    vds: 'vc.[2].vds.[1]'
+                '[2]':
+                    name: slave-dvpg-VDS2-mgmt
+                    vds: 'vc.[2].vds.[2]'
+    vm:
+        '[2-5]':
+            # There is no VM 1
+            # 4 VMs [2-5] are on respective 4 ESX hosts. They will be used
+            # for same VC site and different VC site testing
+            host: 'esx.[x]'
+            vmstate: 'poweron'
+            datastoreType: 'shared'
+
+L2TestbedSpec: &L2_TOPOLOGY_03
+    esx:
+        '[1]': {}
+            # Host on which vxlan controller will be deployed
+        '[2-5]':
+            # 2 hosts in 1 VC site and 2 hosts in other VC site
+            vmnic:
+                '[1-2]':
+                    driver: 'any'
+
+    vsm:
+        '[1]':
+            # reconfigure action key will register this VSM with
+            # its corresponding VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            set_node_id: "true"
+            VDNCluster:
+                '[1]':
+                    cluster     : "vc.[1].datacenter.[1].cluster.[2]"
+                    vibs        : "install"
+                    switch      : "vc.[1].vds.[1]"
+                    vlan        : "19"
+                    mtu         : "1600"
+                    vmkniccount : "1"
+                    teaming     : "FAILOVER_ORDER"
+            # This IP Pool is used for NSX Controller
+            ippool:
+                '[1]':
+                    name: AutoGenerate
+                    gateway: x.x.x.x
+                    ipranges:
+                      - a.a.a.a-b.b.b.b
+                    prefixlength: yy
+            # TODO: Enable this after first P0 test has stabilized. We can make use
+            # of cache testbed and save lot of time by not deploying NSX
+            # Controller and VIB installl again and again in each test
+            vxlancontroller:
+                '[1]':
+                    name: AutoGenerate
+                    host: 'esx.[1]'
+                    ippool: 'vsm.[1].ippool.[1]'
+                    resourcepool: 'vc.[1].datacenter.[1].cluster.[1]'
+        '[2]':
+            # Register respective VSM with its VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            set_node_id: "true"
+            ippool:
+                '[1]':
+                    name: AutoGenerate
+                    gateway: x.x.x.x
+                    ipranges:
+                      - a.a.a.a-b.b.b.b
+                    prefixlength: yy
+                '[2]':
+                    name: AutoGenerate
+                    gateway: x.x.x.x
+                    ipranges:
+                      - a.a.a.a-b.b.b.b
+                    prefixlength: yy
+            VDNCluster:
+               '[1]':
+                  cluster     : "vc.[2].datacenter.[1].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[1]"
+                  vlan        : "19"
+                  mtu         : "1600"
+                  vmkniccount : "1"
+                  ippool      : "vsm.[2].ippool.[1]"
+                  teaming     : "FAILOVER_ORDER"
+               '[2]':
+                  cluster     : "vc.[2].datacenter.[2].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[2]"
+                  vlan        : "19"
+                  mtu         : "1600"
+                  vmkniccount : "1"
+                  ippool      : "vsm.[2].ippool.[2]"
+                  teaming     : "FAILOVER_ORDER"
+    vc:
+        '[1]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            # Cluster and host on which nsx controller will be
+                            # deployed
+                            name: Master-Controller-Cluster
+                            host: 'esx.[1]'
+                        '[2]':
+                            # Both ESX hosts are in same cluster
+                            name: Master-Compute-Cluster
+                            host: 'esx.[2-3]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[1].datacenter.[1]'
+                    numuplinkports: 1
+                    # Both ESX hosts are in same VDS
+                    configurehosts: add
+                    host: 'esx.[2-3]'
+                    vmnicadapter: 'esx.[2-3].vmnic.[1]'
+            dvportgroup:
+                '[1]':
+                    name: master-dvpg-VDS1-mgmt
+                    vds: 'vc.[1].vds.[1]'
+        '[2]':
+            #This site has two data centers
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Datacenter-1-Compute-Cluster-1
+                            host: 'esx.[4]'
+                '[2]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Datacenter-2-Compute-Cluster-1
+                            host: 'esx.[5]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[2].datacenter.[1]'
+                    numuplinkports: 1
+                    configurehosts: add
+                    host: 'esx.[4]'
+                    vmnicadapter: 'esx.[4].vmnic.[1]'
+                '[2]':
+                    name: VDS-2
+                    datacenter: 'vc.[2].datacenter.[2]'
+                    numuplinkports: 1
+                    configurehosts: add
+                    host: 'esx.[5]'
+                    vmnicadapter: 'esx.[5].vmnic.[1]'
+            dvportgroup:
+                '[1]':
+                    name: slave-dvpg-VDS1-mgmt
+                    vds: 'vc.[2].vds.[1]'
+                '[2]':
+                    name: slave-dvpg-VDS2-mgmt
+                    vds: 'vc.[2].vds.[2]'
+    vm:
+        '[2-5]':
+            # There is no VM 1
+            # 4 VMs [2-5] are on respective 4 ESX hosts. They will be used
+            # for same VC site and different VC site testing
+            host: 'esx.[x]'
+            vmstate: 'poweron'
+
+L2TestbedSpec: &L2_TOPOLOGY_05
+    esx:
+        '[1]': {}
+            # Host on which vxlan controller will be deployed
+        '[2-5]':
+            # 2 hosts in 1 VC site and 2 hosts in other VC site
+            vmnic:
+                '[1-2]':
+                    driver: 'any'
+
+    vsm:
+        '[1]':
+            # reconfigure action key will register this VSM with
+            # its corresponding VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            set_node_id: "true"
+            VDNCluster:
+                '[1]':
+                    cluster     : "vc.[1].datacenter.[1].cluster.[2]"
+                    vibs        : "install"
+                    switch      : "vc.[1].vds.[1]"
+                    vlan        : "19"
+                    mtu         : "1600"
+                    vmkniccount : "1"
+                    teaming     : "FAILOVER_ORDER"
+            # This IP Pool is used for NSX Controller
+            ippool:
+                '[1]':
+                    name: AutoGenerate
+                    gateway: x.x.x.x
+                    ipranges:
+                      - a.a.a.a-b.b.b.b
+                    prefixlength: yy
+            # TODO: Enable this after first P0 test has stabilized. We can make use
+            # of cache testbed and save lot of time by not deploying NSX
+            # Controller and VIB installl again and again in each test
+            vxlancontroller:
+                '[1]':
+                    name: AutoGenerate
+                    host: 'esx.[1]'
+                    ippool: 'vsm.[1].ippool.[1]'
+                    resourcepool: 'vc.[1].datacenter.[1].cluster.[1]'
+        '[2]':
+            # Register respective VSM with its VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            set_node_id: "true"
+            VDNCluster:
+               '[1]':
+                  cluster     : "vc.[2].datacenter.[1].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[1]"
+                  vlan        : "18"
+                  mtu         : "1600"
+                  vmkniccount : "4"
+                  teaming     : "LOADBALANCE_SRCID"
+               '[2]':
+                  cluster     : "vc.[2].datacenter.[2].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[2]"
+                  vlan        : "20"
+                  mtu         : "1600"
+                  vmkniccount : "1"
+                  teaming     : "LOADBALANCE_SRCMAC"
+    vc:
+        '[1]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            # Cluster and host on which nsx controller will be
+                            # deployed
+                            name: Master-Controller-Cluster
+                            host: 'esx.[1]'
+                        '[2]':
+                            # Both ESX hosts are in same cluster
+                            name: Master-Compute-Cluster
+                            host: 'esx.[2-3]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[1].datacenter.[1]'
+                    numuplinkports: 4
+                    # Both ESX hosts are in same VDS
+                    configurehosts: add
+                    host: 'esx.[2-3]'
+                    vmnicadapter: 'esx.[2-3].vmnic.[1-2]'
+            dvportgroup:
+                '[1]':
+                    name: master-dvpg-VDS1-mgmt
+                    vds: 'vc.[1].vds.[1]'
+        '[2]':
+            #This site has two data centers
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Datacenter-1-Compute-Cluster-1
+                            host: 'esx.[4]'
+                '[2]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Datacenter-2-Compute-Cluster-1
+                            host: 'esx.[5]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[2].datacenter.[1]'
+                    numuplinkports: 4
+                    configurehosts: add
+                    host: 'esx.[4]'
+                    vmnicadapter: 'esx.[4].vmnic.[1-2]'
+                '[2]':
+                    name: VDS-2
+                    datacenter: 'vc.[2].datacenter.[2]'
+                    numuplinkports: 4
+                    configurehosts: add
+                    host: 'esx.[5]'
+                    vmnicadapter: 'esx.[5].vmnic.[1-2]'
+            dvportgroup:
+                '[1]':
+                    name: slave-dvpg-VDS1-mgmt
+                    vds: 'vc.[2].vds.[1]'
+                '[2]':
+                    name: slave-dvpg-VDS2-mgmt
+                    vds: 'vc.[2].vds.[2]'
+    vm:
+        '[2-5]':
+            # There is no VM 1
+            # 4 VMs [2-5] are on respective 4 ESX hosts. They will be used
+            # for same VC site and different VC site testing
+            host: 'esx.[x]'
+            vmstate: 'poweron'
+
+L2TestbedSpec: &L2_TOPOLOGY_06
+    esx:
+        '[1]': {}
+            # Host on which vxlan controller will be deployed
+        '[2]':
+            # 2 hosts in 1 VC site and 2 hosts in other VC site
+            vmnic:
+                '[1-2]':
+                    driver: 'any'
+            pswitchport:
+                '[1]':
+                   vmnic: esx.[2].vmnic.[1]
+                '[2]':
+                   vmnic: esx.[2].vmnic.[2]
+        '[3]':
+            # 2 hosts in 1 VC site and 2 hosts in other VC site
+            vmnic:
+                '[1-2]':
+                    driver: 'any'
+            pswitchport:
+                '[1]':
+                   vmnic: esx.[3].vmnic.[1]
+                '[2]':
+                   vmnic: esx.[3].vmnic.[2]
+        '[4]':
+            # 2 hosts in 1 VC site and 2 hosts in other VC site
+            vmnic:
+                '[1-2]':
+                    driver: 'any'
+            pswitchport:
+                '[1]':
+                   vmnic: esx.[4].vmnic.[1]
+                '[2]':
+                   vmnic: esx.[4].vmnic.[2]
+        '[5]':
+            # 2 hosts in 1 VC site and 2 hosts in other VC site
+            vmnic:
+                '[1-2]':
+                    driver: 'any'
+            pswitchport:
+                '[1]':
+                   vmnic: esx.[5].vmnic.[1]
+                '[2]':
+                   vmnic: esx.[5].vmnic.[2]
+
+    vsm:
+        '[1]':
+            # reconfigure action key will register this VSM with
+            # its corresponding VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            set_node_id: "true"
+            VDNCluster:
+                '[1]':
+                    cluster     : "vc.[1].datacenter.[1].cluster.[2]"
+                    vibs        : "install"
+                    switch      : "vc.[1].vds.[1]"
+                    vlan        : "19"
+                    mtu         : "1600"
+                    vmkniccount : "1"
+                    teaming     : "LACP_V2"
+                '[2]':
+                    cluster     : "vc.[1].datacenter.[1].cluster.[3]"
+                    vibs        : "install"
+                    switch      : "vc.[1].vds.[2]"
+                    vlan        : "19"
+                    mtu         : "1600"
+                    vmkniccount : "1"
+                    teaming     : "ETHER_CHANNEL"
+            # This IP Pool is used for NSX Controller
+            ippool:
+                '[1]':
+                    name: AutoGenerate
+                    gateway: x.x.x.x
+                    ipranges:
+                      - a.a.a.a-b.b.b.b
+                    prefixlength: yy
+            # TODO: Enable this after first P0 test has stabilized. We can make use
+            # of cache testbed and save lot of time by not deploying NSX
+            # Controller and VIB installl again and again in each test
+            vxlancontroller:
+                '[1]':
+                    name: AutoGenerate
+                    host: 'esx.[1]'
+                    ippool: 'vsm.[1].ippool.[1]'
+                    resourcepool: 'vc.[1].datacenter.[1].cluster.[1]'
+        '[2]':
+            # Register respective VSM with its VC
+            reconfigure: true
+            assignrole: enterprise_admin
+            vc: 'vc.[x]'
+            set_node_id: "true"
+            VDNCluster:
+               '[1]':
+                  cluster     : "vc.[2].datacenter.[1].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[1]"
+                  vlan        : "18"
+                  mtu         : "1600"
+                  vmkniccount : "1"
+                  teaming     : "LACP_ACTIVE"
+               '[2]':
+                  cluster     : "vc.[2].datacenter.[2].cluster.[1]"
+                  vibs        : "install"
+                  switch      : "vc.[2].vds.[2]"
+                  vlan        : "20"
+                  mtu         : "1600"
+                  vmkniccount : "1"
+                  teaming     : "LACP_PASSIVE"
+    vc:
+        '[1]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            # Cluster and host on which nsx controller will be
+                            # deployed
+                            name: Master-Controller-Cluster
+                            host: 'esx.[1]'
+                        '[2]':
+                            # Both ESX hosts are in same cluster
+                            name: Master-Compute-Cluster-1
+                            host: 'esx.[2]'
+                        '[3]':
+                            # Both ESX hosts are in same cluster
+                            name: Master-Compute-Cluster-2
+                            host: 'esx.[3]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[1].datacenter.[1]'
+                    numuplinkports: 4
+                    # Both ESX hosts are in same VDS
+                    configurehosts: add
+                    host: 'esx.[2]'
+                    'lag':
+                        '[1]':
+                            lagtimeout: short
+                            hosts: esx.[2]
+                            lagports: 2
+                            configuplinktolag: add
+                            vmnicadapter: esx.[2].vmnic.[1-2]
+                '[2]':
+                    name: VDS-2
+                    datacenter: 'vc.[1].datacenter.[1]'
+                    numuplinkports: 4
+                    # Both ESX hosts are in same VDS
+                    configurehosts: add
+                    host: 'esx.[3]'
+                    vmnicadapter: 'esx.[3].vmnic.[1-2]'
+
+            dvportgroup:
+                '[1]':
+                    name: master-dvpg-VDS1-mgmt
+                    vds: 'vc.[1].vds.[1]'
+        '[2]':
+            #This site has two data centers
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Datacenter-1-Compute-Cluster-1
+                            host: 'esx.[4]'
+                '[2]':
+                    Cluster:
+                        '[1]':
+                            name: Slave-Datacenter-2-Compute-Cluster-1
+                            host: 'esx.[5]'
+            vds:
+                '[1]':
+                    name: VDS-1
+                    datacenter: 'vc.[2].datacenter.[1]'
+                    numuplinkports: 4
+                    configurehosts: add
+                    version: 5.1.0
+                    host: 'esx.[4]'
+                    vmnicadapter: 'esx.[4].vmnic.[1-2]'
+                    'lag':
+                        '[1]':
+                            lacpversion: singlelag
+                '[2]':
+                    name: VDS-2
+                    datacenter: 'vc.[2].datacenter.[2]'
+                    numuplinkports: 4
+                    configurehosts: add
+                    version: 5.1.0
+                    host: 'esx.[5]'
+                    vmnicadapter: 'esx.[5].vmnic.[1-2]'
+                    'lag':
+                        '[1]':
+                            lacpversion: singlelag
+
+            dvportgroup:
+                '[1]':
+                    name: slave-dvpg-VDS1-mgmt
+                    vds: 'vc.[2].vds.[1]'
+                '[2]':
+                    name: slave-dvpg-VDS2-mgmt
+                    vds: 'vc.[2].vds.[2]'
+    vm:
+        '[2-5]':
+            # There is no VM 1
+            # 4 VMs [2-5] are on respective 4 ESX hosts. They will be used
+            # for same VC site and different VC site testing
+            host: 'esx.[x]'
+            vmstate: 'poweron'
+    pswitch:
+        '[1]':
+            ip: "XX.XX.XX.XX"
+        '[2]':
+            ip: "XX.XX.XX.XX"
+        '[3]':
+            ip: "XX.XX.XX.XX"
+        '[4]':
+            ip: "XX.XX.XX.XX"

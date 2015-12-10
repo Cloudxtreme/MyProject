@@ -1,0 +1,1829 @@
+!include ../Clustering/MPCommonWorkloads.yaml
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+
+ESXEndToEndAddESXToNSX:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    Summary: "This test case verifies inventory is updated in NsxManager"
+    Tags: nsx,avalanche
+    Version: "2"
+    TestName: "ESXAddESXToMPNode"
+    Priority: "P0"
+    Developer: "kchakraborty"
+    Procedure: '1. Register a Fabric Host to inventory with incorrect type
+                2. Verify if Fabric Host is registered successfully
+                3. Verify vms and vif information are uploaded correctly to nsx manager
+                4. Add a new Vm on the host
+                5. Verify new vm information is updated into nsx manager'
+    ExpectedResult: "PASS"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['AddVSSOnEsx1']
+            - ['AddPGOnEsx1']
+            - ['AddVnic1ToVM1']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['GetVm1Id']
+            - ['GetVnic1OfVm1']
+            - ['AddVm2OnEsx1']
+            - ['AddVnic1ToVm2']
+            - ['GetVm2Id']
+            - ['GetVnic1OfVm2']
+
+        ExitSequence:
+            - ['DeleteVnic1ofVM1']
+            - ['VerifyVnic1OfVm1Deleted']
+            - ['DeleteVm2']
+            - ['VerifyVm2Deleted']
+            - ['VerifyVnic1OfVm2Deleted']
+            - ['RemoveNSXManager1OnNode1']
+            - ['VerifyVm1Deleted']
+            - ['DeletePortgroupFromESX1']
+            - ['DeleteVSSFromESX1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVSSOnEsx1: *ADD_VSS_ON_ESX1
+        AddPGOnEsx1: *ADD_PG_ON_ESX1
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm1Id: *GET_VM1_ID
+        GetVm2Id: *GET_VM2_ID
+        AddVnic1ToVM1: *ADD_VNIC1_TO_VM1
+        AddVnic1ToVm2: *ADD_VNIC1_To_VM2
+        GetVnic1OfVm1: *GET_VNIC1_OF_VM1
+        GetVnic1OfVm2: *GET_VNIC1_OF_VM2
+        DeleteVnic1ofVM1: *DELETE_VNIC1_OF_VM1
+        DeleteVm2: *DELETE_VM2
+        DeletePortgroupFromESX1: *DELETE_PORTGROUP_FROM_ESX1
+        DeleteVSSFromESX1: *DELETE_VSS_FROM_ESX1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+        VerifyVnic1OfVm1Deleted: *VERIFY_VIF1_OF_VM1_DELETED
+        VerifyVm1Deleted: *VERIFY_VM1_DELETED
+        VerifyVm2Deleted: *VERIFY_VM2_DELETED
+        VerifyVnic1OfVm2Deleted: *VERIFY_VIF1_OF_VM2_DELETED
+
+ESXDAInstallOnESXHost:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "DAInstallOnESXHost"
+    Version: "2"
+    Summary: "To verify DA is sucessfully installed in ESX host"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "kchakraborty"
+    Procedure: '1. Install DA on ESX Host'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ["InstallDAOnEsx"]
+
+        InstallDAOnEsx:
+            Type: Host
+            TestHost: 'esx.[1]'
+            configure_package:
+                execution_type: 'cli'
+                operation: install
+                maintenance: 1
+                signaturecheck: 0
+                resource:
+                    - 'http://build-squid.eng.vmware.com/build/mts/release/bora-2196191/publish/esx55/nsx-mpa-7.0.0.0.0.2196191-esx55.zip'
+                    - 'http://build-squid.eng.vmware.com/build/mts/release/bora-2196191/publish/esx55/nsx-da-7.0.0.0.0.2196191-esx55.zip'
+
+KVMDAInstallOnRhelKVMHost:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "DAInstallOnRhelKVMHost"
+    Version: "2"
+    Summary: "To verify Agent is sucessfully installed in RhelKVM host"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "kchakraborty"
+    Procedure: '1. Install DA on RHELKVM Host'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec:
+        kvm:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["InstallDAOnRHELKVM"]
+
+        InstallDAOnRHELKVM:
+            Type: Host
+            TestHost: 'kvm.[1]'
+        configure_package:
+           resource:
+              - http://apt.nicira.eng.vmware.com/builds/4.2.0-openvswitch/rhel64_x86_64/
+              - http://build-squid.eng.vmware.com/build/mts/release/bora-2196191/publish/rhel64_x86_64/nsx-mpa-7.0.0.0.0.2196191-1.el6.x86_64.rpm
+           execution_type: cmd
+
+ESXDAWatchdog:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "ESXDAWatchdog"
+    Version: "2"
+    Summary: "To verify DA agent watchdog functionality"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Inventory"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Kill DA Agent
+                2. Add A Vm
+                3. Verify Vm is uploaded in Inventory'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['KillDA']
+            - ['AddVm2OnEsx1']
+            - ['GetVm2Id']
+
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        KillDA: *KILL_DA--ESX
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXNewVmAdded:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "NewVmAdded"
+    Version: "2"
+    Summary: "To verify correct inventory sync is received by MP"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Inventory"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Add a new Vm
+                3. verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['AddVm2OnEsx1']
+            - ['GetVm2Id']
+
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+        GetVm2Id: *GET_VM2_ID
+
+ESXVmRemoved:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "VmRemoved"
+    Version: "2"
+    Summary: "To verify correct inventory sync is received by MP"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Inventory"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Remove the vm
+                3. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['AddVm2OnEsx1']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['VerifyVm2Deleted']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVnic1ofVM1: *DELETE_VNIC1_OF_VM1
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+        VerifyVm2Deleted: *VERIFY_VM2_DELETED
+
+ESXVnicAddded:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "VnicAddded"
+    Version: "2"
+    Summary: "To verify correct inventory sync is received by MP"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Add another Vnic to the vm
+                3. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['AddVSSOnEsx1']
+            - ['AddPGOnEsx1']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['AddVnic1ToVM1']
+            - ['GetVnic1OfVm1']
+
+        ExitSequence:
+            - ['DeleteVnic1ofVM1']
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeletePortgroupFromESX1']
+            - ['DeleteVSSFromESX1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVSSOnEsx1: *ADD_VSS_ON_ESX1
+        AddPGOnEsx1: *ADD_PG_ON_ESX1
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm1Id: *GET_VM1_ID
+        GetVm2Id: *GET_VM2_ID
+        AddVnic1ToVM1: *ADD_VNIC1_TO_VM1
+        GetVnic1OfVm1: *GET_VNIC1_OF_VM1
+        DeleteVnic1ofVM1: *DELETE_VNIC1_OF_VM1
+        DeleteVm2: *DELETE_VM2
+        DeletePortgroupFromESX1: *DELETE_PORTGROUP_FROM_ESX1
+        DeleteVSSFromESX1: *DELETE_VSS_FROM_ESX1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXVnicRemoved:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "VnicRemoved"
+    Version: "2"
+    Summary: "To verify correct inventory sync is received by MP "
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 2 vif
+                2. Remove Vnic from the vm
+                3. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['AddVSSOnEsx1']
+            - ['AddPGOnEsx1']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['AddVnic1ToVM1']
+            - ['GetVnic1OfVm1']
+        ExitSequence:
+            - ['DeleteVnic1ofVM1']
+            - ['VerifyVnic1OfVm1Deleted']
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeletePortgroupFromESX1']
+            - ['DeleteVSSFromESX1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVSSOnEsx1: *ADD_VSS_ON_ESX1
+        AddPGOnEsx1: *ADD_PG_ON_ESX1
+        AddVnic1ToVM1: *ADD_VNIC1_TO_VM1
+        GetVnic1OfVm1: *GET_VNIC1_OF_VM1
+        DeleteVnic1ofVM1: *DELETE_VNIC1_OF_VM1
+        DeletePortgroupFromESX1: *DELETE_PORTGROUP_FROM_ESX1
+        DeleteVSSFromESX1: *DELETE_VSS_FROM_ESX1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+        VerifyVnic1OfVm1Deleted: *VERIFY_VIF1_OF_VM1_DELETED
+
+ESXAddVmPostRestartOfDA:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "AddVmPostRestartOfIDA"
+    Version: "2"
+    Summary: "To verify inventory update post restart of IDA"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Restart DA
+                3. Add a Vm
+                4. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['RestartDA']
+            - ['AddVm2OnEsx1']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RestartDA: *RESTART_DA--ESX
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXAddVmPostRestartOfMPA:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "AddVmPostRestartOfMPA"
+    Version: "2"
+    Summary: "To verify inventory update post restart of MPA"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Inventory"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Restart MPA
+                3. Add a Vm
+                4. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['RestartMPA']
+            - ['AddVm2OnEsx1']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+        RestartMPA: *RESTART_MPA--ESX
+
+ESXAddVmMPAIsDown:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "AddVmMPAIsDown"
+    Version: "2"
+    Summary: "To verify inventory update when inventory is changed while MPA is down"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Inventory"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Stop MPA
+                3. Add a Vm
+                4. Start MPA
+                4. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['StopMPA']
+            - ['AddVm2OnEsx1']
+            - ['StartMPA']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        StopMPA: *STOP_MPA--ESX
+        StartMPA: *START_MPA--ESX
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXAddVmDAIsDown:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "AddVmDAIsDown"
+    Version: "2"
+    Summary: "To verify inventory update when inventory is changed while DA is down"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Stop DA
+                3. Add a Vm
+                4. Start DA
+                4. Verify inventory update is received)'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['StopDA']
+            - ['AddVm2OnEsx1']
+            - ['StartDA']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        StopDA: *STOP_DA--ESX
+        StartDA: *START_DA--ESX
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXFullInventorySyncPostMPAFailure:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "ESXFullInventorySyncPostMPAFailure"
+    Version: "2"
+    Summary: "To verify full inventory sync is called if MPA is failed"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Kill MPA Agent
+                2. Add A Vm
+                3. Verify Vm is uploaded in Inventory'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['KillMPA']
+            - ['AddVm2OnEsx1']
+            - ['GetVm2Id']
+
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        KillMPA: *KILL_MPA--ESX
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXRemoveHostFromMPNode:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "RemoveHostFromMPNode"
+    Version: "2"
+    Summary: "To verify correct inventory sync is received by MP Node"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Register the host
+                3. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+
+        Sequence:
+            - ['AddVSSOnEsx1']
+            - ['AddPGOnEsx1']
+            - ['AddVnic1ToVM1']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['GetVm1Id']
+            - ['GetVnic1OfVm1']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['VerifyVm1Deleted']
+            - ['VerifyVnic1OfVm1Deleted']
+            - ['DeleteVnic1ofVM1']
+            - ['DeletePortgroupFromESX1']
+            - ['DeleteVSSFromESX1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVSSOnEsx1: *ADD_VSS_ON_ESX1
+        AddPGOnEsx1: *ADD_PG_ON_ESX1
+        GetVm1Id: *GET_VM1_ID
+        AddVnic1ToVM1: *ADD_VNIC1_TO_VM1
+        GetVnic1OfVm1: *GET_VNIC1_OF_VM1
+        DeleteVnic1ofVM1: *DELETE_VNIC1_OF_VM1
+        DeletePortgroupFromESX1: *DELETE_PORTGROUP_FROM_ESX1
+        DeleteVSSFromESX1: *DELETE_VSS_FROM_ESX1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+        VerifyVnic1OfVm1Deleted: *VERIFY_VIF1_OF_VM1_DELETED
+        VerifyVm1Deleted: *VERIFY_VM1_DELETED
+
+ESXRenameVm:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "RenameVm"
+    Version: "2"
+    Summary: "To verify inventory is updated when a vm is renamed"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Rename the vm
+                3. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['AddVm2OnEsx1']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['GetVm2Id']
+            - ['RenameVm2']
+            - ['GetVm2IdPostRename']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RenameVm2: *RENAME_VM2
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+        GetVm2IdPostRename: *GET_VM2_ID
+
+ESXBrokerDown:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "BrokerDown"
+    Version: "2"
+    Summary: "To verify inventory data gets updated after broker comes up after failure"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Stop rabbitmq service
+                4. Add a vm
+                5. Start rabbitmq service
+                6. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['SetRabbitmqServiceId']
+            - ['StopRabbitmqService']
+            - ['AddVm2OnEsx1']
+            - ['StartRabbitmqService']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVm2']
+
+        StartRabbitmqService: *START_RABBITMQ_SERVICE
+        StopRabbitmqService: *STOP_RABBITMQ_SERVICE
+        SetRabbitmqServiceId: *SET_RABBITMQ_SERVICEID
+        DeleteVm2: *DELETE_VM2
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXBrokerRestarted:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BrokerRebooted"
+    TestName: "AddHostToMPNode"
+    Version: "2"
+    Summary: "To verify inventory data when broker gets resrated"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Restart rabbitmq service
+                4. Add a vm
+                5. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['SetRabbitmqServiceId']
+            - ['RestartRabbitmqService']
+            - ['AddVm2OnEsx1']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVm2']
+
+        RestartRabbitmqService: *RESTART_RABBITMQ_SERVICE
+        SetRabbitmqServiceId: *SET_RABBITMQ_SERVICEID
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXRestartProtonService:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "RestartProtonServer"
+    Version: "2"
+    Summary: "To verify inventory update post restart of proton server"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Restart proton service
+                4. Add a vm
+                5. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        <<: *MPClusteringVerificationWorkloads
+        <<: *MPClusteringConfigurationWorkloads
+        Sequence:
+            - ["GetMPNode1Id"]
+            - ["MapNSXManager1ToCluster"]
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ["SetProtonServiceIdFor_Node1"]
+            - ["RestartProtonServiceOn_Node1"]
+            - ['AddVm2OnEsx1']
+            - ["Wait_For_Cluster_Status_Stable_On_Node1"]
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVm2']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXProtonServiceDown:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "BrokerDown"
+    Version: "2"
+    Summary: "To verify inventory data gets updated after proton service comes up after failure"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Stop proton service
+                4. Add a vm
+                5. Start proton service
+                6. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        <<: *MPClusteringVerificationWorkloads
+        <<: *MPClusteringConfigurationWorkloads
+        Sequence:
+            - ['GetMPNode1Id']
+            - ['MapNSXManager1ToCluster']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ["SetProtonServiceIdFor_Node1"]
+            - ["StopProtonServiceOn_Node1"]
+            - ['AddVm2OnEsx1']
+            - ['StartProtonServiceOn_Node1']
+            - ["Wait_For_Cluster_Status_Stable_On_Node1"]
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVm2']
+
+        StartProtonService: *START_PROTON_SERVICE
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm2Id: *GET_VM2_ID
+        DeleteVm2: *DELETE_VM2
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXFullInventorySyncMpNodeReboot:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "FullInventorySyncMpNodeReboot"
+    Version: "2"
+    Summary: "To verify full inventory sync is called if NODE is rebooted"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Reboot Mp Node
+                4. Add a vm
+                5. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        <<: *MPClusteringVerificationWorkloads
+        <<: *MPClusteringConfigurationWorkloads
+        Sequence:
+            - ["GetMPNode1Id"]
+            - ["MapNSXManager1ToCluster"]
+            - ['AddVSSOnEsx1']
+            - ['AddPGOnEsx1']
+            - ['AddVnic1ToVM1']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['RestartManagerAppliance']
+            - ['AddVm2OnEsx1']
+            - ["Wait_For_Cluster_Status_Stable_On_Node1"]
+            - ['GetVm2Id']
+            - ['GetVm1Id']
+            - ['GetVnic1OfVm1']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVnic1ofVM1']
+            - ['DeleteVm2']
+            - ['DeletePortgroupFromESX1']
+            - ['DeleteVSSFromESX1']
+
+        RestartManagerAppliance: *RESTART_MANAGER_APPLIANCE
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVSSOnEsx1: *ADD_VSS_ON_ESX1
+        AddPGOnEsx1: *ADD_PG_ON_ESX1
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm1Id: *GET_VM1_ID
+        GetVm2Id: *GET_VM2_ID
+        AddVnic1ToVM1: *ADD_VNIC1_TO_VM1
+        GetVnic1OfVm1: *GET_VNIC1_OF_VM1
+        DeleteVnic1ofVM1: *DELETE_VNIC1_OF_VM1
+        DeleteVm2: *DELETE_VM2
+        DeletePortgroupFromESX1: *DELETE_PORTGROUP_FROM_ESX1
+        DeleteVSSFromESX1: *DELETE_VSS_FROM_ESX1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+
+ESXFullInventorySyncHostReboot:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "FullInventorySyncHostReboot"
+    Version: "2"
+    Summary: "To verify full inventory sync is called if host is rebooted"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Reboot Esx Host
+                4. Add a vm
+                5. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_ESX_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['AddVSSOnEsx1']
+            - ['AddPGOnEsx1']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['RebootESX1']
+            - ['GetClients']
+            - ['PingClient1']
+            - ['PowerOnVm1']
+            - ['AddVnic1ToVM1']
+            - ['GetVm1Id']
+            - ['GetVnic1OfVm1']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVnic1ofVM1']
+            - ['DeletePortgroupFromESX1']
+            - ['DeleteVSSFromESX1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--ESX
+        AddVSSOnEsx1: *ADD_VSS_ON_ESX1
+        AddPGOnEsx1: *ADD_PG_ON_ESX1
+        AddVm2OnEsx1: *ADD_VM2_ON_ESX1
+        GetVm1Id: *GET_VM1_ID
+        GetVm2Id: *GET_VM2_ID
+        AddVnic1ToVM1: *ADD_VNIC1_TO_VM1
+        GetVnic1OfVm1: *GET_VNIC1_OF_VM1
+        DeleteVnic1ofVM1: *DELETE_VNIC1_OF_VM1
+        DeletePortgroupFromESX1: *DELETE_PORTGROUP_FROM_ESX1
+        DeleteVSSFromESX1: *DELETE_VSS_FROM_ESX1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--ESX
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--ESX
+        RebootESX1: *REBOOT_ESX1
+        GetClients: *GET_CLIENTS
+        PingClient1: *PING_CLIENT_1
+        PowerOnVm1: *POWER_ON_VM1
+
+KVMEndToEndAddKVMToNSX:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    Summary: "This test case verifies inventory is updated in NsxManager"
+    Tags: nsx,avalanche
+    Version: "2"
+    TestName: "KVMAddKVMToMPNode"
+    Priority: "P0"
+    Developer: "kchakraborty"
+    Procedure: '1. Register a Fabric Host to inventory with incorrect type
+                2. Verify if Fabric Host is registered successfully
+                3. Verify vms and vif information are uploaded correctly to nsx manager
+                4. Add a new Vm on the host
+                5. Verify new vm information is updated into nsx manager'
+    ExpectedResult: "PASS"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['GetVm1Id']
+            - ['AddVIF1ToVM1']
+            - ['GetVIF1OfVM1']
+            - ['AddVm2OnKVM1']
+            - ['AddVIF1ToVM2']
+            - ['GetVm2Id']
+            - ['GetVIF1OfVM2']
+
+        ExitSequence:
+            - ['DeleteVifOfVm1']
+            - ['VerifyVif1OfVm1Deleted']
+            - ['DeleteVm2']
+            - ['VerifyVm2Deleted']
+            - ['VerifyVif1OfVm2Deleted']
+            - ['RemoveNSXManager1OnNode1']
+            - ['VerifyVm1Deleted']
+
+        AddVIF1ToVM2: *ADD_VIF1_TO_VM2
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        DeleteVifOfVm1: *DELETE_VIF1_OF_VM1
+        GetVIF1OfVM1: *GET_VIF1_OF_VM1_ON_KVM
+        GetVIF1OfVM2: *GET_VIF1_OF_VM2_ON_KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        GetVm1Id: *GET_VM1_ID
+        GetVm2Id: *GET_VM2_ID
+        AddVIF1ToVM1: *ADD_VIF1_TO_VM1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+        VerifyVif1OfVm1Deleted: *VERIFY_VIF1_OF_VM1_DELETED
+        VerifyVm1Deleted: *VERIFY_VM1_DELETED
+        VerifyVm2Deleted: *VERIFY_VM2_DELETED
+        VerifyVif1OfVm2Deleted: *VERIFY_VIF1_OF_VM2_DELETED
+
+KVMDAWatchdog:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMDAWatchdog"
+    Version: "2"
+    Summary: "To verify DA agent watchdog functionality"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Inventory"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Kill DA Agent
+                2. Add A Vm
+                3. Verify Vm is uploaded in Inventory'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['GetVm1Id']
+            - ['KillDAOnKVM']
+            - ['AddVm2OnKVM1']
+            - ['GetVm2Id']
+
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        GetVm1Id: *GET_VM1_ID
+        GetVm2Id: *GET_VM2_ID
+        KillDAOnKVM: *KILL_DA--KVM
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+
+KVMNewVmAdded:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMNewVmAdded"
+    Version: "2"
+    Summary: "To verify correct inventory sync is received by MP"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Inventory"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Add a new Vm
+                3. verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['AddVm2OnKVM1']
+            - ['GetVm2Id']
+
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        GetVm2Id: *GET_VM2_ID
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+
+KVMVmRemoved:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMVmRemoved"
+    Version: "2"
+    Summary: "To verify correct inventory sync is received by MP"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Inventory"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Remove the vm
+                3. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['AddVm2OnKVM1']
+            - ['AddVIF1ToVM2']
+            - ['GetVm2Id']
+            - ['GetVIF1OfVM2']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['VerifyVm2Deleted']
+            - ['VerifyVif1OfVm2Deleted']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        GetVIF1OfVM2: *GET_VIF1_OF_VM2_ON_KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        AddVIF1ToVM2: *ADD_VIF1_TO_VM2
+        GetVm2Id: *GET_VM2_ID
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+        VerifyVm2Deleted: *VERIFY_VM2_DELETED
+        VerifyVif1OfVm2Deleted: *VERIFY_VIF1_OF_VM2_DELETED
+
+KVMVnicAddded:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMVnicAddded"
+    Version: "2"
+    Summary: "To verify correct inventory sync is received by MP"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Add another Vnic to the vm
+                3. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['AddVIF1ToVM1']
+            - ['GetVIF1OfVM1']
+        ExitSequence:
+            - ['DeleteVifOfVm1']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        DeleteVifOfVm1: *DELETE_VIF1_OF_VM1
+        GetVIF1OfVM1: *GET_VIF1_OF_VM1_ON_KVM
+        AddVIF1ToVM1: *ADD_VIF1_TO_VM1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+
+KVMVnicRemoved:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMVnicRemoved"
+    Version: "2"
+    Summary: "To verify correct inventory sync is received by MP "
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 2 vif
+                2. Remove Vnic from the vm
+                3. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['AddVIF1ToVM1']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['GetVIF1OfVM1']
+        ExitSequence:
+            - ['DeleteVifOfVm1']
+            - ['VerifyVif1OfVm1Deleted']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        DeleteVifOfVm1: *DELETE_VIF1_OF_VM1
+        GetVIF1OfVM1: *GET_VIF1_OF_VM1_ON_KVM
+        AddVIF1ToVM1: *ADD_VIF1_TO_VM1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        VerifyVif1OfVm1Deleted: *VERIFY_VIF1_OF_VM1_DELETED
+
+KVMAddVmPostRestartOfDA:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMAddVmPostRestartOfIDA"
+    Version: "2"
+    Summary: "To verify inventory update post restart of DA"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Restart DA
+                3. Add a Vm
+                4. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['RestartDAOnKVM']
+            - ['AddVm2OnKVM1']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        GetVm2Id: *GET_VM2_ID
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+        RestartDAOnKVM: *RESTART_DA--KVM
+
+KVMAddVmPostRestartOfMPA:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMAddVmPostRestartOfMPA"
+    Version: "2"
+    Summary: "To verify inventory update post restart of MPA"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Inventory"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Restart MPA
+                3. Add a Vm
+                4. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['RestartMPAOnKVM']
+            - ['AddVm2OnKVM1']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        GetVm2Id: *GET_VM2_ID
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+        RestartMPAOnKVM: *RESTART_MPA--KVM
+
+KVMAddVmMPAIsDown:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMAddVmMPAIsDown"
+    Version: "2"
+    Summary: "To verify inventory update when inventory is changed while MPA is down"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Inventory"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Stop MPA
+                3. Add a Vm
+                4. Start MPA
+                4. Verify inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['StopMPAOnKVM']
+            - ['AddVm2OnKVM1']
+            - ['StartMPAOnKVM']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+        StopMPAOnKVM: *STOP_MPA--KVM
+        GetVm2Id: *GET_VM2_ID
+        StartMPAOnKVM: *START_MPA--KVM
+
+KVMAddVmDAIsDown:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMAddVmDAIsDown"
+    Version: "2"
+    Summary: "To verify inventory update when inventory is changed while DA is down"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Stop DA
+                3. Add a Vm
+                4. Start DA
+                4. Verify inventory update is received)'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['StopDAOnKVM']
+            - ['AddVm2OnKVM1']
+            - ['StartDAOnKVM']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+        GetVm2Id: *GET_VM2_ID
+        StopDAOnKVM: *STOP_DA--KVM
+        StartDAOnKVM: *START_DA--KVM
+
+KVMFullInventorySyncPostMPAFailure:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMFullInventorySyncPostMPAFailure"
+    Version: "2"
+    Summary: "To verify full inventory sync is called if MPA is failed"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Kill MPA Agent
+                2. Add A Vm
+                3. Verify Vm is uploaded in Inventory'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['KillMPAOnKVM']
+            - ['AddVm2OnKVM1']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['DeleteVm2']
+            - ['RemoveNSXManager1OnNode1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+        GetVm2Id: *GET_VM2_ID
+        KillMPAOnKVM: *KILL_MPA--KVM
+
+KVMRemoveHostFromMPNode:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMRemoveHostFromMPNode"
+    Version: "2"
+    Summary: "To verify correct inventory sync is received by MP Node"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Register the host
+                3. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+
+        Sequence:
+            - ['AddVIF1ToVM1']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['GetVm1Id']
+            - ['GetVIF1OfVM1']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['VerifyVm1Deleted']
+            - ['VerifyVif1OfVm1Deleted']
+            - ['DeleteVifOfVm1']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        DeleteVifOfVm1: *DELETE_VIF1_OF_VM1
+        GetVIF1OfVM1: *GET_VIF1_OF_VM1_ON_KVM
+        GetVm1Id: *GET_VM1_ID
+        AddVIF1ToVM1: *ADD_VIF1_TO_VM1
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+        VerifyVif1OfVm1Deleted: *VERIFY_VIF1_OF_VM1_DELETED
+        VerifyVm1Deleted: *VERIFY_VM1_DELETED
+
+KVMBrokerDown:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMBrokerDown"
+    Version: "2"
+    Summary: "To verify inventory data gets updated after broker comes up after failure"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Stop rabbitmq service
+                4. Add a vm
+                5. Start rabbitmq service
+                6. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['SetRabbitmqServiceId']
+            - ['StopRabbitmqService']
+            - ['AddVm2OnKVM1']
+            - ['StartRabbitmqService']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVm2']
+
+        StartRabbitmqService: *START_RABBITMQ_SERVICE
+        StopRabbitmqService: *STOP_RABBITMQ_SERVICE
+        SetRabbitmqServiceId: *SET_RABBITMQ_SERVICEID
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        GetVm2Id: *GET_VM2_ID
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+
+KVMBrokerRestarted:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "BrokerRebooted"
+    TestName: "KVMAddHostToMPNode"
+    Version: "2"
+    Summary: "To verify inventory data when broker gets resrated"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Restart rabbitmq service
+                4. Add a vm
+                5. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['SetRabbitmqServiceId']
+            - ['RestartRabbitmqService']
+            - ['AddVm2OnKVM1']
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVm2']
+
+        RestartRabbitmqService: *RESTART_RABBITMQ_SERVICE
+        SetRabbitmqServiceId: *SET_RABBITMQ_SERVICEID
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        GetVm2Id: *GET_VM2_ID
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+
+KVMRestartProtonService:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMRestartProtonService"
+    Version: "2"
+    Summary: "To verify inventory update post restart of proton server"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Restart proton service
+                4. Add a vm
+                5. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        <<: *MPClusteringVerificationWorkloads
+        <<: *MPClusteringConfigurationWorkloads
+        Sequence:
+            - ["GetMPNode1Id"]
+            - ["MapNSXManager1ToCluster"]
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ["SetProtonServiceIdFor_Node1"]
+            - ["RestartProtonServiceOn_Node1"]
+            - ['AddVm2OnKVM1']
+            - ["Wait_For_Cluster_Status_Stable_On_Node1"]
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVm2']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        GetVm2Id: *GET_VM2_ID
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+
+KVMProtonServiceDown:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMBrokerDown"
+    Version: "2"
+    Summary: "To verify inventory data gets updated after proton service comes up after failure"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Stop proton service
+                4. Add a vm
+                5. Start proton service
+                6. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        <<: *MPClusteringVerificationWorkloads
+        <<: *MPClusteringConfigurationWorkloads
+        Sequence:
+            - ['GetMPNode1Id']
+            - ['MapNSXManager1ToCluster']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ["StopProtonServiceOn_Node1"]
+            - ['AddVm2OnKVM1']
+            - ['StartProtonServiceOn_Node1']
+            - ["Wait_For_Cluster_Status_Stable_On_Node1"]
+            - ['GetVm2Id']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVm2']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        GetVm2Id: *GET_VM2_ID
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+
+KVMFullInventorySyncMpNodeReboot:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMFullInventorySyncMpNodeReboot"
+    Version: "2"
+    Summary: "To verify full inventory sync is called if NODE is rebooted"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Reboot Mp Node
+                4. Add a vm
+                5. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        <<: *MPClusteringVerificationWorkloads
+        <<: *MPClusteringConfigurationWorkloads
+        Sequence:
+            - ['GetMPNode1Id']
+            - ['MapNSXManager1ToCluster']
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['GetVm1Id']
+            - ['RestartManagerAppliance']
+            - ['AddVm2OnKVM1']
+            - ['Wait_For_Cluster_Status_Stable_On_Node1']
+            - ['GetVm2Id']
+            - ['GetVm1IdPostRestart']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVm2']
+
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        AddVm2OnKVM1: *ADD_VM2_ON_KVM1
+        GetVm1Id: *GET_VM1_ID
+        GetVm1IdPostRestart: *GET_VM1_ID
+        GetVm2Id: *GET_VM2_ID
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+        RestartManagerAppliance: *RESTART_MANAGER_APPLIANCE
+
+KVMFullInventorySyncHostReboot:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "InventoryManager"
+    TestName: "KVMFullInventorySyncHostReboot"
+    Version: "2"
+    Summary: "To verify full inventory sync is called if host is rebooted"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "kchakraborty"
+    Procedure: '1. Host1 has 1 Vm with 1 vif
+                2. Verify correct inventory update is received
+                3. Reboot Esx Host
+                4. Add a vm
+                5. Verify correct inventory update is received'
+    ExpectedResult: "PASS"
+    Duration: '5'
+    Tags: 'nsxmanager,management,Inventory'
+    Partnerfacing: "N"
+    TestbedSpec: *ONE_NSXMANAGER_ONE_KVM_ONE_VM
+    WORKLOADS:
+        Sequence:
+            - ['RegisterHostNode1ToManager1']
+            - ['DiscoverHostNode']
+            - ['GetVm1Id']
+            - ['RebootKVM1']
+            - ['GetClients']
+            - ['PingClient1']
+            - ['PowerOnVm1']
+            - ['AddVIF1ToVM1']
+            - ['GetVIF1OfVM1']
+            - ['GetVm1IdPostRestart']
+        ExitSequence:
+            - ['RemoveNSXManager1OnNode1']
+            - ['DeleteVifOfVm1']
+
+        RebootKVM1: *REBOOT_KVM1
+        RegisterHostNode1ToManager1: *SET_MANAGER--KVM
+        GetVm1Id: *GET_VM1_ID
+        GetVm1IdPostRestart: *GET_VM1_ID
+        GetVm2Id: *GET_VM2_ID
+        RemoveNSXManager1OnNode1: *REMOVE_NSX_MANAGER--KVM
+        DiscoverHostNode: *DISCOVER_HOST_NODE1--KVM
+        DeleteVm2: *DELETE_VM2
+        GetClients: *GET_CLIENTS
+        PingClient1: *PING_CLIENT_1
+        PowerOnVm1: *POWER_ON_VM1
+        GetVIF1OfVM1: *GET_VIF1_OF_VM1_ON_KVM
+        AddVIF1ToVM1: *ADD_VIF1_TO_VM1
+        DeleteVifOfVm1: *DELETE_VIF1_OF_VM1

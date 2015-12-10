@@ -1,0 +1,100 @@
+!include Builds10c10.yaml
+#
+'testbed':
+
+   'network':
+       '[1]':
+            name: 'network-kvm'
+
+   'kvm':
+        '[1-10]':
+            <<: *kvmbuild
+            username: root
+            password: ca$hc0w
+            pif:
+                '[1]':
+                    interface: eth1
+                    network: network.[1]
+            configure_package:
+                <<: *kvmpkgs
+                execution_type: cmd
+            framework_setup:
+                - disablefirewall
+                - createanchor
+                - copysshkey
+
+# ESX host for Edge cluster on KVM deployment
+   'esx':
+      '[1]':  # last host is dedicated for Edge
+         <<: *esxbuild
+         installtype: 'linkedclone'
+         vmnic:
+            '[1]':
+               network: network.[1]
+               'driver': 'e1000e'
+         configure_package:
+            <<: *esxpkgs
+
+   'nsxmanager':
+      '[1]':
+          <<: *nsxmgrbuild
+          'username' : 'admin'
+          'password' : 'default'
+
+   'nsxcontroller':
+      '[1]':
+          <<: *nsxctrlbuild
+          'username' : 'admin'
+          'password' : 'default'
+          'cmd_username': 'root'
+          'cmd_password': 'vmware'
+
+   'vm':
+       '[-1]':
+            template: template_kvm_debian
+            installtype: fullclone
+
+#   'nsxedge':
+#      '[1-2]':
+#          <<: *edgebuild
+#          username: 'admin'
+#          password: 'C@shc0w12345'
+#          #Supported values are: compact/large/xlarge
+#          edgetype: 'compact'
+#          # esx host ip
+#          esx: 'esx.[1]'  # XXX(dbadiani): Adjust this to use the right
+#                          # ESX as per your topology.
+#          management_network: 'VM Network'
+#          internal_network: 'VM Network'
+#          uplink_network: 'VM Network'
+#          installtype: 'nested'
+
+
+# other vdnet options
+'options':
+    'noTools': 1
+    'dontupgstafsdk': 0
+    # 'maxWorkloadTimeout': 36000  # global for all workloads
+    'snapshotDir': '/tmp-vdnet/vdnet-kvm'
+    'collectLogs' : 0
+    <<: *testrunid-kvm
+    # 'testrunid': 'rtqa10c9-kvm'
+    'racetrack': 'avalanche-bat@racetrack-dev.eng.vmware.com'
+
+    # use local toolchain
+    # export USE_LOCAL_TOOLCHAIN=1
+
+    'src': 'pa-dbc1102:/dbc/pa-dbc1102/jworsnup/nsx-qe/vdnet/automation'
+
+    # 9/27/2014 7:58:13 AM  New from Mo
+    # set: wdc-ucs-guest, wdc-fvt-protected-1, wdc-vdnetSharedStorage
+    'podspec':  /mts/home4/netfvt/wdc-ucs-guest
+    'vmrepos' :  10.144.136.251:/wdc-protected-02
+    'sharedstorage': 10.144.136.251:/wdc-fvt-1/wdc-vdnetSharedStorage/
+    'mirrors':
+        toolchain: '10.144.136.251:/wdc-fvt-1/toolchain/'
+
+    # set: prmb-nsbu-private, fvt-protected-02, vdnetSharedStorage
+#    'podspec': '/mts/home4/netfvt/prmb-nsbu-private'
+#    'vmrepos': '10.115.160.201:/fvt-protected-02'
+#    'sharedstorage':  '10.115.160.201:/fvt-1/vdnetSharedStorage/'

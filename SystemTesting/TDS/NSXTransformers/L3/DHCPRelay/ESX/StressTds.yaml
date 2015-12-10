@@ -1,0 +1,174 @@
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/VMWorkload.yaml' %}
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/CommonWorkloads.yaml' %}
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/TestbedSpec.yaml' %}
+
+StormDHCPRelayESXinternalDHCPServer:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "ESX DHCP Relay Storm"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    QCPath:  'ESX'
+    Summary: "Test all clients simultaneously getting leased IP in a
+              DHCP Storm scenario in an ESX only based hypervisor set up "
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Stress"
+    Priority: "P1"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_ESX_STRESS_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonESXTestSteps
+        Sequence:
+            - ['TransportZoneStressSetup']
+            - ['L2SetupAndWiringStressTopo1']
+            - ['DHCPServerConfigStressTopo1']
+            - ['L3SetupandWiringTopo1']
+            - ['DHCPRelayconfigTopo1']
+            - ['VerifyDHCPRelayEnabledLRPort12cli']
+            - ['ConfigureVM1-10Vif1IP']
+            - ['VerifyVM1-10Vif1IP']
+        ExitSequence:
+            - ['CleanupStressTopo1']
+        ConfigureDHCPserverVif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[1].vnic.[1]'
+            ipv4:       '192.168.9.4'
+            netmask:    '255.255.255.0'
+        AddRouteDHCPserver:
+            Type:        "NetAdapter"
+            Testadapter: "dhcpserver.[1].vnic.[1]"
+            route:       "add"
+            gateway:     "192.168.9.1"
+            netmask:     "0.0.0.0"
+            network:     "0.0.0.0"
+        VerifyVM1-10Vif1IP:
+            Type: 'VM'
+            TestVM: vm.[1-10]
+            adapter_name: vm.[x=vm_index].vnic.[1]->adapter_interface
+            execution_type: 'cmd'
+            sleepbetweenworkloads: 10
+            noofretries: 3
+            timeout: 300
+            get_single_adapter_info:
+               ip[?]ip_range: '192.168.7.0/24'
+        ConfigureVM1-10Vif1IP:
+            Type: NetAdapter
+            Testadapter: 'vm.[1-10].vnic.[1]'
+            ipv4: 'dhcp'
+
+DHCPRelayESX8internalDHCPServers:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    QCPath:  'ESX'
+    TestName: "ESX DHCP IP 8 internal DHCP Servers"
+    Version: "2"
+    Tags: "NSX, Avalanche"
+    Summary: "Test client getting an IP from a DHCP server on the same logical network when DHCP relay
+              is enabled  in a ESX only hypervisor based set up with 8 DHCP Servers"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Stress"
+    Priority: "P1"
+    Developer: "mbindal"
+    Partnerfacing: "N"
+    TestbedSpec: *DHCPRelay_ESX_STRESS_TOPOLOGY_02
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *CommonESXTestSteps
+        Sequence:
+            - ['TransportZoneStressSetup']
+            - ['L2SetupAndWiringStressTopo2']
+            - ['DHCPServerConfigStressTopo2']
+            - ['L3SetupandWiringTopo1']
+            - ['DHCPRelayconfigStressTopo2']
+            - ['VerifyDHCPRelayEnabledLRPort12cli8Servers']
+            - ['StartTSharkDHCPServer1-8']
+            - ['ConfigureVM1Vif1IP', 'ConfigureVM2Vif1IP']
+            - ['StopTSharkDHCPServer1-8']
+            - ['VerifyVM1Vif1IP', 'VerifyVM2Vif1IP']
+        ExitSequence:
+            - ['CleanupStressTopo2']
+        EnableDHCPServerOninterfacesStress8DHCPServers:
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1-8]"
+            enable_dhcp_server_on_interfaces:
+               execution_type: 'cmd'
+               adapter_interface: 'dhcpserver.[x=dhcpserver_index].vnic.[1]'
+        ConfigureDHCPserver1Vif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[1].vnic.[1]'
+            ipv4:       '192.168.9.4'
+            netmask:    '255.255.255.0'
+        ConfigureDHCPserver2Vif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[2].vnic.[1]'
+            ipv4:       '192.168.9.5'
+            netmask:    '255.255.255.0'
+        ConfigureDHCPserver3Vif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[3].vnic.[1]'
+            ipv4:       '192.168.9.6'
+            netmask:    '255.255.255.0'
+        ConfigureDHCPserver4Vif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[4].vnic.[1]'
+            ipv4:       '192.168.9.7'
+            netmask:    '255.255.255.0'
+        ConfigureDHCPserver5Vif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[5].vnic.[1]'
+            ipv4:       '192.168.9.8'
+            netmask:    '255.255.255.0'
+        ConfigureDHCPserver6Vif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[6].vnic.[1]'
+            ipv4:       '192.168.9.9'
+            netmask:    '255.255.255.0'
+        ConfigureDHCPserver7Vif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[7].vnic.[1]'
+            ipv4:       '192.168.9.10'
+            netmask:    '255.255.255.0'
+        ConfigureDHCPserver8Vif1IP:
+            Type: NetAdapter
+            Testadapter: 'dhcpserver.[8].vnic.[1]'
+            ipv4:       '192.168.9.11'
+            netmask:    '255.255.255.0'
+        AddRoute8DHCPservers:
+            Type:        "NetAdapter"
+            Testadapter: "dhcpserver.[1-8].vnic.[1]"
+            route:       "add"
+            gateway:     "192.168.9.1"
+            netmask:     "0.0.0.0"
+            network:     "0.0.0.0"
+        VerifyVM1Vif1IP:
+            Type: 'VM'
+            TestVM: vm.[1]
+            adapter_name: vm.[1].vnic.[1]->adapter_interface
+            execution_type: 'cmd'
+            sleepbetweenworkloads: 10
+            noofretries: 3
+            timeout: 300
+            get_single_adapter_info:
+               ip[?]ip_range: '192.168.7.0/24'
+        VerifyVM2Vif1IP:
+            Type: 'VM'
+            TestVM: vm.[2]
+            adapter_name: vm.[2].vnic.[1]->adapter_interface
+            execution_type: 'cmd'
+            sleepbetweenworkloads: 10
+            noofretries: 3
+            timeout: 300
+            get_single_adapter_info:
+               ip[?]ip_range: '192.168.8.0/24'

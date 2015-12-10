@@ -1,0 +1,407 @@
+!include ../../ManagementPlane/Clustering/L2Workloads.yaml
+!include ../../ManagementPlane/Clustering/MPCommonWorkloads.yaml
+!include ../../ManagementPlane/Clustering/MPVerticalWorkloads.yaml
+!include MPACommon.yaml
+!include TestbedSpec.yaml
+
+SmokeMPARestartSurvival:
+    <<: *MPACommonTestParams
+    Summary: 'Ensure that MPA survives a reboot'
+    TestName: 'MPA Restart Survival'
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Developer: jfieger
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['RestartMPA']
+             - ['SyslogCheckForMessage']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeMPARestartSurvival'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SmokeMPARestartSurvival'
+                grep_string: 'MPA connection fully established'
+                max_wait: 600
+
+SmokeSampleClientRPC:
+    <<: *MPACommonTestParams
+    Summary: 'Sample Client Send RPC Message'
+    TestName: 'Sample Client RPC'
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Developer: jfieger
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['RPC']
+             - ['SyslogCheckForSend']
+             - ['RPCSent']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientRPC'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SmokeSampleClientRPC'
+                grep_string: 'Sending message:RMQ_CLIENT_RPC_REQUEST to mp'
+                max_wait: 20
+
+SmokeSampleClientGenericMessage:
+    <<: *MPACommonTestParams
+    Summary: 'Sample Client Send Generic Message'
+    TestName: 'Sample Client Generic Message'
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Developer: jfieger
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['GenericMessage']
+             - ['SyslogCheckForSend']
+             - ['GenericMessageSent']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientGenericMessage'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SmokeSampleClientGenericMessage'
+                grep_string: 'Sending message:RMQ_VSM_PAYLOAD to mp'
+                max_wait: 20
+
+SmokeSampleClientPublish:
+    <<: *MPACommonTestParams
+    Summary: 'Sample Client Send Publish Subscribe Message'
+    TestName: 'Sample Client Publish Subscribe'
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+    Developer: jfieger
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['PublishSubscribe']
+             - ['SyslogCheckForSend']
+             - ['PublishSubscribeSent']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeSampleClientPublish'
+
+        SyslogCheckForSend:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SmokeSampleClientPublish'
+                grep_string: 'Sending message:RMQ_CLIENT_PUBLISH to mp'
+                max_wait: 20
+
+Draft_SmokeBrokerRPC:
+    <<: *MPACommonTestParams
+    Summary: RPC from MP using the testrpc endpoint
+    Version: 2
+    TestName: Smoke Broker RPC
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['KillSampleClient']
+             - ['ConnectXMLRPCServer']
+             - ['VerticalRegistration']
+             - ['TestRPC']
+             - ['KillSampleClient']
+             - ['SyslogCheckForMessage']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeBrokerRPC'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SmokeBrokerRPC'
+                grep_string: 'Msg Received in client queue. message type: com.vmware.nsx.customer.MpRpcRequest'
+                max_wait: 120
+
+SmokeStopProtonServiceOnMasterBroker:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: StopProtonServiceOnMasterBroker
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: toric
+    Summary: Stop Proton Service On Master Broker
+    Version: 2
+    TestbedSpec:  *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['GetMasterBrokerIp']
+            - ['SetServiceId']
+            - ['StopProtonServiceOnMasterBroker']
+            - ['SyslogCheckForMessage']
+            - ['CompareMasterBrokerIp']
+            - ['StartProtonServiceOnMasterBroker']
+
+        GetMasterBrokerIp:
+            Type: Host
+            TestHost: 'esx.[1]'
+            execution_type: 'cmd'
+            PersistData: 'yes'
+            read_master_broker_ip:
+                'master_broker_ip[?]defined' : ''
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeStopProtonServiceOnMasterBroker'
+
+        SetServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+                '[1]':
+                    map_object: true
+                    id_: 'proton'
+
+        StopProtonServiceOnMasterBroker:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            managers: 'nsxmanager.[-1]'
+            ipaddress: 'esx.[1]->read_master_broker_ip->master_broker_ip'
+            service_name: 'proton'
+            master_broker_node_service_status: 'stop'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SmokeStopProtonServiceOnMasterBroker'
+                grep_string: 'MPA connection fully established'
+                max_wait: 240
+
+        CompareMasterBrokerIp:
+            Type: Host
+            TestHost: 'esx.[1]'
+            execution_type: 'cmd'
+            read_master_broker_ip:
+                'master_broker_ip[?]not_equal_to' : 'esx.[1]->read_master_broker_ip->master_broker_ip'
+
+        StartProtonServiceOnMasterBroker:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            managers: 'nsxmanager.[-1]'
+            ipaddress: 'esx.[1]->read_master_broker_ip->master_broker_ip'
+            service_name: 'proton'
+            master_broker_node_service_status: 'start'
+
+SmokeStopBrokerServiceOnMasterBroker:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: StopBrokerServiceOnMasterBroker
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: toric
+    Summary: Stop Broker Service On Master Broker
+    Version: 2
+    TestbedSpec:  *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['GetMasterBrokerIp']
+            - ['SetServiceId']
+            - ['StopBrokerServiceOnMasterBroker']
+            - ['SyslogCheckForMessage']
+            - ['CompareMasterBrokerIp']
+            - ['StartBrokerServiceOnMasterBroker']
+
+        GetMasterBrokerIp:
+            Type: Host
+            TestHost: 'esx.[1]'
+            execution_type: 'cmd'
+            PersistData: 'yes'
+            read_master_broker_ip:
+                'master_broker_ip[?]defined' : ''
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeStopBrokerServiceOnMasterBroker'
+
+        SetServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+                '[1]':
+                    map_object: true
+                    id_: 'rabbitmq'
+
+        StopBrokerServiceOnMasterBroker:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            managers: 'nsxmanager.[-1]'
+            ipaddress: 'esx.[1]->read_master_broker_ip->master_broker_ip'
+            service_name: 'rabbitmq'
+            master_broker_node_service_status: 'stop'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SmokeStopBrokerServiceOnMasterBroker'
+                grep_string: 'MPA connection fully established'
+                max_wait: 240
+
+        CompareMasterBrokerIp:
+            Type: Host
+            TestHost: 'esx.[1]'
+            execution_type: 'cmd'
+            read_master_broker_ip:
+                'master_broker_ip[?]not_equal_to' : 'esx.[1]->read_master_broker_ip->master_broker_ip'
+
+        StartBrokerServiceOnMasterBroker:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            managers: 'nsxmanager.[-1]'
+            ipaddress: 'esx.[1]->read_master_broker_ip->master_broker_ip'
+            service_name: 'rabbitmq'
+            master_broker_node_service_status: 'start'
+
+SmokeRebootMasterBroker:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: RebootMasterBroker
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p0
+    Developer: toric
+    Summary: reboot Master Broker
+    Version: 2
+    TestbedSpec:  *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['GetMasterBrokerIp']
+            - ['MapNSXManager1ToCluster']
+            - ['RebootMasterBroker']
+            - ['SyslogCheckForMessage']
+
+        GetMasterBrokerIp:
+            Type: Host
+            TestHost: 'esx.[1]'
+            execution_type: 'cmd'
+            PersistData: 'yes'
+            read_master_broker_ip:
+                'master_broker_ip[?]defined' : ''
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeRebootMasterBroker'
+
+        MapNSXManager1ToCluster:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            cluster:
+                '[1]':
+                    map_object: true
+                    id_: 1
+
+        RebootMasterBroker:
+            Type: "Cluster"
+            TestCluster: "nsxmanager.[1].cluster.[1]"
+            managers: 'nsxmanager.[-1]'
+            ipaddress: 'esx.[1]->read_master_broker_ip->master_broker_ip'
+            master_broker_node_vmstate: reboot
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SmokeRebootMasterBroker'
+                grep_string: 'MPA connection fully established'
+                max_wait: 360
+

@@ -1,0 +1,685 @@
+!include TestbedSpec.yaml
+!include TopoDFW.yaml
+
+tds_template: &tds_template
+    AutomationLevel: Automated
+    Category: DistributedFirewall
+    SubRelease: Bumblebee
+    Component: KernelModules
+    Developer: mbindal
+    Duration: 3600
+    ExpectedResult: PASS
+    FullyAutomatable: Y
+    PartnerFacing: N
+    PMT: null
+    Procedure: null
+    Product: NSXTransformers
+    QCPath: KVM
+    Status: Execution Ready
+    TCMSId: null
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Version: 2
+
+p0_template: &p0_template
+    <<: *tds_template
+    Priority: P0
+
+p1_template: &p1_template
+    <<: *tds_template
+    Priority: P1
+
+BasicDFWRuleCreationDeletion:
+    <<: *p0_template
+    Summary: Basic DFW Rule Creation Deletion
+    Procedure:
+        - Create a DFW section with rules to stop traffic flow
+        - Verify that the traffic cannot flow through
+        - Update the firewall rule to allow traffic
+        - Verify the traffic can flow through
+        - Delete the firewall rule
+        - Delete the DFW section
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestbedSpec: *TestBed_2KVM_2VMs
+    TestName: BasicDFWRuleCreationDeletion
+    WORKLOADS:
+        <<: *TopoDFW2VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - L2Traffic--KVM
+            - - CreateDFWSectionBlockTraffic--KVM
+            - - L2TrafficFail--KVM
+            - - CreateDFWRuleAllowTraffic--KVM
+            - - L2Traffic--KVM
+            - - DiscoverDFWRule1
+            - - DeleteDFWRule2
+            - - L2TrafficFail--KVM
+            - - DeleteDFWSection1withRules
+            - - L2Traffic--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L2ExactMatchSingleMACAddressRules:
+    <<: *p0_template
+    Summary: L2 DFW Exact Match Single MAC Address Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L2ExactMatchSingleMACAddressRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateL2DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockL2Traffic_VM1_Mac_Insert_Top--KVM
+            - - TrafficVM1_VM2_Fail--KVM
+            - - CreateDFWRuleAllowL2Traffic_VM1_Mac_Insert_Top--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - DeleteDFWRule2
+            - - TrafficVM1_VM2_Fail--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L2ExactMatchListOfMACAddressRules:
+    <<: *p0_template
+    Summary: L2 DFW Exact Match List of MAC Address Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L2ExactMatchListOfMACAddressRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateL2DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockL2TrafficMacList_VM1_VM3_Insert_Top--KVM
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateDFWRuleAllowL2TrafficMacList_VM1_VM3_Insert_Top--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWRule2
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L2MACSetRules:
+    <<: *p0_template
+    Summary: L2 DFW Match MAC Set Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L2MACSetRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateL2DFWSection_Empty_Position_Bottom
+            - - CreateMacSet_VM1_VM3--KVM
+            - - CreateDFWRuleBlockL2TrafficMacSet_VM1_VM3
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateDFWRuleAllowL2TrafficMacSet_VM1_VM3
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWRule2
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteMacSet
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L2WildcardedMACRules:
+    <<: *p0_template
+    Summary: L2 DFW Rules With Wild Card In Source or Destination MAC Address
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L2WildcardedMACRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateL2DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockL2TrafficWildcardedMac--KVM
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateDFWRuleAllowL2TrafficWildcardedMac
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWRule2
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L2NegatedMACRules:
+    <<: *p0_template
+    Summary: L2 DFW Rules with MAC Address Negated
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L2NegatedMACRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateL2DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockL2Traffic_Negate_VM1_VM2_Mac_Insert_Top--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateDFWRuleAllowL2Traffic_Negate_VM1_VM2_Mac_Insert_Top--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWRule2
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L2EthertypeRules:
+    <<: *p0_template
+    Summary: L2 DFW Rules Based on Various Ethertype
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L2EthertypeRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateL2DFWSection_Empty_Position_Bottom
+            - - CreateEtherTypeNSServiceIPV4
+            - - CreateDFWRuleBlockIPV4TrafficEtherType--KVM
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateDFWRuleAllowIPV4TrafficEtherType--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteEtherTypeNSServiceIPV4
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L2DFWRuleCreateUpdateDelete:
+    <<: *p0_template
+    Summary: Basic L2 DFW Rule Create Update and Delete
+    Procedure:
+        - Create a DFW section with rules to stop traffic flow
+        - Verify that the traffic cannot flow through
+        - Update the firewall rule to allow traffic
+        - Verify the traffic can flow through
+        - Delete the firewall rule
+        - Delete the DFW section
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestbedSpec: *TestBed_2KVM_4VMs
+    TestName: BasicDFWRuleCreationDeletion
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateL2DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockTraffic
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - UpdateDFWRule1AllowTraffic
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - UpdateDFWRule1BlockTraffic
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteDFWRule1
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L2SectionReorder:
+    <<: *p0_template
+    Summary: Reorder L2 Section
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L2SectionReorder
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateL2DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockTraffic
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateL2DFWSection2AllowTraffic
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - ReviseDFWSection2AfterSection1
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteDFWSection2withRules
+            - - DeleteDFWSection2withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L3DFWRulesTestGroupingObjects:
+    <<: *p0_template
+    Summary: L3 DFW Rules Based on Various applied to fields
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L3DFWRulesTestGroupingObjects
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateStateful_L3DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockIPV4TrafficLS1--KVM
+            - - TrafficVM1_VM2_Fail_Drop--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateDFWRuleAllowIPV4TrafficLS1
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateDFWRuleBlockIPV4TrafficLS1_Port1
+            - - TrafficVM1_VM2_Fail_Drop--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteAllDFWRuleSection1
+            - - CreateNSGroupLP2LS2
+            - - CreateDFWRuleBlockIPV4TrafficNSGroupLP2LS2--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Fail_Drop--KVM
+            - - TrafficVM2_VM4_Fail--KVM
+            - - TrafficVM2_VM3_Pass--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteAllNSGroups
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L3IPv4ExactMatchSingleAddressRules:
+    <<: *p0_template
+    Summary: L3 IPv4 Exact Match Single IP Address Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L3IPv4ExactMatchSingleAddressRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateStateful_L3DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockL3Traffic_VM1_IP_Insert_Top--KVM
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateDFWRuleAllowL3Traffic_VM1_IP_Insert_Top--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L3IPv4ExactMatchListOfIPAddressRules:
+    <<: *p0_template
+    Summary: L3 IPv4 Exact Match List Of IP Address Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L3IPv4ExactMatchListOfIPAddressRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateStateful_L3DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockL3TrafficIPList_VM1_VM3_Insert_Top--KVM
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateDFWRuleAllowL3TrafficIPList_VM1_VM3_Insert_Top--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L3IPv4WildCardedAddressRules:
+    <<: *p0_template
+    Summary: L3 IPv4 Rules with Wild Card in Source or Destination IP Address
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L3IPv4WildCardedAddressRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateStateful_L3DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockL3TrafficWildcardedIP--KVM
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateDFWRuleAllowL3TrafficWildcardedIP
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWRule2
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L3IPv4NegatedAddressRules:
+    <<: *p0_template
+    Summary: L3 IPv4 Rules With IP address Negated
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L3IPv4NegatedAddressRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateStateful_L3DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockL3Traffic_Negate_VM1_VM2_IP_Insert_Top--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateDFWRuleAllowL3Traffic_Negate_VM1_VM2_IP_Insert_Top--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWRule2
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L3IPv4IPSetRules:
+    <<: *p0_template
+    Summary: L3 IPv4 Rules Match IP Set
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L3IPv4IPSetRules
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateIPSet_192.168.0.0_Subnet_VM1_VM3_IP--KVM
+            - - CreateStateful_L3DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockL3TrafficIPSet_VM1_VM3
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - UpdateIPSetVM1_VM3_IP
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - UpdateIPSet_10.0.0.0_Subnet
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteIPSet
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L3DFWRuleCreateUpdateDelete:
+    <<: *p0_template
+    Summary: Basic L3 DFW Rule Create Update and Delete
+    Procedure:
+        - Create a DFW section with rules to stop traffic flow
+        - Verify that the traffic cannot flow through
+        - Update the firewall rule to allow traffic
+        - Verify the traffic can flow through
+        - Delete the firewall rule
+        - Delete the DFW section
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestbedSpec: *TestBed_2KVM_4VMs
+    TestName: BasicDFWRuleCreationDeletion
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateStateful_L3DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockTraffic
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - UpdateDFWRule1AllowTraffic
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - UpdateDFWRule1BlockTraffic
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteDFWRule1
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+CreateDeleteModifyDefaultL3Section:
+    <<: *p0_template
+    Summary: Default L3 Section Creation and Deletion
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: CreateDeleteModifyDefaultL3Section
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DiscoverDefaultL3DFWSection
+            - - UpdateDFWSection1withRulesDropAll
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - UpdateDFWSection1withRulesAllowAll
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+CreateDeleteModifyDefaultL2Section:
+    <<: *p0_template
+    Summary: Default L2 Section Creation and Deletion
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: CreateDeleteDefaultSection
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DiscoverDefaultL2DFWSection
+            - - UpdateDFWSection1withRulesDropAll
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - UpdateDFWSection1withRulesAllowAll
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L3SectionReorder:
+    <<: *p0_template
+    Summary: Reorder L3 Section
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L3SectionReorder
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateStateful_L3DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockTraffic
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateL3DFWSection2AllowTraffic
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - ReviseDFWSection2AfterSection1
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteDFWSection1withRules
+            - - DeleteDFWSection2withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+L4IPv4ExactMatchIndividualPortRules:
+    <<: *p0_template
+    Summary: L4 IPv4 Exact Match Individual Port Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4IPv4ExactMatchIndividualPortRules
+
+L4IPv4ExactMatchPortListRules:
+    <<: *p0_template
+    Summary: L4 IPv4 Exact Match List Of Port Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4IPv4ExactMatchPortListRules
+
+L4IPv4WildcardedL4PortRules:
+    <<: *p0_template
+    Summary: L4 IPv4 Exact Match Individual Port Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4IPv4WildcardedL4PortRules
+
+L4IPv4L4PortRangeRules:
+    <<: *p0_template
+    Summary: L4 IPv4 Match On Range Of Port Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4IPv4L4PortRangeRules
+
+L4IPv4PortSetRules:
+    <<: *p0_template
+    Summary: L4 IPv4 Match On Port Set
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4IPv4PortSetRules
+
+L4IPv4NegatedPortRules:
+    <<: *p0_template
+    Summary: L4 IPv4 Rules With Negated Port Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4IPv4NegatedPortProtocolRules
+
+L4IPv4ExactMatchTCPRules:
+    <<: *p0_template
+    Summary: L4 IPv4 Exact Match TCP Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4IPv4ExactMatchTCPRules
+
+L4IPv4ExactMatchUDPRules:
+    <<: *p0_template
+    Summary: L4 IPv4 Exact Match UDP Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4IPv4ExactMatchUDPRules
+
+L4IPv4MatchAnyRules:
+    <<: *p0_template
+    Summary: L4 IPv4 Match Any Port In Source And Destination Rules
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4IPv4MatchAnyRules
+
+L4CreateNewRule:
+    <<: *p0_template
+    Summary: New L4 DFW Rule Creation
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4CreateNewRule
+
+L4UpdateRule:
+    <<: *p0_template
+    Summary: L4 DFW Rule Update
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4UpdateRule
+
+L4DeleteRule:
+    <<: *p0_template
+    Summary: L4 DFW Rule Deletion
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: L4DeleteRule
+
+ExcludeListAddDeleteLSLport:
+    <<: *p0_template
+    Summary: Exclude List Logical Switch and Logical Port Addition And Deletion
+    Tags: cat,kvm,nsxtransformers,dfw
+    TestName: ExcludeListAddDeleteLSLport
+    TestbedSpec: *TestBed_2KVM_4VMs
+    WORKLOADS:
+        <<: *TopoDFW4VMs_2Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - CreateExcludeListLport2-4
+            - - CreateStateful_L3DFWSection_Empty_Position_Bottom
+            - - CreateDFWRuleBlockTraffic
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+            - - DeleteExcludeList
+            - - TrafficVM1_VM2_Fail--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - CreateExcludeListLS1
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Fail--KVM
+            - - DeleteExcludeList
+            - - DeleteDFWSection1withRules
+            - - TrafficVM1_VM2_Pass--KVM
+            - - TrafficVM3_VM4_Pass--KVM
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+

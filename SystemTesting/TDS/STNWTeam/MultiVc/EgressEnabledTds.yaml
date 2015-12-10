@@ -1,0 +1,133 @@
+TDSCommonFieldsP0Case: &TDS_COMMON_SYSTEM_P0_CASE
+    Product: "NSX 6.2"
+    Component: "L2"
+    Category: "MultiVC"
+    Version: "2"
+    Tags: "EgressEnabled"
+    #QCPath: *QCPATH--ESX
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "System"
+    TestcaseType: "System"
+    Priority: "P0"
+    Developer: "liuwei"
+    Partnerfacing: "N"
+
+Deployment:
+    <<: *TDS_COMMON_SYSTEM_P0_CASE
+    Component: "NSX Manager"
+    TestName:  "TorInstancesCreateDeleteBeforeConnected"
+    Developer: "mqing"
+    TestbedSpec: *MULTI_VC_TESTBEDSPEC
+    Summary: |
+        Perform the create TOR instance operation, then delete the TOR instance
+        directly, after that verify TOR instance has been deleted successfully
+    WORKLOADS:
+        Sequence:
+            # Setup testbed
+            - ['vdncluster1']
+            - ['vdncluster2']
+
+            # Setup Universal configuration on VC-A
+            - ['ConfigUniversalEgressEnabled']
+
+            # Setup Local configuration on VC-A
+            - ['ConfigLocalOnVCA']
+
+            # Configure route on VC-A
+            - ['ConfigRouteOnVCA']
+
+            # Setup VC-B
+            - ['ConfigUniversalOnVCB']
+            - ['ConfigLocalOnVCB']
+            - ['ConfigEgressEnabledOnVCB']
+            - ['ConfigRouteOnVCB']
+
+            # Setup VC-C
+#            - ['ConfigUniversalOnVCC']
+#            - ['ConfigLocalOnVCC']
+#            - ['ConfigRouteOnVCC']
+
+            # traffic workload
+            - ['CreateApplyProfile']
+            - ['PlaceVMInNetwork']
+            - ['PowerOnVM']
+            - ['SetVMIP']
+            - ['iperfTest1']
+            - ['IperfTest2']
+            - ['NetperfTest1']
+            - ['PingTest1']
+#            - ['OperationVMotion']
+
+        ExitSequence:
+#            - ['DeleteGlobalTransportZone']
+
+        #multiVC workload
+        ConfigUniversalEgressEnabled: *CONFIG_UNIVERSAL_EGRESS_ENABLED
+        ConfigLocalOnVCA: *CONFIG_LOCAL_ON_VC_A
+        ConfigRouteOnVCA: *CONFIG_ROUTE_ON_VC_A
+
+        ConfigUniversalOnVCB: *CONFIG_UNIVERSAL_ON_VC_B
+        ConfigEgressEnabledOnVCB: *CONFIG_EGRESS_ENABLED_ON_VC_B
+        ConfigLocalOnVCB: *CONFIG_LOCAL_ON_VC_B
+        ConfigRouteOnVCB: *CONFIG_ROUTE_ON_VC_B
+
+        ConfigUniversalOnVCC: *CONFIG_UNIVERSAL_ON_VC_C
+        ConfigLocalOnVCC: *CONFIG_LOCAL_ON_VC_C
+        ConfigRouteOnVCC: *CONFIG_ROUTE_ON_VC_C
+
+        CreateApplyProfile: *CREATE_APPLY_PROFILE
+
+        PlaceVMInNetwork: *PLACE_VM_IN_NETWORK
+        PowerOnVM: *POWER_ON_VM
+        SetVMIP: *SET_VM_IP
+
+#        # traffic workload
+        iperfTest1: *TRAFFIC_IPERF_TEST_1
+        IperfTest2: *TRAFFIC_IPERF_TEST_2
+        NetperfTest1: *TRAFFIC_NETPERF_TEST_1
+        PingTest1: *TRAFFIC_PING_TEST_1
+
+        vdncluster1:
+            Type       : 'NSX'
+            TestNSX    : "vsm.[1]"
+            VDNCluster :
+                '[1]':
+                    cluster : "vc.[1].datacenter.[1].cluster.[2]"
+                    vibs    : "install"
+                    switch  : "vc.[1].vds.[1]"
+                    vlan    : "21"
+                    mtu     : "1600"
+                    teaming : "FAILOVER_ORDER"
+                    ippool  : "vsm.[1].ippool.[2]"
+                '[2]':
+                    cluster : "vc.[1].datacenter.[1].cluster.[3]"
+                    vibs    : "install"
+                    switch  : "vc.[1].vds.[1]"
+                    vlan    : "21"
+                    mtu     : "1600"
+                    teaming : "FAILOVER_ORDER"
+                    ippool  : "vsm.[1].ippool.[2]"
+
+        vdncluster2:
+            Type       : 'NSX'
+            TestNSX    : "vsm.[2]"
+            VDNCluster :
+                '[1]':
+                    cluster : "vc.[2].datacenter.[1].cluster.[1]"
+                    vibs    : "install"
+                    switch  : "vc.[2].vds.[1]"
+                    vlan    : "21"
+                    mtu     : "1600"
+                    teaming : "FAILOVER_ORDER"
+                    ippool  : "vsm.[2].ippool.[1]"
+                '[2]':
+                    cluster : "vc.[2].datacenter.[1].cluster.[2]"
+                    vibs    : "install"
+                    switch  : "vc.[2].vds.[1]"
+                    vlan    : "21"
+                    mtu     : "1600"
+                    teaming : "FAILOVER_ORDER"
+                    ippool  : "vsm.[2].ippool.[1]"

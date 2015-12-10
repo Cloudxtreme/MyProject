@@ -1,0 +1,1339 @@
+---
+loadbalancerconfig:
+  dependency:
+    - gateway
+  derived_components:
+    - nsx
+  description: Enable load balancer on gateway
+  linkedworkload: GatewayWorkload
+  format: hash
+  sample_value:
+      enabled: 'true'
+      accelerationenabled: 'true'
+      enableserviceinsertion: 'true'
+      globalserviceinstance:
+         serviceid: 'vsm.[1].service.[1]'
+         instancetemplateuniqueid: 'vsm.[1].service.[1].serviceinstancetemplate.[1]'
+         runtimenicinfoarray:
+           - index: 0
+             label: vnic1
+             network:
+                objectid: 'dvportgroup-53'
+                objecttypename: 'DistributedVirtualPortgroup'
+  method: CreateAndVerifyComponent
+  params:
+    - loadbalancerconfig
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+serviceinstanceruntimefromedge:
+  dependency:
+    - gateway
+  derived_components:
+    - nsx
+  description: Install service instance runtimeinfo on gateway
+  linkedworkload: GatewayWorkload
+  format: hash
+  method: CreateAndVerifyComponent
+  params:
+    - serviceinstanceruntimefromedge
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+instancetemplateuniqueid:
+  derived_components:
+    - service
+  description: instancetemplateuniqueid description
+  format: vdnet index
+  sample_value: 'vsm.[1].service.[1].serviceinstancetemplate.[1]'
+  method: ProcessParameters
+  type: parameter
+serviceid:
+  derived_components:
+    - service
+  description: service id description
+  format: vdnet index
+  sample_value: 'vsm.[1].service.[1]'
+  method: ProcessParameters
+  type: parameter
+objectid:
+  derived_components:
+    - portgroup
+  description: dv port group description
+  format: vdnet index
+  sample_value: 'vc.[1].dvportgroup.[2]'
+  method: ProcessParameters
+  type: parameter
+globalserviceinstance:
+  derived_components:
+    - gateway
+  description: Global service instance description
+  method: ProcessParameters
+  format:
+      serviceid: vdnet index
+      instancetemplateuniqueid: vdnet index
+      runtimenicinfoarray: array
+  sample_value:
+      serviceid: 'vsm.[1].service.[1]'
+      instancetemplateuniqueid: 'vsm.[1].service.[1].serviceinstancetemplate.[1]'
+      runtimenicinfoarray:
+        - index: 0
+          label: vnic1
+          network:
+             objectid: 'dvportgroup-53'
+             objecttypename: 'DistributedVirtualPortgroup'
+  type: parameter
+runtimenicinfoarray:
+  derived_components:
+    - gateway
+  description: Runtime NIC Information array desc
+  format:
+      index: string
+      label: string
+      network:
+          objectid: vdnet index
+          objecttypename: string
+  sample_value:
+      index: '0'
+      label: 'vnic1'
+      network:
+          objectid: 'dvportgroup-53'
+          objecttypename: 'DistributedVirtualPortgroup'
+  method: ProcessParameters
+  type: parameter
+nics:
+  derived_components:
+    - gateway
+  description: NIC Information array desc
+  method: ProcessParameters
+  format:
+      index: string
+      label: string
+      network:
+          objectid: vdnet index
+          objecttypename: string
+  sample_value:
+      index: '0'
+      label: 'vnic1'
+      network:
+          objectid: 'dvportgroup-53'
+          objecttypename: 'DistributedVirtualPortgroup'
+  type: parameter
+network:
+  derived_components:
+    - gateway
+  description: Network desc
+  format:
+      objectid: vdnet index
+      objecytypename: string
+  method: ProcessParameters
+  sample_value:
+      objectid: 'vc.[1].dvportgroup.[1]'
+      objecttypename: 'DistributedVirtualPortgroup'
+  type: parameter
+
+edge_node_id:
+  description: edge node identifier
+  derived_components:
+    - edgenode
+    - edgecluster
+  format: vdnet index
+  sample_value: nsxmanager.[1].edgenode.[1]
+  method: GetComponentAttribute
+  type: parameter
+
+external_id:
+  description: Hypervisor specific external Id for edge node VM
+  derived_components:
+    - edgenode
+  format: String
+  sample_value: 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6'
+  method: GetComponentAttribute
+  type: parameter
+
+node_type:
+  description: Type of Node.
+  derived_components:
+    - edgenode
+  format: String
+  sample_value: 'EdgeNode'
+  method: GetComponentAttribute
+  allowed_values:
+    - EdgeNode
+  type: parameter
+
+msg_client_info:
+  description: Message client information used by the edge to connect to the message bus.
+  derived_components:
+    - edgenode
+  method: PreProcessNestedParameters
+  format:
+    account_name: "ref: account_name"
+    shared_secret: "ref: shared_secret"
+    certificate: "ref: certificate"
+  sample_value:
+    account_name: string value
+    shared_secret: string value
+    certificate: string value
+  type: parameter
+
+account_name:
+  description: User name for Msg client
+  derived_components:
+    - edgenode
+  format: String
+  method: GetComponentAttribute
+  sample_value: admin
+  type: parameter
+
+shared_secret:
+  description: Shared secret for Msg client
+  derived_components:
+    - edgenode
+  format: String
+  method: GetComponentAttribute
+  sample_value: TBD
+  type: parameter
+
+certificate:
+  description: Certificate for Msg Client
+  derived_components:
+    - edgenode
+  format: String
+  method: GetComponentAttribute
+  sample_value: TBD
+  type: parameter
+
+node_status:
+  description: Run time information of edge-node
+  derived_components:
+    - edgenode
+  method: PreProcessNestedParameters
+  format:
+    mpa_connectivity_status: "ref: mpa_connectivity_status"
+    mpa_connectivity_status_message: "ref: mpa_connectivity_status_message"
+  sample_value:
+    mpa_connectivity_status: CONNECTED
+    mpa_connectivity_status_message: String message
+  type: parameter
+
+mpa_connectivity_status:
+  description: Shows that connectivity status of MP <-> MPA
+  derived_components:
+    - edgenode
+  format: String
+  method: GetComponentAttribute
+  sample_value: DISCONNECTED/CONNECTED
+  type: parameter
+
+mpa_connectivity_status_message:
+  description: Shows that reason when connectivity status is not Connected
+  derived_components:
+    - edgenode
+  format: String
+  method: GetComponentAttribute
+  sample_value: error message describing error details
+  type: parameter
+
+fabric_profile_id:
+  description: fabric profile identifier
+  derived_components:
+    - edgecluster
+  format: vdnet index
+  sample_value: nsxmanager.[1].fabricprofile.[1]
+  method: GetComponentAttribute
+  type: parameter
+
+cluster_profile_bindings:
+  description: Service-binding for the cluster profile.
+  derived_components:
+    - edgecluster
+    - clusterprofile
+  method: PreProcessNestedParameters
+  format:
+    cluster_resource_type: "ref: cluster_resource_type"
+  sample_value:
+    cluster_resource_type: HighAvailabilityProfile
+  type: parameter
+
+resource_type:
+  description: cluster and bfd profile resource type
+  derived_components:
+    - edgecluster
+    - clusterprofile
+  format: String
+  method: GetComponentAttribute
+  sample_value: HighAvailabilityProfile
+  allowed_values:
+     - HighAvailabilityProfile
+     - BfdHealthMonitoringProfile
+  type: parameter
+
+fabric_profile_clusterkeepalive:
+  description: fabric profile for cluster keep alive
+  derived_components:
+    - edgecluster
+    - fabricprofile
+  method: PreProcessNestedParameters
+  format:
+    hello_interval: "ref: hello_interval"
+    declare_dead_timer: "ref: declare_dead_timer"
+  sample_value:
+    fabric_profile_clusterkeepalive:
+      hello_interval: 3000
+      declare_dead_timer: 15000
+  type: parameter
+
+hello_interval:
+  description: hello interval for cluster keep alive
+  derived_components:
+    - edgecluster
+    - fabricprofile
+  format: int
+  method: GetComponentAttribute
+  sample_value: 20000
+  allowed_values:
+     - 1000 (min value)
+     - 20000 (max value)
+     - 3000 (default)
+  type: parameter
+
+declare_dead_timer:
+  description:  dead timer for cluster keep alive
+  derived_components:
+    - edgecluster
+    - fabricprofile
+  method: GetComponentAttribute
+  format: int
+  sample_value: 6000
+  allowed_values:
+     - 15000 (default value)
+     - 60000 (min value)
+  type: parameter
+
+get_edge_node_list:
+  derived_components:
+    - edgenode
+  description: Get list of Edge Nodes for verification
+  method: query
+  params:
+    - get_edge_node_list
+  preprocess: PreProcessVerification
+  type: verification
+  format:
+    result_count: 2
+    results:
+      - name: edge_node_1
+      - name: edge_node_2
+
+result_count:
+  derived_components:
+    - all
+  description: Result count
+  format: integer
+  sample_value: 2
+  type: parameter
+
+members:
+  description: List of members for this cluster
+  derived_components:
+    - edgecluster
+  format:
+    member_index: "ref: memberindex"
+    transport_node_id: "ref: transport_node_id"
+  method: PreProcessNestedParameters
+  sample_value:
+    - members:
+        member_index: 1
+        transport_node_id: 'f81d4fae-7dec-11d0-a765-00a0c91e6bf6'
+    - members:
+        member_index: 2
+        transport_node_id: 'a90f4dre-7dec-11d0-a765-00a0c91e6bf6'
+  type: parameter
+
+member_index:
+  description: This index is unique only within the cluster. System generated ID.
+  derived_components:
+    - edgecluster
+  format: int
+  method: GetComponentAttribute
+  sample_value: This value will be system generated
+  type: parameter
+
+get_edge_cluster_list:
+  derived_components:
+    - edgecluster
+  description: Get list of Edge Clusters for verification
+  method: query
+  params:
+    - get_edge_cluster_list
+  preprocess: PreProcessVerification
+  type: verification
+  format:
+    result_count: 2
+    results:
+      - name: edge_cluster_1
+      - name: edge_cluster_2
+
+reconfigure:
+  allowed_values:
+    - true
+  derived_components:
+    - edge_cluster
+  description: Reconfigures the range managed object
+  format: boolean
+  method: UpdateComponent
+  params:
+    - name
+    - summary
+    - fabric_profile_bindings
+    - members
+    - execution_type
+    - reconfigure
+  preprocess: PreProcessHashRefTypeAPI
+  sample_value: true
+  type: action
+
+get_fabric_profile_list:
+  derived_components:
+    - fabricprofile
+  description: Get list of Fabric Profiles for verification
+  method: query
+  params:
+    - get_fabric_profile_list
+  preprocess: PreProcessVerification
+  type: verification
+  format:
+    result_count: 2
+    results:
+      - name: fabric_profile_1
+      - name: fabric_profile_1
+
+register_nsx_edge_node:
+   type: action
+   description: Register Edge Node with NSX
+   derived_components:
+      - gateway
+   format:
+      operation: 'ref: operation'
+      manager_username: 'admin'
+      manager_password: 'default'
+      manager_ip: 'vdnet index'
+      manager_thumbprint: 'vdnet index'
+      nsx_api_user: 'vdnet index'
+   preprocess: PreProcessNestedParametersForAction
+   method: register_nsx_edge_node
+   params:
+      - register_nsx_edge_node
+   sample_value:
+      operation: 'register_node'
+      manager_username: 'admin'
+      manager_password: 'default'
+      manager_ip: nsxmanager.[1]
+      nsx_api_user: nsxmanager.[1]
+      nsx_thumbprint: nsxmanager.[1]
+
+show_interface:
+  type: verification
+  description: Execute show interface command
+  derived_components:
+    - gateway
+  format:
+    - hwaddr: vdnet index
+      vnic_state: vdnet index
+      ip4:
+        - vdnet index
+      ip6:
+        - vdnet index
+  preprocess: PreProcessVerificationAndParameters
+  method: show_interface
+  params:
+    - show_interface
+    - execution_type
+    - adapter_name
+  sample_value:
+    - hwaddr: vm.[1].vnic.[1]->mac_addr
+      vnic_state: vm.[1].vnic.[1]->vnic_state
+      ip4:
+        - vm.[1].vnic.[1]->ip
+      ip6:
+        - vm.[1].vnic.[1]->ip6
+
+get_ip:
+  type: verification
+  description: Execute show ip bgp command
+  derived_components:
+    - gateway
+  format:
+    table:
+    - locprf: string
+      metric: string
+      network: string
+      nexthop: string
+      origin: string
+      code: string
+      weight: string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_ip
+  params:
+    - get_ip
+    - execution_type
+    - table_name
+  sample_value:
+    table:
+    - locprf: '100'
+      metric: '0'
+      network: '78.0.0.0/8'
+      nexthop: '192.168.80.2'
+      origin: '?'
+      code: '>'
+      weight: '60'
+
+table_name:
+  derived_components:
+    - gateway
+  description: Look for entries in the specified table.
+  format: string
+  method: ProcessParameters
+  sample_value: 'bgp'
+  allowed_values:
+    - bgp
+    - forwarding
+  type: parameter
+
+get_configuration_bgp:
+  type: verification
+  description: Execute show configuration bgp command
+  derived_components:
+    - gateway
+  format:
+    bgp:
+       gracefulrestart: boolean
+       enabled: boolean
+       localas: string
+       neighbors:
+         - holddowntimer: string
+           ipaddress: string
+           keepalivetimer: string
+           remoteas: string
+           srcipaddress: string
+           name: string
+           weight: string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_configuration_bgp
+  params:
+    - get_configuration_bgp
+    - execution_type
+  sample_value:
+    bgp:
+       gracefulrestart: 'False'
+       enabled: 'True'
+       localas: '200'
+       neighbors:
+         - holddowntimer: '180'
+           ipaddress: '192.168.50.50'
+           keepalivetimer: '60'
+           remoteas:  '200'
+           srcipaddress: '192.168.50.1'
+           name: 'Neighbour 1'
+           weight: '60'
+
+get_ip_route:
+  type: verification
+  description: Execute show ip route command
+  derived_components:
+    - gateway
+  format:
+    table:
+      - 'code': string
+        'network': string
+        'nexthop': string
+        'admindist_metric': string
+        'via': string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_ip_route
+  params:
+    - get_ip_route
+    - execution_type
+    - route_filter
+    - prefix
+    - edge_ha_index
+  sample_value:
+    - code: 'S'
+      network: '100.64.1.0/31'
+      nexthop: '169.0.0.1'
+      admindist_metric: '[10/10]'
+      via: 'via'
+
+route_filter:
+  derived_components:
+    - gateway
+  description: Route filter to be used along with show ip route command.
+  format: string
+  method: ProcessParameters
+  sample_value: 'bgp'
+  allowed_values:
+    - bgp
+    - static
+    - connected
+  type: parameter
+
+prefix:
+  derived_components:
+    - gateway
+  description: Prefix to be used with show ip route command filter.
+  format: string
+  method: GetComponentAttribute
+  sample_value: '192.168.1.0/24'
+  type: parameter
+
+get_cluster_status:
+  type: verification
+  description: Execute show edge-cluster status command
+  derived_components:
+    - gateway
+  format:
+    - ha_status: string
+    - routing_status: string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_cluster_status
+  params:
+    - get_cluster_status
+    - execution_type
+  sample_value:
+    - ha_status: 'Standby'
+    - routing_status: 'Down'
+
+get_ip_bgp_neighbors:
+  type: verification
+  description: Execute show ip bgp neighbors command
+  derived_components:
+    - gateway
+  format:
+     bgp_neighbor: string
+     bgp_state: string
+     bgp_status: string
+     hold_time: string
+     keep_alive_interval: string
+     local_host: vdnet index
+     remote_host: string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_ip_bgp_neighbors
+  params:
+    - get_ip_bgp_neighbors
+    - execution_type
+    - ip_address
+    - edge_ha_index
+  sample_value:
+     bgp_neighbor: '20.20.20.1'
+     bgp_state: 'established'
+     bgp_status: 'up'
+     hold_time: '180'
+     keep_alive_interval: '60'
+     local_host: '20.20.20.113'
+     remote_host: '20.20.20.1'
+
+
+get_os_information:
+  type: verification
+  description: Execute show version command
+  derived_components:
+    - gateway
+  format:
+     kernel: string
+     version: string
+     build_number: string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_os_info
+  params:
+    - get_os_info
+    - execution_type
+  sample_value:
+     kernel: '3.2.62'
+     build_number: '2252106'
+     version: '7.0.0.0.0'
+
+get_license_string:
+  type: action
+  description: Fetch the license information from edge upon login
+  derived_components:
+    - gateway
+  preprocess: PreProcessVerificationAndParameters
+  method: get_license_string
+  params:
+    - get_license_string
+    - execution_type
+
+get_supported_commands_admin_mode:
+  type: verification
+  description: verify that command list available at admin mode of edge is correct
+  derived_components:
+    - gateway
+  preprocess: PreProcessVerificationAndParameters
+  method: get_all_supported_commands_admin_mode
+  params:
+    - get_all_supported_commands_admin_mode
+    - execution_type
+    - password (optional)
+
+get_supported_commands_enable_mode:
+  type: verification
+  description: verify that command list available at enable mode of edge is correct
+  derived_components:
+    - gateway
+  preprocess: PreProcessVerificationAndParameters
+  method: get_all_supported_commands_enable_mode
+  params:
+    - get_all_supported_commands_enable_mode
+    - execution_type
+    - password (optional)
+
+get_supported_commands_configure_mode:
+  type: verification
+  description: verify that command list available at configure mode of edge is correct
+  derived_components:
+    - gateway
+  preprocess: PreProcessVerificationAndParameters
+  method: get_all_supported_commands_configure_mode
+  params:
+    - get_all_supported_commands_configure_mode
+    - execution_type
+    - password (optional)
+
+get_assigned_interface_ip:
+  derived_components:
+    - gateway
+  description: Retrives the assigned ip from the given network name
+  method: get_assigned_interface_ip
+  params:
+    - get_assigned_interface_ip
+    - execution_type
+    - adapter_name
+    - network_name
+    - ip_version
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  format:
+      adapter_name: string
+      network_name: string
+      ip_version: string
+
+get_cluster_history_resource:
+  type: verification
+  description: Execute show edge-cluster history resource command
+  derived_components:
+    - gateway
+  format:
+    - ha_status: string
+    - routing_status: string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_cluster_history_resource
+  params:
+    - get_cluster_history_resource
+    - execution_type
+  sample_value:
+    - ha_status: 'Standby'
+    - routing_status: 'Down'
+
+get_cluster_history_state:
+  type: verification
+  description: Execute show edge-cluster history state command
+  derived_components:
+    - gateway
+  format:
+    - ha_status: string
+    - routing_status: string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_cluster_history_state
+  params:
+    - get_cluster_history_state
+    - execution_type
+  sample_value:
+    - ha_status: 'Standby'
+    - routing_status: 'Down'
+
+vmstate:
+  derived_components:
+    - vm
+  description: "Power on/off, suspend/resume TOR Gateway VM"
+  format: string
+  method: ChangeVMState
+  params:
+    - vmstate
+  postprocess: PostProcessChangeVMState
+  preprocess: PreProcessChangeVMState
+  sample_value: poweron
+  type: action
+
+configure_package:
+ type: action
+ description: Install/uninstall/update a package on the host
+ dependency:
+  - framework_setup
+ derived_components:
+  - gateway
+ format:
+  resource:
+   - 'ref: resource'
+  operation: 'ref: operation'
+  maintenance: 'ref: maintenance'
+  signaturecheck: 'ref: signaturecheck'
+ preprocess: PreProcessNestedParametersForAction
+ method: configure_package
+ params:
+  - configure_package
+ sample_value:
+  resource:
+   - 'https://url_to_buildweb'
+  operation: 'install'
+  maintenance: 'true'
+  signaturecheck: 'false'
+  ordered: 'true'
+
+reset_adapter_ip:
+   type: action
+   description: resets the ip of the interface
+   dependency:
+    - framework_setup
+   derived_components:
+    - gateway
+   preprocess: PreProcessNestedParametersForAction
+   method: reset_adapter_ip
+   params:
+    - name
+   format:
+    - name: string
+   sample_value:
+    name: "eth1"
+
+bind_pnic:
+   type: action
+   description: binds pnic to tor switch
+   dependency:
+    - framework_setup
+   derived_components:
+    - torgateway
+   preprocess: PreProcessNestedParametersForAction
+   method: bind_pnic
+   params:
+    - name
+    - switch_name
+   format:
+    - name: string
+    - switch_name: vdnet index 
+   sample_value:
+    name: "eth1"
+    switch_name: "torgateway.[1].torswitch.[1]"
+
+clear_ip_bgp:
+   type: action
+   description: Clear BGP configuration
+   derived_components:
+      - gateway
+   preprocess: PreProcessNestedParametersForAction
+   method: clear_ip_bgp
+   params:
+      - clear_ip_bgp
+
+deletetorswitch:
+  derived_components:
+    - torgateway
+  linkedworkload: SwitchWorkload
+  description: delete TOR switches
+  format: vdnet index
+  method: DeleteComponent
+  params:
+    - deletetorswitch
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'torgateway.[1].torswitch.[1]'
+  type: action
+
+vtep:
+ type: component
+ description: Create Tunnel endpoint on the host
+ derived_components:
+  - torgateway
+ dependency:
+  - framework_setup
+ preprocess: PreProcessSubComponentsInPython
+ method: CreateComponent
+ postprocess: StoreSubComponentObjects
+ objtype:
+    torgateway: 'VDNetLib::NetAdapter::Vtep::TORGatewayVtep'
+ params:
+  - vtep
+
+vnic:
+  derived_components:
+    - kvm
+  description: "Create virtual ethernet adapter using the given spec"
+  format:
+    driver : string
+    portgroup : vdnet index
+  linkedworkload: NetAdapterWorkload
+  method: AddEthernetAdapters
+  params:
+    - vnic
+  postprocess: StoreVnicObjects
+  preprocess: PreProcessCreateVnic
+  sample_value:
+    driver : e1000
+    portgroup : esx.[1].portgroup.[1]
+  type: component
+
+deletevnic:
+  dependency:
+    - vnic
+  derived_components:
+    - kvm
+  description: "Remove a vnic on VM"
+  format: vdnet index
+  method: RemoveVirtualAdapters
+  params:
+    - deletevnic
+  postprocess: RemoveSubComponentObjects
+  preprocess: PreProcessDeleteVnic
+  sample_value: "vm.[1].vnic.[1]"
+  type: component
+
+bind_vtep_switch:
+  type: action
+  description: Bind vtep adapter with TOR switch
+  dependency:
+  derived_components:
+   - torgateway
+  format:
+    tor_entries:
+      - 'ref: tor_entries'
+  preprocess: PreProcessNestedParametersForAction
+  method: bind_vtep_switch
+  params:
+   - bind_vtep_switch
+  sample_value:
+    tor_entries:
+        - switch: torgateway.[1].torswitch.[1]
+          vtep: torgateway.[1].vnic.[1]
+        - switch: torgateway.[1].torswitch.[2]
+          vtep: torgateway.[1].vnic.[2]
+
+tor_entries:
+  type: parameter
+  description: 'tor entries like tor switch or tor vtep adatper'
+  derived_components:
+    - torgateway
+  method: ProcessTOREntriesParameters
+
+start_tor_vtep:
+  type: action
+  description: start vtep simulator for one TOR switch
+  dependency:
+  derived_components:
+   - torgateway
+  format:
+    tor_entries:
+      - 'ref: tor_entries'
+  preprocess: PreProcessNestedParametersForAction
+  method: start_tor_vtep
+  params:
+   - start_tor_vtep
+  sample_value:
+     - switch: torgateway.[1].torswitch.[1]
+     - switch: torgateway.[1].torswitch.[2]
+
+stop_tor_vtep:
+  type: action
+  description: stop vtep simulator for one TOR switch
+  dependency:
+  derived_components:
+   - torgateway
+  format:
+    tor_entries:
+      - 'ref: tor_entries'
+  preprocess: PreProcessNestedParametersForAction
+  method: stop_tor_vtep
+  params:
+   - stop_tor_vtep
+  sample_value:
+     - switch: torgateway.[1].torswitch.[1]
+     - switch: torgateway.[1].torswitch.[2]
+
+tor_set_controller:
+  type: action
+  description: set management controller for tor gateway
+  dependency:
+  derived_components:
+   - torgateway
+  format:
+      controller_ip: 'tuple of vxlan controller'
+      port: 'port number'
+  preprocess: PreProcessNestedParametersForAction
+  method: tor_set_controller
+  params:
+   - tor_set_controller
+  sample_value:
+     controller_ip: "vsm.[1].vxlancontroller.[-1]"
+     port: '6632'
+
+get_tor_emulator_bfd_params:
+  type: verification
+  description: get bfd params on tor gateway
+  dependency:
+  derived_components:
+   - torgateway
+  format:
+      bfd_state_up_unique_count: integer
+      bfd_remote_state_up_unique_count: integer
+      bfd_enabled_unique_count:  integer
+  preprocess: PreProcessVerification
+  method: get_tor_emulator_bfd_params
+  params:
+   - get_tor_emulator_bfd_params
+  sample_value:
+      bfd_state_up_unique_count: 4
+      bfd_remote_state_up_unique_count: 4
+      bfd_enabled_unique_count:  4
+
+bfd_state_up_unique_count:
+  description: vtep tunnel unique count that local bfd state is 'up'
+  format: integer
+  type: parameter
+  sample_value: 4
+
+bfd_remote_state_up_unique_count:
+  description: vtep tunnel unique count that remote bfd state is 'up'
+  format: integer
+  type: parameter
+  sample_value: 4
+
+bfd_enabled_unique_count:
+  description: vtep tunnel unique count that bfd status is enabled
+  format: integer
+  type: parameter
+  sample_value: 4
+
+get_edge_interface_ip:
+  derived_components:
+    - gateway
+  description: Retrives the assigned ip from the given network name
+  method: get_edge_interface_ip
+  params:
+    - get_edge_interface_ip
+    - execution_type
+    - adapter_name
+    - network_name
+    - ip_version
+  preprocess: PreProcessVerification
+  type: verification
+  format:
+      adapter_name: string
+      network_name: string
+      ip_version: string
+
+get_edge_version:
+  type: verification
+  description: Execute show version on edge through centralized api.
+  derived_components:
+    - gateway
+  format:
+      name: string
+      version: string
+      kernel: string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_edge_version
+  params:
+    - get_edge_version
+    - gateway_command
+    - edge_ha_index
+  sample_value:
+      name[?]equal_to: 'vShield Edge'
+      version[?]equal_to: '6.2.0'
+      kernel[?]equal_to: '3.2.62'
+
+edge_ha_index:
+  description: This index is specifies the edge cluster index.
+  derived_components:
+    - gateway
+  format: string
+  method: GetComponentAttribute
+  sample_value: 0
+  type: parameter
+
+get_ip_forwarding:
+  type: verification
+  description: Execute show version on edge through centralized api.
+  derived_components:
+    - gateway
+  format:
+      - 'code': string
+        'network': string
+        'nexthop': string
+        'via': string
+        'vnicname': string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_ip_forwarding
+  params:
+    - get_ip_forwarding
+    - edge_ha_index
+  sample_value:
+      table:
+          - code: 'R>*'
+            network: '0.0.0.0/0'
+            nexthop: '10.110.63.253'
+            via: 'via'
+            vnicname: 'vNic_0'
+
+get_ip_ospf_neighbor:
+  type: verification
+  description: Execute show ip bgp command
+  derived_components:
+    - gateway
+  format:
+    table:
+       - neigbhor_id: string
+         priority: string
+         address: string
+         state: string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_ip_ospf_neighbor
+  params:
+    - get_ip_ospf_neighbor
+    - edge_ha_index
+  sample_value:
+     - neigbhor_id: '2.2.2.2'
+       priority: '128'
+       address: '10.10.10.2'
+       state: 'Full/BDR'
+
+get_ip_ospf_database:
+  type: verification
+  description: Execute show ip ospf database
+  derived_components:
+    - gateway
+  format:
+    table:
+      - 'link_id': string
+        'adv_router': string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_ip_ospf_database
+  params:
+    - get_ip_ospf_database
+    - edge_ha_index
+    - area_id
+    - search_filter
+  sample_value:
+    - link_id: '1.1.1.1'
+      adv_router: '1.1.1.1'
+
+area_id:
+  description: This specifies the area id.
+  derived_components:
+    - gateway
+  format: string
+  method: GetComponentAttribute
+  sample_value: 0
+  type: parameter
+
+search_filter:
+  description: This specifies the search filter criteria while searching OSPF database.
+  derived_components:
+    - gateway
+  format: string
+  method: GetComponentAttribute
+  sample_value: 0
+  type: parameter
+  allowed_values:
+    - Summary_NLS
+    - RLS
+    - NLS
+    - OALS
+    - Summary_ASB
+    - Type7_AS
+    - AS_ExternalLink
+
+network_partitioning:
+  type: action
+  description: Isolate target ip or port from current device
+  dependency:
+  derived_components:
+    - torgateway
+  format:
+    operation: 'ref: operation'
+    ip_address: 'ref: ip_address'
+    protocol: 'tcp/udp'
+    port: specific destination port you want partitioning
+  preprocess: PreProcessNestedParametersForAction
+  method: network_partitioning
+  params:
+    - network_partitioning
+  sample_value:
+    operation: 'set'
+    protocol: 'tcp'
+    ip_address: 'torgateway.[1].vnic.[1]'
+    port: '5671'
+
+protocol:
+  allowed_value:
+    - tcp
+    - udp
+  derived_components:
+    - all
+  description: This key specifies the protocol used
+  format: string
+  sample_value: tcp
+  type: parameter
+
+torswitch:
+  derived_components:
+    - torgateway
+  description: Create a TOR switch on a TOR Gateway
+  method: CreateComponent
+  params:
+    - execution_type
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  sample_value:
+    - torswitch:
+        '[2]':
+            execution_type: 'cmd'
+            name: 'switch1'
+  linkedworkload: SwitchWorkload
+  type: component
+  objtype:
+    torgateway: 'VDNetLib::Switch::TORSwitch::TORSwitch'
+
+pif:
+  type: component
+  description: create a pnic object for TOR Gateway
+  derived_components:
+    - torgateway
+  linkedworkload: NetAdapterWorkload
+  preprocess: TransformSubComponentSpec
+  method: DiscoverPIF
+  params:
+    - pif
+  postprocess: StoreSubComponentObjects
+  objtype:
+    torgateway: 'VDNetLib::NetAdapter::Pnic:PIF'
+
+start_service:
+  description: Method to start service on a tor gateway.
+  method: start_service
+  params:
+    - execution_type
+    - service_name
+    - tor_entries
+  dependency:
+    - configure_package
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  derived_components:
+    - torgateway
+  format:
+   name: 'ref: name'
+  sample_value:
+    execution_type: 'cmd'
+    service_name: 'ovs-vtep'
+
+stop_service:
+  description: Method to start service on a tor gateway.
+  method: stop_service
+  params:
+    - execution_type
+    - service_name
+    - tor_entries
+  dependency:
+    - configure_package
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  derived_components:
+    - torgateway
+  format:
+   name: 'ref: name'
+  sample_value:
+    execution_type: 'cmd'
+    service_name: 'ovs-vtep'
+
+tor_entries:
+  derived_components:
+    - torgateway
+  description: list of tor switch ids
+  method: PreProcessNestedParameters
+  format: array
+  sample_value: array of switch ids
+  type: parameter
+
+set_nsx_controller:
+ type: action
+ description: Set NSX controller on the node
+ derived_components:
+  - tor_gateway
+ format:
+  controller_ip: 'vdnet index'
+  port: 'vdnet index'
+ preprocess: PreProcessNestedParametersForAction
+ method: set_nsx_controller
+ params:
+  - set_nsx_controller
+ sample_value:
+  controller_ip: vsm.[1].vxlancontroller.[1]
+  port: vsm.[1].vxlancontroller.[1]
+remove_nsx_controller:
+ type: action
+ description: Remove NSX controller on the node
+ derived_components:
+  - torgateway
+ format:
+    remove_nsx_controller: 'true'
+ preprocess: PreProcessNestedParametersForAction
+ method: remove_nsx_controller
+ params:
+  - remove_nsx_controller
+ sample_value:
+get_ip_bgp:
+  type: verification
+  description: Execute show ip bgp command
+  derived_components:
+    - gateway
+  format:
+    table:
+      - 'locprf': string
+        'metric': string
+        'network': string
+        'nexthop': string
+        'origin': string
+        'scode': string
+        'weight': string
+  preprocess: PreProcessVerificationAndParameters
+  method: get_ip_bgp
+  params:
+    - get_ip_bgp
+    - edge_ha_index
+  sample_value:
+      - locprf: '100'
+        metric: '0'
+        network: '10.10.10.0/24'
+        nexthop: '192.168.1.50'
+        origin: '?'
+        scode: '>'
+        weight: '60'
+
+regenerate_certificate:
+  type: action
+  description: regenerate certification for tor gateway
+  dependency:
+  derived_components:
+   - torgateway
+  preprocess: PreProcessNestedParametersForAction
+  method: regenerate_certificate
+  params:
+   - regenerate_certificate
+
+transport_node_id:
+  description: transport node identifier
+  derived_components:
+    - edgecluster
+  format: vdnet index
+  sample_value: nsxmanager.[1].edgenode.[1]
+  method: GetComponentAttribute
+  type: parameter

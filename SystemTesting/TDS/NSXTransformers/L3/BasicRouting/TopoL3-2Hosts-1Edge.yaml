@@ -1,0 +1,347 @@
+# Depends on anchors in ../../WORKAROUNDS.yaml. Requires that file to be included.
+
+#######################################################################################################
+#   Topology with 2 HVs and 1 Edge                                                                    #
+#                                                                                                     #
+#                                           +------------------+                                      #
+#                                           |   EDGE CLUSTER   |                                      #
+#                                           |                  |                                      #
+#                                           |                  |                                      #
+#                                           |            NSXE1-|----------------------------+         #
+#                                           |              |   |                            |         #
+#  HV2---VM1---LP1--LS101--LP101---LRP101---|----+       GWMC0 |                            |         #
+#                                           |    |         |   |                            |         #
+#                                           |    |-PLR1--ULRP1-|--LP201--LS201--LSP3---VM3--+---HV1   #
+#                                           |    |             |                                      #
+#  HV3---VM2---LP2--LS102--LP102---LRP102---|----+             |                                      #
+#                                           |                  |                                      #
+#                                           +------------------+                                      #
+#                                                                                                     #
+#######################################################################################################
+
+
+TopoL3_2Hosts_1Edge: &TopoL3_2Hosts_1Edge
+
+    VerifyTunnelPortsStateOnKVM-3:
+        Type: "Host"
+        TestHost: "kvm.[3]"
+        execution_type: 'cli'
+        'get_tunnel_ports_remote_ip[?]contain_once':
+            table:
+                - remote_ip: "kvm.[2].vtep.[1]->ip_address"
+                  forwarding_state: "true"
+            # WORKAROUND for BUG #1412223
+            #   - remote_ip: "esx.[1].vtep.[1]->adapter_ip"
+            #     forwarding_state: "true"
+
+    VerifyTunnelPortsStateOnKVM-2:
+        Type: "Host"
+        TestHost: "kvm.[2]"
+        execution_type: 'cli'
+        'get_tunnel_ports_remote_ip[?]contain_once':
+            table:
+                - remote_ip: "kvm.[3].vtep.[1]->ip_address"
+                  forwarding_state: "true"
+            # WORKAROUND for BUG #1412223
+            #   - remote_ip: "esx.[1].vtep.[1]->adapter_ip"
+            #     forwarding_state: "true"
+
+    VerifyL2Setup--ESX:
+        - - VtepConnectivity--ESX--EDGEESX
+    VerifyL2Setup--KVM:
+        - - VtepConnectivity--KVM--EDGEESX
+        - - VerifyTunnelPortsStateOnKVM-2
+        - - VerifyTunnelPortsStateOnKVM-3
+
+    VerifyL3Setup--ESX:
+        - - L3SRDRVerifications--ESX
+    VerifyL3Setup--KVM:
+        - - L3SRDRVerifications--KVM
+
+    VtepConnectivity--ESX--EDGEESX:
+        - - PingFromESX2Vtep1ToESX3Vtep1
+        - - PingFromESX1Vtep1ToESX2Vtep1
+        - - PingFromESX1Vtep1ToESX3Vtep1
+    VtepConnectivity--KVM--EDGEESX:
+        - - PingFromKVM2Vtep1ToKVM3Vtep1
+        - - PingFromESX1Vtep1ToKVM2Vtep1
+        - - PingFromESX1Vtep1ToKVM3Vtep1
+
+    LogicalSetup:
+        - - CreateTZ-1
+        - - CreateUPROF-1_MTU-1600
+        - - CreateLS-201  # UplinkLS
+          - CreateLS-101  # DownlinkLS
+          - CreateLS-102  # DownlinkLS
+        - - CreateLSP-201_LS-201  # UplinkLSPort
+          - CreateLSP-101_LS-101  # DownlinkLSPort
+          - CreateLSP-102_LS-102  # DownlinkLSPort
+
+    LogicalCleanup:
+        - - DeleteLSP-101-102
+        - - DeleteLSP-201
+        - - DeleteLS-101
+        - - DeleteLS-102
+        - - DeleteLS-201
+        - - DeleteUPROF-1
+        - - DeleteTZ-1
+
+    TNSetup--ESX:
+        - - SetManagerOnESX-2
+          - SetManagerOnESX-3
+        - - DiscoverHostNode2FromESX2
+          - DiscoverHostNode3FromESX3
+        - - CreateTN-2_HOSTNODE-2_TZ-1_VMNIC-1
+          - CreateTN-3_HOSTNODE-3_TZ-1_VMNIC-1
+        - - DiscoverESX2Vtep1FromDevice-vmk10
+        - - DiscoverESX3Vtep1FromDevice-vmk10
+    TNSetup--KVM:
+        - - SetManagerOnKVM-2
+          - SetManagerOnKVM-3
+        - - DiscoverHostNode2FromKVM2
+          - DiscoverHostNode3FromKVM3
+        - - CreateTN-2_HOSTNODE-2_TZ-1_ETH-1
+          - CreateTN-3_HOSTNODE-3_TZ-1_ETH-1
+        - - DiscoverKVM2Vtep1FromDevice-nsx-vtep0.0
+        - - DiscoverKVM3Vtep1FromDevice-nsx-vtep0.0
+
+    TNCleanup--ESX:
+        - - DeleteTN-2
+          - DeleteTN-3
+        - - RemoveManagerOnESX-2
+          - RemoveManagerOnESX-3
+        - - UndiscoverHostNode-2
+          - UndiscoverHostNode-3
+    TNCleanup--KVM:
+        - - DeleteTN-2
+          - DeleteTN-3
+        - - RemoveManagerOnKVM-2
+          - RemoveManagerOnKVM-3
+        - - UndiscoverHostNode-2
+          - UndiscoverHostNode-3
+
+    EdgeSetup--EDGEESX:
+        - - SetManagerOnESX-1
+        - - DiscoverHostNode1FromESX1
+        - - CreateTN-1_HOSTNODE-1_TZ-1_VMNIC-1
+        - - RegisterEdge
+        - - DiscoverEdgeNode-1_EDGE-1
+        - - CreateFPROF-1
+        - - CreateEdgeCluster
+        - - DiscoverESX1Vtep1FromDevice-vmk10
+
+    EdgeCleanup--EDGEESX:
+        - - DeleteEdgeCluster-1
+        - - DeleteEdgeNode-1
+        - - DeleteFPROF-1
+        - - DeleteTN-1
+        - - RemoveManagerOnESX-1
+        - - UndiscoverHostNode-1
+
+    L3Setup--InternalNetworkConfiguration:
+        - - CreatePLR-1_EDGECLUSTER-1_InternalNetworkConfiguration
+        - - CreateLRP-101_LR-1_IP-192.168.1.1_LSP-101  # CreateDownlinkPortsPLR1
+        - - CreateLRP-102_LR-1_IP-192.168.2.1_LSP-102  # CreateDownlinkPortsPLR1
+        - - CreateULRP-1_LSP-201_GWMC-0_IP-192.168.50.1  # CreateUplinkPortsPLR1
+
+
+    L3Setup:
+        - - CreatePLR-1_EDGECLUSTER-1
+        - - CreateLRP-101_LR-1_IP-192.168.1.1_LSP-101  # CreateDownlinkPortsPLR1
+        - - CreateLRP-102_LR-1_IP-192.168.2.1_LSP-102  # CreateDownlinkPortsPLR1
+        - - CreateULRP-1_LSP-201_GWMC-0_IP-192.168.50.1  # CreateUplinkPortsPLR1
+
+    L3Cleanup:
+        - - DeleteULRP-1
+        - - DeleteLRP-101
+        - - DeleteLRP-102
+        - - DeleteLR-1
+
+    UplinkVMSetup--EDGEESX:
+        - - AddVM3Vnic1ToLS201
+        - - DiscoverLport3FromVM3Vnic1
+        - - ConfigureVM3Vnic1IP-192.168.50.10
+        - - AddVM3Route--ESX
+
+    DownlinkVMSetup--ESX:
+        - - AddVM1Vnic1ToLS101  # AttachVM1Nic1ToDownlinkLS--ESX
+        - - AddVM2Vnic1ToLS102  # AttachVM2Nic1ToDownlinkLS--ESX
+        - - DiscoverLport1FromVM1Vnic1
+        - - DiscoverLport2FromVM2Vnic1
+        - - ConfigureVM1Vnic1IP-192.168.1.10
+          - ConfigureVM2Vnic1IP-192.168.2.10
+        - - AddVM1Route--ESX
+          - AddVM2Route--ESX
+    DownlinkVMSetup--KVM:
+        - - AddVM1Vif1ToKVM2Bridge1
+        - - AddVM2Vif1ToKVM3Bridge1
+        - - CreateLP1OnLS101ForVM1Vif1
+          - CreateLP2OnLS102ForVM2Vif1
+        - - ConfigureVM1Vif1IP-192.168.1.10
+          - ConfigureVM2Vif1IP-192.168.2.10
+        - - AddVM1Route--KVM
+          - AddVM2Route--KVM
+
+    VMSetup--ESX:
+        - - DownlinkVMSetup--ESX
+        - - UplinkVMSetup--EDGEESX
+    VMSetup--KVM:
+        - - DownlinkVMSetup--KVM
+        - - UplinkVMSetup--EDGEESX
+
+    DownlinkVMCleanup--ESX:
+        - - DeleteVnic-1_VM-1
+          - DeleteVnic-1_VM-2
+        - - UndiscoverLSP-1-2
+    DownlinkVMCleanup--KVM:
+        - - DeleteVif-1_VM-1
+          - DeleteVif-1_VM-2
+        - - DeleteLSP-1-2
+
+    UplinkVMCleanup--EDGEESX:
+        - - DeleteVnic-1_VM-3
+        - - UndiscoverLSP-3
+
+    VMCleanup--ESX:
+        - - DownlinkVMCleanup--ESX
+        - - UplinkVMCleanup--EDGEESX
+    VMCleanup--KVM:
+        - - DownlinkVMCleanup--KVM
+        - - UplinkVMCleanup--EDGEESX
+
+    EWTraffic--ESX:
+        - - PingFromVM1Vnic1ToVM2Vnic1
+    EWTraffic--KVM:
+        - - PingFromVM1Vif1ToVM2Vif1
+    NSTraffic--ESX:
+        - - PingFromVM3Vnic1ToVM1Vnic1
+    NSTraffic--KVM:
+        - - PingFromVM3Vnic1ToVM1Vif1
+
+    EWTrafficFail--ESX:
+        - - PingFailFromVM1Vnic1ToVM2Vnic1
+    EWTrafficFail--KVM:
+        - - PingFailFromVM1Vif1ToVM2Vif1
+    NSTrafficFail--ESX:
+        - - PingFailFromVM3Vnic1ToVM1Vnic1
+    NSTrafficFail--KVM:
+        - - PingFailFromVM3Vnic1ToVM1Vif1
+
+    L3Traffic--ESX:
+        - - EWTraffic--ESX
+        - - NSTraffic--ESX
+
+    L3Traffic--KVM:
+        - - EWTraffic--KVM
+        - - NSTraffic--KVM
+
+    L3TrafficFail--ESX:
+        - - EWTrafficFail--ESX
+        - - NSTrafficFail--ESX
+
+    L3TrafficFail--KVM:
+        - - EWTrafficFail--KVM
+        - - NSTrafficFail--KVM
+
+    #TODO(Krishna): Add DR/SR verifications on EDGEESX
+    L3SRDRVerifications--ESX:
+        - - VerifyLRsOnHVs--ESX
+        - - VerifyLRPortsOnHVs--ESX
+
+    L3SRDRVerifications--KVM:
+        - - VerifyLRsOnHVs--KVM
+        - - VerifyLRPortsOnHVs--KVM
+
+    VerifyLRsOnHVs--ESX:
+        Type: Host
+        TestHost: esx.[2-3]
+        execution_type: cli
+        sleepbetweenworkloads: *L3DpStabilizedSleep
+        noofretries: *L3DpStabilizedRetries
+        get_logical_routers[?]contain_once:
+            table:
+                - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+
+    VerifyLRPortsOnHVs--ESX:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: esx.[2-3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        sleepbetweenworkloads: *L3DpStabilizedSleep
+        noofretries: *L3DpStabilizedRetries
+        get_logical_router_ports[?]contain_once:
+            table:
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[101]->lr_port_id
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[102]->lr_port_id
+
+    VerifyLRsOnHVs--KVM:
+        Type: Host
+        TestHost: kvm.[2-3]
+        execution_type: cli
+        sleepbetweenworkloads: *L3DpStabilizedSleep
+        noofretries: *L3DpStabilizedRetries
+        get_logical_routers[?]contain_once:
+            table:
+                - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+
+    VerifyLRPortsOnHVs--KVM:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: kvm.[2-3]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        sleepbetweenworkloads: *L3DpStabilizedSleep
+        noofretries: *L3DpStabilizedRetries
+        get_logical_router_ports[?]contain_once:
+            table:
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[101]->lr_port_id
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[102]->lr_port_id
+
+    TopoSetup--ESX:
+        - - LogicalSetup
+        - - EdgeSetup--EDGEESX
+        - - TNSetup--ESX
+        - - VMSetup--ESX
+        - - L3Setup
+        - - VerifyL2Setup--ESX
+        - - VerifyL3Setup--ESX
+
+    TopoSetup--KVM:
+        - - LogicalSetup
+        - - EdgeSetup--EDGEESX
+        - - TNSetup--KVM
+        - - VMSetup--KVM
+        - - L3Setup
+        - - VerifyL2Setup--KVM
+        - - VerifyL3Setup--KVM
+
+    TopoSetup--ESX--L3InternalNetworkConfiguration:
+        - - LogicalSetup
+        - - EdgeSetup--EDGEESX
+        - - TNSetup--ESX
+        - - VMSetup--ESX
+        - - L3Setup--InternalNetworkConfiguration
+        - - VerifyL2Setup--ESX
+
+    TopoSetup--KVM--L3InternalNetworkConfiguration:
+        - - LogicalSetup
+        - - EdgeSetup--EDGEESX
+        - - TNSetup--KVM
+        - - VMSetup--KVM
+        - - L3Setup--InternalNetworkConfiguration
+        - - VerifyL2Setup--KVM
+
+    TopoCleanup--ESX:
+        - - L3Cleanup
+        - - VMCleanup--ESX
+        - - TNCleanup--ESX
+        - - EdgeCleanup--EDGEESX
+        - - LogicalCleanup
+
+    TopoCleanup--KVM:
+        - - L3Cleanup
+        - - VMCleanup--KVM
+        - - TNCleanup--KVM
+        - - EdgeCleanup--EDGEESX
+        - - LogicalCleanup

@@ -1,0 +1,502 @@
+WORKLOADS:
+    SetMasterNSXReplicatorAsPrimary: &SET_MASTER_NSX_REPLICATOR_AS_PRIMARY
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_role: primary
+
+    SetMasterNSXReplicatorAsStandalone: &SET_MASTER_NSX_REPLICATOR_AS_STANDALONE
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_role: standalone
+
+
+    RegisterAllSlaveNSXManagerWithMasterNSXReplicator: &REGISTER_NSX_MANAGER_WITH_REPLICATOR
+        Type: NSX
+        TestNSX: vsm.[1]
+        nsxslave:
+            '[1]':
+                ipaddress: 'vsm.[2]'
+                username: 'vsm.[2]'
+                password: 'vsm.[2]'
+                cert_thumbprint: 'vsm.[2]'
+
+    DeployControllerMasterSite: &DEPLOY_1_NSX_CONTROLLER_MASTER_SITE
+        Type: NSX
+        TestNSX: vsm.[1]
+        vxlancontroller:
+            '[1]':
+                name: AutoGenerate
+                host: 'esx.[1]'
+                ippool: 'vsm.[1].ippool.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[1]'
+
+    # TODO: TBD - key value pair
+    ImportControllersAllSlaveSites: &IMPORT_GCC_CONFIG_ALL_SLAVE_SITES
+
+    Delete_All_Controllers:
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        deletevxlancontroller: "vsm.[1].vxlancontroller.[-1]"
+
+    UnRegisterAllSlaves: &UNREGISTER_ALL_SLAVES
+        Type: NSX
+        TestNSX: vsm.[1]
+        deletensxslave: vsm.[1].nsxslave.[-1]
+        metadata:
+            expectedresultcode: '204'
+
+    VIBInstallVxlanConfigMasterSite: &INSTALLVIBS_CONFIGUREVXLAN_MASTER_SITE
+        Type: NSX
+        TestNSX: vsm.[1]
+        VDNCluster:
+            '[1]':
+                cluster: 'vc.[1].datacenter.[1].cluster.[2]'
+                mtu: 1600
+                switch: 'vc.[1].vds.[1]'
+                teaming: FAILOVER_ORDER
+                vibs: install
+                vlan: 19
+                vmkniccount: 1
+
+    VIBInstallVxlanConfigAllSlaveSite: &INSTALLVIBS_CONFIGUREVXLAN_ALL_SLAVE_SITE
+        Type: NSX
+        TestNSX: vsm.[2]
+        VDNCluster:
+            '[1]':
+                cluster: 'vc.[2].datacenter.[1].cluster.[1]'
+                mtu: 1600
+                switch: 'vc.[2].vds.[1]'
+                teaming: LOADBALANCE_SRCMAC
+                vibs: install
+                vlan: 18
+                vmkniccount: 1
+            '[2]':
+                cluster: 'vc.[2].datacenter.[2].cluster.[1]'
+                mtu: 1600
+                switch: 'vc.[2].vds.[2]'
+                teaming:
+                  - LOADBALANCE_SRCMAC
+                  - LOADBALANCE_SRCID
+                  - LOADBALANCE_LOADBASED
+                  - FAILOVER_ORDER
+                  - ETHER_CHANNEL
+                vibs: install
+                vlan: 20
+                vmkniccount: 1
+
+    # TODO: TBD - key value pair
+    CreateVerifyGlobalVNIPool: &GLOBAL_VNI_POOL
+        Type: NSX
+        TestNSX: vsm.[1]
+        globalvnipool:
+            '[1]':
+                name: AutoGenerate
+                begin: 10000
+                end: 19000
+
+    DeleteVerifyGlobalVNIPool: &DELETE_GLOBAL_VNI_POOL
+        Type: NSX
+        TestNSX: vsm.[1]
+        deleteglobalvnipool: vsm.[1].globalvnipool.[1]
+
+    CreateVerifyGlobalMulticastRange: &GLOBAL_MULTICAST_RANGE
+        Type: NSX
+        TestNSX: vsm.[1]
+        globalmulticastiprange:
+            '[1]':
+                name: AutoGenerate
+                begin: 239.0.0.101
+                end: 239.254.254.254
+
+    DeleteVerifyGlobalMulticastRange: &DELETE_GLOBAL_MULTICAST_RANGE
+        Type: NSX
+        TestNSX: vsm.[1]
+        deleteglobalmulticastiprange: vsm.[1].globalmulticastiprange.[1]
+
+    # TODO: TBD - key value pair
+    CreateVerifyGlobalTransportZone: &GLOBAL_TRANSPORT_ZONE_MASTER_SITE
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        globaltransportzone:
+            '[1]':
+                name: AutoGenerate
+                clusters: 'vc.[1].datacenter.[1].cluster.[2]'
+
+    DeleteVerifyGlobalTransportZone: &DELETE_GLOBAL_TRANSPORT_ZONE_MASTER_SITE
+        Type: NSX
+        TestNSX: vsm.[1]
+        deleteglobaltransportzone: vsm.[1].globaltransportzone.[1]
+
+    AddClustersToGTZSlaveSites: &ADD_CLUSTERS_GTZ_SLAVE_SITES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+        transportzoneaction: expand
+        clusters: 'vc.[2].datacenter.[1-2].cluster.[1]'
+        metadata:
+            expectedresultcode: '201'
+
+    ShrinkGTZToRemoveSecondClusterOnSlaveSite: &SHRINK_CLUSTER2_SLAVE
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+        transportzoneaction: shrink
+        clusters: 'vc.[2].datacenter.[2].cluster.[1]'
+        metadata:
+            expectedresultcode: '201'
+
+    ExpandGTZSecondClusterSlaveSite: &EXPAND_GTZ_SECOND_CLUSTER_SLAVE_SITE
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+        transportzoneaction: expand
+        clusters: 'vc.[2].datacenter.[2].cluster.[1]'
+        metadata:
+            expectedresultcode: '201'
+
+    # TODO: Add verification
+    CreateVerify2GlobalLogicalSwitches: &2_GLOBAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        globallogicalswitch:
+            '[1-2]':
+                #controlplanemode: UNICAST_MODE
+                controlplanemode: MULTICAST_MODE
+                name: AutoGenerate
+                # TODO: Check about this
+                tenantid: AutoGenerate
+
+    AllVMsAddvNICOnSameGlobalLogicalSwitch: &ALL_VMS_SAME_GLS_BACKING
+        Type: VM
+        TestVM: 'vm.[-1]'
+        vnic:
+            '[1]':
+                allowguestcontrol: 1
+                connected: 1
+                driver: vmxnet3
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                startconnected: 1
+
+    PingLIFIpFromVM2: &PingLIFIpFromVM2
+        Type: Traffic
+        ToolName: Ping
+        TestAdapter: 'vm.[2].vnic.[1]'
+        SupportAdapter: '172.32.1.1'
+        NoofOutbound: 1
+
+    PingLIFIpFromVM3: &PingLIFIpFromVM3
+        Type: Traffic
+        ToolName: Ping
+        TestAdapter: 'vm.[3].vnic.[1]'
+        SupportAdapter: '172.33.1.1'
+        NoofOutbound: 1
+
+    PingLIFIpFromVM4: &PingLIFIpFromVM4
+        Type: Traffic
+        ToolName: Ping
+        TestAdapter: 'vm.[4].vnic.[1]'
+        SupportAdapter: '172.34.1.1'
+        NoofOutbound: 1
+
+    PingLIFIpFromVM5: &PingLIFIpFromVM5
+        Type: Traffic
+        ToolName: Ping
+        TestAdapter: 'vm.[5].vnic.[1]'
+        SupportAdapter: '172.35.1.1'
+        NoofOutbound: 1
+
+    AllVMsPowerOn: &ALL_VMS_POWER_ON
+        Type: VM
+        # TODO: Use threads here to do in parallel
+        TestVM: 'vm.[-1]'
+        vmstate: poweron
+
+    # TODO: Add verification
+    AllVMsPingEachOther: &ALL_VMS_PING_EACH_OTHER
+        Type: Traffic
+        ToolName: Ping
+        TestAdapter: 'vm.[2].vnic.[1]'
+        SupportAdapter: 'vm.[3-5].vnic.[1]'
+        NoofInbound: 1
+        NoofOutbound: 1
+        TestDuration: 60
+        maxtimeout: 128000
+
+    # TODO: Add verification
+    CreateVerifyGlobalDistributedLogicalRouter: &GLOBAL_DISTRIBUTED_LOGICAL_ROUTER
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        globaldistributedlogicalrouter:
+            '[1]':
+                name: AutoGenerate
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'esx.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                #TODO: Check with aditya on this
+                primaryaddress: 10.10.10.14
+                subnetmask: 255.255.255.0
+
+    CreateVerify2GlobalDistributedLogicalRouters: &TWO_GLOBAL_DISTRIBUTED_LOGICAL_ROUTER
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        globaldistributedlogicalrouter:
+            '[1]':
+                name: AutoGenerate
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'esx.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                #TODO: Check with aditya on this
+                primaryaddress: 10.10.10.14
+                subnetmask: 255.255.255.0
+            '[2]':
+                name: AutoGenerate
+                datacenter: 'vc.[1].datacenter.[1]'
+                host: 'esx.[2]'
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[2]'
+                primaryaddress: 10.10.10.15
+                subnetmask: 255.255.255.0
+
+    CreateVerifyLIFsOnGDLR1: &LIFS_ON_GDLR1
+        Type: VM
+        TestVM: 'vsm.[1].globaldistributedlogicalrouter.[1]'
+        global_lif:
+            '[1]':
+                name: AutoGenerate
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.32.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+            '[2]':
+                name: AutoGenerate
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.33.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+
+    CreateVerifyLIFsOnGDLR2: &LIFS_ON_GDLR2
+        Type: VM
+        TestVM: 'vsm.[1].globaldistributedlogicalrouter.[2]'
+        global_lif:
+            '[1]':
+                name: AutoGenerate
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[3]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.34.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+            '[2]':
+                name: AutoGenerate
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[4]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.35.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+
+    # TODO: Add verification + addressgroup will depend on the DHCP
+    # scheme we will use from Edge
+    CreateVerifyLIFs: &LIFS_ON_GDLR
+        Type: VM
+        TestVM: 'vsm.[1].globaldistributedlogicalrouter.[1]'
+        global_lif:
+            '[1]':
+                name: AutoGenerate
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.32.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+            '[2]':
+                name: AutoGenerate
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.33.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+            '[3]':
+                name: AutoGenerate
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[3]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.34.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+            '[4]':
+                name: AutoGenerate
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[4]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.35.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+
+
+    EvenVMsOnEvenGlobalLogicalSwitch: &EVEN_VMS_EVEN_GLS_BACKING
+        Type: NetAdapter
+        testadapter: 'vm.[x:vdnetmod:2].vnic.[1]'
+        portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+        reconfigure: true
+
+    VM2OnFirstGlobalLogicalSwitch:
+        Type: NetAdapter
+        testadapter: 'vm.[2].vnic.[1]'
+        portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+        reconfigure: true
+
+    VM3OnSecondGlobalLogicalSwitch:
+        Type: NetAdapter
+        testadapter: 'vm.[3].vnic.[1]'
+        portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+        reconfigure: true
+
+    VM4OnThirdGlobalLogicalSwitch:
+        Type: NetAdapter
+        testadapter: 'vm.[4].vnic.[1]'
+        portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[3]'
+        reconfigure: true
+
+    VM5OnForthGlobalLogicalSwitch:
+        Type: NetAdapter
+        testadapter: 'vm.[5].vnic.[1]'
+        portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[4]'
+        reconfigure: true
+
+    RealizeLogicalports: &REALIZE_LOGICALPORTS
+         Type: NSX
+         TestNSX: vsm.[1]
+         logicalport:
+             '[1]':
+                 discover: true
+                 vif: 'vm.[1].vnic.[1]'
+
+    # TODO: Router port is not supported in vdnet yet. Check with subbu
+    AllVMsPingRouterPort: &ALL_VMS_PING_ROUTER_PORT
+        Type: Traffic
+        ToolName: Ping
+        TestAdapter: 'vm.[-1].vnic.[1]'
+        SupportAdapter: 'vsm.[1].globaldistributedlogicalrouter.[1].routerport.[1]'
+        NoofOutbound: 1
+
+    AllVMsPowerOff: &ALL_VMS_POWER_OFF
+        Type: VM
+        # TODO: Use threads here to do in parallel
+        TestVM: 'vm.[-1]'
+        vmstate: poweroff
+
+    DeleteAllVnicsAllVMs: &ALL_VMS_DELETE_ALL_VNICS
+        Type: VM
+        TestVM: 'vm.[-1]'
+        deletevnic: 'vm.[x=vm_index].vnic.[-1]'
+
+    # TODO: Set the dependency order in keysdatabase
+    CleanupVSM: &CLEAN_VSM
+        Type : "NSX"
+        TestNSX : "vsm.[1]"
+        deleteglobaldistributedlogicalrouter: "vsm.[1].globaldistributedlogicalrouter.[-1]"
+        deleteglobaltransportzone: "vsm.[1].globaltransportzone.[-1]"
+
+    DeleteAllGlobalLogicalSwitches: &DELETE_ALL_GLOBAL_LOGICAL_SWITCH
+        Type: TransportZone
+        TestTransportZone: vsm.[1].globaltransportzone.[1]
+        deletegloballogicalswitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[-1]'
+
+    DeleteAllLIFsAllGlobalDistributedLogicalRouters: &DELETE_ALL_GDLR_LIFS
+        Type: VM
+        TestVM: vsm.[1].globaldistributedlogicalrouter.[1]
+        delete_global_lif: 'vsm.[1].globaldistributedlogicalrouter.[1].global_lif.[-1]'
+
+    UnconfigureVxlanConfigMasterSite: &UNCONFIGUREVXLAN_MASTER_SITE
+        Type: Cluster
+        Testcluster: vsm.[1].vdncluster.[-1]
+        vxlan: unconfigure
+
+    UnconfigureVxlanConfigSlaveSite: &UNCONFIGUREVXLAN_SLAVE_SITE
+        Type: Cluster
+        Testcluster: vsm.[2].vdncluster.[-1]
+        vxlan: unconfigure
+
+    ConfigureVM2Vnic1IP:
+        IPv4: 172.32.1.5
+        TestAdapter: 'vm.[2].vnic.[1]'
+        Type: NetAdapter
+        netmask: 255.255.0.0
+
+    ConfigureVM3Vnic1IP:
+        IPv4: 172.33.1.5
+        TestAdapter: 'vm.[3].vnic.[1]'
+        Type: NetAdapter
+        netmask: 255.255.0.0
+
+    ConfigureVM4Vnic1IP:
+        IPv4: 172.34.1.5
+        TestAdapter: 'vm.[4].vnic.[1]'
+        Type: NetAdapter
+        netmask: 255.255.0.0
+
+    ConfigureVM5Vnic1IP:
+        IPv4: 172.35.1.5
+        TestAdapter: 'vm.[5].vnic.[1]'
+        Type: NetAdapter
+        netmask: 255.255.0.0
+
+    AddRouteVM2:
+        Testadapter: 'vm.[2].vnic.[1]'
+        Type: NetAdapter
+        gateway: 172.32.1.1
+        netmask: 255.0.0.0
+        network: 172.0.0.0
+        route: add
+
+    AddRouteVM3:
+        Testadapter: 'vm.[3].vnic.[1]'
+        Type: NetAdapter
+        gateway: 172.33.1.1
+        netmask: 255.0.0.0
+        network: 172.0.0.0
+        route: add
+
+    AddRouteVM4:
+        Testadapter: 'vm.[4].vnic.[1]'
+        Type: NetAdapter
+        gateway: 172.34.1.1
+        netmask: 255.0.0.0
+        network: 172.0.0.0
+        route: add
+
+    AddRouteVM5:
+        Testadapter: 'vm.[5].vnic.[1]'
+        Type: NetAdapter
+        gateway: 172.35.1.1
+        netmask: 255.0.0.0
+        network: 172.0.0.0
+        route: add
+
+    Delete_All_Edges_site1:
+        Type:     "NSX"
+        TestNSX: "vsm.[1]"
+        deletevse: "vsm.[1].vse.[-1]"
+
+    Delete_All_Edges_site2:
+        Type:     "NSX"
+        TestNSX: "vsm.[2]"
+        deletevse: "vsm.[2].vse.[-1]"
+
+    Delete_All_Universal_Edges:
+        Type:     "NSX"
+        TestNSX: "vsm.[1]"
+        deleteglobaldistributedlogicalrouter: "vsm.[1].globaldistributedlogicalrouter.[-1]"

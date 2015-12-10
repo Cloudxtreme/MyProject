@@ -1,0 +1,224 @@
+CCPClusterSingleNodeWithLargeHosts:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ControlPlatform'
+    TestName: 'CCPClusterSingleNodeWithLargeHosts'
+    TestbedSpec: *CCP_Clustering_TOPOLOGY_04--KVM
+    Version: 2
+    TCMSId: ''
+    Priority: 'P3'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath: *QCPATH--KVM
+    Testbed: 'Deploy a setup with 1 NSX managers, 1 Control Plane node,  100 KVM host, 100 VM'
+    Summary: 'Join nodes to form a cluster of one nodes, verify single node serving large
+              number of hosts and logical switch '
+    Procedure:  '1. Deploy first controller,join controller 1 to control plan cluster
+                 2. Configure transport zone and larger number logical switch on MP
+                 3. Add 100 KVM host to transport zone,100 VM join logical switch
+                 After step 2 - Transport zone create is successful
+                 After step 3 - Traffic works well on these 100 VM in logical switch'
+    ExpectedResult: "PASS"
+    Duration: '300'
+    Tags: 'nsx,control,clustering'
+    AutomationLevel: 'Automated'
+    Developer: 'wxzhang'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    WORKLOADS:
+        Sequence:
+            - ['Register100Hosts']
+            - ['RegisterController1']
+            - ['Discover100Hostnodes']
+            - ['SetSecurityOnController1']
+            - ['InitializeController1']
+            - ['JoinController1ToCluster']
+            - ['VerifyCCPCluster']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateLogicalSwitch']
+            - ['VerifyLogicalSwitchInfoOnControllers']
+            - ['Create100Vif']
+            - ['VifAttachment']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusUpOnHost']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyLogicalSwithEntryCountOnControllers']
+            - ['Create10LogicalSwitch',
+               'LogicalSwitch1Traffic']
+            - ['VerifyCCPCluster']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusUpOnHost']
+            - ['LogicalSwitch1Traffic']
+            - ['RebootCCPNode1']
+            - ['VerifyLSControllerStatusUpOnHost']
+            - ['VerifyCCPCluster']
+            - ['ReadLS1VniMasterCCP']
+            - ['LogicalSwitch1Traffic']
+        ExitSequence:
+            - ['DeleteAllVnics']
+            - ['NSXCleanup']
+            - ['UnregisterHosts']
+
+        Register100Hosts: *REGISTER_100_HOSTS--KVM
+        NSXCleanup: *NSX_CLEANUP--KVM
+        RegisterController1: *REGISTER_CONTROLLER_1
+        SetSecurityOnController1: *SET_SECURITY_ON_CONTROLLER_1
+        InitializeController1: *INITIALIZE_CONTROLLER_1
+        JoinController1ToCluster: *JOIN_CONTROLLER_1_TO_CLUSTER
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01--KVM
+        ConfigureVnicIP: *CONFIGURE_2VMS_IP--KVM
+        VerifyCCPCluster: *VERIFY_CCP_CLUSTER
+        RebootCCPNode1: *REBOOT_CCP_NODE_1
+
+        Create100Vif:
+            Type: VM
+            TestVM: 'vm.[1-100]'
+            vif:
+                '[1]':
+                    backing: "kvm.[x=vm_index].bridge.[1]"
+        VifAttachment:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalport:
+                '[1-100]':
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+                    attachment:
+                        attachment_type: 'VIF'
+                        id_: vm.[x=logicalport_index].vif.[1]->uuid
+        UnregisterHosts:
+            Type: Host
+            TestHost: 'kvm.[1-100]'
+            remove_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+
+        Discover100Hostnodes:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            hostnode:
+                '[1-100]':
+                    discover: 'true'
+                    ip_addresses: 'kvm.[x=hostnode_index]'
+
+        VerifyLSControllerStatusUpOnHost:
+            Type: "Host"
+            testHost: "kvm.[1-100]"
+            execution_type: 'cli'
+            noofretries: '6'
+            'get_logical_switch[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      controller_status: 'up'
+                      controller_ip: 'nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->master_ccp_ip'
+        ReadLS1VniMasterCCP:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            controllers: "nsxcontroller.[-1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            PersistData: "Yes"
+            read_switch_ccp_mapping:
+                'master_ccp_ip[?]defined': ''
+
+        Create10LogicalSwitch:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            logicalswitch:
+                '[1-5]':
+                    name: autogenerate
+                    transport_zone_id: nsxmanager.[1].transportzone.[1]
+                    admin_state: UP
+                    replication_mode: MTEP # source
+                '[6-10]':
+                    name: autogenerate
+                    transport_zone_id: nsxmanager.[1].transportzone.[1]
+                    admin_state: UP
+                    replication_mode: SOURCE
+
+        CreateTransportNodes:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[1-100]':
+                    node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                    host_switches:
+                          - switch_name: 'nsxvswitch'
+                            host_switch_profile_ids:
+                               - key: 'UplinkHostSwitchProfile'
+                                 value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                            uplinks:
+                               - device_name: 'vmnic1'
+                                 adapter_name: 'uplink1'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+        VifAttachment:
+            Type: VM
+            TestVM: 'vm.[1-100]'
+            vif:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[1]"
+                   connected: 1
+                   startconnected: 1
+
+        DiscoverLogicalPorts:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            logicalport:
+                '[1-100]':
+                    discover: 'true'
+                    attachment:
+                       attachment_type : VIF
+                       id_: 'vm.[x=logicalport_index].vif.[1]->uuid'
+
+        DeleteAllVnics:
+            Type: VM
+            TestVM: vm.[1-100]
+            deletevif: vm.[x].vnic.[1]
+            expectedResult: ignore
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            TestHost: "kvm.[1-100]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+               table:
+                   - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                     replication_mode: 'mtep'
+
+        LogicalSwitch1Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp,udp"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[2].vif.[1]"
+            TestDuration  : "60"
+
+        VerifyLogicalSwitchInfoOnControllers:
+            Type: "Controller"
+            TestController: 'nsxcontroller.[-1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            switches: 'nsxmanager.[1].logicalswitch.[-1]'
+            'get_logical_switches[?]contain_once':
+                table:
+                    - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                      replication_mode: 'mtep'
+                      binding_type: 'vxstt'
+
+        VerifyLogicalSwithEntryCountOnControllers:
+            Type: "Controller"
+            TestController: 'nsxcontroller.[-1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            'get_entry_count':
+                logical_switch[?]equal_to: 1
+                transport_node[?]equal_to: 100
+                logical_switch_port[?]equal_to: 100

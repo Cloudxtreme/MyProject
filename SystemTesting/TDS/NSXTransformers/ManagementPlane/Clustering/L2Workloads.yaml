@@ -1,0 +1,1305 @@
+MPClusteringL2Workloads: &MPClusteringL2Workloads
+
+  CCPClusterNode1: &CCP_CLUSTERNODE1
+    'nsxcontroller.[1].clusternode.[1]'
+
+  CCPClusterNode2: &CCP_CLUSTERNODE2
+    'nsxcontroller.[1].clusternode.[2]'
+
+  CCPClusterNode3: &CCP_CLUSTERNODE3
+    'nsxcontroller.[1].clusternode.[3]'
+
+  SetTransportZoneId:
+    Type: "NSX"
+    TestNSX: "nsxmanager.[1]"
+    transportzone:
+      '[1]':
+        map_object: true
+        id_: 'incorrect_id'
+
+  CreateTransportZone1From_Node1: &CREATE_TRANSPORT_ZONE_1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    transportzone:
+      '[1]':
+        name: TZ-1
+        transport_zone_type: 'OVERLAY' # or VLAN, both case-senstive
+        switch_name: 'nsxvswitch'
+
+  CreateTransportZone1From_Node4: &CREATE_TRANSPORT_ZONE_1_FROM_NODE_4
+    <<: *CREATE_TRANSPORT_ZONE_1
+    TestNSX: nsxmanager.[4]
+
+  CreateTransportZone1To10From_Node1: &CREATE_TRANSPORT_ZONE_1_10_FROM_NODE1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    transportzone:
+      '[1-10]':
+        name: TZ-1
+        transport_zone_type: 'OVERLAY' # or VLAN, both case-senstive
+        switch_name: 'nsxvswitch'
+
+  ReadTZFrom_Node1_For_1_10: &READ_TZ_FROM_NODE_1_FOR_1_TO_10
+    Type: TransportZone
+    TestTransportZone: "nsxmanager.[1].transportzone.[1]"
+    get_transport_zones:
+      'results[?]contain_once':
+        - id_: "nsxmanager.[1].transportzone.[1]->transport_zone_id"
+        - id_: "nsxmanager.[1].transportzone.[2]->transport_zone_id"
+        - id_: "nsxmanager.[1].transportzone.[3]->transport_zone_id"
+        - id_: "nsxmanager.[1].transportzone.[4]->transport_zone_id"
+        - id_: "nsxmanager.[1].transportzone.[5]->transport_zone_id"
+        - id_: "nsxmanager.[1].transportzone.[6]->transport_zone_id"
+        - id_: "nsxmanager.[1].transportzone.[7]->transport_zone_id"
+        - id_: "nsxmanager.[1].transportzone.[8]->transport_zone_id"
+        - id_: "nsxmanager.[1].transportzone.[9]->transport_zone_id"
+        - id_: "nsxmanager.[1].transportzone.[10]->transport_zone_id"
+
+  ReadTZFrom_Node2_For_1_10: &READ_TZ_FROM_NODE_2_FOR_1_TO_10
+    Type: TransportZone
+    TestTransportZone: "nsxmanager.[2].transportzone.[1]"
+    get_transport_zones:
+      'results[?]contain_once':
+        - id_: "nsxmanager.[2].transportzone.[1]->transport_zone_id"
+        - id_: "nsxmanager.[2].transportzone.[2]->transport_zone_id"
+        - id_: "nsxmanager.[2].transportzone.[3]->transport_zone_id"
+        - id_: "nsxmanager.[2].transportzone.[4]->transport_zone_id"
+        - id_: "nsxmanager.[2].transportzone.[5]->transport_zone_id"
+        - id_: "nsxmanager.[2].transportzone.[6]->transport_zone_id"
+        - id_: "nsxmanager.[2].transportzone.[7]->transport_zone_id"
+        - id_: "nsxmanager.[2].transportzone.[8]->transport_zone_id"
+        - id_: "nsxmanager.[2].transportzone.[9]->transport_zone_id"
+        - id_: "nsxmanager.[2].transportzone.[10]->transport_zone_id"
+
+  ReadTZFrom_Node3_For_1_10: &READ_TZ_FROM_NODE_3_FOR_1_TO_10
+    Type: TransportZone
+    TestTransportZone: "nsxmanager.[3].transportzone.[1]"
+    get_transport_zones:
+      'results[?]contain_once':
+        - id_: "nsxmanager.[3].transportzone.[1]->transport_zone_id"
+        - id_: "nsxmanager.[3].transportzone.[2]->transport_zone_id"
+        - id_: "nsxmanager.[3].transportzone.[3]->transport_zone_id"
+        - id_: "nsxmanager.[3].transportzone.[4]->transport_zone_id"
+        - id_: "nsxmanager.[3].transportzone.[5]->transport_zone_id"
+        - id_: "nsxmanager.[3].transportzone.[6]->transport_zone_id"
+        - id_: "nsxmanager.[3].transportzone.[7]->transport_zone_id"
+        - id_: "nsxmanager.[3].transportzone.[8]->transport_zone_id"
+        - id_: "nsxmanager.[3].transportzone.[9]->transport_zone_id"
+        - id_: "nsxmanager.[3].transportzone.[10]->transport_zone_id"
+
+  ReadTZ1FromMP:
+    Type: NSX
+    TestNSX: nsxmanager.[1].transportzone.[1]
+    read:
+      'name[?]equal_to': 'TZ-1'
+      'transport_zone_type[?]equal_to': 'OVERLAY' # or VLAN, both case-senstive
+      'switch_name[?]equal_to': 'nsxvswitch'
+
+  ReadTransportZone1From_Node1: &READ_TRANSPORT_ZONE_1_FROM_NODE_1
+    Type: NSX
+    TestNSX: "nsxmanager.[1].transportzone.[1]"
+    read:
+      'name[?]equal_to': 'TZ-1'
+      'transport_zone_type[?]equal_to': 'OVERLAY'
+      'switch_name[?]equal_to': 'nsxvswitch'
+
+  ReadTransportZone1From_Node2: &READ_TRANSPORT_ZONE_1_FROM_NODE_2
+    <<: *READ_TRANSPORT_ZONE_1_FROM_NODE_1
+    TestNSX: "nsxmanager.[2].transportzone.[1]"
+
+  ReadTransportZone1From_Node3: &READ_TRANSPORT_ZONE_1_FROM_NODE_3
+    <<: *READ_TRANSPORT_ZONE_1_FROM_NODE_1
+    TestNSX: "nsxmanager.[3].transportzone.[1]"
+
+  ReadTransportZone1From_Node4: &READ_TRANSPORT_ZONE_1_FROM_NODE_4
+    <<: *READ_TRANSPORT_ZONE_1_FROM_NODE_1
+    TestNSX: "nsxmanager.[4].transportzone.[1]"
+
+  ReadTransportZone1From_Node5: &READ_TRANSPORT_ZONE_1_FROM_NODE_5
+    <<: *READ_TRANSPORT_ZONE_1_FROM_NODE_1
+    TestNSX: "nsxmanager.[5].transportzone.[1]"
+
+  ReadTransportZone1FromAllNodes: &READ_TRANSPORT_ZONE_1_FROM_ALL_NODES
+    - ["ReadTransportZone1From_Node1"]
+    - ["ReadTransportZone1From_Node2"]
+    - ["ReadTransportZone1From_Node3"]
+
+  ReadTransportZone2FromAllNodes: &READ_TRANSPORT_ZONE_2_FROM_ALL_NODES
+    - ["ReadTransportZone2From_Node1"]
+    - ["ReadTransportZone2From_Node2"]
+    - ["ReadTransportZone2From_Node3"]
+
+  ReadTransportZone3FromAllNodes: &READ_TRANSPORT_ZONE_3_FROM_ALL_NODES
+    - ["ReadTransportZone3From_Node1"]
+    - ["ReadTransportZone3From_Node2"]
+    - ["ReadTransportZone3From_Node3"]
+
+  CreateTransportZone2From_Node1: &CREATE_TRANSPORT_ZONE_2_FROM_NODE1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    transportzone:
+      '[2]':
+        name: 'TZ-2'
+        transport_zone_type: 'OVERLAY' # or VLAN, both case-senstive
+        switch_name: 'nsxvswitch'
+
+  CreateTransportZone2From_Node2: &CREATE_TRANSPORT_ZONE_2_FROM_NODE2
+    <<: *CREATE_TRANSPORT_ZONE_2_FROM_NODE1
+    TestNSX: nsxmanager.[2]
+
+  CreateTransportZone2From_Node4: &CREATE_TRANSPORT_ZONE_2_FROM_NODE4
+    <<: *CREATE_TRANSPORT_ZONE_2_FROM_NODE1
+    TestNSX: nsxmanager.[4]
+
+  CreateTransportZone3From_Node1: &CREATE_TRANSPORT_ZONE_3
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    transportzone:
+      '[3]':
+        name: 'TZ-3'
+        transport_zone_type: 'OVERLAY' # or VLAN, both case-senstive
+        switch_name: 'nsxvswitch'
+
+  CreateTransportZone3From_Node3: &CREATE_TRANSPORT_ZONE_3_FROM_NODE3
+    <<: *CREATE_TRANSPORT_ZONE_3
+    TestNSX: nsxmanager.[3]
+
+  ReadTransportZone3From_Node3: &READ_TRANSPORT_ZONE_3_FROM_NODE_3
+    Type: NSX
+    TestNSX: "nsxmanager.[3].transportzone.[3]"
+    read:
+      'name[?]equal_to': 'TZ-3'
+      'transport_zone_type[?]equal_to': 'OVERLAY'
+      'switch_name[?]equal_to': 'nsxvswitch'
+
+  ReadTransportZone3From_Node2: &READ_TRANSPORT_ZONE_3_FROM_NODE_2
+    <<: *READ_TRANSPORT_ZONE_3_FROM_NODE_3
+    TestNSX: "nsxmanager.[2].transportzone.[3]"
+
+  ReadTransportZone3From_Node1: &READ_TRANSPORT_ZONE_3_FROM_NODE_1
+    <<: *READ_TRANSPORT_ZONE_3_FROM_NODE_3
+    TestNSX: "nsxmanager.[1].transportzone.[3]"
+
+  ReadTransportZone2From_Node1: &READ_TRANSPORT_ZONE_2_FROM_NODE_1
+    Type: NSX
+    TestNSX: "nsxmanager.[1].transportzone.[2]"
+    read:
+      'name[?]equal_to': 'TZ-2'
+      'transport_zone_type[?]equal_to': 'OVERLAY'
+      'switch_name[?]equal_to': 'nsxvswitch'
+
+  ReadTransportZone2From_Node2: &READ_TRANSPORT_ZONE_2_FROM_NODE_2
+    <<: *READ_TRANSPORT_ZONE_2_FROM_NODE_1
+    TestNSX: "nsxmanager.[2].transportzone.[2]"
+
+  ReadTransportZone2From_Node3: &READ_TRANSPORT_ZONE_2_FROM_NODE_3
+    <<: *READ_TRANSPORT_ZONE_2_FROM_NODE_1
+    TestNSX: "nsxmanager.[3].transportzone.[2]"
+
+  VerifyTransportZoneList_Count_2_From_Node1: &READ_TZ_COUNT_2_FROM_NODE1
+    Type: TransportZone
+    TestTransportZone: "nsxmanager.[1].transportzone.[1]"
+    get_transport_zones:
+      'result_count[?]equal_to': 2
+
+  VerifyTransportZoneList_Count_0_From_Node1: &READ_TZ_COUNT_0_FROM_NODE1
+    Type: TransportZone
+    TestTransportZone: "nsxmanager.[1].transportzone.[1]"
+    get_transport_zones:
+      'result_count[?]equal_to': 0
+
+  VerifyTransportZoneList_Count_2_From_Node2: &READ_TZ_COUNT_2_FROM_NODE2
+    <<: *READ_TZ_COUNT_2_FROM_NODE1
+    TestTransportZone: "nsxmanager.[2].transportzone.[1]"
+
+  VerifyTransportZoneList_Count_2_From_Node3: &READ_TZ_COUNT_2_FROM_NODE3
+    <<: *READ_TZ_COUNT_2_FROM_NODE1
+    TestTransportZone: "nsxmanager.[3].transportzone.[1]"
+
+  VerifyTransportZoneList_Count_3_From_Node1: &READ_TZ_COUNT_3_FROM_NODE1
+    Type: TransportZone
+    TestTransportZone: "nsxmanager.[1].transportzone.[1]"
+    get_transport_zones:
+      'result_count[?]equal_to': 3
+
+  VerifyTransportZoneList_Count_3_From_Node2: &READ_TZ_COUNT_3_FROM_NODE2
+    <<: *READ_TZ_COUNT_3_FROM_NODE1
+    TestTransportZone: "nsxmanager.[2].transportzone.[1]"
+
+  VerifyTransportZoneList_Count_3_From_Node3: &READ_TZ_COUNT_3_FROM_NODE3
+    <<: *READ_TZ_COUNT_3_FROM_NODE1
+    TestTransportZone: "nsxmanager.[3].transportzone.[1]"
+
+  VerifyTransportZoneList_Count_10_From_Node1: &READ_TZ_COUNT_10_FROM_NODE1
+    Type: TransportZone
+    TestTransportZone: "nsxmanager.[1].transportzone.[1]"
+    get_transport_zones:
+      'result_count[?]equal_to': 10
+
+  VerifyTransportZoneList_Count_10_From_Node2: &READ_TZ_COUNT_10_FROM_NODE2
+    <<: *READ_TZ_COUNT_10_FROM_NODE1
+    TestTransportZone: "nsxmanager.[2].transportzone.[1]"
+
+  VerifyTransportZoneList_Count_10_From_Node3: &READ_TZ_COUNT_10_FROM_NODE3
+    <<: *READ_TZ_COUNT_10_FROM_NODE1
+    TestTransportZone: "nsxmanager.[3].transportzone.[1]"
+
+  CreateUplinkProfileFrom_Node1:
+    ESX: &CREATE_UPLINK_PROFILE_01--ESX
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      UplinkProfile:
+        '[1]':
+          mtu: 1600
+          teaming:
+            active:
+              - adapter_name: 'uplink1'
+                adapter_type: 'PNIC'
+            policy: 'FAILOVER_ORDER'
+          vlan: '0'
+          resource_type: 'UplinkHostSwitchProfile'
+    KVM: &CREATE_UPLINK_PROFILE_01--KVM
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      UplinkProfile:
+        '[1]':
+          mtu: 1600
+          teaming:
+            active:
+              - adapter_name: 'eth1'
+                adapter_type: 'PNIC'
+            policy: 'FAILOVER_ORDER'
+          vlan: '0'
+          resource_type: 'UplinkHostSwitchProfile'
+
+  CreateTransportNodesFrom_Node1:
+    ESX: &CREATE_TRANSPORT_NODE_01--ESX
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      transportnode:
+        '[1-2]':
+          node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+          host_switches:
+            - switch_name: 'nsxvswitch'
+              host_switch_profile_ids:
+                - key: 'UplinkHostSwitchProfile'
+                  value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+              uplinks:
+                - device_name: 'vmnic1'
+                  adapter_name: 'uplink1'
+          transport_zone_endpoint:
+            - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+    KVM: &CREATE_TRANSPORT_NODE_01--KVM
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      transportnode:
+        '[1-2]':
+          node_id: nsxmanager.[1].hostnode.[x=transportnode_index]
+          host_switches:
+            - switch_name: 'nsxvswitch'
+              host_switch_profile_ids:
+                - key: 'UplinkHostSwitchProfile'
+                  value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+              uplinks:
+                - device_name: "eth1"
+                  adapter_name: "transport"
+          transport_zone_endpoint:
+            - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+  SetControllerOnHost1: &SET_CONTROLLER_ON_HOST1
+    Type: Host
+    TestHost: 'esx.[1]'
+    set_nsx_controller:
+      controller_ip: 'nsxcontroller.[1]'
+      node_id: 'nsxmanager.[1].transportnode.[1]'
+      execution_type: 'cli'
+
+  SetControllerOnHost2: &SET_CONTROLLER_ON_HOST2
+    Type: Host
+    TestHost: 'esx.[2]'
+    set_nsx_controller:
+      controller_ip: 'nsxcontroller.[1]'
+      node_id: 'nsxmanager.[1].transportnode.[2]'
+      execution_type: 'cli'
+
+  CreateLogicalSwitch01From_Node1: &CREATE_LOGICAL_SWITCH_01
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    logicalswitch:
+      '[1]':
+        name: 'ls-demo-1'  # display_name in product schema
+        summary: '1st logical Switch'  # description in product schema
+        transport_zone_id: nsxmanager.[1].transportzone.[1]
+        admin_state: UP  # switch_admin_state in product schema
+        # replication_mode's value is case sensitive
+        replication_mode: MTEP # source
+
+  CreateLogicalSwitch02From_Node1: &CREATE_LOGICAL_SWITCH_02
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    logicalswitch:
+      '[2]':
+        name: 'ls-demo-2'  # display_name in product schema
+        summary: '2nd logical Switch'  # description in product schema
+        transport_zone_id: nsxmanager.[1].transportzone.[1]
+        admin_state: UP  # switch_admin_state in product schema
+        # replication_mode's value is case sensitive
+        replication_mode: MTEP # source
+
+  CreateLogicalSwitch01From_Node3: &CREATE_LOGICAL_SWITCH_01_FROM_NODE3
+    Type: NSX
+    TestNSX: nsxmanager.[3]
+    logicalswitch:
+      '[1]':
+        name: 'autogenerate'  # display_name in product schema
+        summary: 'logical Switch-1'  # description in product schema
+        transport_zone_id: nsxmanager.[1].transportzone.[1]
+        admin_state: UP  # switch_admin_state in product schema
+        # replication_mode's value is case sensitive
+        replication_mode: MTEP # source
+
+  CreateLogicalSwitch03From_Node3: &CREATE_LOGICAL_SWITCH_03_FROM_NODE3
+    Type: NSX
+    TestNSX: nsxmanager.[3]
+    logicalswitch:
+      '[3]':
+        name: 'autogenerate'  # display_name in product schema
+        summary: 'logical Switch-3'  # description in product schema
+        transport_zone_id: nsxmanager.[1].transportzone.[1]
+        admin_state: UP  # switch_admin_state in product schema
+        # replication_mode's value is case sensitive
+        replication_mode: MTEP # source
+
+  CreateLogicalSwitch03From_Node1: &CREATE_LOGICAL_SWITCH_03_FROM_NODE1
+    <<: *CREATE_LOGICAL_SWITCH_03_FROM_NODE3
+    TestNSX: nsxmanager.[1]
+
+  CreateLogicalSwitch03From_Node2: &CREATE_LOGICAL_SWITCH_03_FROM_NODE2
+    <<: *CREATE_LOGICAL_SWITCH_03_FROM_NODE3
+    TestNSX: nsxmanager.[2]
+
+  CreateLogicalSwitch02From_Node3: &CREATE_LOGICAL_SWITCH_02_FROM_NODE3
+    Type: NSX
+    TestNSX: nsxmanager.[3]
+    logicalswitch:
+      '[2]':
+        name: 'autogenerate'  # display_name in product schema
+        summary: 'logical Switch-2'  # description in product schema
+        transport_zone_id: nsxmanager.[1].transportzone.[1]
+        admin_state: UP  # switch_admin_state in product schema
+        # replication_mode's value is case sensitive
+        replication_mode: MTEP # source
+
+  CreateLogicalSwitch01From_Node2: &CREATE_LOGICAL_SWITCH_01_FROM_NODE2
+    Type: NSX
+    TestNSX: nsxmanager.[2]
+    logicalswitch:
+      '[1]':
+        name: 'autogenerate'  # display_name in product schema
+        summary: 'logical Switch-1'  # description in product schema
+        transport_zone_id: nsxmanager.[1].transportzone.[1]
+        admin_state: UP  # switch_admin_state in product schema
+        # replication_mode's value is case sensitive
+        replication_mode: MTEP # source
+
+  CreateLogicalSwitch02From_Node2: &CREATE_LOGICAL_SWITCH_02_FROM_NODE2
+    Type: NSX
+    TestNSX: nsxmanager.[2]
+    logicalswitch:
+      '[2]':
+        name: 'autogenerate'  # display_name in product schema
+        summary: 'logical Switch-2'  # description in product schema
+        transport_zone_id: nsxmanager.[1].transportzone.[1]
+        admin_state: UP  # switch_admin_state in product schema
+        # replication_mode's value is case sensitive
+        replication_mode: MTEP # source
+
+  CreateLogicalSwitch_1_To_10_From_Node3: &CREATE_LOGICAL_SWITCH_1_TO_10_FROM_NODE3
+    Type: NSX
+    TestNSX: nsxmanager.[3]
+    logicalswitch:
+      '[1-10]':
+        name: 'autogenerate'  # display_name in product schema
+        summary: 'logical Switch'  # description in product schema
+        transport_zone_id: nsxmanager.[1].transportzone.[1]
+        admin_state: UP  # switch_admin_state in product schema
+        # replication_mode's value is case sensitive
+        replication_mode: MTEP # source
+
+  CreateLogicalSwitch_1_To_10_From_Node2: &CREATE_LOGICAL_SWITCH_1_TO_10_FROM_NODE2
+    Type: NSX
+    TestNSX: nsxmanager.[2]
+    logicalswitch:
+      '[1-10]':
+        name: 'autogenerate'  # display_name in product schema
+        summary: 'logical Switch'  # description in product schema
+        transport_zone_id: nsxmanager.[1].transportzone.[1]
+        admin_state: UP  # switch_admin_state in product schema
+        # replication_mode's value is case sensitive
+        replication_mode: MTEP # source
+
+  CreateLogicalSwitch_11_To_20_From_Node2: &CREATE_LOGICAL_SWITCH_11_TO_20_FROM_NODE2
+    Type: NSX
+    TestNSX: nsxmanager.[2]
+    logicalswitch:
+      '[11-20]':
+        name: 'autogenerate'  # display_name in product schema
+        summary: 'logical Switch'  # description in product schema
+        transport_zone_id: nsxmanager.[1].transportzone.[1]
+        admin_state: UP  # switch_admin_state in product schema
+        # replication_mode's value is case sensitive
+        replication_mode: MTEP # source
+
+  VIF_ATTACHMENT_01:
+    KVM: &VIF_ATTACHMENT_01--KVM
+    # In Transformers, logical port is not under logicalswitch.
+    # This design is driven by Vmware API (vAPI) team
+    #
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      logicalport:
+        '[1]':
+          switch_id: nsxmanager.[1].logicalswitch.[1]
+          adapter_uuid: vm.[1].vif.[1]->uuid
+          admin_state: up
+        '[2]':
+          switch_id: nsxmanager.[1].logicalswitch.[1]
+          adapter_uuid: vm.[2].vif.[1]->uuid
+          admin_state: up
+
+    ESX: &VIF_ATTACHMENT_01--ESX
+    # There are 2 types of workflow for creating logical ports in MP
+    # w.r.t ESX.
+    # 1. Automatic logical port creation
+    #    When a logical switch is created on MP, it would automatically
+    #    create nsxnetwork (opaque network) on ESX using message bus,
+    #    hostd. When vnic backing is changed to this nsxnetwork,
+    #    hostd will make ipc call to nsx agent which will dial out
+    #    to MP via message bus and create a logical port and
+    #    do vif attachment automatically.
+    # 2. Manually creating logical port
+    #    When vnic is added, a special property called external_vif_id
+    #    can be set (openstack does this too).
+    #    When a logical switch is created on MP, nsxnetwork would be
+    #    automatically created. A logical port can be created explicitly
+    #    on MP using the same external_vif_id for vif.
+    #    Now, when vnic on ESX is reconfigured to use nsxnetwork, MP would
+    #    look up if there is already a port with external_vif_id.
+    #    In this case, it would find one and skip another logical port
+    #    creation.
+    #
+      Type: VM
+      TestVM: 'vm.[1-2]'
+      vnic:
+        '[1]':
+          driver: "e1000"
+          # TODO(gjayavelu): use network instead of portgroup
+          portgroup: "nsxmanager.[1].logicalswitch.[1]"
+          connected: 1
+          startconnected: 1
+
+  VIF_ATTACHMENT_02:
+    KVM: &VIF_ATTACHMENT_02--KVM
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      logicalport:
+        '[3]':
+          switch_id: nsxmanager.[1].logicalswitch.[2]
+          adapter_uuid: vm.[3].vif.[1]->uuid
+          admin_state: up
+        '[4]':
+          switch_id: nsxmanager.[1].logicalswitch.[2]
+          adapter_uuid: vm.[4].vif.[1]->uuid
+          admin_state: up
+
+    ESX: &VIF_ATTACHMENT_02--ESX
+      Type: VM
+      TestVM: 'vm.[3-4]'
+      vnic:
+        '[1]':
+          driver: "e1000"
+          portgroup: "nsxmanager.[1].logicalswitch.[2]"
+          connected: 1
+          startconnected: 1
+
+  VIF_ATTACHMENT_03:
+    KVM: &VIF_ATTACHMENT_03--KVM
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      logicalport:
+        '[5]':
+          switch_id: nsxmanager.[1].logicalswitch.[2]
+          adapter_uuid: vm.[5].vif.[1]->uuid
+          admin_state: up
+        '[6]':
+          switch_id: nsxmanager.[1].logicalswitch.[2]
+          adapter_uuid: vm.[6].vif.[1]->uuid
+          admin_state: up
+
+    ESX: &VIF_ATTACHMENT_03--ESX
+      Type: VM
+      TestVM: 'vm.[5-6]'
+      vnic:
+        '[1]':
+          driver: "e1000"
+          portgroup: "nsxmanager.[1].logicalswitch.[11]"
+          connected: 1
+          startconnected: 1
+
+  VIF_ATTACHMENT_04:
+    KVM: &VIF_ATTACHMENT_04--KVM
+      Type: NSX
+      TestNSX: nsxmanager.[1]
+      logicalport:
+        '[7]':
+          switch_id: nsxmanager.[1].logicalswitch.[2]
+          adapter_uuid: vm.[7].vif.[1]->uuid
+          admin_state: up
+        '[8]':
+          switch_id: nsxmanager.[1].logicalswitch.[2]
+          adapter_uuid: vm.[8].vif.[1]->uuid
+          admin_state: up
+
+    ESX: &VIF_ATTACHMENT_04--ESX
+      Type: VM
+      TestVM: 'vm.[7-8]'
+      vnic:
+        '[1]':
+          driver: "e1000"
+          portgroup: "nsxmanager.[1].logicalswitch.[12]"
+          connected: 1
+          startconnected: 1
+
+  AttachVM1And2toSwitch2: &ATTACH_VM1_TO_SWTCH_2
+    <<: *VIF_ATTACHMENT_01--ESX
+    vnic:
+      '[1]':
+        driver: "e1000"
+        # TODO(gjayavelu): use network instead of portgroup
+        portgroup: "nsxmanager.[1].logicalswitch.[2]"
+        connected: 1
+        startconnected: 1
+
+  VIF_DETACHMENT_01:
+    ESX: &VIF_DETACHMENT_01--ESX
+      Type: NetAdapter
+      TestAdapter: 'vm.[1-2].vnic.[1]'
+      reconfigure: true
+      connected: 0
+      startconnected: 0
+
+  VIF_DETACHMENT_02:
+    ESX: &VIF_DETACHMENT_02--ESX
+      Type: NetAdapter
+      TestAdapter: 'vm.[3-4].vnic.[1]'
+      reconfigure: true
+      connected: 0
+      startconnected: 0
+
+  VIF_DETACHMENT_03:
+    ESX: &VIF_DETACHMENT_03--ESX
+      Type: NetAdapter
+      TestAdapter: 'vm.[5-6].vnic.[1]'
+      reconfigure: true
+      connected: 0
+      startconnected: 0
+
+  VIF_DETACHMENT_04:
+    ESX: &VIF_DETACHMENT_04--ESX
+      Type: NetAdapter
+      TestAdapter: 'vm.[7-8].vnic.[1]'
+      reconfigure: true
+      connected: 0
+      startconnected: 0
+
+  DiscoverLogicalPortsFrom_Node1: &DISCOVER_LOGICAL_PORTS_FROM_NODE_1
+    Type: NSX
+    TestNSX: 'nsxmanager.[1]'
+    logicalport:
+      '[1-2]':
+        discover: 'true'
+        attachment:
+          id_: 'vm.[x=logicalport_index].vnic.[1]->uuid'
+
+  DiscoverLogicalPortsOfLS02From_Node1:
+    Type: NSX
+    TestNSX: 'nsxmanager.[1]'
+    logicalport:
+      '[3-4]':
+        discover: 'true'
+        attachment:
+          id_: 'vm.[x=logicalport_index].vnic.[1]->uuid'
+
+  DiscoverVteps:
+    Type: Host
+    TestHost: 'esx.[1-2]'
+    vtep:
+      '[1]':
+        execution_type: cli
+        discover: 'true'
+        name: 'vmk10'
+
+  ConfigureVTEP1IP:
+    Type: NetAdapter
+    TestAdapter: esx.[1].vtep.[1]
+    IPv4: auto
+
+  ConfigureVTEP2IP:
+    Type: NetAdapter
+    TestAdapter: esx.[2].vtep.[1]
+    IPv4: auto
+
+  VerifyLSReplicationModeOnHostForLS1: &VERIFY_LS_01_REPLICATION_ON_HOST
+    Type: "Host"
+    TestHost: "esx.[1-2]"
+    execution_type: 'cli'
+    'get_logical_switch[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+          replication_mode: 'mtep'
+
+  VerifyLSReplicationModeOnHostForLS2:
+    <<: *VERIFY_LS_01_REPLICATION_ON_HOST
+    'get_logical_switch[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+          replication_mode: 'mtep'
+
+  VerifyLS03ReplicationModeOnHostFromNode3:
+    Type: "Host"
+    TestHost: "esx.[1-2]"
+    execution_type: 'cli'
+    'get_logical_switch[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[3].logicalswitch.[3]"
+          replication_mode: 'mtep'
+
+  VerifyLS03ReplicationModeOnHostFromNode1:
+    Type: "Host"
+    TestHost: "esx.[1-2]"
+    execution_type: 'cli'
+    'get_logical_switch[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[3]"
+          replication_mode: 'mtep'
+
+  VerifyLSReplicationModeOnHostForLS11:
+    <<: *VERIFY_LS_01_REPLICATION_ON_HOST
+    'get_logical_switch[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[11]"
+          replication_mode: 'mtep'
+
+  VerifyLSReplicationModeOnHostForLS12:
+    <<: *VERIFY_LS_01_REPLICATION_ON_HOST
+    'get_logical_switch[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[12]"
+          replication_mode: 'mtep'
+
+  DisconnectVDRPort:
+    Type: Host
+    TestHost: 'esx.[1-2]'
+    disconnect_vdr_port:
+      switch_name: 'nsxvswitch'
+      execution_type: 'cli'
+
+  DeleteVDRPort:
+    Type: Host
+    TestHost: 'esx.[1-2]'
+    delete_vdr_port:
+      switch_name: nsxvswitch
+      execution_type: cli
+
+  CreateVMsVnics:
+    Type: VM
+    TestVM: vm.[1-2]
+    vnic:
+      '[1]':
+        driver: any
+        connected: 1
+        startconnected: 1
+        allowguestcontrol: 1
+        external_uuid: 'auto'
+
+  DeleteVnic1FromVM1: &DELETE_VNIC_1_FROM_VM1
+    Type: VM
+    TestVM: 'vm.[1]'
+    deletevnic: 'vm.[1].vnic.[1]'
+
+  DeleteVnic1FromVM2: &DELETE_VNIC_1_FROM_VM2
+    Type: VM
+    TestVM: 'vm.[2]'
+    deletevnic: 'vm.[2].vnic.[1]'
+
+  DeleteVnic1FromVM3:
+    Type: VM
+    TestVM: 'vm.[3]'
+    deletevnic: 'vm.[3].vnic.[1]'
+
+  DeleteVnic1FromVM4:
+    Type: VM
+    TestVM: 'vm.[4]'
+    deletevnic: 'vm.[4].vnic.[1]'
+
+  DeleteVnic2FromVM1:
+    Type: VM
+    TestVM: 'vm.[1]'
+    deletevnic: 'vm.[1].vnic.[2]'
+
+  DeleteVnic2FromVM2:
+    Type: VM
+    TestVM: 'vm.[2]'
+    deletevnic: 'vm.[2].vnic.[2]'
+
+  DeleteVnic1FromVM5:
+    Type: VM
+    TestVM: 'vm.[5]'
+    deletevnic: 'vm.[5].vnic.[1]'
+
+  DeleteVnic1FromVM6:
+    Type: VM
+    TestVM: 'vm.[6]'
+    deletevnic: 'vm.[6].vnic.[1]'
+
+  DeleteLogicalPortFrom_Node1:
+    Type: NSX
+    TestNSX: 'nsxmanager.[1]'
+    deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+
+  DeleteLogicalSwitchFrom_Node1: &DELETE_LOGICAL_SWITCH_01
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[-1]'
+
+  DeleteTransportZonesFrom_Node1: &DELETE_TRANSPORT_ZONE_01
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletetransportzone: 'nsxmanager.[1].transportzone.[-1]'
+
+  DeleteTransportZonesFrom_Node4: &DELETE_TRANSPORT_ZONES_FROM_NODE_4
+    Type: NSX
+    TestNSX: nsxmanager.[4]
+    deletetransportzone: 'nsxmanager.[4].transportzone.[-1]'
+
+  DeleteTransportNodesFrom_Node1: &DELETE_TRANSPORT_NODE_01
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletetransportnode: 'nsxmanager.[1].transportnode.[-1]'
+
+  DeleteUplinkProfileFrom_Node1: &DELETE_UPLINK_PROFILE_01
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deleteuplinkprofile: nsxmanager.[1].uplinkprofile.[1]
+
+  execution_type:
+    CONTROLLER: &CONTROLLER_EXECUTION_TYPE1
+      cli
+
+  VerifyLogicalSwitch01InfoOnController1:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[1]'
+    execution_type: *CONTROLLER_EXECUTION_TYPE1
+    noofretries: "15"
+    sleepbetweenretry: "20"
+    switches: 'nsxmanager.[1].logicalswitch.[1]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch01InfoOnControllers:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    execution_type: *CONTROLLER_EXECUTION_TYPE1
+    noofretries: "15"
+    sleepbetweenretry: "20"
+    switches: 'nsxmanager.[1].logicalswitch.[1]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch02InfoOnController1: &VERIFY_LS2_ON_CONTROLLER1
+    Type: "Controller"
+    TestController: 'nsxcontroller.[1]'
+    execution_type: *CONTROLLER_EXECUTION_TYPE1
+    noofretries: "15"
+    sleepbetweenretry: "20"
+    switches: 'nsxmanager.[2].logicalswitch.[2]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[2].logicalswitch.[2]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch02InfoOnController1UsingNode1:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[1]'
+    execution_type: *CONTROLLER_EXECUTION_TYPE1
+    noofretries: "15"
+    sleepbetweenretry: "20"
+    switches: 'nsxmanager.[1].logicalswitch.[2]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[2]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch02InfoOnControllers: &VERIFY_LS2_ON_ALL_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    execution_type: *CONTROLLER_EXECUTION_TYPE1
+    noofretries: "15"
+    sleepbetweenretry: "20"
+    switches: 'nsxmanager.[2].logicalswitch.[2]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[2].logicalswitch.[2]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch03InfoOnController1:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[1]'
+    execution_type: *CONTROLLER_EXECUTION_TYPE1
+    noofretries: "15"
+    sleepbetweenretry: "20"
+    switches: 'nsxmanager.[3].logicalswitch.[3]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[3].logicalswitch.[3]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch03InfoOnController1UsingNode1:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[1]'
+    execution_type: *CONTROLLER_EXECUTION_TYPE1
+    noofretries: "15"
+    sleepbetweenretry: "20"
+    switches: 'nsxmanager.[1].logicalswitch.[3]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[3]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch03InfoOnControllers:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    execution_type: *CONTROLLER_EXECUTION_TYPE1
+    noofretries: "15"
+    sleepbetweenretry: "20"
+    switches: 'nsxmanager.[3].logicalswitch.[3]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[3].logicalswitch.[3]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch01InfoOnControllersUsingNode3:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    execution_type: *CONTROLLER_EXECUTION_TYPE1
+    noofretries: "15"
+    sleepbetweenretry: "20"
+    switches: 'nsxmanager.[3].logicalswitch.[1]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[3].logicalswitch.[1]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch02InfoOnControllersUsingNode3:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    execution_type: *CONTROLLER_EXECUTION_TYPE1
+    noofretries: "15"
+    sleepbetweenretry: "20"
+    switches: 'nsxmanager.[3].logicalswitch.[2]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[3].logicalswitch.[2]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitchPort01InfoOnCCP: &VERIFY_LP01_ON_CCP
+    Type: "ClusterNode"
+    Testclusternode: *CCP_CLUSTERNODE1
+    execution_type: 'cli'
+    switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+    'get_switch_ports[?]contain_once':
+      table:
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[1]->id_"
+
+  VerifyLogicalSwitchPort01And02InfoOnCCP: &VERIFY_LP01AND02_ON_CCP
+    Type: "ClusterNode"
+    Testclusternode: *CCP_CLUSTERNODE1
+    execution_type: 'cli'
+    switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+    'get_switch_ports[?]contain_once':
+      table:
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[1]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[2]->id_"
+
+  VerifyLogicalSwitchPort0102And03InfoOnCCP: &VERIFY_LP0102AND03_ON_CCP
+    Type: "ClusterNode"
+    Testclusternode: *CCP_CLUSTERNODE1
+    execution_type: 'cli'
+    switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+    'get_switch_ports[?]contain_once':
+      table:
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[1]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[2]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[3]->id_"
+
+  CreateLP01OnLS01FromNode1: &CREATE_LP01_ON_LS01_FROM_NODE1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    logicalport:
+      '[1]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLP02OnLS01FromNode1: &CREATE_LP02_ON_LS01_FROM_NODE1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    logicalport:
+      '[2]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  ReadLS1FromMPNode1: &READ_LS_1_FROM_NODE_1
+    Type: "Gateway"
+    TestGateway: "nsxmanager.[1].logicalswitch.[1]"
+    read:
+      'name[?]equal_to': 'ls-demo-1'
+      'summary[?]equal_to': "1st logical Switch"
+      'replication_mode[?]equal_to': MTEP # source
+
+  CreateLP03OnLS01FromNode1: &CREATE_LP03_ON_LS01_FROM_NODE1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    logicalport:
+      '[3]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLP04OnLS02FromNode1: &CREATE_LP04_ON_LS02_FROM_NODE1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    logicalport:
+      '[4]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[2]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  VerifyLogicalSwitchPort04InfoOnCCP: &VERIFY_LP04_ON_CCP
+    Type: "ClusterNode"
+    Testclusternode: *CCP_CLUSTERNODE1
+    execution_type: 'cli'
+    switch_id: 'nsxmanager.[1].logicalswitch.[2]->switch_id'
+    'get_switch_ports[?]contain_once':
+      table:
+         - switch_id: "nsxmanager.[1].logicalswitch.[2]->switch_id"
+           port_id: "nsxmanager.[1].logicalport.[4]->id_"
+
+  CreateLogicalPort1To10FromNSXManager1: &CREATE_LP01_TO_10_FROM_NSXMANAGER1
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    logicalport:
+      '[1-10]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort11To20FromNSXManager2: &CREATE_LP11_TO_20_FROM_NSXMANAGER2
+    Type: NSX
+    TestNSX: nsxmanager.[2]
+    logicalport:
+      '[11-20]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort21To30FromNSXManager3: &CREATE_LP21_TO_30_FROM_NSXMANAGER3
+    Type: NSX
+    TestNSX: nsxmanager.[3]
+    logicalport:
+      '[21-30]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  VerifyThirtyLogicalSwitchPortsOnNSXController1: &VERIFY_30_LP_ON_NSXCONTROLLER1
+    Type: "ClusterNode"
+    Testclusternode: *CCP_CLUSTERNODE1
+    execution_type: 'cli'
+    noofretries: 3
+    sleepbetweenretry: 60
+    switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+    'get_switch_ports[?]contain_once':
+      table:
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[1]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[2]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[3]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[4]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[5]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[6]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[7]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[8]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[9]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[10]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[11]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[12]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[13]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[14]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[15]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[16]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[17]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[18]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[19]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[20]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[21]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[22]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[23]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[24]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[25]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[26]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[27]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[28]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[29]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[30]->id_"
+
+  VerifyThirtyLogicalSwitchPortsOnNSXController2: &VERIFY_30_LP_ON_NSXCONTROLLER2
+    <<: *VERIFY_30_LP_ON_NSXCONTROLLER1
+    Testclusternode: *CCP_CLUSTERNODE2
+
+  VerifyThirtyLogicalSwitchPortsOnNSXController3: &VERIFY_30_LP_ON_NSXCONTROLLER3
+    <<: *VERIFY_30_LP_ON_NSXCONTROLLER1
+    Testclusternode: *CCP_CLUSTERNODE3
+
+  VerifyTenLogicalSwitchPortsOnNSXController1: &VERIFY_10_LP_ON_NSXCONTROLLER1
+    Type: "ClusterNode"
+    Testclusternode: *CCP_CLUSTERNODE1
+    execution_type: 'cli'
+    noofretries: 3
+    sleepbetweenretry: 60
+    switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+    'get_switch_ports[?]contain_once':
+      table:
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[1]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[2]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[3]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[4]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[5]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[6]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[7]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[8]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[9]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[10]->id_"
+
+  VerifyTenLogicalSwitchPortsOnNSXController2: &VERIFY_10_LP_ON_NSXCONTROLLER2
+    <<: *VERIFY_10_LP_ON_NSXCONTROLLER1
+    Testclusternode: *CCP_CLUSTERNODE2
+
+  VerifyTenLogicalSwitchPortsOnNSXController3: &VERIFY_10_LP_ON_NSXCONTROLLER3
+    <<: *VERIFY_10_LP_ON_NSXCONTROLLER1
+    Testclusternode: *CCP_CLUSTERNODE3
+
+  # These two create the ports that will be connected to the LRouter.
+  # On ESX, the ports that attach to the VMs will be automatically created
+  # during Vif Attachment. That's why these are ports 3 and 4.
+  CreateLS1Port:
+    TestNSX: nsxmanager.[1]
+    Type: NSX
+    logicalport:
+      '[3]':
+        switch_id: nsxmanager.[1].logicalswitch.[1]
+        name: lport-3
+        admin_state: UP
+
+  CreateLS2Port:
+    TestNSX: nsxmanager.[1]
+    Type: NSX
+    logicalport:
+      '[4]':
+        switch_id: nsxmanager.[1].logicalswitch.[2]
+        name: lport-4
+        admin_state: UP
+
+  AddVM1Vnic1ToLS1:
+    Type: VM
+    TestVM: vm.[1]
+    vnic:
+      '[1]':
+        driver: e1000
+        portgroup: nsxmanager.[1].logicalswitch.[1]
+        connected: 1
+        startconnected: 1
+
+  AddVM2Vnic1ToLS2:
+    Type: VM
+    TestVM: vm.[2]
+    vnic:
+      '[1]':
+        driver: e1000
+        portgroup: nsxmanager.[1].logicalswitch.[2]
+        connected: 1
+        startconnected: 1
+
+  DiscoverLport1FromVM1Vnic1:
+    TestNSX: nsxmanager.[1]
+    Type: NSX
+    logicalport:
+      '[1]':
+        attachment:
+          attachment_type: VIF
+          id_: vm.[1].vnic.[1]->uuid
+        discover: 'true'
+
+  DiscoverLport2FromVM2Vnic1:
+    TestNSX: nsxmanager.[1]
+    Type: NSX
+    logicalport:
+      '[2]':
+        attachment:
+          attachment_type: VIF
+          id_: vm.[2].vnic.[1]->uuid
+        discover: 'true'
+
+  ConfigureVM1Vnic1IP-192.168.1.10:
+    TestAdapter: vm.[1].vnic.[1]
+    Type: NetAdapter
+    ipv4: 192.168.1.10
+    netmask: 255.255.255.0
+
+  ConfigureVM2Vnic1IP-192.168.2.10:
+    TestAdapter: vm.[2].vnic.[1]
+    Type: NetAdapter
+    ipv4: 192.168.2.10
+    netmask: 255.255.255.0
+
+  PingVM1ToVM2: &PING_VM1_TO_VM2
+    Type          : Traffic
+    ToolName      : ping
+    TestAdapter   : vm.[1].vnic.[1]
+    SupportAdapter: vm.[2].vnic.[1]
+    TestDuration  : 10
+
+  PingVM2ToVM1: &PING_VM2_TO_VM1
+    Type          : Traffic
+    ToolName      : ping
+    TestAdapter   : vm.[2].vnic.[1]
+    SupportAdapter: vm.[1].vnic.[1]
+    TestDuration  : 10
+
+  ReadLogicalSwitch01FromNode1: &READ_LOGICALSWITCH_01_FROM_NODE1
+    Type: "Gateway"
+    TestGateway: "nsxmanager.[1].logicalswitch.[1]"
+    read:
+      'name[?]equal_to': 'ls-demo-1'
+      'summary[?]equal_to': "1st logical Switch"
+      'replication_mode[?]equal_to': MTEP
+
+  ReadLogicalSwitch01FromNode2:
+    <<: *READ_LOGICALSWITCH_01_FROM_NODE1
+    TestGateway: "nsxmanager.[2].logicalswitch.[1]"
+
+  ReadLogicalSwitch01FromNode3:
+    <<: *READ_LOGICALSWITCH_01_FROM_NODE1
+    TestGateway: "nsxmanager.[3].logicalswitch.[1]"
+
+  ReadLogicalSwitch02FromNode1: &READ_LOGICALSWITCH_02_FROM_NODE1
+    Type: "Gateway"
+    TestGateway: "nsxmanager.[1].logicalswitch.[2]"
+    read:
+      'summary[?]equal_to': "logical Switch-2"
+      'replication_mode[?]equal_to': MTEP
+
+  ReadLogicalSwitch02FromNode2:
+    <<: *READ_LOGICALSWITCH_02_FROM_NODE1
+    TestGateway: "nsxmanager.[2].logicalswitch.[2]"
+
+  ReadLogicalSwitch02FromNode3:
+    <<: *READ_LOGICALSWITCH_02_FROM_NODE1
+    TestGateway: "nsxmanager.[3].logicalswitch.[2]"
+
+  ReadLogicalSwitch03FromNode1: &READ_LOGICALSWITCH_03_FROM_NODE1
+    Type: "Gateway"
+    TestGateway: "nsxmanager.[1].logicalswitch.[3]"
+    read:
+      'summary[?]equal_to': "logical Switch-3"
+      'replication_mode[?]equal_to': MTEP
+
+  CleanupLogicalSwitches:
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[-1]'

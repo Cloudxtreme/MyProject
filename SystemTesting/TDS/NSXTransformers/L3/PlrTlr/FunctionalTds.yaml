@@ -1,0 +1,1448 @@
+{% include 'TDS/NSXTransformers/L3/PlrTlr/TestbedSpec.yaml' %}
+{% include 'TDS/NSXTransformers/L3/PlrTlr/TopoL3_2Hosts_1Edge.yaml' %}
+{% include 'TDS/NSXTransformers/L3/PlrTlr/CommonWorkloads.yaml' %}
+{% include 'TDS/NSXTransformers/L3/PlrTlr/NewTopo_2Hosts_1Edge.yaml' %}
+{% include 'TDS/NSXTransformers/Common/Topo_Clusters.yaml' %}
+
+PlrTlrTrafficTest:
+    TestName: 'PlrTlrTrafficTest'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'East-west traffic & north-south traffic in PLR-TLR topology:
+             - test ICMP traffic
+             - test TCP/UDP traffic'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            # Test
+            - - VerifyDRCreationForLRs
+            - - VerifyTlr2LIFs
+            - - VerifyTlr3LIFs
+            - - PlrTlrICMPTraffic--ESX
+            - - PlrTlrTCPTraffic--ESX
+            - - PlrTlrUDPTraffic--ESX
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+        VerifyDRCreationForLRs:
+            Type: 'Host'
+            TestHost: "esx.[1-3]"
+            execution_type: 'cli'
+            get_logical_routers[?]contain_once:
+                table:
+                    - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+                    - lr_uuid: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+                    - lr_uuid: nsxmanager.[1].logicalrouter.[3]->logical_router_id
+
+        VerifyTlr2LIFs:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[2]'
+            endpoints: "esx.[1-3]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+            execution_type: 'cli'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: nsxmanager.[1].logicalrouterport.[1]->lr_port_id
+                    - lrport_uuid: nsxmanager.[1].logicalrouterport.[2]->lr_port_id
+
+        VerifyTlr3LIFs:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[3]'
+            endpoints: "esx.[1-3]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[3]->logical_router_id
+            execution_type: 'cli'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: nsxmanager.[1].logicalrouterport.[3]->lr_port_id
+                    - lrport_uuid: nsxmanager.[1].logicalrouterport.[4]->lr_port_id
+
+
+PlrTlrConnectedRoutes:
+    TestName: 'PlrTlrConnectedRoutes'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'PLR-TLR RIB-Connected Routes
+             - Verify that Connected Routes are present in RIB of TLRs & PLR for
+               prefixes configured on the logical router ports.
+             - Verify that the list of connected routes in TLR RIB get updated
+               when
+                a)new LS is added and connected to TLR
+                b)an existing LS connected to TLR is deleted
+             - Verify that the list of connected routes in PLR RIB get updated
+               when
+                a)new LR is added and connected to PLR
+                b)an existing TLR connected to PLR is deleted'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            # Test
+            - - VerifyHost1PLRConnectedRoutes_BeforeTLR3
+            - - VerifyHost1TLR1ConnectedRoutes_BeforeLS5
+             # Add LS5 to TLR1 and verify TLR1 connected routes get updated
+            - - CreateLogicalSwitch5
+            - - CreateLogicalSwitchPort5
+            - - CreateDownLinkPortOnTLR1ForLS5
+            - - VerifyHost1TLR1ConnectedRoutes_AfterLS5
+             # Delete above LS and verify TLR1 connected routes get updated
+            - - DeleteLogicalSwitch5Ports
+            - - DeleteDownLinkPortOnTLR1ForLS5
+            - - DeleteLogicalSwitch5
+            - - VerifyHost1TLR1ConnectedRoutes_BeforeLS5
+             # Add TLR3 to PLR and verify PLR connected routes get updated
+            - - AddRouterLinkPortOnPLRtoTLR3
+            - - CreateRouterLinkPortOnTLR3
+            - - CreateLogicalSwitch5
+            - - CreateLogicalSwitchPort5
+            - - CreateDownLinkPortOnTLR3
+            - - VerifyHost1PLRConnectedRoutes_AfterTLR3
+             # Delete TLR3 to PLR and verify PLR connected routes get updated
+            - - DeleteDownLinkPortOnTLR3
+            - - DeleteRouterLinkPortOnTLR3
+            - - DeleteRouterLinkPortOnPLRtoTLR3
+            - - DeleteLogicalSwitch5Ports
+            - - DeleteLogicalSwitch5
+            - - VerifyHost1PLRConnectedRoutes_BeforeTLR3
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+        VerifyHost1PLRConnectedRoutes_BeforeTLR3:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: 'esx.[1]'
+            logical_router_id: 'nsxmanager.[1].logicalrouter.[1]->logical_router_id'
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: '169.0.0.0'
+                      mask: '255.255.255.240'
+                      dr_flags: 'UCI'
+                      next_hop: '0.0.0.0'
+                      origin: 'MANUAL'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[2]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[2]->netmask
+                      dr_flags: 'UCI'
+                      next_hop: '0.0.0.0'
+                      origin: 'MANUAL'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[4]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[4]->netmask
+                      dr_flags: 'UCI'
+                      next_hop: '0.0.0.0'
+                      origin: 'MANUAL'
+
+
+        VerifyHost1TLR1ConnectedRoutes_BeforeLS5:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[2]'
+            endpoints: 'esx.[1]'
+            logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: nsxmanager.[1].logicalrouterport.[1]->network
+                      mask: nsxmanager.[1].logicalrouterport.[1]->netmask
+                      next_hop: '0.0.0.0'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+                    - destination: nsxmanager.[1].logicalrouterport.[2]->network
+                      mask: nsxmanager.[1].logicalrouterport.[2]->netmask
+                      next_hop: '0.0.0.0'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[1]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[1]->netmask
+                      next_hop: '0.0.0.0'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+
+        VerifyHost1TLR1ConnectedRoutes_AfterLS5:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[2]'
+            endpoints: 'esx.[1]'
+            logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: nsxmanager.[1].logicalrouterport.[1]->network
+                      mask: nsxmanager.[1].logicalrouterport.[1]->netmask
+                      next_hop: '0.0.0.0'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+                    - destination: nsxmanager.[1].logicalrouterport.[2]->network
+                      mask: nsxmanager.[1].logicalrouterport.[2]->netmask
+                      next_hop: '0.0.0.0'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[1]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[1]->netmask
+                      next_hop: '0.0.0.0'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+                    - destination: nsxmanager.[1].logicalrouterport.[5]->network
+                      mask: nsxmanager.[1].logicalrouterport.[5]->netmask
+                      next_hop: '0.0.0.0'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+
+        VerifyHost1PLRConnectedRoutes_AfterTLR3:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: 'esx.[1]'
+            logical_router_id: 'nsxmanager.[1].logicalrouter.[1]->logical_router_id'
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[2]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[2]->netmask
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[4]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[4]->netmask
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+                    - destination: '169.0.0.0'
+                      mask: '255.255.255.240'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[6]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[6]->netmask
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+
+
+PlrTlrInternalRoutes:
+    TestName: 'PlrTlrInternalRoutes'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'PLR-TLR RIB:Internal Routes:
+              - Verify that a default route is automatically created on TLR
+               pointing to PLR. This should be of type Internal Route.
+              - Verify that the internal route in PLR RIB gets updaed when
+                 a) Route advertisement enabled, new LS added
+                 b) Route advertisement enabled, delete above LS
+                 c) Route advertisement disabled, then new LS is added'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Host_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - [PlrTlrSetup--ESX]
+            # Test
+               #a) TLR1 Route advertisement enabled, new LS added
+            - [CreateLogicalSwitch5]
+            - [CreateLogicalSwitchPort16]
+            - [CreateDownLinkPortOnTLR1ForLS5]
+            - [AddTlr1RouteAdvertisement]
+            - [VerifyHost1PLRInternalRoutes_1]
+              #b) TLR1 Route advertisement enabled, delete above LS
+            - [DeleteLogicalSwitch5Ports]
+            - [DeleteDownLinkPortOnTLR1ForLS5]
+            - [DeleteLogicalSwitch5]
+            - [VerifyHost1PLRInternalRoutes_1]
+               #c) TLR1 Route advertisement disabled, then new LS is added
+            - [DisableTLR1RouteAdvertisement]
+            - [CreateLogicalSwitch5]
+            - [CreateLogicalSwitchPort16]
+            - [CreateDownLinkPortOnTLR1ForLS5]
+            - [VerifyHost1PLRInternalRoutes_2]
+            # Delete logical components created above
+            # for common cleanup to run successfully
+            - [DeleteLogicalSwitch5Ports]
+            - [DeleteDownLinkPortOnTLR1ForLS5]
+            - [DeleteLogicalSwitch5]
+        ExitSequence:
+            - [PlrTlrCleanup--ESX]
+
+        AddTlr1RouteAdvertisement:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[2]"
+            routeadvertisements:
+                '[1]':
+                    enableadvertisement: 'true'
+                    advertise_routes:
+                        - name: 'Advertisement for 10.1.1.0/24, 10.1.2.0/24, 30.1.1.0/24'
+                          summary: 'Advertisement for 10.1.1.0/24, 10.1.2.0/24, 30.1.1.0/24'
+                          network:
+                             - '10.1.1.0/24'
+                             - '10.1.2.0/24'
+                             - '30.1.1.0/24'
+
+
+        VerifyHost1PLRInternalRoutes_1:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: 'esx.[1]'
+            logical_router_id: 'nsxmanager.[1].logicalrouter.[1]->logical_router_id'
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: '30.1.1.0'
+                      mask: '255.255.255.0'
+                      # change flags based on fix for Bugzilla 1368794
+                      #dr_flags: 'UCI'
+                      #origin: 'MANUAL'
+
+        VerifyHost1PLRInternalRoutes_2:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: 'esx.[1]'
+            logical_router_id: 'nsxmanager.[1].logicalrouter.[1]->logical_router_id'
+            execution_type: 'cli'
+            'get_route_table[?]not_contains':
+                table:
+                    #- destination: '30.1.1.0'
+                    #  mask: '255.255.255.0'
+                    - destination: nsxmanager.[1].logicalrouterport.[5]->network
+                      mask: nsxmanager.[1].logicalrouterport.[5]->netmask
+                      # change flags based on fix for Bugzilla 1368794
+                      #dr_flags: 'UCI'
+                      #origin: 'MANUAL'
+
+
+        DisableTLR1RouteAdvertisement:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[2]"
+            routeadvertisements:
+                '[1]': {}
+
+
+PlrTlrPortIPAddressAssignment:
+    TestName: 'PlrTlrPortIPAddressAssignment'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'IP address assignment:
+             - Verify that it is possible to ping the PLR and TLR interfaces
+               with assigned IPs
+             - Modify the IP addresses of logical router ports and verify pings
+               work across PLR-TLR'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            # Test
+            # Verify if ping to TLR and PLR are successful before modifying IP.
+            - - PingVM1Vnic1ToTlr2DownlinkIP_1
+            - - PingVM1Vnic1ToPlrRouterLinkIP_1
+
+            # Modify TLR2 IP and check if ping still works.
+            - - ModifyTlr2DownlinkIP
+            - - PingVM1Vnic1ToTlr2DownlinkIP_2
+
+            # Bugzilla 1398866: Modifying RouterLink IP is not allowed.
+            # Try to modify IP and then check that ping to original IP still works.
+            - - ModifyPlrRouterLinkIP
+            - - PingVM1Vnic1ToPlrRouterLinkIP_1
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+
+        PingVM1Vnic1ToTlr2DownlinkIP_1:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: '192.1.1.1'
+            TestDuration: '10'
+
+        PingVM1Vnic1ToPlrRouterLinkIP_1:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: '100.64.1.1'
+            TestDuration: '10'
+
+        ModifyTlr2DownlinkIP:
+            Type: 'Port'
+            TestPort: 'nsxmanager.[1].logicalrouterport.[1]'
+            sleepbetweenworkloads: 10
+            reconfigure:
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                          - '192.1.1.20'
+
+        PingVM1Vnic1ToTlr2DownlinkIP_2:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: '192.1.1.20'
+            TestDuration: '10'
+
+        ModifyPlrRouterLinkIP:
+            Type: 'Port'
+            TestPort: 'nsxmanager.[1].logicalrouterlinkport.[1]'
+            # Bugzilla 1398866: Modifying RouterLinkIP is not allowed anymore
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            reconfigure:
+                subnets:
+                    - prefixlen: 31 
+                      ip_addresses:
+                          - '100.64.1.5'
+
+
+PlrTlrTTLdecrement:
+    TestName: 'PlrTlrTTLdecrement'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify TTL decrement:
+             - east-west traffic: check that TTL is decremented once on
+             egressing DR
+             - north-south traffic: that TTL is decremented once per TLR and
+             PLR.(Check decrement for traffic in north->south and south->north
+                directions)
+             - Verify ICMP Time exceeded is generated for TTL=0
+             - Send traffic with TTL=1,2,3 and verify ICMP TIme Exceeded is
+               generated by respective PLR or TLR when TTL=0'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Host_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            # Test
+            - - CheckTTLEWTraffic
+            - - CheckICMPTImeExceededGeneration
+            - - CheckTTLNSTraffic
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+        CheckTTLEWTraffic:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: 'vm.[3].vnic.[1]'
+            TestDuration: '30'
+            IpTTL: '10'
+            Verification: 'Verification_1'
+
+        Verification_1:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[3].vnic.[1]'
+                'pktcapfilter': 'count 5,ttl == 7,icmptype == 8,src host ipv4/vm.[1].vnic.[1],dst host ipv4/vm.[3].vnic.[1]'
+                'pktcount': '1-10'
+
+        CheckTTLNSTraffic:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: 'vm.[10].vnic.[1]'
+            TestDuration: '30'
+            IpTTL: '20'
+            Verification: 'Verification_2'
+
+        Verification_2:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[10].vnic.[1]'
+                'pktcapfilter': 'count 5,ttl == 18,icmptype == 8,src host ipv4/vm.[1].vnic.[1],dst host ipv4/vm.[10].vnic.[1]'
+                'pktcount': '1-10'
+
+        CheckICMPTImeExceededGeneration:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: 'vm.[3].vnic.[1]'
+            TestDuration: '30'
+            IpTTL: '2'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_3'
+
+        Verification_3:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vnic.[1]'
+                'pktcapfilter': 'count 5,icmptype == 11,icmpcode == 0,src host ipv4/100.64.1.1,dst host ipv4/vm.[1].vnic.[1]'
+                'pktcount': '1-10'
+
+
+PlrTlrICMPDestinationUnreachable:
+    TestName: 'PlrTlrICMPDestinationUnreachable'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'ICMP messages:
+            - Verify that ICMP Destination Host Unreachable is generated by TLR when
+              pinging an unknown IP from north->south or east->west
+              (IP does not exist on LS or logical port on LS has been removed).
+              Likewise PLR should generate this message for south->north & east->west traffic.'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Host_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            # Test
+            - - DestinationHostUnreachableEWTrafficTest
+            - - DestinationHostUnreachableNSTrafficTest
+
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+        DestinationHostUnreachableEWTrafficTest:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: '20.1.1.20'
+            TestDuration: '10'
+            connectivitytest: '0'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_1'
+
+        Verification_1:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vnic.[1]'
+                #(TODO): Try to pass in IP of LRPort instead of string to
+                # pktcapfilter here and in rest of this test
+                'pktcapfilter': 'count 5,icmptype == icmp-unreach,icmpcode == 1,src host ipv4/100.64.1.2'
+                'pktcount': '1-10'
+
+        DestinationHostUnreachableNSTrafficTest:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: '192.168.50.3'
+            TestDuration: '10'
+            connectivitytest: '0'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_2'
+
+        Verification_2:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vnic.[1]'
+                # For N-S traffic, ICMP message is sent by SR interface toward
+                # internal transit LS
+                # (TODO): Use tuple for SR interface IP
+                'pktcapfilter': 'count 5,icmptype == icmp-unreach,icmpcode == 1,src host ipv4/169.0.0.2'
+                'pktcount': '1-10'
+
+
+PlrTlrICMPNetworkUnreachable:
+    TestName: 'PlrTlrICMPNetworkUnreachable'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'ICMP messages:
+              Verify that ICMP Network Unreachable is generated by PLR when
+              pinging an unknown network
+                 - add a new default dummy route and no dynamic routing protocol
+                 - Remove LS2. Check ICMP message is generated for:
+                   - traffic from LS1 to LS2
+                   - traffic from external uplink network to LS2'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Host_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            # Test
+            - - DeleteTLR1DownLinkPort-2
+            - - DeleteTLR1RouterLinkPort-2
+            # Test traffic from LS1 to LS2
+            - - NetworkUnreachableEWTrafficTest-2
+            # Add a dummy route and check NetworkUnreachable is generated
+            - - AddTestRouteonVM1--ESX
+            - - NetworkUnreachableEWTrafficTest-1
+            # TODO(dbadiani/sannapillai): Not sending traffic from physical to
+            # logical due to BZ: 1415631. Remove workaround once bug is fixed.
+            # Test traffic from uplink to LS2
+            #- - NetworkUnreachableNSTrafficTest
+            # Test traffic from LS1 to uplink
+            - - NetworkUnreachableSNTrafficTest
+            # Re-create deleted components for the common cleanup to
+            # run successfully
+            - - CreateLRP-2_LR-2_IP-10.1.2.1_LSP-2
+            - - CreateRouterLinkPortOnTLR1
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+        DeleteTLR1DownLinkPort-2:
+            Type : "NSX"
+            TestNSX : "nsxmanager.[1]"
+            deletelogicalrouterport : "nsxmanager.[1].logicalrouterport.[2]"
+
+        DeleteTLR1RouterLinkPort-2:
+            Type : "NSX"
+            TestNSX : "nsxmanager.[1]"
+            deletelogicalrouterlinkport : "nsxmanager.[1].logicalrouterlinkport.[2]"
+
+        AddTestRouteonVM1--ESX:
+            Type: 'NetAdapter'
+            Testadapter: 'vm.[1].vnic.[1]'
+            netmask:     '255.255.255.0'
+            route:       'add'
+            network:     '10.1.3.0'
+            gateway:     '10.1.1.1'
+
+        NetworkUnreachableEWTrafficTest-1:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: '10.1.3.1'
+            TestDuration: '10'
+            connectivitytest: '0'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_1'
+
+        Verification_1:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vnic.[1]'
+                #(TODO): Try to pass in IP of LRPort instead of string to
+                # pktcapfilter here and in rest of this test
+                'pktcapfilter': 'count 5,icmptype == icmp-unreach,icmpcode == 0,src host ipv4/10.1.1.1'
+                'pktcount': '1-10'
+
+        NetworkUnreachableEWTrafficTest-2:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: '10.1.2.1'
+            TestDuration: '10'
+            connectivitytest: '0'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_2'
+
+        Verification_2:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vnic.[1]'
+                'pktcapfilter': 'count 5,icmptype == icmp-unreach,icmpcode == 0,src host ipv4/10.1.1.1'
+                'pktcount': '1-10'
+
+        NetworkUnreachableNSTrafficTest:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[10].vnic.[1]'
+            SupportAdapter: 'vm.[2].vnic.[1]'
+            TestDuration: '10'
+            connectivitytest: '0'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_3'
+
+        Verification_3:
+           'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[10].vnic.[1]'
+                'pktcapfilter': 'count 5,icmptype == icmp-unreach,icmpcode == 0,src host ipv4/192.168.50.1'
+                'pktcount': '1-10'
+
+        NetworkUnreachableSNTrafficTest:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: 'vm.[10].vnic.[1]'
+            TestDuration: '10'
+            connectivitytest: '0'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_4'
+
+        Verification_4:
+           'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vnic.[1]'
+                'pktcapfilter': 'count 5,icmptype == icmp-unreach,icmpcode ==
+0,src host ipv4/10.1.1.1'
+                'pktcount': '1-10'
+
+PlrTlrRouterTraffic:
+    TestName: 'PlrTlrRouterTraffic'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Router Traffic:Send following packets destined to PLR IP and
+              TLR IP
+               - TCP traffic
+               - UDP traffic
+               - ICMP echo requests'
+    Procedure: 'ESX should silently dicard TCP/UDP frames (except DCHP).
+               ICMP echo requests should receive echo replies.'
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Host_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - [PlrTlrSetup--ESX]
+            # Test
+            # Traffic destined to TLR DR is tested below. No SR for TLR in Avalanche. Also, this
+            # test is already covered for PLR in BasicRouting tests.
+            - [IcmpTrafficToTlrDR]
+            - [UdpTrafficToTlrDR]
+            - [TcpTrafficToTlrDR]
+
+        ExitSequence:
+            - [PlrTlrCleanup--ESX]
+
+        TcpTrafficToTlrDR:
+            Type: 'Traffic'
+            ToolName: 'scapy'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            Protocol: 'tcp'
+            DestinationAddress: '100.64.1.0'
+            connectivitytest: '0'
+            Verification  : 'Verification_Tcp_Tlr_DR'
+
+        Verification_Tcp_Tlr_DR:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vnic.[1]'
+                'pktcapfilter': "count 5,src host ipv4/100.64.1.0,dst host ipv4/vm.[1].vnic.[1]"
+                'pktcount': '0'
+
+        UdpTrafficToTlrDR:
+            Type: 'Traffic'
+            ToolName: 'scapy'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            Protocol: 'udp'
+            DestinationAddress: '100.64.1.0'
+            connectivitytest: '0'
+            Verification  : 'Verification_Udp_Tlr_DR'
+
+        Verification_Udp_Tlr_DR:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vnic.[1]'
+                'pktcapfilter': "count 5,src host ipv4/100.64.1.0,dst host ipv4/vm.[1].vnic.[1]"
+                'pktcount': '0'
+
+        IcmpTrafficToTlrDR:
+            Type: 'Traffic'
+            ToolName: 'scapy'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            Protocol: 'icmp'
+            DestinationAddress: '100.64.1.0'
+            connectivitytest: '0'
+            Verification  : 'Verification_Icmp_Tlr_DR'
+
+        Verification_Icmp_Tlr_DR:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vnic.[1]'
+                'pktcapfilter': "count 5,src host ipv4/100.64.1.0,dst host ipv4/vm.[1].vnic.[1]"
+                'pktcount': '5'
+
+
+PlrTlrRebootHypervisor:
+    TestName: 'PlrTlrRebootHypervisor'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Transport Node operations:Verify that east-west & north-south
+             traffic resume after following operations:
+             - Reboot Hypervisor'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+
+            # Verify E-W and N-S traffic before rebooting hypervisor.
+            - - Traffic--ESX
+
+            # Reboot HV, Power on corresponding VM and add required route.
+            - - RebootESX-3
+            - - PowerOnVM-4
+            - - Add192RouteOnVM4Vnic1viaLRP4
+
+            # Verify traffic.
+            - - Traffic--ESX
+
+            # FIXME(Sheela): Do we need to reboot edge host as well?
+            #- [RebootEdgeHost]
+            #- - Traffic--ESX
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+
+PlrTlrRebootController:
+    TestName: 'PlrTlrRebootController'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south
+             traffic resume after following operations:
+             - Reboot Controller (CCP reboot)'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+
+            # Verify E-W and N-S traffic before rebooting controller.
+            - - Traffic--ESX
+            - - RebootController-1
+            - - Traffic--ESX
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+        # TODO(Krishna): Can autogenerate this.
+        RebootController-1:
+            Type: NSX
+            TestNSX: nsxcontroller.[1]
+            reboot:
+                execution_type: cli
+
+
+PlrTlrRebootManager:
+    TestName: 'PlrTlrRebootManager'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south
+             traffic resume after following operations:
+             - Reboot Manager (MP reboot)'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+
+            # Verify E-W and N-S traffic before rebooting nsxmanager.
+            - - Traffic--ESX
+
+            # Reboot MP and verify E-W and N-S traffic.
+            - - RebootMP
+            - - Traffic--ESX
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+        # TODO(Krishna): Can autogenerate this.
+        RebootMP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            reboot:
+                execution_type: "cli"
+
+
+PlrTlrRemoveAddLRPort:
+    TestName: 'PlrTlrRemoveAddLRPort'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south traffic
+            resume after following operations:
+             - Remove/add port on TLR'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            # Delete/add PLR port covered in BasicRouting
+            # only covering TLR below for now
+            - - Traffic--ESX
+            - - DeleteLRP-1
+            - [TrafficTestFAIL_EW]
+            - - DeleteLLRP-2
+            - [TrafficTestFAIL_EW]
+            - [TrafficTestFAIL_NS]
+            - - CreateTlrLLRP-2_TLR-2_PLRP-1
+            - - CreateLRP-1_LR-2_IP-192.1.1.1_LSP-1
+            - - Traffic--ESX
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+        # TODO(Krishna): Can autogenerate these.
+        TrafficTestFAIL_EW:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: 'vm.[3].vnic.[1]'
+            Expectedresult: 'FAIL'
+            TestDuration: '10'
+
+        TrafficTestFAIL_NS:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            SupportAdapter: 'vm.[100].vnic.[1]'
+            Expectedresult: 'FAIL'
+            TestDuration: '10'
+
+PlrTlrDeleteAddLR:
+    TestName: 'PlrTlrDeleteAddLR'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south traffic
+            resume after following operations:
+             - Delete/re-add TLR'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+
+            # Verify traffic before deleting LR.
+            - - Traffic--ESX
+
+            # Delete uplink LLRP.
+            - - DeleteLLRP-2
+            - - DeleteLRP-1
+            # Delete downlink LRP.
+            - - DeleteLRP-2
+            # Delete TLR1 (i.e. LR2).
+            - - DeleteLR-2
+            # Create TLR1 (i.e. LR2).
+            - - CreateLR-2_TIER-1
+            # Create uplink LLRP.
+            # XXX(Krishna): This naming is confusing. This should be TLR-1 or LR-2, but not TLR-2.
+            - - CreateTlrLLRP-2_TLR-2_PLRP-1
+            # Create downlink LRP ports on LR-2 (i.e. TLR1).
+            - - CreateLRP-1_LR-2_IP-192.1.1.1_LSP-1
+            - - CreateLRP-2_LR-2_IP-192.1.2.1_LSP-2
+            - - Traffic--ESX
+            # (TODO): Delete/Add PLR
+            # Currently covered in Basic Routing
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+
+PlrTlrPowerDownUpVM:
+    TestName: 'PlrTlrPowerDownUpVM'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south
+             traffic resume after following operations:
+             - Power down/power up VMs'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            # Test
+            - - Traffic--ESX
+            - - PowerOffVM-1
+            - - PowerOnVM-1
+            - - Add192RouteOnVM1Vnic1viaLRP1
+            - - Traffic--ESX
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+
+PlrTlrDownUpVirtualNics:
+    TestName: 'PlrTlrDownUpVirtualNics'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south
+             L3 traffic resume after following operations:
+             -Unplug/plug of virtual NICs'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            # Test
+            - - Traffic--ESX
+            - [UnplugVM1Vnic1FromLS1--ESX]
+            - [PlugVM1Vnic1ToLS1--ESX]
+            - - Traffic--ESX
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+        # TODO(Krishna): Can autogenerate these workloads.
+        UnplugVM1Vnic1FromLS1--ESX:
+            Type: NetAdapter
+            TestAdapter: 'vm.[1].vnic.[1]'
+            reconfigure: "true"
+            connected: 0
+            startconnected: 0
+
+        PlugVM1Vnic1ToLS1--ESX:
+            Type: NetAdapter
+            TestAdapter: 'vm.[1].vnic.[1]'
+            portgroup: "nsxmanager.[1].logicalswitch.[1]"
+            reconfigure: "true"
+            connected: 1
+            startconnected: 1
+
+
+PlrTlrDownUpLIF:
+    TestName: 'PlrTlrDownUpLIF'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P2'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south traffic
+            resume after following operations:
+             - Down/up Uplink lif on Edge
+             - (Note:right now no way to down/up via TLR LIF via CLI)'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            - - Traffic--ESX
+            # Test
+            - - DiscoverVnicsOnEdge-1_VNIC-1-3
+            - - DisconnectEdge1Vnic2
+            - - EWTraffic--ESX
+            - - NSTrafficFail--ESX
+            - - ReconnectEdge1Vnic2
+            - - UndiscoverVnicsOnEdge-1_VNIC-1-3
+            - - Traffic--ESX
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+
+PlrTlrDownUpLRAdminState:
+    TestName: 'PlrTlrDownUpLRAdminState'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,bumblebee' #no support in Avalanche, moving to Bumblbee
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south traffic
+            resume after following operations:
+             - Admin down/up TLR'
+    Procedure:
+
+PlrTlrDownUpLRPortAdminState:
+    TestName: 'PlrTlrDownUpLRPortAdminState'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,bumblebee' #no support in Avalanche, moving to Bumblbee
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south traffic
+            resume after following operations:
+             - Admin down/up LR Port on TLR'
+    Procedure:
+
+
+PlrTlrDownUpTunnelInterfaces:
+    TestName: 'PlrTlrDownUpTunnelInterfaces'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P2'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_ESX_TOPOLOGY_02
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south
+             traffic resume after following operations:
+             - Down/up physical NIC for tunnel on Edge to other Edge
+             - Down/up physical NIC for tunnel on Edge to Hypervisor
+             - Down/up physical NIC for tunnel on Hypervisor to Edge
+             - Down/up physical NIC for tunnel on Hypervisor to Hypervisor'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--ESX
+            - - Traffic--ESX
+            # Test
+            - - DownESX-2_Vtep-1
+            - - UpESX-2_Vtep-1
+            - - Traffic--ESX
+            - - DownESX-1_Vtep-1
+            - - UpESX-1_Vtep-1
+            - - Traffic--ESX
+        ExitSequence:
+            - - PlrTlrCleanup--ESX
+
+
+
+MultiplePlrTlr:
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TestName: 'MultiplePlrTlr'
+    TCMSId:
+    Priority: 'P2'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+
+    #Testbed *L3_ESX_TOPOLOGY_01
+    Summary: 'IP address assignment:
+             - Multiple PLRs: Assign same IPs and overlapping IPs to different
+               PLR<->TLR sets and ensure that pings work'
+
+    Procedure:
+    ExpectedResult: 'PASS'
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+
+PlrTlrPortStatistics:
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: L3
+    TestName: PlrTlrPortStatistics
+    TCMSId:
+    Priority: P2 # for Bumblebee per BasicRouting TDS review with Dev
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: Functional
+
+    #Testbed *L3_ESX_TOPOLOGY_01
+    Summary: 'Verify port statistics on TLR & PLR:
+              a) east-west traffic within same LS: TLR, PLR port stats should not
+             change
+             b) east-west traffic between different LS: TLR port stats should
+             change, PLR should remain same
+             c) north-south traffic: TLR & PLR port stats should change'
+    Procedure:
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+

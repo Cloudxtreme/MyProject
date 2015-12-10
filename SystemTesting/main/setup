@@ -1,0 +1,154 @@
+#/bin/bash
+
+#Script purpose: subroutines for requirement check of MC
+#Description: This script needs to be executed before VDNet script executes to check if the mountpoints are present
+#Steps followed while executing this script
+
+#1 Check directory permissions for /tmp and /tmp/vdnet and autocorrect using sudo
+#2 Check if toolchain is mounted and autocorrect using sudo
+#3 Check if /mts/git is mounted and autocorrect using sudo
+#4 Check if build/trees is present and is non-empty and autocorrect using sudo
+#5 Check if /PA/results is mounted which is used for CAT logging and autocorrect using sudo
+#6 Make sure that /bugs is not mounted
+#7 Check if LDAP is enabled
+
+
+# TO DO:
+# Not sure about how to check if LDAP is enabled. This needs to be revisited
+# Autofs is not checked
+# checkSSHPublicKey implementation
+
+git_check() {
+	name="/mts/git"
+	dir=$(mount | grep $name | awk '{print $3}' | head -1)
+        if [ x"$dir" = x ]; then
+        echo "$name is not mounted"
+        echo "Script will try to mount it for you using sudo"
+        echo "You will be prompted to enter your password"
+        command="mount pa-group.eng.vmware.com:/git /mts/git"
+	sudo -S $command
+	fi
+	dir=$(mount | grep $name | awk '{print $3}' | head -1)
+        if [ "$(ls -A $dir 2> /dev/null)" == "" ]; then
+        echo " $dir is empty"
+	return 1
+        fi
+	return 0
+}
+
+build_trees_check() {
+	name="/bldmnt/trees"
+        dir=$(mount | grep $name | awk '{print $3}' | head -1)
+        if [ x"$dir" = x ]; then
+        echo "$name is not mounted"
+        echo "Script will try to mount it for you using sudo"
+        echo "You will be prompted to enter your password"
+        command="mount scm-trees.eng.vmware.com:/trees /build/trees"
+        sudo -S $command
+        fi
+        dir=$(mount | grep $name | awk '{print $3}' | head -1)
+        if [ "$(ls -A $dir 2> /dev/null)" == "" ]; then
+        echo "$dir is empty"
+        return 1
+        fi
+        return 0
+}
+
+cat_logging_check() {
+       name="/PA/results"
+       dir=$(mount | grep $name | awk '{print $3}' | head -1)
+       if [ x"$dir" = x ]; then
+       echo "$name is not mounted"
+       echo "Script will try to mount it for you using sudo"
+       echo " You will be prompted to enter your password"
+       command="mount cat-results.eng.vmware.com:/results /PA/results"
+       sudo -S $command
+       fi
+       dir=$(mount | grep $name | awk '{print $3}' | head -1)
+       if [ "$(ls -A $dir 2> /dev/null)" == "" ]; then
+       echo "$dir is empty"
+       return 1
+       fi
+       return 0
+}
+
+check_bugs_mount() {
+       name="/bugs"
+       dir=$(mount | grep $name | awk '{print $3}' | head -1)
+       if [ x"$dir" != x ]; then
+       echo "WARNING:: /bugs is mounted, unmount /bugs to run vdnet test"
+       return 1
+       fi
+       return 0
+}
+
+toolchain_check() {
+	dir=$(mount | grep toolchain | awk '{print $3}' | head -1)
+	if [ x"$dir" = x ]; then
+	echo "toolchain is not mounted"
+        echo "Script will try to mount it for you using sudo"
+        echo "You will be prompted to enter your password"
+	command="mount build-toolchain.eng.vmware.com:/toolchain /bldmnt/toolchain"
+        sudo -S $command
+	fi
+	dir=$(mount | grep toolchain | awk '{print $3}' | head -1)
+	if [ "$(ls -A $dir 2> /dev/null)" == "" ]; then
+	echo "$dir is empty"
+        return 1
+        fi
+        return 0
+}
+
+check_dir_permissions() {
+	dir1="/tmp"
+	dir2="/tmp/vdnet"
+        if [ ! -d $dir1 ] ; then
+        echo " $dir1 does not exist , script will try to create $dir1 for you using sudo"
+        echo "You will be prompted to enter your password"
+	command="mkdir -p $dir1"
+	sudo -S $command
+        fi
+        if [ ! -w $dir1  ] ; then
+        echo "$dir1 is not writable"
+        echo "Script will try to make $dir1 writable for you using sudo"
+        echo "You will be prompted to enter your password"
+        command="chmod -R a+rwX $dir1"
+        sudo -S $command
+	fi
+        if [ ! -d $dir2 ] ; then
+        echo "$dir2 does not exist, script will try to create $dir2 for you using sudo"
+        echo "You will be prompted to enter your password"
+	command="mkdir -p $dir2"
+	sudo -S $command
+        fi
+	if [ ! -w $dir2 ] ; then echo "$dir2 is not writable"
+        echo "Script will try to make $dir2 writable for you using sudo"
+        echo "You will be prompted to enter your password"
+	command="chmod -R a+rwX $dir2"
+	sudo -S $command
+	fi
+        return 0
+}
+
+check_ldap_enabled() {
+	url=$(grep ldaps /etc/ldap/ldap.conf)
+	if [ "$url" = "" ] ; then
+        echo "WARN: LDAP is disabled"
+	fi
+    return 0
+}
+
+### Execute the subroutines for requirement check in a loop
+### Every function returns a non zero value on failure , if return value if non zero then exit
+
+function_array=( check_dir_permissions toolchain_check git_check build_trees_check cat_logging_check check_bugs_mount check_ldap_enabled )
+
+for function in "${function_array[@]}"
+do
+  $function
+  return=$?
+if [ $return != 0 ]; then
+    echo "$function failed with $return"
+    exit $return
+fi
+done

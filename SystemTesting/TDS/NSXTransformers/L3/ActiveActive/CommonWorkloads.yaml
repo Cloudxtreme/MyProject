@@ -1,0 +1,1292 @@
+WORKLOADS:
+
+    SetManagerOnHost: &SET_MANAGER_ON_HOST
+        Type: Host
+        TestHost: 'esx.[1-3]'
+        set_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    DiscoverHostnodes: &DISCOVER_HOST_NODES
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        hostnode:
+            '[1-3]':
+                discover: 'true'
+                ip_addresses: 'esx.[x=hostnode_index]'
+
+    CreateUplinkProfile:
+        ESX: &CREATE_UPLINK_PROFILE_01--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            UplinkProfile:
+                '[1]':
+                    mtu: 1600
+                    teaming:
+                        active:
+                            - adapter_name: 'uplink1'
+                              adapter_type: 'PNIC'
+                        policy: 'FAILOVER_ORDER'
+                    vlan: '0'
+                    resource_type: 'UplinkHostSwitchProfile'
+
+    CreateOverlayTransportZone: &CREATE_OVERLAY_TRANSPORT_ZONE_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[1]':
+                name: autogenerate
+                transport_zone_type: 'OVERLAY'
+                switch_name: 'nsxvswitch'
+
+    CreateOverlayTransportNodes:
+        ESX: &CREATE_OVERLAY_TRANSPORT_NODES--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[1-3]':
+                    node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                    host_switches:
+                          - switch_name: 'nsxvswitch'
+                            host_switch_profile_ids:
+                               - key: 'UplinkHostSwitchProfile'
+                                 value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                            uplinks:
+                               - device_name: 'vmnic1'
+                                 adapter_name: 'uplink1'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+    CreateUplinkLogicalSwitches: &CREATE_UPLINK_LOGICAL_SWITCHES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1-4]':
+                name: 'autogenerate'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP # source
+
+    CreateDownlinkLogicalSwitches: &CREATE_DOWNLINK_LOGICAL_SWITCHES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[101-102]':
+                name: 'autogenerate'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP # source
+
+    CreateDownlinkLogicalSwitchesTLR1: &CREATE_DOWNLINK_LOGICAL_SWITCHES_TLR1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[301]':
+                name: 'autogenerate'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP # source
+
+    CreateUplinkLogicalPorts: &CREATE_UPLINK_LPORTS
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[1-4]':
+                switch_id: nsxmanager.[1].logicalswitch.[x=logicalport_index]
+                name: 'lport for PLR uplink'
+
+    CreateDownlinkLogicalPortsPLR: &CREATE_DOWNLINK_LPORTS_PLR
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[101-102]':
+                switch_id: nsxmanager.[1].logicalswitch.[x=logicalport_index]
+                name: 'lport for PLR downlink'
+
+    CreateDownlinkLogicalPortsTLR1: &CREATE_DOWNLINK_LPORTS_TLR1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[301]':
+                switch_id: nsxmanager.[1].logicalswitch.[x=logicalport_index]
+                name: 'lport for TLR downlink'
+
+    RegisterAllEdgeNodes: &REGISTER_ALL_EDGE_NODES
+        - - 'RegisterEdgeNode01'
+        - - 'RegisterEdgeNode02'
+        - - 'RegisterEdgeNode03'
+        - - 'RegisterEdgeNode04'
+
+    RegisterEdgeNode: &REGISTER_EDGE_NODE
+        Type: Gateway
+        register_nsx_edge_node:
+            manager_username: 'admin'
+            manager_password: 'default'
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    RegisterEdgeNode01: &REGISTER_EDGE_NODE_01
+        <<: *REGISTER_EDGE_NODE
+        TestGateway: 'nsxedge.[1]'
+
+    RegisterEdgeNode02: &REGISTER_EDGE_NODE_02
+        <<: *REGISTER_EDGE_NODE
+        TestGateway: 'nsxedge.[2]'
+
+    RegisterEdgeNode03: &REGISTER_EDGE_NODE_03
+        <<: *REGISTER_EDGE_NODE
+        TestGateway: 'nsxedge.[3]'
+
+    RegisterEdgeNode04: &REGISTER_EDGE_NODE_04
+        <<: *REGISTER_EDGE_NODE
+        TestGateway: 'nsxedge.[4]'
+
+    DiscoverEdgeNodeIds: &DISCOVER_EDGE_NODE_IDS
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        edgenode:
+            '[1]':
+                discover: 'true'
+                resource_type: "EdgeNode"
+                ipaddresses:
+                    - 'nsxedge.[1]->management_ip'
+            '[2]':
+                discover: 'true'
+                resource_type: "EdgeNode"
+                ipaddresses:
+                    - 'nsxedge.[2]->management_ip'
+            '[3]':
+                discover: 'true'
+                resource_type: "EdgeNode"
+                ipaddresses:
+                    - 'nsxedge.[3]->management_ip'
+            '[4]':
+                discover: 'true'
+                resource_type: "EdgeNode"
+                ipaddresses:
+                    - 'nsxedge.[4]->management_ip'
+
+    CreateFabricProfile: &CREATE_FABRIC_PROFILE
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        fabricprofile:
+            '[1]':
+                name: 'Fabric_Profile_PLR_uplink_cluster'
+                summary: "Fabric Profile for PLR uplink edge cluster"
+                resource_type: "FabricProfileClusterKeepAlive"
+                hello_interval: 20000
+                declare_dead_timer: 60000
+
+    CreateEdgeCluster: &CREATE_EDGE_CLUSTER
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        edgecluster:
+            '[1]':
+                name: 'edge_cluster_plr1'
+                summary: 'Edge cluster for PLR1 uplinks'
+                members:
+                  # XXX(dbadiani): This will not work and need to use hardcoded
+                  # id for edge node to make it work.
+                  - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+                  - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+                  - edge_node_id: 'nsxmanager.[1].edgenode.[3]'
+                  - edge_node_id: 'nsxmanager.[1].edgenode.[4]'
+                fabric_profile_bindings:
+                  - resource_type: "FabricProfileClusterKeepAlive"
+                    # enter the fabric_profile_id: uuid1
+                    fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+    CreateProviderLogicalRouter1: &CREATE_PLR_01
+         Type: NSX
+         TestNSX: 'nsxmanager.[1]'
+         sleepbetweenworkloads: '10' # XXX(dbadiani): When we have multiple
+         # operations, we need a sleep to ensure the previous operations are
+         # complete. (per miriyalak)
+         logicalrouter:
+             '[1]':
+                 name: 'Tier0-LR-1'
+                 summary: 'Tier0 Logical Router (PLR) - 01'
+                 router_type: 'TIER0'
+                 cluster_id: 'nsxmanager.[1].edgecluster.[1]'
+
+    CreateUplinksPLR1: &CREATE_PLR_01_UPLINKS
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        logicalrouteruplinkport:
+            '[1]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_uplink1'
+                summary: 'Uplink 1 for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+                gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[1]->member_index'
+                resource_type: "LogicalRouterUpLinkPort"
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                        - '192.168.50.1'
+            '[2]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_uplink2'
+                summary: 'Uplink 2 for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[2]->id
+                gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[2]->member_index'
+                resource_type: "LogicalRouterUpLinkPort"
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                        - '192.168.60.1'
+            '[3]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_uplink3'
+                summary: 'Uplink 3 for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[3]->id
+                gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[3]->member_index'
+                resource_type: "LogicalRouterUpLinkPort"
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                        - '192.168.70.1'
+            '[4]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_uplink4'
+                summary: 'Uplink 4 for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[4]->id
+                gateway_cluster_member_index: 'nsxmanager.[1].edgenode.[4]->member_index'
+                resource_type: "LogicalRouterUpLinkPort"
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                        - '192.168.80.1'
+
+    CreateDownlinksPLR1: &CREATE_PLR_01_DOWNLINKS
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        logicalrouterport:
+            '[101]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_downlink'
+                summary: 'Downlink for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[101]->id
+                resource_type: "LogicalRouterDownLinkPort"
+                subnets:
+                   - prefixlen: 24
+                     ip_addresses:
+                         - '192.168.1.1'
+            '[102]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_downlink'
+                summary: 'Downlink for PLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[102]->id
+                resource_type: "LogicalRouterDownLinkPort"
+                subnets:
+                   - prefixlen: 24
+                     ip_addresses:
+                         - '192.168.2.1'
+
+    CreateTenantLogicalRouter1: &CREATE_TLR_01
+         Type: NSX
+         TestNSX: 'nsxmanager.[1]'
+         sleepbetweenworkloads: '10' # XXX(dbadiani): ???
+         logicalrouter:
+             '[2]':
+                 name: 'Tier1-LR-1'
+                 summary: 'Tier1 Logical Router (TLR) - 01'
+                 router_type: 'TIER1'
+
+    CreateRouterLinkPLR1: &CREATE_RTR_LINK_PLR_01
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        logicalrouterlinkport:
+            '[201]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                name: 'plr1_tlr1_router_link'
+                summary: "Router Link port on TIER-1 Router"
+                resource_type: "LogicalRouterLinkPort"
+
+    CreateRouterLinkTLR1: &CREATE_RTR_LINK_TLR_01
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        logicalrouterlinkport:
+            '[202]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[2]'
+                linked_router_port_id: nsxmanager.[1].logicalrouterlinkport.[201]->id
+                name: 'tlr1_plr1_router_link'
+                summary: "Router Link port on TIER-1 Router"
+                resource_type: "LogicalRouterLinkPort"
+
+    CreateDownlinksTLR1: &CREATE_TLR_01_DOWNLINKS
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        logicalrouterport:
+            '[301]':
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[2]'
+                name: 'tlr1_downlink1'
+                summary: 'Downlink 1 for TLR 01'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[301]->id
+                resource_type: "LogicalRouterDownLinkPort"
+                subnets:
+                   - prefixlen: 24
+                     ip_addresses:
+                         - '192.168.10.1'
+
+    AttachAllEdgeVnicstoUplinkLSes: &ATTACH_EDGE_VNICS_TO_UPLINK_LSES
+        - - 'AttachEdge1Vnic2ToUplinkLS1'
+          - 'AttachEdge2Vnic2ToUplinkLS2'
+          - 'AttachEdge3Vnic2ToUplinkLS3'
+          - 'AttachEdge4Vnic2ToUplinkLS4'
+
+    AttachEdge1Vnic2ToUplinkLS1:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[2]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[1]
+
+    AttachEdge2Vnic2ToUplinkLS2:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[2].vnic.[2]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[2]
+
+    AttachEdge3Vnic2ToUplinkLS3:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[3].vnic.[2]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[3]
+
+    AttachEdge4Vnic2ToUplinkLS4:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[4].vnic.[2]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[4]
+
+    DiscoverTransitLS: &DISCOVER_TRANSIT_LS
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+           '[500]':
+                discover: 'true'
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+
+    AttachEdgeVnicstoTransitLS: &ATTACH_EDGE_VNIC_TO_TRANSIT_LS
+        - - 'AttachEdge1Vnic3ToTransitLS'
+          - 'AttachEdge2Vnic3ToTransitLS'
+          - 'AttachEdge3Vnic3ToTransitLS'
+          - 'AttachEdge4Vnic3ToTransitLS'
+
+    AttachEdge1Vnic3ToTransitLS:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[3]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[500]
+
+    AttachEdge2Vnic3ToTransitLS:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[2].vnic.[3]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[500]
+
+    AttachEdge3Vnic3ToTransitLS:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[3].vnic.[3]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[500]
+
+    AttachEdge4Vnic3ToTransitLS:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[4].vnic.[3]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[500]
+
+    VifAttachementAllVMsESX: &VIF_ATTACHMENT_ALL_VMS_ESX
+        - - 'VifAttachmentVM1'
+          - 'VifAttachmentVM2'
+          - 'VifAttachmentVM3'
+          - 'VifAttachmentVM4'
+          - 'VifAttachmentVM5'
+          - 'VifAttachmentVM6'
+
+    VifAttachementAllVMsESX2Tier: &VIF_ATTACHMENT_ALL_VMS_ESX_2TIER
+        - - 'VifAttachmentVM1'
+          - 'VifAttachmentVM2'
+          - 'VifAttachmentVM3'
+          - 'VifAttachmentVM4'
+          - 'VifAttachmentVM52Tier'
+          # - 'VifAttachmentVM6' - Add if we need an extra VM on TLR dowlink /
+          # PLR downlink.
+
+    VIF_ATTACHMENT_VM1:
+        ESX: &VIF_ATTACHMENT_VM1--ESX
+            Type: VM
+            TestVM: 'vm.[1]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: 'nsxmanager.[1].logicalswitch.[1]'
+                   connected: 1
+                   startconnected: 1
+
+    VIF_ATTACHMENT_VM2:
+        ESX: &VIF_ATTACHMENT_VM2--ESX
+            Type: VM
+            TestVM: 'vm.[2]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: 'nsxmanager.[1].logicalswitch.[2]'
+                   connected: 1
+                   startconnected: 1
+
+    VIF_ATTACHMENT_VM3:
+        ESX: &VIF_ATTACHMENT_VM3--ESX
+            Type: VM
+            TestVM: 'vm.[3]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: 'nsxmanager.[1].logicalswitch.[3]'
+                   connected: 1
+                   startconnected: 1
+
+    VIF_ATTACHMENT_VM4:
+        ESX: &VIF_ATTACHMENT_VM4--ESX
+            Type: VM
+            TestVM: 'vm.[4]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: 'nsxmanager.[1].logicalswitch.[4]'
+                   connected: 1
+                   startconnected: 1
+
+    VIF_ATTACHMENT_VM5:
+        ESX: &VIF_ATTACHMENT_VM5--ESX
+            Type: VM
+            TestVM: 'vm.[5]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: 'nsxmanager.[1].logicalswitch.[101]'
+                   connected: 1
+                   startconnected: 1
+
+    VIF_ATTACHMENT_VM5_2TIER:
+        ESX: &VIF_ATTACHMENT_VM5_2TIER--ESX
+            Type: VM
+            TestVM: 'vm.[5]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: 'nsxmanager.[1].logicalswitch.[301]'
+                   connected: 1
+                   startconnected: 1
+
+    VIF_ATTACHMENT_VM6:
+        ESX: &VIF_ATTACHMENT_VM6--ESX
+            Type: VM
+            TestVM: 'vm.[6]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   # TODO(gjayavelu): use network instead of portgroup
+                   portgroup: 'nsxmanager.[1].logicalswitch.[102]'
+                   connected: 1
+                   startconnected: 1
+
+    PowerOnAllVMs: &POWER_ON_ALL_VMS
+        - - 'PowerOnVM1'
+          - 'PowerOnVM2'
+          - 'PowerOnVM3'
+          - 'PowerOnVM4'
+          - 'PowerOnVM5'
+          - 'PowerOnVM6'
+
+    PowerOnVM1: &POWER_ON_VM1
+        Type: VM
+        TestVM: 'vm.[1]'
+        vmstate: poweron
+
+    PowerOnVM2: &POWER_ON_VM2
+        Type: VM
+        TestVM: 'vm.[2]'
+        vmstate: poweron
+
+    PowerOnVM3: &POWER_ON_VM3
+        Type: VM
+        TestVM: 'vm.[3]'
+        vmstate: poweron
+
+    PowerOnVM3: &POWER_ON_VM4
+        Type: VM
+        TestVM: 'vm.[4]'
+        vmstate: poweron
+
+    PowerOnVM3: &POWER_ON_VM5
+        Type: VM
+        TestVM: 'vm.[5]'
+        vmstate: poweron
+
+    PowerOnVM3: &POWER_ON_VM6
+        Type: VM
+        TestVM: 'vm.[6]'
+        vmstate: poweron
+
+    ConfigureIPAllVMVNics: &CONFIGURE_IP_ALL_VM_VNICS
+        - - 'ConfigureVM1Vnic1IP'
+          - 'ConfigureVM2Vnic1IP'
+          - 'ConfigureVM3Vnic1IP'
+          - 'ConfigureVM4Vnic1IP'
+          - 'ConfigureVM5Vnic1IP'
+          - 'ConfigureVM6Vnic1IP'
+
+    ConfigureIPAllVMVNics2Tier: &CONFIGURE_IP_ALL_VM_VNICS_2TIER
+        - - 'ConfigureVM1Vnic1IP'
+          - 'ConfigureVM2Vnic1IP'
+          - 'ConfigureVM3Vnic1IP'
+          - 'ConfigureVM4Vnic1IP'
+          - 'ConfigureVM5Vnic1IP2Tier'
+          # - 'ConfigureVM6Vnic1IP' - Add if we need LS on PLR / TLR
+
+    ConfigureVM1Vnic1IP: &CONFIGURE_VM_1_VNIC_1_IP
+        Type: NetAdapter
+        TestAdapter: 'vm.[1].vnic.[1]'
+        ipv4:       '192.168.50.10'
+        netmask:    "255.255.255.0"
+
+    ConfigureVM2Vnic1IP: &CONFIGURE_VM_2_VNIC_1_IP
+        Type: NetAdapter
+        TestAdapter: 'vm.[2].vnic.[1]'
+        ipv4:       '192.168.60.10'
+        netmask:    "255.255.255.0"
+
+    ConfigureVM3Vnic1IP: &CONFIGURE_VM_3_VNIC_1_IP
+        Type: NetAdapter
+        TestAdapter: 'vm.[3].vnic.[1]'
+        ipv4:       '192.168.70.10'
+        netmask:    "255.255.255.0"
+
+    ConfigureVM4Vnic1IP: &CONFIGURE_VM_4_VNIC_1_IP
+        Type: NetAdapter
+        TestAdapter: 'vm.[4].vnic.[1]'
+        ipv4:       '192.168.80.10'
+        netmask:    "255.255.255.0"
+
+    ConfigureVM5Vnic1IP: &CONFIGURE_VM_5_VNIC_1_IP
+        Type: NetAdapter
+        TestAdapter: 'vm.[5].vnic.[1]'
+        ipv4:       '192.168.1.10'
+        netmask:    "255.255.255.0"
+
+    ConfigureVM5Vnic1IP2Tier: &CONFIGURE_VM_5_VNIC_1_IP_2TIER
+        Type: NetAdapter
+        TestAdapter: 'vm.[5].vnic.[1]'
+        ipv4:       '192.168.10.10'
+        netmask:    "255.255.255.0"
+
+    ConfigureVM6Vnic1IP: &CONFIGURE_VM_6_VNIC_1_IP
+        Type: NetAdapter
+        TestAdapter: 'vm.[6].vnic.[1]'
+        ipv4:       '192.168.2.10'
+        netmask:    "255.255.255.0"
+
+    AddRouteAllVMs: &ADD_ROUTE_ALL_VMS
+        - - 'AddRouteVM1'
+          - 'AddRouteVM2'
+          - 'AddRouteVM3'
+          - 'AddRouteVM4'
+          - 'AddRouteVM5'
+          - 'AddRouteVM6'
+
+    AddRouteAllVMs2Tier: &ADD_ROUTE_ALL_VMS_2TIER
+        - - 'AddRouteVM1'
+          - 'AddRouteVM2'
+          - 'AddRouteVM3'
+          - 'AddRouteVM4'
+          - 'AddRouteVM52Tier'
+          # - 'AddRouteVM6' - Add it if we need VM on PLR downlink / TLR
+
+    AddRouteVM1: &ADD_ROUTE_VM_1
+        Type:        "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        netmask:     "255.255.255.0"
+        route:       "add"
+        network:     "192.168.1.0, 192.168.2.0"
+        gateway:     "192.168.50.1"
+
+    AddRouteVM2: &ADD_ROUTE_VM_2
+        Type:        "NetAdapter"
+        Testadapter: "vm.[2].vnic.[1]"
+        netmask:     "255.255.255.0"
+        route:       "add"
+        network:     "192.168.1.0, 192.168.2.0"
+        gateway:     "192.168.60.1"
+
+    AddRouteVM3: &ADD_ROUTE_VM_3
+        Type:        "NetAdapter"
+        Testadapter: "vm.[3].vnic.[1]"
+        netmask:     "255.255.255.0"
+        route:       "add"
+        network:     "192.168.1.0, 192.168.2.0"
+        gateway:     "192.168.70.1"
+
+    AddRouteVM4: &ADD_ROUTE_VM_4
+        Type:        "NetAdapter"
+        Testadapter: "vm.[4].vnic.[1]"
+        netmask:     "255.255.255.0"
+        route:       "add"
+        network:     "192.168.1.0, 192.168.2.0"
+        gateway:     "192.168.80.1"
+
+    AddRouteVM5: &ADD_ROUTE_VM_5
+        Type:        "NetAdapter"
+        Testadapter: "vm.[5].vnic.[1]"
+        netmask:     "255.255.255.0"
+        route:       "add"
+        network:     "192.168.50.0, 192.168.60.0, 192.168.70.0, 192.168.80.0"
+        gateway:     "192.168.1.1"
+
+    AddRouteVM52Tier: &ADD_ROUTE_VM_5_2TIER
+        Type:        "NetAdapter"
+        Testadapter: "vm.[5].vnic.[1]"
+        netmask:     "255.255.255.0"
+        route:       "add"
+        network:     "192.168.50.0, 192.168.60.0, 192.168.70.0, 192.168.80.0"
+        gateway:     "192.168.10.1"
+
+    AddRouteVM6: &ADD_ROUTE_VM_6
+        Type:        "NetAdapter"
+        Testadapter: "vm.[6].vnic.[1]"
+        netmask:     "255.255.255.0"
+        route:       "add"
+        network:     "192.168.50.0, 192.168.60.0, 192.168.70.0, 192.168.80.0"
+        gateway:     "192.168.2.1"
+
+    PingFromLogicalToPhysical: &PING_FROM_LOGICAL_TO_PHYSICAL
+        - - 'TrafficVM5toVm1'
+        - - 'TrafficVM5toVm2'
+        - - 'TrafficVM5toVm3'
+        - - 'TrafficVM5toVm4'
+        - - 'TrafficVM6toVm1'
+        - - 'TrafficVM6toVm2'
+        - - 'TrafficVM6toVm3'
+        - - 'TrafficVM6toVm4'
+
+    # TODO(dbadiani): check if we can send traffic continuously
+    TrafficVM5toVm1: &TRAFFIC_VM5_TO_VM1
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[5].vnic.[1]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        TestDuration  : "200"
+
+    TrafficVM5toVm2: &TRAFFIC_VM5_TO_VM2
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[5].vnic.[1]"
+        SupportAdapter: "vm.[2].vnic.[1]"
+        TestDuration  : "200"
+
+    TrafficVM5toVm3: &TRAFFIC_VM5_TO_VM3
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[5].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        TestDuration  : "200"
+
+    TrafficVM5toVm4: &TRAFFIC_VM5_TO_VM4
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[5].vnic.[1]"
+        SupportAdapter: "vm.[4].vnic.[1]"
+        TestDuration  : "200"
+
+    # TODO(dbadiani): check if we can send traffic continuously
+    TrafficVM6toVm1: &TRAFFIC_VM6_TO_VM1
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[6].vnic.[1]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        TestDuration  : "200"
+
+    TrafficVM6toVm2: &TRAFFIC_VM6_TO_VM2
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[6].vnic.[1]"
+        SupportAdapter: "vm.[2].vnic.[1]"
+        TestDuration  : "200"
+
+    TrafficVM6toVm3: &TRAFFIC_VM6_TO_VM3
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[6].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        TestDuration  : "200"
+
+    TrafficVM6toVm4: &TRAFFIC_VM6_TO_VM4
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[6].vnic.[1]"
+        SupportAdapter: "vm.[4].vnic.[1]"
+        TestDuration  : "200"
+
+    # TODO(dbadiani): add grouped verification workload.
+    L3DRVerifications: &L3_DR_VERIFICATIONS
+        - - 'VerifyDRs'
+        - - 'VerifyDRLIFs'
+        # TODO(dbadiani): Check how to make this dynamic.
+        - - 'VerifyDRRoutes'
+
+    L3DataPathVerifications: &L3_DATAPATH_VERIFICATIONS
+        - - 'VerifyDRArpTable'
+
+    VerifyDRs:
+        Type: 'Host'
+        TestHost: "esx.[-1]"
+        execution_type: 'cli'
+        get_logical_routers[?]contain_once:
+            table:
+                - vdr_name: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+
+    VerifyDRLIFs:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[-1]"
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: 'cli'
+        'get_logical_router_ports[?]contain_once':
+            table:
+                - port_id: nsxmanager.[1].logicalrouterport.[1]->lr_port_id
+                - port_id: nsxmanager.[1].logicalrouterport.[2]->lr_port_id
+                # TODO(dbadiani): need to check how to validate transit network
+                # lif on DR since we don't have an object for that here.
+                #- port_id: nsxmanager.[1].logicalrouterport.[2]->lr_port_id
+
+    VerifyDRRoutes:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[-1]"
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: 'cli'
+        'get_route_table[?]contain_once':
+            table:
+                - destination: '192.168.1.0'
+                  mask: '255.255.255.0'
+                  next_hop: '0.0.0.0'
+                  dr_flags: 'UCI'
+                  origin: 'MANUAL'
+                - destination: '192.168.2.0'
+                  mask: '255.255.255.0'
+                  next_hop: '0.0.0.0'
+                  dr_flags: 'UCI'
+                  origin: 'MANUAL'
+
+    # TODO(dbadiani): Check what entries will be present in ARP table here and
+    # update the workload.
+    VerifyDRArpTable:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[1-2]"
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: 'cli'
+        'get_dr_arp_table[?]contain_once':
+            table:
+                - ip: vm.[1].vnic.[1]->adapter_ip
+                  mac: vm.[1].vnic.[1]->adapter_mac
+                - ip: vm.[2].vnic.[1]->adapter_ip
+                  mac: vm.[2].vnic.[1]->adapter_mac
+                - ip: vm.[3].vnic.[1]->adapter_ip
+                  mac: vm.[3].vnic.[1]->adapter_mac
+                - ip: vm.[4].vnic.[1]->adapter_ip
+                  mac: vm.[4].vnic.[1]->adapter_mac
+
+    VerifyECMPVM5Traffic: &VERIFY_ECMP_VM5_TRAFFIC
+        - - 'GetNextHopVM5VM1'
+        - - 'GetNextHopVM5VM2'
+        - - 'GetNextHopVM5VM3'
+        - - 'GetNextHopVM5VM4'
+
+    VerifyECMPVM6Traffic: &VERIFY_ECMP_VM6_TRAFFIC
+        - - 'GetNextHopVM6VM1'
+        - - 'GetNextHopVM6VM2'
+        - - 'GetNextHopVM6VM3'
+        - - 'GetNextHopVM6VM4'
+
+    GetNextHopVM5VM1:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[2]"  # XXX(dbadiani): Check this on source ESX only.
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        sourceip: vm.[5].vnic.[1]
+        destinationip: vm.[1].vnic.[1]
+        execution_type: 'cli'
+        PersistData: 'Yes'
+        read_next_hop:
+            'next_hop[?]defined': ''
+
+    GetNextHopVM5VM2:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[2]"  # XXX(dbadiani): Check this on source ESX only.
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        sourceip: vm.[5].vnic.[1]
+        destinationip: vm.[2].vnic.[1]
+        execution_type: 'cli'
+        PersistData: 'Yes'
+        read_next_hop:
+            'next_hop[?]defined': ''
+
+    GetNextHopVM5VM3:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[2]"  # XXX(dbadiani): Check this on source ESX only.
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        sourceip: vm.[5].vnic.[1]
+        destinationip: vm.[3].vnic.[1]
+        execution_type: 'cli'
+        PersistData: 'Yes'
+        read_next_hop:
+            'next_hop[?]defined': ''
+
+    GetNextHopVM5VM4:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[2]"  # XXX(dbadiani): Check this on source ESX only.
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        sourceip: vm.[5].vnic.[1]
+        destinationip: vm.[4].vnic.[1]
+        execution_type: 'cli'
+        PersistData: 'Yes'
+        read_next_hop:
+            'next_hop[?]defined': ''
+
+    GetNextHopVM6VM1:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[3]"  # XXX(dbadiani): Check this on source ESX only.
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        sourceip: vm.[6].vnic.[1]
+        destinationip: vm.[1].vnic.[1]
+        execution_type: 'cli'
+        PersistData: 'Yes'
+        read_next_hop:
+            'next_hop[?]defined': ''
+
+    GetNextHopVM6VM2:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[3]"  # XXX(dbadiani): Check this on source ESX only.
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        sourceip: vm.[6].vnic.[1]
+        destinationip: vm.[2].vnic.[1]
+        execution_type: 'cli'
+        PersistData: 'Yes'
+        read_next_hop:
+            'next_hop[?]defined': ''
+
+    GetNextHopVM6VM3:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[3]"  # XXX(dbadiani): Check this on source ESX only.
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        sourceip: vm.[6].vnic.[1]
+        destinationip: vm.[3].vnic.[1]
+        execution_type: 'cli'
+        PersistData: 'Yes'
+        read_next_hop:
+            'next_hop[?]defined': ''
+
+    GetNextHopVM6VM4:
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[3]"  # XXX(dbadiani): Check this on source ESX only.
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        sourceip: vm.[6].vnic.[1]
+        destinationip: vm.[4].vnic.[1]
+        execution_type: 'cli'
+        PersistData: 'Yes'
+        read_next_hop:
+            'next_hop[?]defined': ''
+
+    GetNextHop: &GET_NEXT_HOP
+        Type: 'Router'
+        TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+        endpoints: "esx.[3]"
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        sourceip: vm.[5].vnic.[1]
+        destinationip: vm.[1].vnic.[1]
+        execution_type: 'cli'
+        PersistData: 'Yes'
+        read_next_hop:
+            'next_hop[?]defined': ''
+
+    PingEdge1toVM1:
+        Type: "Traffic"
+        toolName: "Ping"
+        TestAdapter: "edge.[1].vnic.[2]"
+        SupportAdapter: "vm.[1].vnic.[1]"
+        TestDuration: "20"
+        connectivitytest: "0"
+        verification: VerifyPingE1toVM1
+
+    VerifyPingE1toVM1:
+        PktCapVerification:
+            target: nsxedge.[1].vnic.[2]
+            pktcapfilter: 'count 15,flowdirection tx,capturestage post'
+            verificationtype: 'pktcapuserworld'
+            tos: 0x4
+
+    PowerOffAllVMs: &POWER_OFF_ALL_VMS
+        - - 'PowerOffVM1'
+          - 'PowerOffVM2'
+          - 'PowerOffVM3'
+          - 'PowerOffVM4'
+          - 'PowerOffVM5'
+          - 'PowerOffVM6'
+
+    PowerOffVM1: &POWER_OFF_VM1
+        Type: VM
+        TestVM: 'vm.[1]'
+        vmstate: poweroff
+
+    PowerOffVM2: &POWER_OFF_VM2
+        Type: VM
+        TestVM: 'vm.[2]'
+        vmstate: poweroff
+
+    PowerOffVM3: &POWER_OFF_VM3
+        Type: VM
+        TestVM: 'vm.[3]'
+        vmstate: poweroff
+
+    PowerOffVM4: &POWER_OFF_VM4
+        Type: VM
+        TestVM: 'vm.[4]'
+        vmstate: poweroff
+
+    PowerOffVM5: &POWER_OFF_VM5
+        Type: VM
+        TestVM: 'vm.[5]'
+        vmstate: poweroff
+
+    PowerOffVM6: &POWER_OFF_VM6
+        Type: VM
+        TestVM: 'vm.[6]'
+        vmstate: poweroff
+
+    DeleteUplinkProfile: &DELETE_UPLINK_PROFILE_01
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       deleteuplinkprofile: 'nsxmanager.[-1].uplinkprofile.[-1]'
+
+    DeleteTransportNode: &DELETE_TRANSPORT_NODE_01--ESX
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletetransportnode: 'nsxmanager.[-1].transportnode.[-1]'
+
+    DeleteTransportZone: &DELETE_TRANSPORT_ZONE_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletetransportzone: 'nsxmanager.[-1].transportzone.[-1]'
+
+    DeleteLogicalSwitch: &DELETE_LOGICAL_SWITCH_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletelogicalswitch: 'nsxmanager.[-1].logicalswitch.[-1]'
+
+    CleanupNSX: &CLEAN_NSX
+        - - 'DeleteAllLRPorts'
+        - - 'DeleteAllLRUplinkPorts'
+        - - 'DeleteAllLRs'
+        - - 'DeleteAllLPorts'
+        - - 'DeleteAllLSwitches'
+        - - 'DeleteAllEdgeClusters'
+        - - 'DeleteAllEdgeNodes'
+        - - 'DeleteAllTransportNodes'
+        - - 'DeleteAllUplinkProfiles'
+        - - 'DeleteAllFabricProfiles'
+        - - 'DeleteAllTransportZones'
+
+    CleanupTemplate: &CLEANUP_TEMPLATE
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+
+    DeleteAllLRPorts:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[-1]"
+
+    DeleteAllLRUplinkPorts:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalrouteruplinkport: "nsxmanager.[1].logicalrouteruplinkport.[-1]"
+
+    DeleteAllLRs:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalrouter: "nsxmanager.[1].logicalrouter.[-1]"
+
+    DeleteAllLRLinkPorts:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalrouterlinkport: "nsxmanager.[1].logicalrouterlinkport.[-1]"
+
+    DeleteAllLPorts:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalport : "nsxmanager.[1].logicalport.[-1]"
+
+    DeleteAllLSwitches:
+        <<: *CLEANUP_TEMPLATE
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[-1]"
+
+    DeleteAllTransportNodes:
+        <<: *CLEANUP_TEMPLATE
+        deletetransportnode: "nsxmanager.[1].transportnode.[-1]"
+
+    DeleteAllUplinkProfiles:
+        <<: *CLEANUP_TEMPLATE
+        deleteuplinkprofile: "nsxmanager.[1].uplinkprofile.[-1]"
+
+    DeleteAllTransportZones:
+        <<: *CLEANUP_TEMPLATE
+        deletetransportzone: "nsxmanager.[1].transportzone.[-1]"
+
+    DeleteAllEdgeClusters: &DELETE_ALL_EDGE_CLUSTERS
+        <<: *CLEANUP_TEMPLATE
+        deleteedgecluster: "nsxmanager.[1].edgecluster.[-1]"
+
+    DeleteAllFabricProfiles:
+        <<: *CLEANUP_TEMPLATE
+        deleteuplinkprofile: "nsxmanager.[1].fabricprofile.[-1]"
+
+    DeleteAllEdgeNodes: &DELETE_ALL_EDGE_NODES
+        - - 'DeleteEdgeNode01'
+        - - 'DeleteEdgeNode02'
+        - - 'DeleteEdgeNode03'
+        - - 'DeleteEdgeNode04'
+
+    DeleteEdgeNode01: &DELETE_EDGE_NODE_01
+        <<: *CLEANUP_TEMPLATE
+        deleteedgenode: "nsxmanager.[1].edgenode.[1]"
+
+    DeleteEdgeNode02: &DELETE_EDGE_NODE_02
+        <<: *CLEANUP_TEMPLATE
+        deleteedgenode: "nsxmanager.[1].edgenode.[2]"
+
+    DeleteEdgeNode03: &DELETE_EDGE_NODE_03
+        <<: *CLEANUP_TEMPLATE
+        deleteedgenode: "nsxmanager.[1].edgenode.[3]"
+
+    DeleteEdgeNode04: &DELETE_EDGE_NODE_04
+        <<: *CLEANUP_TEMPLATE
+        deleteedgenode: "nsxmanager.[1].edgenode.[4]"
+
+    # XXX(dbadiani): Same as single tier cleanup, except that we have an extra
+    # router link port to cleanup.
+    CleanupNSX2Tier: &CLEAN_NSX_2TIER
+        - - 'DeleteAllLRPorts'
+        - - 'DeleteAllLRUplinkPorts'
+        - - 'DeleteAllLRLinkPorts'
+        - - 'DeleteAllLRs'
+        - - 'DeleteAllLPorts'
+        - - 'DeleteAllLSwitches'
+        - - 'DeleteAllEdgeClusters'
+        - - 'DeleteAllEdgeNodes'
+        - - 'DeleteAllTransportNodes'
+        - - 'DeleteAllFabricProfiles'
+        - - 'DeleteAllUplinkProfiles'
+        - - 'DeleteAllTransportZones'
+
+    DeleteTestVnicsAllVMs: &DELETE_TEST_VNICS_ALL_VMS
+        - - 'DeleteVnic1'
+          - 'DeleteVnic2'
+          - 'DeleteVnic3'
+          - 'DeleteVnic4'
+          - 'DeleteVnic5'
+          - 'DeleteVnic6'
+
+    DeleteTestVnicsAllVMs2Tier: &DELETE_TEST_VNICS_ALL_VMS_2TIER
+        - - 'DeleteVnic1'
+          - 'DeleteVnic2'
+          - 'DeleteVnic3'
+          - 'DeleteVnic4'
+          - 'DeleteVnic5'
+          # - 'DeleteVnic6' - Needed if we have VM on PLR downlink / TLR
+
+    DeleteVnic1: &DELETE_VNIC_VM1
+        Type: VM
+        TestVM: 'vm.[1]'
+        deletevnic: 'vm.[1].vnic.[1]'
+
+    DeleteVnic2: &DELETE_VNIC_VM2
+        Type: VM
+        TestVM: 'vm.[2]'
+        deletevnic: 'vm.[2].vnic.[1]'
+
+    DeleteVnic3: &DELETE_VNIC_VM3
+        Type: VM
+        TestVM: 'vm.[3]'
+        deletevnic: 'vm.[3].vnic.[1]'
+
+    DeleteVnic4: &DELETE_VNIC_VM4
+        Type: VM
+        TestVM: 'vm.[4]'
+        deletevnic: 'vm.[4].vnic.[1]'
+
+    DeleteVnic5: &DELETE_VNIC_VM5
+        Type: VM
+        TestVM: 'vm.[5]'
+        deletevnic: 'vm.[5].vnic.[1]'
+
+    DeleteVnic6: &DELETE_VNIC_VM6
+        Type: VM
+        TestVM: 'vm.[6]'
+        deletevnic: 'vm.[6].vnic.[1]'
+
+    DeleteTransitLSNode: &DELETE_TRANSIT_LS_NODE
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        skipmethod: 1
+        deletelogicalswitch: nsxmanager.[1].logicalswitch.[500]
+
+    # XXX(dbadiani): From RTQA 9 notes:
+    # The reason why this is recommended is to be consistent with the way how
+    # the host is registered via nsxcli where nsxcli causes an API call to the MP to
+    # delete the fabric nodes. The reason why it is optional is because even if you
+    # directly delete the fabric nodes by going to the MP, you shouldn’t run into
+    # any issues. If you plan to chose not to use nsxcli for host unregistration
+    # then makes sure to do the following change for host node:
+    UnregisterHost: &UNREGISTER_HOST
+        Type: Host
+        TestHost: 'esx.[-1]'
+        remove_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+
+    SetManagerOnHost: *SET_MANAGER_ON_HOST
+    DiscoverHostnodes: *DISCOVER_HOST_NODES
+    CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01--ESX
+    CreateOverlayTransportZone: *CREATE_OVERLAY_TRANSPORT_ZONE_01
+    CreateOverlayTransportNodes: *CREATE_OVERLAY_TRANSPORT_NODES--ESX
+    CreateUplinkLogicalSwitches: *CREATE_UPLINK_LOGICAL_SWITCHES
+    CreateDownlinkLogicalSwitches: *CREATE_DOWNLINK_LOGICAL_SWITCHES
+    CreateDownlinkLogicalSwitchesTLR1: *CREATE_DOWNLINK_LOGICAL_SWITCHES_TLR1
+    CreateUplinkLogicalPorts: *CREATE_UPLINK_LPORTS
+    CreateDownlinkLogicalPortsPLR: *CREATE_DOWNLINK_LPORTS_PLR
+    CreateDownlinkLogicalPortsTLR1: *CREATE_DOWNLINK_LPORTS_TLR1
+    RegisterAllEdgeNodes: *REGISTER_ALL_EDGE_NODES
+    RegisterEdgeNode01: *REGISTER_EDGE_NODE_01
+    RegisterEdgeNode02: *REGISTER_EDGE_NODE_02
+    RegisterEdgeNode03: *REGISTER_EDGE_NODE_03
+    RegisterEdgeNode04: *REGISTER_EDGE_NODE_04
+    DeleteAllEdgeClusters: *DELETE_ALL_EDGE_CLUSTERS
+    DeleteAllEdgeNodes: *DELETE_ALL_EDGE_NODES
+    DeleteEdgeNode01: *DELETE_EDGE_NODE_01
+    DeleteEdgeNode02: *DELETE_EDGE_NODE_02
+    DeleteEdgeNode03: *DELETE_EDGE_NODE_03
+    DeleteEdgeNode04: *DELETE_EDGE_NODE_04
+    DiscoverEdgeNodeIds: *DISCOVER_EDGE_NODE_IDS
+    CreateFabricProfile: *CREATE_FABRIC_PROFILE
+    CreateEdgeCluster: *CREATE_EDGE_CLUSTER
+    CreateProviderLogicalRouter1: *CREATE_PLR_01
+    CreateUplinksPLR1: *CREATE_PLR_01_UPLINKS
+    CreateDownlinksPLR1: *CREATE_PLR_01_DOWNLINKS
+    CreateTenantLogicalRouter1: *CREATE_TLR_01
+    CreateRouterLinkPLR1: *CREATE_RTR_LINK_PLR_01
+    CreateRouterLinkTLR1: *CREATE_RTR_LINK_TLR_01
+    CreateDownlinksTLR1: *CREATE_TLR_01_DOWNLINKS
+    AttachAllEdgeVnicstoUplinkLSes: *ATTACH_EDGE_VNICS_TO_UPLINK_LSES
+    DiscoverTransitLS: *DISCOVER_TRANSIT_LS
+    AttachEdgeVnicstoTransitLS: *ATTACH_EDGE_VNIC_TO_TRANSIT_LS
+    VifAttachmentVM1: *VIF_ATTACHMENT_VM1--ESX
+    VifAttachmentVM2: *VIF_ATTACHMENT_VM2--ESX
+    VifAttachmentVM3: *VIF_ATTACHMENT_VM3--ESX
+    VifAttachmentVM4: *VIF_ATTACHMENT_VM4--ESX
+    VifAttachmentVM5: *VIF_ATTACHMENT_VM5--ESX
+    VifAttachmentVM52Tier: *VIF_ATTACHMENT_VM5_2TIER--ESX
+    VifAttachmentVM6: *VIF_ATTACHMENT_VM6--ESX
+    VifAttachementAllVMsESX: *VIF_ATTACHMENT_ALL_VMS_ESX
+    VifAttachementAllVMsESX2Tier: *VIF_ATTACHMENT_ALL_VMS_ESX_2TIER
+    PowerOnAllVMs: *POWER_ON_ALL_VMS
+    PowerOnVM1: *POWER_ON_VM1
+    PowerOnVM2: *POWER_ON_VM2
+    PowerOnVM3: *POWER_ON_VM3
+    PowerOnVM4: *POWER_ON_VM4
+    PowerOnVM5: *POWER_ON_VM5
+    PowerOnVM6: *POWER_ON_VM6
+    ConfigureIPAllVMVNics: *CONFIGURE_IP_ALL_VM_VNICS
+    ConfigureIPAllVMVNics2Tier: *CONFIGURE_IP_ALL_VM_VNICS_2TIER
+    ConfigureVM1Vnic1IP: *CONFIGURE_VM_1_VNIC_1_IP
+    ConfigureVM2Vnic1IP: *CONFIGURE_VM_2_VNIC_1_IP
+    ConfigureVM3Vnic1IP: *CONFIGURE_VM_3_VNIC_1_IP
+    ConfigureVM4Vnic1IP: *CONFIGURE_VM_4_VNIC_1_IP
+    ConfigureVM5Vnic1IP: *CONFIGURE_VM_5_VNIC_1_IP
+    ConfigureVM5Vnic1IP2Tier: *CONFIGURE_VM_5_VNIC_1_IP_2TIER
+    ConfigureVM6Vnic1IP: *CONFIGURE_VM_6_VNIC_1_IP
+    AddRouteAllVMs: *ADD_ROUTE_ALL_VMS
+    AddRouteAllVMs2Tier: *ADD_ROUTE_ALL_VMS_2TIER
+    AddRouteVM1: *ADD_ROUTE_VM_1
+    AddRouteVM2: *ADD_ROUTE_VM_2
+    AddRouteVM3: *ADD_ROUTE_VM_3
+    AddRouteVM4: *ADD_ROUTE_VM_4
+    AddRouteVM5: *ADD_ROUTE_VM_5
+    AddRouteVM52Tier: *ADD_ROUTE_VM_5_2TIER
+    AddRouteVM6: *ADD_ROUTE_VM_6
+    PowerOffAllVMs: *POWER_OFF_ALL_VMS
+    PowerOffVM1: *POWER_OFF_VM1
+    PowerOffVM2: *POWER_OFF_VM2
+    PowerOffVM3: *POWER_OFF_VM3
+    PowerOffVM4: *POWER_OFF_VM4
+    PowerOffVM5: *POWER_OFF_VM5
+    PowerOffVM6: *POWER_OFF_VM6
+    DeleteUplinkProfile: *DELETE_UPLINK_PROFILE_01
+    DeleteTransportNode: *DELETE_TRANSPORT_NODE_01--ESX
+    DeleteTransportZone: *DELETE_TRANSPORT_ZONE_01
+    DeleteLogicalSwitch: *DELETE_LOGICAL_SWITCH_01
+    CleanupNSX: *CLEAN_NSX
+    CleanupNSX2Tier: *CLEAN_NSX_2TIER
+    DeleteTestVnicsAllVMs: *DELETE_TEST_VNICS_ALL_VMS
+    DeleteTestVnicsAllVMs2Tier: *DELETE_TEST_VNICS_ALL_VMS_2TIER
+    DeleteVnic1: *DELETE_VNIC_VM1
+    DeleteVnic2: *DELETE_VNIC_VM2
+    DeleteVnic3: *DELETE_VNIC_VM3
+    DeleteVnic4: *DELETE_VNIC_VM4
+    DeleteVnic5: *DELETE_VNIC_VM5
+    DeleteVnic6: *DELETE_VNIC_VM6
+    UnregisterHost: *UNREGISTER_HOST
+    PingFromLogicalToPhysical: *PING_FROM_LOGICAL_TO_PHYSICAL
+    L3DRVerifications: *L3_DR_VERIFICATIONS
+    L3DataPathVerifications: *L3_DATAPATH_VERIFICATIONS
+    VerifyECMPVM5Traffic: *VERIFY_ECMP_VM5_TRAFFIC
+    VerifyECMPVM6Traffic: *VERIFY_ECMP_VM6_TRAFFIC
+    GetNextHop: *GET_NEXT_HOP
+
+    JoinMPClusterNode-1_NSXM-1_ToNSXM-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        clusternode:
+            '[1]':
+                mgr_role_config:
+                    manager_ip: nsxmanager.[1]
+                    manager_thumbprint: nsxmanager.[1]
+                    node_type: AddManagementNodeSpec
+                    password: default
+                    username: admin
+
+    MapNSXManager-1_CLUSTER-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        cluster:
+            '[1]':
+                id_: 1
+                map_object: true
+
+    VerifyMPClusterStatus-1_NSXM-1:
+        TestCluster: nsxmanager.[1].cluster.[1]
+        Type: Cluster
+        cluster_status:
+            control_cluster_status:
+                status[?]equal_to: STABLE
+            mgmt_cluster_status:
+                status[?]equal_to: STABLE

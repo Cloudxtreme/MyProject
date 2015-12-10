@@ -1,0 +1,168 @@
+CreateCASignedCertificate:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CertificateMgmt"
+    TestName: "CreateCASignedCertificate"
+    Version: "2"
+    Summary: "Verify CA signed certificate gets created"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Semi-Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "dgargote"
+    Procedure: '1. Create one CSR
+                2. Verify CSR gets created successfully
+                3. Sign CSR from third party CA
+                4. Try to import CA signed certificate for CSR
+                5. Verify CA signed certificate gets imported'
+    ExpectedResult: 'CA signed certificate should get imported successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,certmgmt'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateCSR"]
+            - ["VerifyCSR"]
+            - ["SignCSRFromCA"]
+            - ["ImportCASignedCertificate"]
+        ExitSequence:
+            - ["DeleteCASignedCertificate"]
+
+        CreateCSR: *CREATE_CSR
+
+        VerifyCSR:
+            Type: "Certificate"
+            Testcertificate: "nsxmanager.[1].csr.[1]"
+            read:
+              'resource_type[?]equal_to': 'csr'
+              'algorithm[?]equal_to': 'RSA'
+              'key_size[?]equal_to': '2048'
+
+        SignCSRFromCA:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            #TODO: Sign CSR from CA
+
+        ImportCASignedCertificate:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            csr_id: "nsxmanager.[1].csr.[1]"
+            casignedcertificate:
+                '[1]':
+                    pem_encoded: '-----BEGIN CERTIFICATE-----\nMIIE7zCCAtegAwIBAgICEAEwDQYJKoZIhvcNAQEFBQAwezELMAkGA1UEBhMCVVMx\nCzAJBgNVBAgMAkNBMQswCQYDVQQHDAJQQTEPMA0GA1UECgwGVk13YXJlMQ0wCwYD\nVQQLDAROU0JVMQ4wDAYDVQQDDAVWaXZlazEiMCAGCSqGSIb3DQEJARYTdnNhcmFv\nZ2lAdm13YXJlLmNvbTAeFw0xNDA4MDYyMTE1NThaFw0xNTA4MDYyMTE1NThaMG4x\nCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDQTEPMA0GA1UEChMGVk13YXJlMQ0wCwYD\nVQQLEwROU0JVMQ4wDAYDVQQDEwVWaXZlazEiMCAGCSqGSIb3DQEJARYTdnNhcmFv\nZ2lAdm13YXJlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANHv\nl6nlZEbY+PamrPYxiit3jlYY7tIOUtLNqYtANBMTNVuCQweREHCNIXmsDGDvht28\nTZm0RwO7U72ZMlUYIM9JeDKvf4SwpGyXEyCCPsrnV4ZWaazLDS+rsi0daO2ak70+\nc9pnfGIogf/tcslFUb//dsK3wJQcirq3Aii/Eswzva6tiP4TOjAA8Ujy1eLmnQVN\nIXpAeAqRmk+AKfzXS+fRjeaMQsZD0rySJ1Q2M//Y0/e9nTLUx450rIAlx/EfwhNJ\nHkNh5hCsblaCv9bUiIkIuDBiNn2zh3hUmRo/gjk94lSoG6plILOM8BY1Ro5uSqyu\nRSrJXzcOQ1ndmXjCxKUCAwEAAaOBiTCBhjAJBgNVHRMEAjAAMAsGA1UdDwQEAwIF\n4DAsBglghkgBhvhCAQ0EHxYdT3BlblNTTCBHZW5lcmF0ZWQgQ2VydGlmaWNhdGUw\nHQYDVR0OBBYEFCKOu6UTn7XsNQVQxOpOUzOc9Yh3MB8GA1UdIwQYMBaAFOqoDj0V\n7pC6BhIjy3sVV73EfBZMMA0GCSqGSIb3DQEBBQUAA4ICAQClSkVbIb3HEJNBaRBW\nnm9cf+iU9lpMCYdQAsYAeE9ltSbfJMw8e+Yla+m8D4ZGSLzevjEyTHslACd7666q\nTBviPSlopYkMmiiwaGpTVL8qIhhxzkMOMea4AiPgZ4FUDzb/yYKGSQEIE3/5MMbP\nvUEac+n0JIiwHZZP4TgT7vPD9so2cc6dZU0CW+vTu+50zzsOUKUYAfUkk6k5SL6H\nkho+cavL38Dyjx2DdvZ/dtZkommbj+wtoluRR17wTwSD1yCqpfPAvGwbSwUwX2U+\nwEqGQsnfBYslsf81PNPzVDAsE5asf5dooOmx9LogbzVT7B27VAfcpqtaT5WH6jij\nusVzUaRVlylZHGqXQ3QeYFG4zulT4q2V9Q/CVnX8uOzRFIcgAyYkizd603EgMWPq\nAyEqu5HTeqomk+cwsyel35q9QpGl8iDjJQaCZNW7tTPobVWYcdt7VA1i0MtnNz4R\nxjb+3WKPTswawKqO1souuXpBiGptMKjb/gasDh2gH+MvGob+9XQ0HkKUvDUeaU5a\n+JdASpSsKswIx6rAsaIvNREXh3ur8ao3DEBpo/og5qNhZmnTBKcDLElgIRMjF0GD\nT0ycWSV33x4X3U+qogXOr7mAVIKBWEp/w2JeCRFbLKxLc4q7CESaYRWGSml0McmH\n0tmEO4++tc1WSc2i/WGJYsZbHA==\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIF1jCCA76gAwIBAgIJANY0bE9WZ1GVMA0GCSqGSIb3DQEBBQUAMHsxCzAJBgNV\nBAYTAlVTMQswCQYDVQQIDAJDQTELMAkGA1UEBwwCUEExDzANBgNVBAoMBlZNd2Fy\nZTENMAsGA1UECwwETlNCVTEOMAwGA1UEAwwFVml2ZWsxIjAgBgkqhkiG9w0BCQEW\nE3ZzYXJhb2dpQHZtd2FyZS5jb20wHhcNMTQwNzE2MTgwMjQ4WhcNMjQwNzEzMTgw\nMjQ4WjB7MQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExCzAJBgNVBAcMAlBBMQ8w\nDQYDVQQKDAZWTXdhcmUxDTALBgNVBAsMBE5TQlUxDjAMBgNVBAMMBVZpdmVrMSIw\nIAYJKoZIhvcNAQkBFhN2c2FyYW9naUB2bXdhcmUuY29tMIICIjANBgkqhkiG9w0B\nAQEFAAOCAg8AMIICCgKCAgEA3bvIkxqNzTEOSlWfMRPCKUt2hy064GP3OwR8tXqf\n0PemyT/2SgVFPtAVv3dH7qBG+CmnYXlSymgHrVb8d9Kh08Jv+utkunQmGqecUjcd\nt0ziJj+aZQx6yxfOOwmYxXjVbKRgtLFby30KgFKJ1/xC45bNGzEI99u3ZFrEfkwl\n0ebozdB6Tfjo/ZzsbtuwqGcgfWMwFqI9P/8upn7rzBTHXp4Z8zygf1+/fkIxUu9o\n5Q/E1cjaLrKBa9ETMSmpXenEQdQvT2vmj69fafvXbBA+2nZPO/6Hmhgnbni+qglM\n0h7BUpf/NXb7vybTFRhm1EO2dhQnK0IHU8qeEgxt/vyuD4JlBsUw/HqD3XJ20Qj2\nulOoRa8cQdIuDX/0gLJ92g2kCKTEE7iHa5jDdba7MqUQvOxJPJ4Mi55iuiolh88o\ne92jhS2zxImcy/IElXLxwJyWv0WUxQNX+0h+lafK9XPsZIV3K+W7PPpMvymjDNIC\nVbjvURDaHg/uRszZovfFewiIvYCR4jB5eCud4vOLY1iLyEt2CnmTCPH9No1lk2B/\n1Ej/QJOPFJC/wbDeTiTg7sgJIdTHcRMdumIMhtQHTYYXxd3u3Oy7M9fxYCnHQE14\nejh4/37Qn1bylOqACVT0u++pamlT1fc70Y1Bwq5xS/OJGRmK0FAHiWus/3QvV9Kj\nUucCAwEAAaNdMFswHQYDVR0OBBYEFOqoDj0V7pC6BhIjy3sVV73EfBZMMB8GA1Ud\nIwQYMBaAFOqoDj0V7pC6BhIjy3sVV73EfBZMMAwGA1UdEwQFMAMBAf8wCwYDVR0P\nBAQDAgEGMA0GCSqGSIb3DQEBBQUAA4ICAQCFD6o1SALwTxAMmHqt6rrwjZdrUMLe\n0vZ1lsjlr82MrUk9L1YOsSFRFGLpYMhmIC/pdaziMxEOI+RifRSI9sk/sY3XlsrL\nuI/92sE9qLV6/PGZsaHYeQcDduaqLqHj7LnsCkgoVZqYhpgpRvgiuUm8faWW9piG\nO0t/PuKpyxWRn+0dqzsH+Nhr/lMoYPqeURphphqiiqoTGcmREEYrDC+MoUsTeHy4\nPy2NNCB5J5qQpMfwfWBeLf0dXXpFk7ggF0dHW/Ma/b8g+fdVE6AswY3NG6TV8phy\nOoNCgqIIO18OuFVL2DnYDoDaEjin/Y5l6U32BAsiCTyiUrCr4+4V7Awa10ipZiPK\niQlIs0vbXD9tSyiP1yTn3tXXHE7OZnT5nE1//UQbEaQWbQcgZOCoH54M7m03aMS5\n1PHs9BHt7zj3ASDF682rsiZTKgW+hv6TTTdfgDHMEO5+ocpIXKAeN9Kx3XSp6jHt\n5yMT2IUv3BEO9i+Dj8CBwvUHU9keinWCJ3i8WbiVhDsQoSnIARX51pmZ9Hz+JelS\nCh0BJtJsWac0Ceq5u62qzRNCj2D6ZqWHjmlzJ4WnvcQMRYxrskct4kS/zX4NTZyx\nlBH6xjE5pnf45jUWkiAD9IfGC40bApHorgC/2wCCTmkL8nxIGY1jg1zHXO/cxTxp\nVcf1BfHFyi5CjA==\n-----END CERTIFICATE-----\n'
+
+        DeleteCASignedCertificate:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletecasignedcertificate: "nsxmanager.[1].casignedcertificate.[-1]"
+
+ImportCertificateWithIncorrectCSRId:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CertificateMgmt"
+    TestName: "ImportCertificateWithIncorrectCSRId"
+    Version: "2"
+    Summary: "Verify import certificate fails with incorrect CSR Id"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "dgargote"
+    Procedure: '1. Try to import certificate with incorrect CSR Id
+                2. Verify import certificate operation is failing'
+    ExpectedResult: 'Import certificate should fail with appropriate error'
+    Duration: '5'
+    Tags: 'nsxmanager,management,certmgmt,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetCSRId"]
+            - ["ImportCASignedCertificate"]
+
+        #Set CSR-Id to incorrect value
+        SetCSRId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            csr:
+                '[1]':
+                    map_object: true
+                    id_: 'incorrect_id'
+
+        ImportCASignedCertificate:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            csr_id: "nsxmanager.[1].csr.[1]"
+            ExpectedResult:
+                status_code: NOT_FOUND
+            casignedcertificate:
+                '[1]':
+                    pem_encoded: '-----BEGIN CERTIFICATE-----\nMIIE7zCCAtegAwIBAgICEAEwDQYJKoZIhvcNAQEFBQAwezELMAkGA1UEBhMCVVMx\nCzAJBgNVBAgMAkNBMQswCQYDVQQHDAJQQTEPMA0GA1UECgwGVk13YXJlMQ0wCwYD\nVQQLDAROU0JVMQ4wDAYDVQQDDAVWaXZlazEiMCAGCSqGSIb3DQEJARYTdnNhcmFv\nZ2lAdm13YXJlLmNvbTAeFw0xNDA4MDYyMTE1NThaFw0xNTA4MDYyMTE1NThaMG4x\nCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDQTEPMA0GA1UEChMGVk13YXJlMQ0wCwYD\nVQQLEwROU0JVMQ4wDAYDVQQDEwVWaXZlazEiMCAGCSqGSIb3DQEJARYTdnNhcmFv\nZ2lAdm13YXJlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANHv\nl6nlZEbY+PamrPYxiit3jlYY7tIOUtLNqYtANBMTNVuCQweREHCNIXmsDGDvht28\nTZm0RwO7U72ZMlUYIM9JeDKvf4SwpGyXEyCCPsrnV4ZWaazLDS+rsi0daO2ak70+\nc9pnfGIogf/tcslFUb//dsK3wJQcirq3Aii/Eswzva6tiP4TOjAA8Ujy1eLmnQVN\nIXpAeAqRmk+AKfzXS+fRjeaMQsZD0rySJ1Q2M//Y0/e9nTLUx450rIAlx/EfwhNJ\nHkNh5hCsblaCv9bUiIkIuDBiNn2zh3hUmRo/gjk94lSoG6plILOM8BY1Ro5uSqyu\nRSrJXzcOQ1ndmXjCxKUCAwEAAaOBiTCBhjAJBgNVHRMEAjAAMAsGA1UdDwQEAwIF\n4DAsBglghkgBhvhCAQ0EHxYdT3BlblNTTCBHZW5lcmF0ZWQgQ2VydGlmaWNhdGUw\nHQYDVR0OBBYEFCKOu6UTn7XsNQVQxOpOUzOc9Yh3MB8GA1UdIwQYMBaAFOqoDj0V\n7pC6BhIjy3sVV73EfBZMMA0GCSqGSIb3DQEBBQUAA4ICAQClSkVbIb3HEJNBaRBW\nnm9cf+iU9lpMCYdQAsYAeE9ltSbfJMw8e+Yla+m8D4ZGSLzevjEyTHslACd7666q\nTBviPSlopYkMmiiwaGpTVL8qIhhxzkMOMea4AiPgZ4FUDzb/yYKGSQEIE3/5MMbP\nvUEac+n0JIiwHZZP4TgT7vPD9so2cc6dZU0CW+vTu+50zzsOUKUYAfUkk6k5SL6H\nkho+cavL38Dyjx2DdvZ/dtZkommbj+wtoluRR17wTwSD1yCqpfPAvGwbSwUwX2U+\nwEqGQsnfBYslsf81PNPzVDAsE5asf5dooOmx9LogbzVT7B27VAfcpqtaT5WH6jij\nusVzUaRVlylZHGqXQ3QeYFG4zulT4q2V9Q/CVnX8uOzRFIcgAyYkizd603EgMWPq\nAyEqu5HTeqomk+cwsyel35q9QpGl8iDjJQaCZNW7tTPobVWYcdt7VA1i0MtnNz4R\nxjb+3WKPTswawKqO1souuXpBiGptMKjb/gasDh2gH+MvGob+9XQ0HkKUvDUeaU5a\n+JdASpSsKswIx6rAsaIvNREXh3ur8ao3DEBpo/og5qNhZmnTBKcDLElgIRMjF0GD\nT0ycWSV33x4X3U+qogXOr7mAVIKBWEp/w2JeCRFbLKxLc4q7CESaYRWGSml0McmH\n0tmEO4++tc1WSc2i/WGJYsZbHA==\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIF1jCCA76gAwIBAgIJANY0bE9WZ1GVMA0GCSqGSIb3DQEBBQUAMHsxCzAJBgNV\nBAYTAlVTMQswCQYDVQQIDAJDQTELMAkGA1UEBwwCUEExDzANBgNVBAoMBlZNd2Fy\nZTENMAsGA1UECwwETlNCVTEOMAwGA1UEAwwFVml2ZWsxIjAgBgkqhkiG9w0BCQEW\nE3ZzYXJhb2dpQHZtd2FyZS5jb20wHhcNMTQwNzE2MTgwMjQ4WhcNMjQwNzEzMTgw\nMjQ4WjB7MQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExCzAJBgNVBAcMAlBBMQ8w\nDQYDVQQKDAZWTXdhcmUxDTALBgNVBAsMBE5TQlUxDjAMBgNVBAMMBVZpdmVrMSIw\nIAYJKoZIhvcNAQkBFhN2c2FyYW9naUB2bXdhcmUuY29tMIICIjANBgkqhkiG9w0B\nAQEFAAOCAg8AMIICCgKCAgEA3bvIkxqNzTEOSlWfMRPCKUt2hy064GP3OwR8tXqf\n0PemyT/2SgVFPtAVv3dH7qBG+CmnYXlSymgHrVb8d9Kh08Jv+utkunQmGqecUjcd\nt0ziJj+aZQx6yxfOOwmYxXjVbKRgtLFby30KgFKJ1/xC45bNGzEI99u3ZFrEfkwl\n0ebozdB6Tfjo/ZzsbtuwqGcgfWMwFqI9P/8upn7rzBTHXp4Z8zygf1+/fkIxUu9o\n5Q/E1cjaLrKBa9ETMSmpXenEQdQvT2vmj69fafvXbBA+2nZPO/6Hmhgnbni+qglM\n0h7BUpf/NXb7vybTFRhm1EO2dhQnK0IHU8qeEgxt/vyuD4JlBsUw/HqD3XJ20Qj2\nulOoRa8cQdIuDX/0gLJ92g2kCKTEE7iHa5jDdba7MqUQvOxJPJ4Mi55iuiolh88o\ne92jhS2zxImcy/IElXLxwJyWv0WUxQNX+0h+lafK9XPsZIV3K+W7PPpMvymjDNIC\nVbjvURDaHg/uRszZovfFewiIvYCR4jB5eCud4vOLY1iLyEt2CnmTCPH9No1lk2B/\n1Ej/QJOPFJC/wbDeTiTg7sgJIdTHcRMdumIMhtQHTYYXxd3u3Oy7M9fxYCnHQE14\nejh4/37Qn1bylOqACVT0u++pamlT1fc70Y1Bwq5xS/OJGRmK0FAHiWus/3QvV9Kj\nUucCAwEAAaNdMFswHQYDVR0OBBYEFOqoDj0V7pC6BhIjy3sVV73EfBZMMB8GA1Ud\nIwQYMBaAFOqoDj0V7pC6BhIjy3sVV73EfBZMMAwGA1UdEwQFMAMBAf8wCwYDVR0P\nBAQDAgEGMA0GCSqGSIb3DQEBBQUAA4ICAQCFD6o1SALwTxAMmHqt6rrwjZdrUMLe\n0vZ1lsjlr82MrUk9L1YOsSFRFGLpYMhmIC/pdaziMxEOI+RifRSI9sk/sY3XlsrL\nuI/92sE9qLV6/PGZsaHYeQcDduaqLqHj7LnsCkgoVZqYhpgpRvgiuUm8faWW9piG\nO0t/PuKpyxWRn+0dqzsH+Nhr/lMoYPqeURphphqiiqoTGcmREEYrDC+MoUsTeHy4\nPy2NNCB5J5qQpMfwfWBeLf0dXXpFk7ggF0dHW/Ma/b8g+fdVE6AswY3NG6TV8phy\nOoNCgqIIO18OuFVL2DnYDoDaEjin/Y5l6U32BAsiCTyiUrCr4+4V7Awa10ipZiPK\niQlIs0vbXD9tSyiP1yTn3tXXHE7OZnT5nE1//UQbEaQWbQcgZOCoH54M7m03aMS5\n1PHs9BHt7zj3ASDF682rsiZTKgW+hv6TTTdfgDHMEO5+ocpIXKAeN9Kx3XSp6jHt\n5yMT2IUv3BEO9i+Dj8CBwvUHU9keinWCJ3i8WbiVhDsQoSnIARX51pmZ9Hz+JelS\nCh0BJtJsWac0Ceq5u62qzRNCj2D6ZqWHjmlzJ4WnvcQMRYxrskct4kS/zX4NTZyx\nlBH6xjE5pnf45jUWkiAD9IfGC40bApHorgC/2wCCTmkL8nxIGY1jg1zHXO/cxTxp\nVcf1BfHFyi5CjA==\n-----END CERTIFICATE-----\n'
+
+ImportCertificateWithIncorrectCertificateData:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CertificateMgmt"
+    TestName: "ImportCertificateWithIncorrectCertificateData"
+    Version: "2"
+    Summary: "Verify import certificate fails with incorrect pem data"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P2"
+    Developer: "dgargote"
+    Procedure: '1. Try to import certificate with incorrect pem-data
+                2. Verify import certificate operation is failing'
+    ExpectedResult: 'Import certificate should fail with appropriate error'
+    Duration: '5'
+    Tags: 'nsxmanager,management,certmgmt,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateCSR"]
+            - ["VerifyCSR"]
+            - ["ImportCASignedCertificate"]
+        ExitSequence:
+            - ["DeleteCSR"]
+
+        CreateCSR: *CREATE_CSR
+
+        VerifyCSR:
+            Type: "Certificate"
+            Testcertificate: "nsxmanager.[1].csr.[1]"
+            read:
+              'algorithm[?]equal_to': 'RSA'
+              'key_size[?]equal_to': '2048'
+
+        ImportCASignedCertificate:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            csr_id: "nsxmanager.[1].csr.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            casignedcertificate:
+                '[1]':
+                    #Incorrect pem-data
+                    pem_encoded: '-----BEGIN CERTIFICATE-----\\nMIIE7zCCAtegAwIBAgICEAEwDQYJKoZIhvcNAQEFBQAwezELMAkGA1UEBhMCVVMx\\nCzAJBgNVBAgMAkNBMQswCQYDVQQHDAJQQTEPMA0GA1UECgwGVk13YXJlMQ0wCwYD\\nVQQLDAROU0JVMQ4wDAYDVQQDDAVWaXZlazEiMCAGCSqGSIb3DQEJARYTdnNhcmFv\\nZ2lAdm13YXJlLmNvbTAeFw0xNDA4MDYyMTE1NThaFw0xNTA4MDYyMTE1NThaMG4x\\nCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDQTEPMA0GA1UEChMGVk13YXJlMQ0wCwYD\\nVQQLEwROU0JVMQ4wDAYDVQQDEwVWaXZlazEiMCAGCSqGSIb3DQEJARYTdnNhcmFv\\nZ2lAdm13YXJlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANHv\\nl6nlZEbY+PamrPYxiit3jlYY7tIOUtLNqYtANBMTNVuCQweREHCNIXmsDGDvht28\\nTZm0RwO7U72ZMlUYIM9JeDKvf4SwpGyXEyCCPsrnV4ZWaazLDS+rsi0daO2ak70+\\nc9pnfGIogf/tcslFUb//dsK3wJQcirq3Aii/Eswzva6tiP4TOjAA8Ujy1eLmnQVN\\nIXpAeAqRmk+AKfzXS+fRjeaMQsZD0rySJ1Q2M//Y0/e9nTLUx450rIAlx/EfwhNJ\\nHkNh5hCsblaCv9bUiIkIuDBiNn2zh3hUmRo/gjk94lSoG6plILOM8BY1Ro5uSqyu\\nRSrJXzcOQ1ndmXjCxKUCAwEAAaOBiTCBhjAJBgNVHRMEAjAAMAsGA1UdDwQEAwIF\\n4DAsBglghkgBhvhCAQ0EHxYdT3BlblNTTCBHZW5lcmF0ZWQgQ2VydGlmaWNhdGUw\\nHQYDVR0OBBYEFCKOu6UTn7XsNQVQxOpOUzOc9Yh3MB8GA1UdIwQYMBaAFOqoDj0V\\n7pC6BhIjy3sVV73EfBZMMA0GCSqGSIb3DQEBBQUAA4ICAQClSkVbIb3HEJNBaRBW\\nnm9cf+iU9lpMCYdQAsYAeE9ltSbfJMw8e+Yla+m8D4ZGSLzevjEyTHslACd7666q\\nTBviPSlopYkMmiiwaGpTVL8qIhhxzkMOMea4AiPgZ4FUDzb/yYKGSQEIE3/5MMbP\\nvUEac+n0JIiwHZZP4TgT7vPD9so2cc6dZU0CW+vTu+50zzsOUKUYAfUkk6k5SL6H\\nkho+cavL38Dyjx2DdvZ/dtZkommbj+wtoluRR17wTwSD1yCqpfPAvGwbSwUwX2U+\\nwEqGQsnfBYslsf81PNPzVDAsE5asf5dooOmx9LogbzVT7B27VAfcpqtaT5WH6jij\\nusVzUaRVlylZHGqXQ3QeYFG4zulT4q2V9Q/CVnX8uOzRFIcgAyYkizd603EgMWPq\\nAyEqu5HTeqomk+cwsyel35q9QpGl8iDjJQaCZNW7tTPobVWYcdt7VA1i0MtnNz4R\\nxjb+3WKPTswawKqO1souuXpBiGptMKjb/gasDh2gH+MvGob+9XQ0HkKUvDUeaU5a\\n+JdASpSsKswIx6rAsaIvNREXh3ur8ao3DEBpo/og5qNhZmnTBKcDLElgIRMjF0GD\\nT0ycWSV33x4X3U+qogXOr7mAVIKBWEp/w2JeCRFbLKxLc4q7CESaYRWGSml0McmH\\n0tmEO4++tc1WSc2i/WGJYsZbHA==\\n-----END CERTIFICATE-----\\n-----BEGIN CERTIFICATE-----\\nMIIF1jCCA76gAwIBAgIJANY0bE9WZ1GVMA0GCSqGSIb3DQEBBQUAMHsxCzAJBgNV\\nBAYTAlVTMQswCQYDVQQIDAJDQTELMAkGA1UEBwwCUEExDzANBgNVBAoMBlZNd2Fy\\nZTENMAsGA1UECwwETlNCVTEOMAwGA1UEAwwFVml2ZWsxIjAgBgkqhkiG9w0BCQEW\\nE3ZzYXJhb2dpQHZtd2FyZS5jb20wHhcNMTQwNzE2MTgwMjQ4WhcNMjQwNzEzMTgw\\nMjQ4WjB7MQswCQYDVQQGEwJVUzELMAkGA1UECAwCQ0ExCzAJBgNVBAcMAlBBMQ8w\\nDQYDVQQKDAZWTXdhcmUxDTALBgNVBAsMBE5TQlUxDjAMBgNVBAMMBVZpdmVrMSIw\\nIAYJKoZIhvcNAQkBFhN2c2FyYW9naUB2bXdhcmUuY29tMIICIjANBgkqhkiG9w0B\\nAQEFAAOCAg8AMIICCgKCAgEA3bvIkxqNzTEOSlWfMRPCKUt2hy064GP3OwR8tXqf\\n0PemyT/2SgVFPtAVv3dH7qBG+CmnYXlSymgHrVb8d9Kh08Jv+utkunQmGqecUjcd\\nt0ziJj+aZQx6yxfOOwmYxXjVbKRgtLFby30KgFKJ1/xC45bNGzEI99u3ZFrEfkwl\\n0ebozdB6Tfjo/ZzsbtuwqGcgfWMwFqI9P/8upn7rzBTHXp4Z8zygf1+/fkIxUu9o\\n5Q/E1cjaLrKBa9ETMSmpXenEQdQvT2vmj69fafvXbBA+2nZPO/6Hmhgnbni+qglM\\n0h7BUpf/NXb7vybTFRhm1EO2dhQnK0IHU8qeEgxt/vyuD4JlBsUw/HqD3XJ20Qj2\\nulOoRa8cQdIuDX/0gLJ92g2kCKTEE7iHa5jDdba7MqUQvOxJPJ4Mi55iuiolh88o\\ne92jhS2zxImcy/IElXLxwJyWv0WUxQNX+0h+lafK9XPsZIV3K+W7PPpMvymjDNIC\\nVbjvURDaHg/uRszZovfFewiIvYCR4jB5eCud4vOLY1iLyEt2CnmTCPH9No1lk2B/\\n1Ej/QJOPFJC/wbDeTiTg7sgJIdTHcRMdumIMhtQHTYYXxd3u3Oy7M9fxYCnHQE14\\nejh4/37Qn1bylOqACVT0u++pamlT1fc70Y1Bwq5xS/OJGRmK0FAHiWus/3QvV9Kj\\nUucCAwEAAaNdMFswHQYDVR0OBBYEFOqoDj0V7pC6BhIjy3sVV73EfBZMMB8GA1Ud\\nIwQYMBaAFOqoDj0V7pC6BhIjy3sVV73EfBZMMAwGA1UdEwQFMAMBAf8wCwYDVR0P\\nBAQDAgEGMA0GCSqGSIb3DQEBBQUAA4ICAQCFD6o1SALwTxAMmHqt6rrwjZdrUMLe\\n0vZ1lsjlr82MrUk9L1YOsSFRFGLpYMhmIC/pdaziMxEOI+RifRSI9sk/sY3XlsrL\\nuI/92sE9qLV6/PGZsaHYeQcDduaqLqHj7LnsCkgoVZqYhpgpRvgiuUm8faWW9piG\\nO0t/PuKpyxWRn+0dqzsH+Nhr/lMoYPqeURphphqiiqoTGcmREEYrDC+MoUsTeHy4\\nPy2NNCB5J5qQpMfwfWBeLf0dXXpFk7ggF0dHW/Ma/b8g+fdVE6AswY3NG6TV8phy\\nOoNCgqIIO18OuFVL2DnYDoDaEjin/Y5l6U32BAsiCTyiUrCr4+4V7Awa10ipZiPK\\niQlIs0vbXD9tSyiP1yTn3tXXHE7OZnT5nE1//UQbEaQWbQcgZOCoH54M7m03aMS5\\n1PHs9BHt7zj3ASDF682rsiZTKgW+hv6TTTdfgDHMEO5+ocpIXKAeN9Kx3XSp6jHt\\n5yMT2IUv3BEO9i+Dj8CBwvUHU9keinWCJ3i8WbiVhDsQoSnIARX51pmZ9Hz+JelS\\nCh0BJtJsWac0Ceq5u62qzRNCj2D6ZqWHjmlzJ4WnvcQMRYxrskct4kS/zX4NTZyx\\nlBH6xjE5pnf45jUWkiAD9IfGC40bApHorgC/2wCCTmkL8nxIGY1jg1zHXO/cxTxp\\nVcf1BfHFyi5CjA==\\n-----END CERTIFICATE-----\\n'
+
+        DeleteCSR: *DELETE_ALL_CSR

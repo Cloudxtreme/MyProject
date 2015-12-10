@@ -1,0 +1,1360 @@
+{% include 'TDS/NSXTransformers/L3/PlrTlr/TestbedSpec.yaml' %}
+{% include 'TDS/NSXTransformers/L3/PlrTlr/NewTopo_2Hosts_1Edge.yaml' %}
+{% include 'TDS/NSXTransformers/Common/Topo_Clusters.yaml' %}
+
+PlrTlrTrafficTest:
+    TestName: 'PlrTlrTrafficTest'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'East-west traffic & north-south traffic in PLR-TLR topology:
+             - test unicast traffic
+             - test BUM traffic
+             - test TCP/UDP traffic'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+            # Test
+            - - VerifyDRCreationForLRs
+            - - VerifyTlr2LIFs
+            - - VerifyTlr3LIFs
+            - - PlrTlrICMPTraffic--KVM
+            # XXX(dbadiani): Netperf traffic disable workaround start
+            # Ref. BZ: 1417298
+            #- - PlrTlrTCPTraffic--KVM
+            #- - PlrTlrUDPTraffic--KVM
+            # XXX(dbadiani): Netperf traffic disable workaround ends.
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+        VerifyDRCreationForLRs:
+            Type: 'Host'
+            # XXX(Sheela): Do we need to check these on esx hosting the edge?
+            TestHost: "kvm.[2-3]"
+            execution_type: 'cli'
+            get_logical_routers[?]contain_once:
+                table:
+                    - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+                    - lr_uuid: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+                    - lr_uuid: nsxmanager.[1].logicalrouter.[3]->logical_router_id
+
+        VerifyTlr2LIFs:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[2]'
+            endpoints: "kvm.[2-3]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+            execution_type: 'cli'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: nsxmanager.[1].logicalrouterport.[1]->lr_port_id
+                    - lrport_uuid: nsxmanager.[1].logicalrouterport.[2]->lr_port_id
+
+        VerifyTlr3LIFs:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[3]'
+            endpoints: "kvm.[2-3]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[3]->logical_router_id
+            execution_type: 'cli'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: nsxmanager.[1].logicalrouterport.[3]->lr_port_id
+                    - lrport_uuid: nsxmanager.[1].logicalrouterport.[4]->lr_port_id
+
+
+PlrTlrConnectedRoutes:
+    TestName: 'PlrTlrConnectedRoutes'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'PLR-TLR RIB-Connected Routes
+             - Verify that Connected Routes are present in RIB of TLRs & PLR for
+               prefixes configured on the logical router ports.
+             - Verify that the list of connected routes in TLR RIB get updated
+               when
+                a)new LS is added and connected to TLR
+                b)an existing LS connected to TLR is deleted
+             - Verify that the list of connected routes in PLR RIB get updated
+               when
+                a)new LR is added and connected to PLR
+                b)an existing TLR connected to PLR is deleted'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+            # Test
+            - - VerifyHost1PLRConnectedRoutes_BeforeTLR3
+            - - VerifyHost1TLR1ConnectedRoutes_BeforeLS5
+            # Add LS5 to TLR1 and verify TLR1 connected routes get updated
+            - - CreateLogicalSwitch5
+            - - CreateLogicalSwitchPort5
+            - - CreateDownLinkPortOnTLR1ForLS5
+            - - VerifyHost1TLR1ConnectedRoutes_AfterLS5
+            # Delete above LS and verify TLR1 connected routes get updated
+            - - DeleteLogicalSwitch5Ports
+            - - DeleteDownLinkPortOnTLR1ForLS5
+            - - DeleteLogicalSwitch5
+            - - VerifyHost1TLR1ConnectedRoutes_BeforeLS5
+            # Add TLR3 to PLR and verify PLR connected routes get updated
+            - - AddRouterLinkPortOnPLRtoTLR3
+            - - CreateRouterLinkPortOnTLR3
+            - - CreateLogicalSwitch5
+            - - CreateLogicalSwitchPort5
+            - - CreateDownLinkPortOnTLR3
+            - - VerifyHost1PLRConnectedRoutes_AfterTLR3
+            # Delete TLR3 to PLR and verify PLR connected routes get updated
+            - - DeleteDownLinkPortOnTLR3
+            - - DeleteRouterLinkPortOnTLR3
+            - - DeleteRouterLinkPortOnPLRtoTLR3
+            - - DeleteLogicalSwitch5Ports
+            - - DeleteLogicalSwitch5
+            - - VerifyHost1PLRConnectedRoutes_BeforeTLR3
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+
+        VerifyHost1PLRConnectedRoutes_BeforeTLR3:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: 'kvm.[2]'
+            logical_router_id: 'nsxmanager.[1].logicalrouter.[1]->logical_router_id'
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: '169.0.0.0'
+                      mask: '255.255.255.240'
+                      next_hop: '0.0.0.0'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[2]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[2]->netmask
+                      next_hop: '0.0.0.0'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[4]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[4]->netmask
+                      next_hop: '0.0.0.0'
+
+        VerifyHost1TLR1ConnectedRoutes_BeforeLS5:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[2]'
+            endpoints: 'kvm.[2]'
+            logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: nsxmanager.[1].logicalrouterport.[1]->network
+                      mask: nsxmanager.[1].logicalrouterport.[1]->netmask
+                      next_hop: '0.0.0.0'
+                    - destination: nsxmanager.[1].logicalrouterport.[2]->network
+                      mask: nsxmanager.[1].logicalrouterport.[2]->netmask
+                      next_hop: '0.0.0.0'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[1]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[1]->netmask
+                      next_hop: '0.0.0.0'
+                    - destination: '0.0.0.0'
+                      mask: '0.0.0.0'
+                      next_hop: nsxmanager.[1].logicalrouterlinkport.[1]->ip
+
+        VerifyHost1TLR1ConnectedRoutes_AfterLS5:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[2]'
+            endpoints: 'kvm.[2]'
+            logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: nsxmanager.[1].logicalrouterport.[1]->network
+                      mask: nsxmanager.[1].logicalrouterport.[1]->netmask
+                      next_hop: '0.0.0.0'
+                    - destination: nsxmanager.[1].logicalrouterport.[2]->network
+                      mask: nsxmanager.[1].logicalrouterport.[2]->netmask
+                      next_hop: '0.0.0.0'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[1]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[1]->netmask
+                      next_hop: '0.0.0.0'
+                    - destination: '0.0.0.0'
+                      mask: '0.0.0.0'
+                      next_hop: nsxmanager.[1].logicalrouterlinkport.[1]->ip
+                    - destination: nsxmanager.[1].logicalrouterport.[5]->network
+                      mask: nsxmanager.[1].logicalrouterport.[5]->netmask
+                      next_hop: '0.0.0.0'
+
+
+        VerifyHost1PLRConnectedRoutes_AfterTLR3:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: 'kvm.[2]'
+            logical_router_id: 'nsxmanager.[1].logicalrouter.[1]->logical_router_id'
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: '169.0.0.0'
+                      mask: '255.255.255.240'
+                      next_hop: '0.0.0.0'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[2]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[2]->netmask
+                      next_hop: '0.0.0.0'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[4]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[4]->netmask
+                      next_hop: '0.0.0.0'
+                    - destination: nsxmanager.[1].logicalrouterlinkport.[6]->network
+                      mask: nsxmanager.[1].logicalrouterlinkport.[6]->netmask
+                      next_hop: '0.0.0.0'
+
+PlrTlrInternalRoutes:
+    TestName: 'PlrTlrInternalRoutes'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'PLR-TLR RIB:Internal Routes:
+              - Verify that a default route is automatically created on TLR
+               pointing to PLR. This should be of type Internal Route.
+              - Verify that the internal route in PLR RIB gets updaed when
+                 a) Route advertisement enabled, new LS added
+                 b) Route advertisement enabled, delete above LS
+                 c) Route advertisement disabled, then new LS is added'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - [PlrTlrSetup--KVM]
+            # Test
+            #a) TLR1 Route advertisement enabled, new LS added
+            - [CreateLogicalSwitch5]
+            - [CreateLogicalSwitchPort5]
+            - [CreateDownLinkPortOnTLR1ForLS5]
+            - [AddTlr1RouteAdvertisement]
+            - [VerifyHost1PLRInternalRoutes_1]
+            #b) TLR1 Route advertisement enabled, delete above LS
+            - [DeleteLogicalSwitch5Ports]
+            - [DeleteDownLinkPortOnTLR1ForLS5]
+            - [DeleteLogicalSwitch5]
+            - [VerifyHost1PLRInternalRoutes_1]
+            #c) TLR1 Route advertisement disabled, then new LS is added
+            - [DisableTLR1RouteAdvertisement]
+            - [CreateLogicalSwitch5]
+            - [CreateLogicalSwitchPort5]
+            - [CreateDownLinkPortOnTLR1ForLS5]
+            - [VifAttachmentVM5--KVM]
+            - - ConfigureVM5Vif1IP-30.1.1.10
+            - [VerifyHost1PLRInternalRoutes_2]
+            - [DeleteVif-1_VM-5]
+            - [DeleteLSP-15]
+            # Delete logical components created above
+            # for comon cleanup to run successfully
+            - [DeleteDownLinkPortOnTLR1ForLS5]
+            - [DeleteLogicalSwitch5Ports]
+            - [DeleteLogicalSwitch5]
+        ExitSequence:
+            - [PlrTlrCleanup--KVM]
+
+        AddTlr1RouteAdvertisement:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[2]"
+            routeadvertisements:
+                '[1]':
+                    enableadvertisement: 'true'
+                    advertise_routes:
+                        - name: 'Advertisement for 192.1.1.0/24, 192.1.2.0/24, 30.1.1.0/24'
+                          summary: 'Advertisement for 192.1.1.0/24, 192.1.2.0/24, 30.1.1.0/24'
+                          network:
+                             - '192.1.1.0/24'
+                             - '192.1.2.0/24'
+                             - '30.1.1.0/24'
+
+        VerifyHost1PLRInternalRoutes_1:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: 'kvm.[2]'
+            logical_router_id: 'nsxmanager.[1].logicalrouter.[1]->logical_router_id'
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: '30.1.1.0'
+                      mask: '255.255.255.0'
+                    # change flags based on fix for Bugzilla 1368794
+                    # FIXME(Krishna): Add missing fields once Bug 1376840 is fixed.
+                    #  dr_flags: 'UCI'
+                    #  origin: 'MANUAL'
+
+        VerifyHost1PLRInternalRoutes_2:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            endpoints: 'kvm.[2]'
+            logical_router_id: 'nsxmanager.[1].logicalrouter.[1]->logical_router_id'
+            execution_type: 'cli'
+            'get_route_table[?]not_contains':
+                table:
+                    - destination: '30.1.1.0'
+                      mask: '255.255.255.0'
+                    # change flags based on fix for Bugzilla 1368794
+                    # FIXME(Krishna): Add missing fields once Bug 1376840 is fixed.
+                    #  dr_flags: 'UCI'
+                    #  origin: 'MANUAL'
+
+        CreateDownLinkPortOnTLR1ForLS5:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            logicalrouterport:
+                '[5]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+                    name: "tlr1-to-ls5"
+                    resource_type: 'LogicalRouterDownLinkPort'
+                    linked_switch_port_id: nsxmanager.[1].logicalport.[5]->id
+                    subnets:
+                        - prefixlen: 24
+                          ip_addresses:
+                          - '30.1.1.1'
+
+        DisableTLR1RouteAdvertisement:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[2]"
+            routeadvertisements:
+                '[1]':
+                    enableadvertisement: 'false'
+
+PlrTlrPortIPAddressAssignment:
+    TestName: 'PlrTlrPortIPAddressAssignment'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'IP address assignment:
+             - Verify that it is possible to ping the PLR and TLR interfaces
+               with assigned IPs
+             - Modify the IP addresses of logical router ports and verify pings
+               work across PLR-TLR'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+
+            # Verify if ping to TLR and PLR are successful before modifying IP.
+            - - PingVM1Vif1ToTlr2DownlinkIP_1
+            - - PingVM1Vif1ToPlrRouterLinkIP_1
+
+            # Modify TLR2 IP and check if ping still works.
+            - - ModifyTlr2DownlinkIP
+            - - PingVM1Vif1ToTlr2DownlinkIP_2
+
+            # Bugzilla 1398866: Modifying RouterLink IP is not allowed,
+            # Try to modify IP and then check that ping to original IP still works.
+            - - ModifyPlrRouterLinkIP
+            - - PingVM1Vif1ToPlrRouterLinkIP_1
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+        PingVM1Vif1ToTlr2DownlinkIP_1:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: '192.1.1.1'  # XXX(Bug1403186) nsxmanager.[1].logicalrouterport.[1]
+            TestDuration: '10'
+
+        PingVM1Vif1ToPlrRouterLinkIP_1:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: '100.64.1.1'
+            TestDuration: '10'
+
+        ModifyTlr2DownlinkIP:
+            Type: 'Port'
+            TestPort: 'nsxmanager.[1].logicalrouterport.[1]'
+            sleepbetweenworkloads: 10
+            reconfigure:
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                          - '192.1.1.20'
+
+        PingVM1Vif1ToTlr2DownlinkIP_2:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: '192.1.1.20'  # XXX(Bug1403186) nsxmanager.[1].logicalrouterport.[1]
+            TestDuration: '10'
+
+        ModifyPlrRouterLinkIP:
+            Type: 'Port'
+            TestPort: 'nsxmanager.[1].logicalrouterlinkport.[1]'
+            # Bugzilla 1398866: Modifying RouterLinkIP is not allowed anymore
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            reconfigure:
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                          - '100.64.1.50'
+
+
+PlrTlrTTLdecrement:
+    TestName: 'PlrTlrTTLdecrement'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify TTL decrement:
+             - east-west traffic: check that TTL is decremented once on
+             egressing DR
+             - north-south traffic: that TTL is decremented once per TLR and
+             PLR.(Check decrement for traffic in north->south and south->north
+                directions)
+             - Verify ICMP Time exceeded is generated for TTL=0
+             - Send traffic with TTL=1,2,3 and verify ICMP TIme Exceeded is
+               generated by respective PLR or TLR when TTL=0'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+
+            # Test
+            - - CheckTTLEWTlrTraffic
+            - - CheckTTLEWTlrPlrTraffic
+            - - CheckTTLNSTraffic
+            - - CheckICMPTImeExceededGeneration
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+        CheckTTLEWTlrTraffic:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[2].vif.[1]'
+            TestDuration: '30'
+            IpTTL: '10'
+            Verification: 'Verification_1'
+
+        Verification_1:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[2].vif.[1]'
+                'pktcapfilter': 'count 5,ttl == 9,icmptype == 8,src host ipv4/vm.[1].vif.[1],dst host ipv4/vm.[2].vif.[1]'
+                'pktcount': '1-10'
+
+        CheckTTLEWTlrPlrTraffic:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[4].vif.[1]'
+            TestDuration: '30'
+            IpTTL: '10'
+            Verification: 'Verification_2'
+
+        Verification_2:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[4].vif.[1]'
+                'pktcapfilter': 'count 5,ttl == 7,icmptype == 8,src host ipv4/vm.[1].vif.[1],dst host ipv4/vm.[4].vif.[1]'
+                'pktcount': '1-10'
+
+        CheckTTLNSTraffic:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[100].vnic.[1]'
+            TestDuration: '30'
+            IpTTL: '20'
+            Verification: 'Verification_3'
+
+        Verification_3:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[100].vnic.[1]'
+                'pktcapfilter': 'count 5,ttl == 18,icmptype == 8,src host ipv4/vm.[1].vif.[1],dst host ipv4/vm.[100].vnic.[1]'
+                'pktcount': '1-10'
+
+        CheckICMPTImeExceededGeneration:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[4].vif.[1]'
+            TestDuration: '30'
+            IpTTL: '2'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_4'
+
+        Verification_4:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vif.[1]'
+                'pktcapfilter': 'count 5,icmptype == 11,icmpcode == 0,src host ipv4/100.64.1.1,dst host ipv4/vm.[1].vif.[1]'
+                'pktcount': '1-10'
+
+
+PlrTlrICMPDestinationUnreachable:
+    TestName: 'PlrTlrICMPDestinationUnreachable'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'ICMP messages:
+            - Verify that ICMP Destination Unreachable is generated by TLR when
+              pinging an unknown IP from north->south or east->west
+              (IP does not exist on LS or logical port on LS has been removed).
+              Likewise PLR should generate this message for south->north & east->west traffic.'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+            # Test
+            # XXX(Sheela): Do we expect to see ICMP error replies? Seems we only see echo requests but no replies.
+            - - DestinationUnreachableEWTrafficTest
+            - - DestinationUnreachableNSTrafficTest
+
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+        DestinationUnreachableEWTrafficTest:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: '192.2.1.20'
+            TestDuration: '10'
+            connectivitytest: '0'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_1'
+
+        Verification_1:
+            'PktCapVerificaton':
+                'verificationtype': 'pktcap'
+                'target': 'vm.[1].vif.[1]'
+                # (TODO): Try to pass in IP of LRPort instead of string to pktcapfilter
+                # here and in rest of this test. Also, do we need dst host in filter?
+                'pktcapfilter': 'count 10,icmptype == icmp-unreach,icmpcode == 1,src host ipv4/100.64.1.2'
+                'pktcount': '1-10'
+
+        DestinationUnreachableNSTrafficTest:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: '192.200.1.20'
+            TestDuration: '10'
+            connectivitytest: '0'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_2'
+
+        Verification_2:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              # For N-S traffic, ICMP message is sent by SR interface toward
+              # internal transit LS
+              # (TODO): Use tuple for SR interface IP
+              'pktcapfilter': 'count 10,icmptype == icmp-unreach,icmpcode == 1,src host ipv4/169.0.0.2'
+              'pktcount': '1-10'
+
+
+PlrTlrICMPNetworkUnreachable:
+    TestName: 'PlrTlrICMPNetworkUnreachable'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'ICMP messages:
+              Verify that ICMP Network Unreachable is generated by PLR when
+              pinging an unknown network
+                 - from external network
+                 - from LS1 subnet to LS-X subnet which has been removed
+                 - default route removed and no dynamic routing protocol'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+            # Test
+            - - DeleteTLR1DownLinkPort-2
+            - - DeleteTLR1RouterLinkPort-2
+            # Test traffic from LS1 to LS2
+            - - NetworkUnreachableEWTrafficTest2
+            # Add a dummy route and check NetworkUnreachable is generated
+            - - AddTestRouteonVM1--KVM
+            - - NetworkUnreachableEWTrafficTest1
+            # TODO(dbadiani/sannapillai): Not sending traffic from physical to
+            # logical due to BZ: 1415631. Remove workaround once bug is fixed.
+            # Test traffic from uplink to LS2
+            #- - NetworkUnreachableNSTrafficTest
+            # Test traffic from LS1 to uplink
+            - - NetworkUnreachableSNTrafficTest
+            # Re-create deleted components for the common cleanup to
+            # run successfully
+            - - CreateLRP-2_LR-2_IP-192.1.2.1_LSP-2
+            - - CreateTlrLLRP-2_TLR-2_PLRP-1
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+        DeleteTLR1DownLinkPort-2:
+            Type : "NSX"
+            TestNSX : "nsxmanager.[1]"
+            deletelogicalrouterport : "nsxmanager.[1].logicalrouterport.[2]"
+
+        DeleteTLR1RouterLinkPort-2:
+            Type : "NSX"
+            TestNSX : "nsxmanager.[1]"
+            deletelogicalrouterlinkport : "nsxmanager.[1].logicalrouterlinkport.[2]"
+
+        AddTestRouteonVM1--KVM:
+            Type: 'NetAdapter'
+            Testadapter: 'vm.[1].vif.[1]'
+            netmask:     '255.255.255.0'
+            route:       'add'
+            network:     '10.1.3.0'
+            gateway:     '192.1.1.1'
+
+        NetworkUnreachableEWTrafficTest1:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: '10.1.3.1'
+            TestDuration: '10'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_1'
+
+        Verification_1:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': 'count 10,icmptype == icmp-unreach,icmpcode == 0,src host ipv4/192.1.1.1'
+              'pktcount': '1-10'
+
+        NetworkUnreachableEWTrafficTest2:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[2].vif.[1]'
+            TestDuration: '10'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_2'
+
+        Verification_2:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              # XXX(Sheela/Mihir): Should src host be PLR? Does TLR have a default route pointing to PLR?
+              'pktcapfilter': 'count 10,icmptype == icmp-unreach,icmpcode == 0,src host ipv4/192.1.1.1'
+              'pktcount': '1-10'
+
+        NetworkUnreachableNSTrafficTest:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[100].vnic.[1]'
+            SupportAdapter: 'vm.[2].vif.[1]'
+            TestDuration: '10'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_3'
+
+        Verification_3:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[100].vnic.[1]'
+              'pktcapfilter': 'count 10,icmptype == icmp-unreach,icmpcode == 0,src host ipv4/192.200.1.1'
+              'pktcount': '1-10'
+
+        NetworkUnreachableSNTrafficTest:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[100].vnic.[1]'
+            TestDuration: '10'
+            Expectedresult: 'FAIL'
+            Verification: 'Verification_4'
+
+        Verification_4:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': 'count 10,icmptype == icmp-unreach,icmpcode ==
+0,src host ipv4/192.1.1.1'
+              'pktcount': '1-10'
+
+
+PlrTlrRouterTraffic:
+    TestName: 'PlrTlrRouterTraffic'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P0'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Router Traffic:Send following packets destined to PLR IP and
+              TLR IP
+               - TCP traffic (Expect RST packets in response for KVM)
+               - UDP traffic (Expect ICMP Port Unreachable packets in response for KVM)
+               - ICMP echo requests (Expect ICMP echo replies)'
+    Procedure: 'See expectations above.'
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+            # Test
+            # Traffic destined to TLR DR is tested below. No SR for TLR in Avalanche. Also, this
+            # test is already covered for PLR in BasicRouting tests.
+
+            # Add route for 100.x.x.x, the default IP on LLRPs.
+            - - Add100RouteOnVM1Vif1viaLRP1
+
+            # Traffic.
+            - - TrafficToTlrDR--KVM
+
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+PlrTlrRebootHypervisor:
+    TestName: 'PlrTlrRebootHypervisor'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Transport Node operations:Verify that east-west & north-south
+             traffic resume after following operations:
+             - Reboot Hypervisor'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+
+            # Verify E-W and N-S traffic before rebooting hypervisor.
+            - - Traffic--KVM
+
+            # Reboot HV, Power on corresponding VM and add required route.
+            - - RebootKVM-3
+            - - PowerOnVM-4
+            - - ConfigureVM4Vif1IP-192.2.2.10
+            - - Add192RouteOnVM4Vif1viaLRP4
+
+            # Verify traffic.
+            - - Traffic--KVM
+
+            # FIXME(Sheela): Do we need to reboot edge host as well?
+            #- [RebootEdgeHost]
+            #- - Traffic--KVM
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+
+PlrTlrRebootController:
+    TestName: 'PlrTlrRebootController'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south
+             traffic resume after following operations:
+             - Reboot Controller (CCP reboot)'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+
+            # Verify E-W and N-S traffic before rebooting controller.
+            - - Traffic--KVM
+            - - RebootController-1
+            - - Traffic--KVM
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+        # TODO(Krishna): Can autogenerate this.
+        RebootController-1:
+            Type: NSX
+            TestNSX: nsxcontroller.[1]
+            reboot:
+                execution_type: cli
+
+
+PlrTlrRebootManager:
+    TestName: 'PlrTlrRebootManager'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south
+             traffic resume after following operations:
+             - Reboot Manager (MP reboot)'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+
+            # Verify E-W and N-S traffic before rebooting nsxmanager.
+            - - Traffic--KVM
+
+            # Reboot MP and verify E-W and N-S traffic.
+            - - RebootMP
+            - - Traffic--KVM
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+        # TODO(Krishna): Can autogenerate this.
+        RebootMP:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            reboot:
+                execution_type: "cli"
+
+
+PlrTlrRemoveAddLRPort:
+    TestName: 'PlrTlrRemoveAddLRPort'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south traffic
+            resume after following operations:
+             - Remove/add port on TLR'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+            # Delete/add PLR port covered in BasicRouting
+            # only covering TLR below for now
+            - - Traffic--KVM
+            - - DeleteLRP-1
+            - [TrafficTestFAIL_EW]
+            - - DeleteLLRP-2
+            - [TrafficTestFAIL_EW]
+            - [TrafficTestFAIL_NS]
+            - - CreateTlrLLRP-2_TLR-2_PLRP-1
+            - - CreateLRP-1_LR-2_IP-192.1.1.1_LSP-1
+            - - Traffic--KVM
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+        # TODO(Krishna): Can autogenerate these.
+        TrafficTestFAIL_EW:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[3].vif.[1]'
+            Expectedresult: 'FAIL'
+            TestDuration: '10'
+
+        TrafficTestFAIL_NS:
+            Type: 'Traffic'
+            ToolName: 'ping'
+            TestAdapter: 'vm.[1].vif.[1]'
+            SupportAdapter: 'vm.[100].vnic.[1]'
+            Expectedresult: 'FAIL'
+            TestDuration: '10'
+
+
+PlrTlrDeleteAddLR:
+    TestName: 'PlrTlrDeleteAddLR'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south traffic
+            resume after following operations:
+             - Delete/re-add TLR'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+
+            # Verify traffic before deleting LR.
+            - - Traffic--KVM
+
+            # Delete uplink LLRP.
+            - - DeleteLLRP-2
+            - - DeleteLRP-1
+            # Delete downlink LRP.
+            - - DeleteLRP-2
+            # Delete TLR1 (i.e. LR2).
+            - - DeleteLR-2
+            # Create TLR1 (i.e. LR2).
+            - - CreateLR-2_TIER-1
+            # Create uplink LLRP.
+            # XXX(Krishna): This naming is confusing. This should be TLR-1 or LR-2, but not TLR-2.
+            - - CreateTlrLLRP-2_TLR-2_PLRP-1
+            # Create downlink LRP ports on LR-2 (i.e. TLR1).
+            - - CreateLRP-1_LR-2_IP-192.1.1.1_LSP-1
+            - - CreateLRP-2_LR-2_IP-192.1.2.1_LSP-2
+            - - Traffic--KVM
+            # (TODO): Delete/Add PLR
+            # Currently covered in Basic Routing
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+
+PlrTlrPowerDownUpVM:
+    TestName: 'PlrTlrPowerDownUpVM'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south
+             traffic resume after following operations:
+             - Power down/power up VMs'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+            # Test
+            - - Traffic--KVM
+            - - PowerOffVM-1
+            - - PowerOnVM-1
+            - - ConfigureVM1Vif1IP-192.1.1.10
+            - - Add192RouteOnVM1Vif1viaLRP1
+            - - Traffic--KVM
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+
+PlrTlrDownUpVirtualNics:
+    TestName: 'PlrTlrDownUpVirtualNics'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south
+             traffic resume after following operations:
+             - Down/up virtual NICs'
+    Procedure:
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoPlrTlr_2Hosts_1Edge
+        Sequence:
+            # Setup
+            - - ClusterSetup
+            - - ClusterVerification
+            - - PlrTlrSetup--KVM
+            # Test
+            - - Traffic--KVM
+
+            # Delete and add Lport to down/up vnic.
+            - - DeleteLSP-11
+            - - CreateLP11OnLS1ForVM1Vif1
+            - - Traffic--KVM
+        ExitSequence:
+            - - PlrTlrCleanup--KVM
+
+
+PlrTlrDownUpLIF:
+    TestName: 'PlrTlrDownUpLIF'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P2' #right now no way to down/up via CLI, making P2.
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south traffic
+            resume after following operations:
+             - Down/up LIFs on TLR'
+    Procedure:
+
+
+PlrTlrDownUpLRAdminState:
+    TestName: 'PlrTlrDownUpLRAdminState'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,bumblebee'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south traffic
+            resume after following operations:
+             - Admin down/up TLR'
+    Procedure:
+
+PlrTlrDownUpLRPortAdminState:
+    TestName: 'PlrTlrDownUpLRPortAdminState'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P1'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,bumblebee'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south traffic
+            resume after following operations:
+             - Admin down/up LR Port on TLR'
+    Procedure:
+
+
+PlrTlrDownUpTunnelInterfaces:
+    TestName: 'PlrTlrDownUpTunnelInterfaces'
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TCMSId:
+    Priority: 'P2'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    TestbedSpec: *L3_KVM_TOPOLOGY
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    Version: '2'
+    Summary: 'Verify that east-west & north-south
+             traffic resume after following operations:
+             - Down/up physical NIC for tunnel on Edge to other Edge
+             - Down/up physical NIC for tunnel on Edge to Hypervisor
+             - Down/up physical NIC for tunnel on Hypervisor to Edge
+             - Down/up physical NIC for tunnel on Hypervisor to Hypervisor'
+    Procedure:
+
+
+MultiplePlrTlr:
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: 'L3'
+    TestName: 'MultiplePlrTlr'
+    TCMSId:
+    Priority: 'P2'
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+
+    #Testbed *L3_KVM_TOPOLOGY
+    Summary: 'IP address assignment:
+             - Multiple PLRs: Assign same IPs and overlapping IPs to different
+               PLR<->TLR sets and ensure that pings work'
+
+    Procedure:
+    ExpectedResult: 'PASS'
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+
+PlrTlrPortStatistics:
+    Product: 'NSXTransformers'
+    Component: 'PlrTlr'
+    Category: L3
+    TestName: PlrTlrPortStatistics
+    TCMSId:
+    Priority: P2 # for Bumblebee per BasicRouting TDS review with Dev
+    PMT:
+    Testcaselevel: 'Functional'
+    Testcasetype: Functional
+
+    #Testbed *L3_KVM_TOPOLOGY
+    Summary: 'Verify port statistics on TLR & PLR:
+              a) east-west traffic within same LS: TLR, PLR port stats should not
+             change
+             b) east-west traffic between different LS: TLR port stats should
+             change, PLR should remain same
+             c) north-south traffic: TLR & PLR port stats should change'
+    Procedure:
+    ExpectedResult: PASS
+    #Duration:
+    Tags: 'nsx,l3,avalanche'
+    AutomationLevel: 'automated'
+    Developer: 'sannapillai'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+

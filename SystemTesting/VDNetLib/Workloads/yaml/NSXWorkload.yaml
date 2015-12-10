@@ -1,0 +1,4975 @@
+---
+applicationservice:
+  derived_components:
+    - nsx
+  description: Creates Service grouping object on Neutron cluster
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - applicationservice
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+applicationservicegroup:
+  dependency:
+    - applicationservice
+  derived_components:
+    - nsx
+  description: Creates ServiceGroup grouping object on Neutron cluster
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - applicationservicegroup
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+assignrole:
+  dependency:
+    - reconfigure
+  derived_components:
+    - nsx
+  description: Reconfigures NSX Manager
+  format: string
+  method: CreateAndVerifyComponent
+  params:
+    - assignrole
+  preprocess: PreProcessNSXHashTypeAPI
+  sample_value: enterprise_admin
+  type: action
+build_branch:
+  description: upgrade build branch
+  format: vshield-main
+  type: parameter
+build_context:
+  description: upgrade build context
+  format: sb/ob
+  type: parameter
+build_product:
+  description: upgrade build product
+  format: vsmva
+  type: parameter
+build_type:
+  description: upgrade build type
+  format: e.g. beta
+  type: parameter
+checkifnodeexists:
+  description: Sample key to check verification end to end
+  format: 'Tuple,tuple '
+  method: VerifyEndPoint
+  params:
+    - checkifnodeexists
+  preprocess: ConvertTuplesToObjects
+  type: action
+config_flow_exclusion:
+  derived_components:
+    - vsm
+  description: Configure components to exclude from flow capture, enable/disable global flow collection
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - config_flow_exclusion
+  preprocess: PreProcessNSXSubComponent
+  format:
+    collectFlows: boolean
+  type: action
+deleteactivecontroller:
+  description: Delete active(in using) controller from test session
+  format: Y
+  method: DeleteActiveController
+  params:
+    - deleteactivecontroller
+    - controllers
+    - switches
+  postprocess: PostProcessDeleteActiveController
+  preprocess: PreProcessShiftTypeAPI
+  type: component
+activecontrollerstate:
+  derived_components:
+    - nsx
+  description: Do some operations on the active controller, currently only support poweroff
+  format: string
+  method: ChangeActiveControllerState
+  params:
+    - activecontrollerstate
+    - controllers
+    - switches
+  preprocess: PreProcessShiftTypeAPI
+  type: action
+  sample_value: poweroff
+deleteapplicationservice:
+  derived_components:
+    - nsx
+  description: Deletes Service from Neutron
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'neutron.[1].applicationservice.[1]'
+  type: component
+deleteapplicationservicegroup:
+  derived_components:
+    - nsx
+  description: Deletes ServiceGroup from Neutron
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'neutron.[1].applicationservicegroup.[1]'
+  type: component
+deletedeploymentcontainer:
+  dependency:
+    - deletelogicalservicesnode
+  derived_components:
+    - nsx
+  description: Deletes the global deployment container on VSM
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].deploymentcontainer.[1]'
+  type: component
+
+deleteipfixconfig: &deleteipfixconfig
+  derived_components:
+    - nsxmanager
+    - vsm
+  description: Deletes all IPFIX config.
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  objtype:
+    - nsxmanager: 'VDNetLib::NSXManager::IPFix'
+    - vsm: 'VDNetLib::VSM::IPFIXConfig'
+  type: component
+
+deleteipfixconf: *deleteipfixconfig
+
+deleteippool:
+  dependency:
+    - deletevxlancontroller
+  derived_components:
+    - vsm
+    - nsxmanager
+  description: Delete IP Pool objs from test session
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: PreProcessDeleteComponentsAndParameters
+  params:
+    - deleteippool
+    - runtime_params
+  sample_value: 'vsm.[1].ippool.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::IPPool'
+deleteipset: &DELETE_IPSET
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Deletes an IPSet on neutron/vsm/nsxmanager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value:
+     - 'vsm.[1].ipset.[2]'
+     - 'nsxmanager.[1].ipset.[1]'
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::IPSet'
+      vsm: 'VDNetLib::VSM::IPSet'
+  type: component
+deletensgroup:
+  derived_components:
+    - nsxmanager
+  description: Deletes a NSX Group on nsxmanager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value:
+     - 'nsxmanager.[1].nsgroup.[1]'
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::NSGroup'
+  type: component
+deletensservice:
+  derived_components:
+    - nsxmanager
+  description: Deletes a NSService on nsxmanager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value:
+     - 'nsxmanager.[1].nsservice.[1]'
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::NSService'
+  type: component
+deletelogicalservicesnode:
+  derived_components:
+    - nsx
+  description: Deletes logical services router on NSX
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'neutron.[1].logicalservicesnode.[1]'
+  type: component
+deletelogicalswitch:
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Deletes logical switch on NSX or NSXManager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: PreProcessDeleteComponentsAndParameters
+  sample_value: 'nsxmanager.[1].logicalswitch.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalSwitch'
+  params:
+    - sync
+    - timeout
+    - execution_type
+
+deletelogicalport:
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Deletes logical port on NSX or NSXManager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: PreProcessDeleteComponentsAndParameters
+  sample_value: 'nsxmanager.[1].logicalport.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalPort'
+  params:
+    - execution_type
+    - query_params
+
+deletemacset: &DELETE_MACSET
+  derived_components:
+    - nsx
+  description: Deletes a MACSet grouping object in vsm
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value:
+    - 'vsm.[1].macset.[2]'
+    - 'nsxmanager.[1].macset.[1]'
+  type: component
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::MACSet'
+      vsm: 'VDNetLib::VSM::MACSet'
+deletemulticastiprange: &DELETE_MULTICAST_IP_RANGE
+  dependency:
+    - deletenetworkscope
+  derived_components:
+    - vsm
+  description: Delete multicastiprange obj from test session
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].multicastiprange.[1]'
+  type: component
+deletenetworkscope:
+  dependency:
+    - deletevse
+  derived_components:
+    - vsm
+  description: Delete networkscope obj from test session
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].networkscope.[1]'
+  type: component
+deleteneutronpeer: &DELETE_NEUTRON_PEER
+  derived_components:
+    - nsx
+  description: Deregisters Neutron with Neutron cluster
+  format: vdnet index
+  method: DeleteComponent
+  params:
+    - neutronpeer
+  postprocess: RemoveAndReplicateSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'neutron.[1].neutronpeer.[1]'
+  type: component
+deletesecuritygroup: &DELETE_SECURITY_GROUP
+  derived_components:
+    - nsx
+  description: Deletes SecurityGroup object
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].securitygroup.[1]'
+  type: component
+deletesegmentidrange: &DELETE_SEGMENTID_RANGE
+  dependency:
+    - deletenetworkscope
+  derived_components:
+    - vsm
+  description: Delete segmentidrange obj from test session
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].segmentidrange.[1]'
+  type: component
+deleteservice:
+  dependency:
+    - service
+    - deleteserviceinstance
+  derived_components:
+    - nsx
+  description: Delete service
+  format: vdnet index
+  method: DeleteComponent
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::Service'
+      nsx: 'VDNetLib::VSM::Service'
+  params:
+    - deleteservice
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].service.[2]'
+  type: component
+deleteserviceinstance:
+  dependency:
+    - serviceinstance
+  derived_components:
+    - nsx
+  description: Delete service instance
+  format: vdnet index
+  method: DeleteComponent
+  params:
+    - deleteserviceinstance
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].serviceinstance.[2]'
+  type: component
+deleteservicemanager:
+  dependency:
+    - servicemanager
+    - deleteservice
+  derived_components:
+    - nsx
+  description: Deletes service manager
+  format: vdnet index
+  method: DeleteComponent
+  params:
+    - deleteservicemanager
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].servicemanager.[1]'
+  type: component
+deleteserviceprofile:
+  dependency:
+    - serviceprofile
+    - service
+    - servicemanager
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Delete service profile
+  format: vdnet index
+  method: DeleteComponent
+  objtype:
+      nsx: 'VDNetLib::VSM::ServiceProfile'
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].serviceprofile.[2]'
+  type: component
+deletetransportnode:
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Deletes transport node on NSX
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: PreProcessDeleteComponentsAndParameters
+  sample_value: 'nvpcontroller.[1].transportnode.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::TransportNode'
+  params:
+    - sync
+deletetransportnodecluster:
+  derived_components:
+    - nsx
+  description: Deletes transport node cluster on NSX
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nvpcontroller.[1].transportnodecluster.[1]'
+  type: component
+deletetransportzone:
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Deletes a transport zone on NVP
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: PreProcessDeleteComponentsAndParameters
+  sample_value: 'neutron.[1].transportzone.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::TransportZone'
+  params:
+    - execution_type
+deletevdncluster:
+  dependency:
+    - deletenetworkscope
+  derived_components:
+    - vsm
+  description: 'Unconfigure VXLAN, uninstall VIBs. Remove reference to VC Cluster from NSX Obj'
+  format: vdnet index
+  method: DeleteVDNCluster
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].vdncluster.[1]'
+  type: component
+deletevse:
+  derived_components:
+    - nsx
+  description: Delete an edge from test session
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].vse.[1]'
+  type: component
+deletevxlancontroller:
+  derived_components:
+    - nsx
+  description: Delete vxlan controller from test session
+  format: vdnet index
+  method: DeleteVXLANController
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].vxlancontroller.[1]'
+  type: component
+deploymentcontainer:
+  derived_components:
+    - nsx
+  description: Creates deployment container on vsm
+  linkedworkload: ContainerWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - deploymentcontainer
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+dhcpservice:
+  derived_components:
+    - nsx
+  description: Configure a DHCP service on logical services router of neutron
+  linkedworkload: ServiceWorkload
+  method: UpdateSubComponent
+  params:
+    - dhcpservice
+  preprocess: PreProcessUpdateSubComponent
+  type: component
+export:
+  description: Backs up state of Neutron cluster to a file
+  linkedworkload: RegistrationWorkload
+  method: Backup
+  params:
+    - export
+  postprocess: StoreAndBackupSubComponentObjects
+  preprocess: PreProcessUpdateSubComponent
+  type: component
+
+firewallrule:
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Configure the distributed Firewall rules for NSX
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  params:
+    - firewallrule
+  preprocess: PreProcessNSXSubComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::DFW::DFWRules'
+      vsm: 'VDNetLib::VSM::DistributedFirewall'
+  type: component
+firewallservice:
+  derived_components:
+    - nsx
+  description: Configure a Firewall service on logical services router of neutron
+  linkedworkload: ServiceWorkload
+  method: UpdateSubComponent
+  params:
+    - firewallservice
+  preprocess: PreProcessUpdateSubComponent
+  type: component
+import:
+  description: Restores state of Neutron cluster from a file
+  linkedworkload: RegistrationWorkload
+  method: Restore
+  params:
+    - import
+  postprocess: StoreAndRestoreSubComponentObjects
+  preprocess: PreProcessUpdateSubComponent
+  type: component
+
+ipfixconfig:
+  type: component
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Configures collector parameters for ipfix
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  params:
+    - ipfixconfig
+  preprocess: PreProcessNSXSubComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::IPFix'
+    vsm: 'VDNetLib::VSM::IPFIXConfig'
+
+ippool:
+  derived_components:
+    - vsm
+    - nsxmanager
+  description: Creates IP Pool on NSX or NSXManager
+  linkedworkload: GroupingObjectWorkload
+  method: CreateComponent
+  params:
+    - ippool
+    - runtime_params
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::IPPool'
+    vsm: 'VDNetLib::VSM::IPPool'
+
+ipset:
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Creates IP Set grouping object on Neutron cluster
+  linkedworkload: GroupingObjectWorkload
+  method: CreateComponent
+  params:
+    - ipset
+  postprocess: APIPostProcess
+  preprocess: PreProcessNSXSubComponent
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::IPSet'
+      vsm: 'VDNetLib::VSM::IPSet'
+  type: component
+nsgroup:
+  derived_components:
+    - nsxmanager
+  description: Creates a new NSGroup to group NSX resources
+  linkedworkload: GroupingObjectWorkload
+  method: CreateComponent
+  params:
+    - nsgroup
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::NSGroup'
+  type: component
+  format:
+    name: 'testNSGroup'
+    members:
+      - logical_entity: 'VIF'
+        target_property: 'id'
+        operation: EQUALS
+        target_value: vm.[1].vif.[1]->id
+nsservice:
+  derived_components:
+    - nsxmanager
+  description: Creates a new NSService for specifying traffic characteristics
+  linkedworkload: GroupingObjectWorkload
+  method: CreateComponent
+  params:
+    - nsservice
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::NSService'
+  type: component
+  format:
+    name: 'testNSService'
+    members:
+        ether_type: '0x800'
+        resource_type: 'EtherTypeNSService'
+loadbalancerservice:
+  derived_components:
+    - nsx
+  description: Configure a Load Balancer service on logical services router of neutron
+  linkedworkload: ServiceWorkload
+  method: UpdateSubComponent
+  params:
+    - loadbalancerservice
+  preprocess: PreProcessUpdateSubComponent
+  type: component
+logicalservicesnode:
+  dependency:
+    - deploymentcontainer
+  derived_components:
+    - nsx
+  description: Deploy a logical services node from Neutron
+  linkedworkload: VMWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - logicalservicesnode
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+
+logicalswitch:
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Creates a logical port on NVP or NSXManager
+  linkedworkload: SwitchWorkload
+  method: CreateComponent
+  params:
+    - logicalswitch
+    - sync
+    - timeout
+    - execution_type
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalSwitch'
+logicalport:
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Creates a logical port on logical switch
+  linkedworkload: PortWorkload
+  method: CreateComponent
+  params:
+    - logicalport
+    - execution_type
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalPort'
+macset:
+  derived_components:
+    - nsx
+  description: Creates MAC Set grouping object on vsm/NSX Manager
+  linkedworkload: GroupingObjectWorkload
+  method: CreateComponent
+  params:
+    - macset
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+  sample_value:
+    - 'vsm.[1].macset.[2]'
+    - 'nsxmanager.[1].macset.[1]'
+  objtype:
+      vsm: 'VDNetLib::VSM::MACSet'
+      nsxmanager: 'VDNetLib::NSXManager::MACSet'
+multicastiprange: &MULTICAST_IP_RANGE
+  derived_components:
+    - vsm
+  description: Creates a range of MulticastIP address on NSX
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - multicastiprange
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+name:
+  description: Name of the any component
+  format: string
+  method: ProcessParameters
+  type: parameter
+tor:
+  description: Creates a Top of Rack Switch on NSX
+  linkedworkload: SwitchWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - tor
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+tor_binding:
+  description: Creates a binding on a TOR Switch
+  linkedworkload: PortWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - tor_binding
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+networkscope: &NETWORK_SCOPE
+  dependency:
+    - vxlancontroller
+    - vdncluster
+    - segmentidrange
+    - multicastiprange
+  derived_components:
+    - vsm
+  description: Creates a networkscope on NSX
+  linkedworkload: TransportZoneWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - networkscope
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+neutronpeer:
+  derived_components:
+    - nsx
+  description: Registers Neutron with Neutron cluster
+  linkedworkload: RegistrationWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - neutronpeer
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+nvpregistration:
+  derived_components:
+    - nsx
+  description: Registers NVP with Neutron cluster
+  linkedworkload: RegistrationWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - nvpregistration
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+operatingmode:
+  derived_components:
+    - nsx
+  description: Change operating mode of Neutron cluster
+  linkedworkload: RegistrationWorkload
+  method: UpdateOperatingMode
+  params:
+    - operatingmode
+  preprocess: PreProcessUpdateSubComponent
+  type: component
+profile:
+  description: Upgrades VSM to specified build
+  format: update
+  method: Upgrade
+  params:
+    - profile
+    - build
+    - name
+    - build_product
+    - build_branch
+    - build_type
+    - build_context
+  preprocess: PreProcessHashTypeAPI
+  type: action
+reconfigure:
+  allowed_values:
+    - true
+  derived_components:
+    - all
+  description: Reconfigures NSX Manager
+  format: boolean
+  method: update
+  params:
+    - vc
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: true
+  type: action
+securitygroup:
+  derived_components:
+    - nsx
+  description: Creates a security group for firewall
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - securitygroup
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+segmentidrange: &SEGMENT_ID_RANGE
+  derived_components:
+    - vsm
+  description: Creates a range of SegmentID on NSX
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - segmentidrange
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+service:
+  dependency:
+    - servicemanager
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Creates service
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::Service'
+      nsx: 'VDNetLib::VSM::Service'
+      vsm: 'VDNetLib::VSM::Service'
+  params:
+    - service
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+serviceinstance:
+  dependency:
+    - service
+  derived_components:
+    - nsx
+  description: Gets the service instance
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - serviceinstance
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+servicemanager:
+  derived_components:
+    - vsm
+  description: Creates service manager
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  params:
+    - servicemanager
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    vsm: 'VDNetLib::VSM::ServiceManager'
+serviceprofile:
+  dependency:
+    - service
+    - serviceinstance
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Creates service profile
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  params:
+    - serviceprofile
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  objtype:
+      nsx: 'VDNetLib::VSM::ServiceProfile'
+      vsm: 'VDNetLib::VSM::ServiceProfile'
+  type: component
+dhcprelay_profile:
+  derived_components:
+    - nsxmanager
+  description: Creates DHCP Relay service profile
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  params:
+    - dhcprelay_profile
+  format:
+    resource_type: 'DHCP_RELAY_PROFILE'    # required
+    ipaddresses:
+      - '192.168.9.4'    # required
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::DHCPRelayProfile'
+  type: component
+deletedhcprelay_profile:
+  type: component
+  description: Delete DHCP Relay profile.
+  derived_components:
+    - nsxmanager
+  dependency:
+    - dhcprelay_profile
+  format: vdnet index
+  sample_value: 'nsxmanager.[1].dhcprelay_profile.[1]'
+  method: DeleteComponent
+  preprocess: ConstructArrayOfObjects
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::DHCPRelayProfile'
+dhcprelay_service:
+  derived_components:
+    - nsxmanager
+  description: Creates DHCP Relay service
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  params:
+    - dhcprelay_service
+  format:
+    resource_type: 'DHCP_RELAY_SERVICE'    # required
+    dhcp_relay_profile_id: '11222-1190-111223'    # required
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::DHCPRelayService'
+  type: component
+deletedhcprelay_service:
+  type: component
+  description: Delete DHCP Relay Service.
+  derived_components:
+    - nsxmanager
+  dependency:
+    - dhcprelay_service
+  format: vdnet index
+  sample_value: 'nsxmanager.[1].dhcprelay_service.[1]'
+  method: DeleteComponent
+  preprocess: ConstructArrayOfObjects
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::DHCPRelayService'
+qos_profile:
+  type: component
+  description: Creates QoS switching profile.
+  derived_components:
+    - nsxmanager
+  dependency:
+  linkedworkload: QosProfileWorkload
+  method: CreateComponent
+  params:
+    - qos_profile
+    - execution_type
+  format:
+    resource_type: 'qos'    # required
+    dscp:                   # optional
+      priority: 4
+      mode: 'trusted'
+    burst_size: 4           # optional
+    class_of_service: 4     # optional
+    peak_bandwidth: 4       # optional
+    average_bandwidth: 4    # optional
+  preprocess: PreProcessNSXSubComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::QosProfile'
+deleteqos_profile:
+  type: component
+  description: Delete QoS switching profile.
+  derived_components:
+    - nsxmanager
+  dependency:
+    - qos_profile
+  format: vdnet index
+  sample_value: 'nsxmanager.[1].qos_profile.[1]'
+  method: DeleteComponent
+  preprocess: PreProcessDeleteComponentsAndParameters
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::QosProfile'
+  params:
+    - execution_type
+    - query_params
+
+transportnode:
+  dependency:
+    - uplinkprofile
+    - transportzone
+    - hostnode
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Registers ovs containing hypervisor with Neutron cluster
+  linkedworkload: TransportNodeWorkload
+  method: CreateComponent
+  params:
+    - transportnode
+    - sync
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::TransportNode'
+uplinkprofile:
+  derived_components:
+    - nsxmanager
+  description: profile for uplink policies
+  linkedworkload: ProfileWorkload
+  method: CreateComponent
+  params:
+    - uplinkprofile
+  postprocess: StoreSubComponentObjects
+  format:
+    - name: 'profile1'
+      teaming:
+        policy: 'FAILOVER_ORDER'
+        active:
+          - adapter: 'uplink1'
+            type: 'PNIC'
+        standby:
+          - adapter: 'uplink2'
+            type: 'PNIC'
+      vlan: '19'
+      mtu: '1600'
+      resource_type: 'uplink'
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::UplinkProfile'
+deleteuplinkprofile:
+  type: component
+  description: Delete Uplink profile from NSXManager
+  derived_components:
+    - nsxmanager
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].uplinkprofile.[1]'
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::UplinkProfile'
+
+transportnodecluster:
+  derived_components:
+    - nsx
+  description: Registers ESX CLuster with Neutron cluster
+  linkedworkload: TransportNodeWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - transportnodecluster
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+
+transportzone:
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Creates a transport zone on NVP or NSXManager
+  linkedworkload: TransportZoneWorkload
+  method: CreateComponent
+  params:
+    - transportzone
+    - execution_type
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::TransportZone'
+upgrade_build:
+  description: upgrade build number
+  format: string
+  type: parameter
+vc:
+  derived_components:
+    - all
+  description: Get VC information
+  format: vdnet index
+  method: GetVCInfo
+  sample_value: 'vc.[1]'
+  type: parameter
+vdncluster:
+  derived_components:
+    - vsm
+  description: Point to a VC cluster for enabling VDN capabilites. E.g. vib install and vxlan config
+  linkedworkload: ClusterWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - vdncluster
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+  dependency:
+    - assignrole
+    - ippool
+verifyapplicationserviceattributes:
+  derived_components:
+    - nsx
+  description: verifies all the attributes of the application service endpoint
+  format:
+    'description[?]equal_to': string
+    element:
+      'sourceport[?]equal_to': integer
+      'value[?]equal_to': integer
+    'inheritanceallowed[?]equal_to': boolean
+    'name[?]equal_to': string
+  method: GetApplicationServiceAttributes
+  params:
+    - verifyapplicationserviceattributes
+  preprocess: PreProcessVerifyApplicationServiceAttributes
+  sample_value:
+    'description[?]equal_to': 'Changed the application attributes '
+    element:
+      'sourceport[?]equal_to': 33001
+      'value[?]equal_to': 20-23
+    'inheritanceallowed[?]equal_to': true
+    'name[?]equal_to': appset-name-changed
+  type: verification
+verifyipsetattributes:
+  derived_components:
+    - nsx
+  description: verifies all the attributes of the ipset endpoint
+  format:
+    'description[?]equal_to': string
+    'inheritanceallowed[?]equal_to': boolean
+    'name[?]equal_to': string
+    'value[?]equal_to':
+      - vdnet index
+  method: GetIpsetEndpointAttributes
+  params:
+    - verifyipsetattributes
+  preprocess: PreProcessVerifyIpsetAttributes
+  sample_value:
+    'description[?]equal_to': testing ipset_1
+    'inheritanceallowed[?]equal_to': true
+    'name[?]equal_to': ipset-100
+    'value[?]equal_to':
+      - 'vm.[1].vnic.[1]'
+  type: verification
+verifymacsetattributes:
+  derived_components:
+    - nsx
+  description: verifies all the attributes of the macset endpoint
+  format:
+    'description[?]equal_to': string
+    'inheritanceallowed[?]equal_to': boolean
+    'name[?]equal_to': string
+    'value[?]equal_to':
+      - vdnet index
+  method: GetMacsetEndpointAttributes
+  params:
+    - verifymacsetattributes
+  preprocess: PreProcessVerifyMacsetAttributes
+  sample_value:
+    'description[?]equal_to': testing macset_1
+    'inheritanceallowed[?]equal_to': true
+    'name[?]equal_to': macset-1
+    'value[?]equal_to':
+      - 'vm.[1].vnic.[1]'
+  type: verification
+vmstate:
+  description: Restart NSX Manager
+  format: restart
+  method: ChangeVSMState
+  params:
+    - vmstate
+  preprocess: PreProcessShiftTypeAPI
+  type: action
+vse:
+  dependency:
+    - vxlancontroller
+  description: Deploy a VSE from NSX
+  linkedworkload: VMWorkload
+  method: CreateApplianceVM
+  params:
+    - vse
+  postprocess: PostProcessApplianceVM
+  preprocess: PreProcessNSXSubComponent
+  type: component
+gateway:
+  derived_components:
+    - nsx
+  description: Deploy a Gateway from NSX
+  linkedworkload: VMWorkload
+  method: CreateApplianceVM
+  params:
+    - gateway
+  postprocess: PostProcessApplianceVM
+  preprocess: PreProcessNSXSubComponent
+  type: component
+deletegateway:
+  derived_components:
+    - nsx
+  description: Delete a gateway edge from test session
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].gateway.[1]'
+  type: component
+vnics:
+  derived_components:
+    - nsx
+  description: vnics for gateway edge
+  format: array
+  method: ProcessParameters
+  type: parameter
+vsmregistration:
+  derived_components:
+    - nsx
+  description: Registers VSM with Neutron cluster
+  linkedworkload: RegistrationWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - vsmregistration
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+vxlancontroller:
+  dependency:
+    - ippool
+  derived_components:
+    - nsx
+  description: Deploy a vxlan controller from NSX
+  linkedworkload: VMWorkload
+  method: CreateApplianceVM
+  params:
+    - vxlancontroller
+  postprocess: PostProcessApplianceVM
+  preprocess: PreProcessNSXSubComponent
+  type: component
+networkfeatures:
+  derived_components:
+    - vsm
+  description: method to enable xvs features for given network
+  format:
+    portgroup: vdnet index
+    ipDiscovery: 'ref: ipdiscovery'
+    macLearning: 'ref: maclearning'
+  params:
+    - networkfeatures
+    - portgroup
+  preprocess: PreProcessHashTypeAPI
+  method: SetNetworkFeatures
+  sample_value:
+    ipDiscovery: enable
+    macLearning: enable
+    portgroup: 'vsm.[1].networkscope.[1].virtualwire.[1]'
+  type: action
+ipdiscovery:
+  description: parameter to enable ip discovery
+  format: string
+  sample_value: enable
+  type: parameter
+maclearning:
+  description: parameter to enable mac learning
+  format: string
+  sample_value: enable
+  type: parameter
+
+vxlancontrollers:
+  derived_components:
+    - nsx
+  description: Upgrade/Downgrade all the controllers in the controller cluster
+  method: ManageVxlanControllers
+  params:
+    - vxlancontrollers
+  preprocess: PreProcessHashTypeAPI
+  type: action
+  sample_value:
+    - vxlancontrollers: 'UPGRADE/DOWNGRADE'
+
+controllerupgradecapability:
+  derived_components:
+    - nsx
+  description: Check if controllers support upgrade to new version
+  method: GetVxlanControllerUpgradeCapability
+  params:
+    - controllerupgradecapability
+  preprocess: PreProcessVerification
+  type: verification
+  sample_value:
+    - capability: 'TRUE/FALSE'
+
+controllerupgradestatus:
+  derived_components:
+    - nsx
+  description: verify controllers cluster upgrade status or one specific controller upgrade status(have controllers param)
+  method: GetVxlanControllerUpgradeStatus
+  params:
+    - controllerupgradestatus
+    - controllers
+  preprocess: PreProcessVerification
+  type: verification
+  sample_value:
+    - status: 'NOT_UPGRADED/DOWNLOADING_UPGRADE/IN_PROGRESS/UPGRADE_COMPLETE for cluster upgrade and NOT_STARTED/DOWNLOADING_UPGRADE_FILE/DOWNLOAD_COMPLETE/UPGRADING/REBOOTING/REBOOTED/FAILED/UPGRADED for a specific controller'
+
+verifycontrollerdelaydivvy:
+  derived_components:
+    - nsx
+  description: verify one specific controller delay divvy param value during upgrade
+  method: GetVxlanControllerDelayDivvy
+  params:
+    - verifycontrollerdelaydivvy
+    - controllers
+  preprocess: PreProcessVerification
+  type: verification
+  sample_value:
+    - divvy: 'int'
+
+setcmdoncontroller:
+  derived_components:
+    - nsx
+  description: configure one specific command on controller, like divvy
+  method: SetCmdOnController
+  params:
+    - setcmdoncontroller
+    - controllers
+    - value
+  preprocess: PreProcessHashTypeAPI
+  format: string
+  type: action
+  sample_value:
+    - setcmdoncontroller: 'divvy'
+dfwsection:
+  derived_components:
+    - distributed firewall
+    - nsxmanager
+  description: Create empty DFW section
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  params:
+    - dfwsection
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::DFW::DFWSection'
+      vsm: 'VDNetLib::VSM::DFWSections'
+  type: component
+deletedfwsection:
+  derived_components:
+    - distributed firewall
+    - nsxmanager
+  description: Deletes DFW section.
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value:
+     - 'vsm.[1].dfwsection.[1]'
+     - 'nsxmanager.[1].dfwsection.[1]'
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::DFW::DFWSection'
+      vsm: 'VDNetLib::VSM::DFWSections'
+  type: component
+deletefirewallrule:
+  derived_components:
+    - distributed firewall
+  description: Deletes DFW rule.
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::DFW::DFWRules'
+      vsm: 'VDNetLib::VSM::DistributedFirewall'
+  sample_value:
+    - 'vsm.[1].firewallrule.[1]'
+    - 'nsxmanager.[1].firewallrule.[1]'
+  type: component
+command:
+  derived_components:
+    - nsxmanager
+  description: Executes command on NSXManager
+  params:
+    - command
+  type: parameter
+  sample_value: 'end'
+vnipool:
+  type: component
+  description: Create VNI Pool on the NSXManager
+  derived_components:
+    - nsxmanager
+  linkedworkload: GroupingObjectWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::VNIPool'
+  params:
+    - vnipool
+
+deletevnipool: &DELETE_VNI_POOL
+  type: component
+  description: Delete VNIPool from NSXManager
+  derived_components:
+    - nsxmanager
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].vnipool.[1]'
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::VNIPool'
+
+logicalrouter:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Creates LogicalRouter
+  linkedworkload: RouterWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalRouter'
+  params:
+    - logicalrouter
+    - execution_type
+
+deletelogicalrouter:
+  type: component
+  description: Delete LogicalRouter from NSXManager
+  derived_components:
+    - nsxmanager
+  preprocess: PreProcessDeleteComponentsAndParameters
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalRouter'
+  sample_value: 'nsxmanager.[1].logicalrouter.[1]'
+  params:
+    - execution_type
+
+logicalrouterport:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Creates Logical Router Port
+  linkedworkload: NetAdapterWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  format: vdnet index
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalRouterPort'
+  params:
+    - logicalrouterport
+
+deletelogicalrouterport:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Delete Logical Router Port
+  linkedworkload: NetAdapterWorkload
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalRouterPort'
+  sample_value: 'nsxmanager.[1].logicalrouterport.[1]'
+
+clusternode:
+  derived_components:
+    - nsxmanager
+  description: Registers NSX manager node with manager cluster
+  method: CreateComponent
+  params:
+    - cluster_node
+    - execution_type
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  sample_value: 'nsxmanager.[1].clusternode.[1]'
+  linkedworkload: ClusterWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::ClusterNode'
+
+deleteclusternode:
+  derived_components:
+    - nsxmanager
+  description: Deregisters nsx manager from cluster
+  format: vdnet index
+  method: DeleteComponent
+  params:
+    - cluster_node
+    - execution_type
+  linkedworkload: ClusterWorkload
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].clusternode.[1]'
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::ClusterNode'
+  type: component
+
+certificate:
+  type: component
+  description: Create Certificate on NSXManager
+  derived_components:
+    - nsxmanager
+  linkedworkload: CertificateWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateMultipleComponents
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Certificate'
+  params:
+    - certificate
+
+certificatemob:
+  type: component
+  description: Create mapped object for Certificate
+  derived_components:
+    - nsxmanager
+  linkedworkload: CertificateWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Certificate'
+  params:
+    - certificatemmob
+
+csr:
+  type: component
+  description: Create Certificate Signing Request on NSXManager
+  derived_components:
+    - nsxmanager
+  linkedworkload: CertificateWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::CSR'
+  params:
+    - csr
+
+crl:
+  type: component
+  description: Create CRL(Certificate Revocation List) on NSXManager
+  derived_components:
+    - nsxmanager
+  linkedworkload: CertificateWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateMultipleComponents
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::CRL'
+  params:
+    - crl
+
+crlmob:
+  type: component
+  description: Create mapped object for CRL(Certificate Revocation List)
+  derived_components:
+    - nsxmanager
+  linkedworkload: CertificateWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::CRL'
+  params:
+    - crlmob
+
+selfsignedcertificate:
+  type: component
+  description: Create Self Signed Certificate on NSXManager
+  derived_components:
+    - nsxmanager
+  linkedworkload: CertificateWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::SelfSignedCertificate'
+  params:
+    - selfsignedcertificate
+
+casignedcertificate:
+  type: component
+  description: Import CA Signed Certificate on NSXManager
+  derived_components:
+    - nsxmanager
+  linkedworkload: CertificateWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::CASignedCertificate'
+  params:
+    - casignedcertificate
+    - csr_id
+
+trustmanagementobject:
+  type: component
+  description: Create TrustManagement object on NSXManager
+  derived_components:
+    - nsxmanager
+  linkedworkload: CertificateWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::TrustManagement'
+  params:
+    - trustmanagementobject
+
+deletecsr:
+  derived_components:
+    - nsxmanager
+  description: Delete CSR from NSXManager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].csr.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::CSR'
+
+deletecertificate:
+  derived_components:
+    - nsxmanager
+  description: Delete Certificate from NSXManager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].certificate.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Certificate'
+
+deletecrl:
+  derived_components:
+    - nsxmanager
+  description: Delete CRL from NSXManager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].crl.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::CRL'
+
+deleteselfsignedcertificate:
+  derived_components:
+    - nsxmanager
+  description: Delete Self Signed Certificate from NSXManager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].selfsignedcertificate.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::SelfSignedCertificate'
+
+deletecasignedcertificate:
+  derived_components:
+    - nsxmanager
+  description: Delete CA Signed Certificate from NSXManager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].selfsignedcertificate.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::CASignedCertificate'
+
+deletetrustmanagementobject:
+  derived_components:
+    - nsxmanager
+  description: Delete TrustManagement object from NSXManager
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: PreProcessDeleteComponentsAndParameters
+  sample_value: 'nsxmanager.[1].trustmanagementobject.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::TrustManagement'
+  params:
+    - deletetrustmanagementobject
+    - certificate_type
+
+configure_power_state:
+  allowed_values:
+    - state : 'shutdown'
+    - state : 'restart'
+  derived_components:
+    - nsxmanager
+  description: Shutdown NSX Manager
+  format: string
+  method: configure_power_state
+  params:
+    - configure_power_state
+  preprocess: PreProcessShiftTypeAPI
+  sample_value:
+    state: 'shutdown'
+  type: action
+
+configure_service_state:
+  allowed_values:
+    - state : 'stop'
+    - state : 'start'
+    - state : 'restart'
+    - service_name : 'ntp'
+  derived_components:
+    - nsxmanager
+  description: Stop/Start/Restart service on NSX Manager e.g syslog,ntp,rabbitmq
+  format: string
+  method: configure_service_state
+  params:
+    - configure_service_state
+  preprocess: PreProcessShiftTypeAPI
+  sample_value:
+    state: 'stop'
+    service_name: 'ntp'
+  type: action
+
+fabricvm:
+  derived_components:
+    - nsxmanager
+  description: register a virtual machine on NSX or NSXManager
+  linkedworkload: InventoryWorkload
+  method: CreateComponent
+  params:
+    - fabricvm
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::FabricVm'
+
+deletefabricvm:
+  derived_components:
+    - nsxmanager
+  description: Delete virtual machine from NSXManager inventory
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'NSXManger.[1].fabricvm.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::FabricVm'
+
+fabricvif:
+  derived_components:
+    - nsxmanager
+  description: Register a virtual nic on NSX or NSXManager
+  linkedworkload: InventoryWorkload
+  method: CreateComponent
+  params:
+    - fabricvif
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::FabricVif'
+
+deletefabricvif:
+  derived_components:
+    - nsxmanager
+  description: Delete vif NSX Manager inventory
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'NSXManger.[1].fabricvif.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::FabricVif'
+
+syslogserver:
+  derived_components:
+      - nsxmanager
+  description: Configure Syslog Server exporter
+  linkedworkload: LogServerWorkload
+  method: CreateComponent
+  params:
+     - syslogserver
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  sample_value: 'nsxmanager.[1].syslogserver.[1]'
+  type: component
+  objtype:
+     nsxmanager: 'VDNetLib::NSXManager::SyslogServer'
+
+deletesyslogserver:
+  derived_components:
+      - nsxmanager
+  description: Remove syslog exporter configuration
+  linkedworkload: LogServerWorkload
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].syslogserver.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::SyslogServer'
+
+node_network_partitioning:
+  type: action
+  description: Isolate node from cluster
+  derived_components:
+    - nsxmanager
+  format:
+    operation: 'ref: operation'
+    manager_ip: 'ref: manager_ip'
+  preprocess: PreProcessNestedParametersForAction
+  method: node_network_partitioning
+  params:
+    - node_network_partitioning
+  sample_value:
+    manager_ip: 'nsxmanager.[1]'
+    operation: 'set'
+
+thresholdconfig:
+  derived_components:
+    - nsx
+  description: configure DFW event thresholds
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  params:
+    - thresholdconfig
+  type: component
+  objtype:
+    vsm: 'VDNetLib::VSM::DFWEventThreshold'
+
+checkthresholdevent:
+  description: check DFW threshold event
+  method: ReadDFWEvents
+  preprocess: PreProcessVerification
+  format:
+    cpu_ts: string
+    cpu_event_count: string
+    mem_ts: string
+    mem_event_count: string
+    cps_ts: string
+    cps_event_count: string
+  samplevalue:
+    cpu_ts: ''
+    cpu_event_count: ''
+    mem_ts: ''
+    mem_event_count: ''
+    cps_ts: ''
+    cps_event_count: ''
+  params:
+    - checkthresholdevent
+  type: verification
+
+distinguished_name:
+  type: component
+  description: Component for distinguished name keys
+  derived_components:
+    - nsxmanager
+  linkedworkload: CertificateWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::DNKeys'
+  params:
+    - distinguished_name
+
+algorithm:
+  type: component
+  description: Component for cryptographic algorithm
+  derived_components:
+    - nsxmanager
+  linkedworkload: CertificateWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::CryptographicAlgorithm'
+  params:
+    - algorithm
+
+edgenode:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Creates Edge Node
+  linkedworkload: GatewayWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXEdge::EdgeNode'
+  format:
+    external_id: "ref: account_name"
+    management_ip_address: "ref: management_ip_address"
+    node_type: "ref: node_type"
+    msg_client_info: "ref: msg_client_info"
+  params:
+    - edgenode
+
+deleteedgenode:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Deletes Edge Node
+  linkedworkload: GatewayWorkload
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXEdge::EdgeNode'
+  sample_value: 'nsxmanager.[1].edgenode.[1]'
+
+edgecluster:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Creates Edge Cluster
+  linkedworkload: GatewayWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXEdge::EdgeCluster'
+  format:
+    members: "ref: members"
+    cluster_profile_bindings: "ref: cluster_profile_bindings"
+  params:
+    - edgecluster
+    - execution_type
+
+deleteedgecluster:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Deletes Edge Cluster
+  linkedworkload: GatewayWorkload
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXEdge::EdgeCluster'
+  sample_value: 'nsxmanager.[1].edgecluster.[1]'
+
+transportprofile:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Creates Transport Profile
+  linkedworkload: GatewayWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::TransportProfile'
+  format:
+    transport_resource_type: "ref: transport_resource_type"
+    enabled: "ref: bfd_enabled"
+    mtep_probe_interval: "ref: mtep_probe_interval"
+    utep_probe_interval: "ref: utep_probe_interval"
+  params:
+    - transportprofile
+    - execution_type
+
+deletetransportprofile:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Deletes Transport Profile
+  linkedworkload: GatewayWorkload
+  preprocess: PreProcessDeleteComponentsAndParameters
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::TransportProfile'
+  sample_value: 'nsxmanager.[1].transportprofile.[1]'
+  params:
+    - execution_type
+
+deletefabricprofile:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Deletes Fabric Profile
+  linkedworkload: GatewayWorkload
+  preprocess: PreProcessDeleteComponentsAndParameters
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::FabricProfile'
+  sample_value: 'nsxmanager.[1].fabricprofile.[1]'
+  params:
+    - execution_type
+
+clusterprofile:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Creates Cluster Profile
+  linkedworkload: GatewayWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::ClusterProfile'
+  format:
+    cluster_resource_type: "ref: cluster_resource_type"
+  params:
+    - clusterprofile
+    - execution_type
+
+deleteclusterprofile:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Deletes Cluster Profile
+  linkedworkload: GatewayWorkload
+  preprocess: PreProcessDeleteComponentsAndParameters
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::ClusterProfile'
+  sample_value: 'nsxmanager.[1].clusterprofile.[1]'
+  params:
+    - execution_type
+
+cluster:
+  derived_components:
+    - nsxmanager
+  dependency:
+    - clusternode
+  description: Creates cluster component in vdnet
+  method: CreateComponent
+  params:
+    - cluster
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: ClusterWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Cluster'
+
+nsxservice:
+  derived_components:
+    - nsxmanager
+  description: configure nsx service
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  params:
+    - nsxservice
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::NSXService'
+
+allocateip:
+  derived_components:
+    - nsxmanager
+  description: Allocates IP from Pool on NSX
+  linkedworkload: GroupingObjectWorkload
+  method: CreateComponent
+  params:
+    - allocateip
+    - allocation_action
+    - ippool_id
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::IPPoolAllocate'
+
+releaseip:
+  derived_components:
+    - nsxmanager
+  description: Release IP from Pool on NSX
+  linkedworkload: GroupingObjectWorkload
+  method: CreateComponent
+  params:
+    - releaseip
+    - allocation_action
+    - ippool_id
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::IPPoolAllocate'
+
+allocation_action:
+  derived_components:
+    - ippool
+  description: action whether allocate or release IP
+  format: string
+  type: parameter
+  sample_value:
+    allocation_action: 'ALLOCATE|RELEASE'
+
+ippool_id:
+  derived_components:
+    - ippool
+  description: ippool id
+  format: vdnet index
+  method: GetComponentAttribute
+  type: parameter
+  sample_value:
+    ippool_id: "nsxmanager.[1].ippool.[1]"
+
+rabbitmq:
+  type: component
+  description: Execute Rabbitmq commands on NSXManager
+  derived_components:
+    - nsxmanager
+    - nsx
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: RabbitmqServerWorkload
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Rabbitmq'
+  params:
+    - 'rabbitmq'
+
+messagingclient:
+  type: component
+  description: Get Messaging on NSXManager
+  derived_components:
+    - nsxmanager
+  linkedworkload: MessagingWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateMultipleComponents
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Messaging'
+  params:
+    - messagingclient
+
+componentlog:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Componenet for differnet log categories
+  linkedworkload: ComponentLogWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Log'
+  params:
+    - componentlog
+
+ntpserver:
+  derived_components:
+    - nsxmanager
+  description: Ntp server configuration
+  method: CreateComponent
+  params:
+    - ntpserver
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: ServiceWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::NtpServer'
+
+nsxinterface:
+  derived_components:
+    - nsxmanager
+  description: NSXManager interface configuration
+  method: CreateComponent
+  params:
+    - nsxinterface
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: ServiceWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::NSXInterface'
+
+process:
+  derived_components:
+    - nsxmanager
+  description: NSXManager processes
+  method: CreateComponent
+  params:
+    - process
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: ServiceWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Process'
+
+get_setting:
+  type: verification
+  derived_components:
+    - nsxmanager
+  method: read
+  preprocess: PreProcessVerification
+  description: 'Used for reading Object attributes'
+  format:
+     'name': 'string'
+  samplevalue:
+     'name': 'test'
+  params:
+    - get_setting
+
+read_status:
+  type: verification
+  derived_components:
+    - nsxmanager
+  method: get_status
+  preprocess: PreProcessVerification
+  description: 'Used for reading Object attributes'
+  format:
+     'name': 'string'
+  samplevalue:
+     'name': 'test'
+  params:
+    - read_status
+
+reconfigure_nsx:
+  derived_components:
+    - nsxmanager
+  description: Configure NSXManager settings
+  format: string
+  method: update
+  params:
+    - reconfigure_nsx
+  preprocess: PreProcessShiftTypeAPI
+  sample_value:
+    timezone: 'UTC'
+  type: action
+
+uidriver:
+  type: component
+  description: Component for UI Driver
+  derived_components:
+    - nsxmanager
+  linkedworkload: UIDriverWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::UIDriver'
+  params:
+    - ui_driver
+
+quituidriver:
+  derived_components:
+    - nsxmanager
+  description: Quit UI Browser session
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].uidriver.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::UIDriver'
+
+verify_application_version:
+  type: verification
+  description: Verify Application version
+  derived_components:
+    - nsxmanager
+  format:
+    version: string
+  preprocess: PreProcessVerificationAndParameters
+  method: verify_application_version
+  params:
+    - verify_application_version
+    - execution_type
+    - application_name
+
+techsupportbundlelog:
+  derived_components:
+    - nsxmanager
+  description: Get Tech Support Bundle
+  method: CreateComponent
+  params:
+    - techsupportbundlelog
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: ComponentLogWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::TechSupportBundleLog'
+
+snmpmanager:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Basic key for SNMP manager
+  linkedworkload: SnmpManagerWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Snmp'
+  params:
+    - snmpmanager
+
+localuser:
+  derived_components:
+    - nsxmanager
+  description: Get Tech Support Bundle
+  method: CreateComponent
+  params:
+    - localuser
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: UserWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LocalUser'
+
+verify_application_processes:
+  derived_components:
+    - nsxmanager
+  description: Verify application processes on NSXManager
+  allowed_values:
+    - application_name: 'appmgmt'
+  method: verify_application_processes
+  params:
+    - verify_application_processes
+    - execution_type
+    - application_name
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+
+show_interfaces:
+  derived_components:
+    - nsxmanager
+    - nsxcontroller
+  description: Verify show interfaces command on NSXManager
+  method: show_interfaces
+  params:
+    - show_interfaces
+    - execution_type
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+
+verify_show_interface:
+  derived_components:
+    - nsxmanager
+  description: Verify show interface on NSXManager
+  allowed_values:
+    - vnic_name: 'mgmt'
+  method: verify_show_interface
+  params:
+    - verify_show_interface
+    - execution_type
+    - vnic_name
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+
+logicalrouterlinkport:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Creates Logical Router link Port
+  linkedworkload: NetAdapterWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  format: vdnet index
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalRouterLinkPort'
+  params:
+    - logicalrouterlinkport
+
+deletelogicalrouterlinkport:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Delete Logical Router Link Port
+  linkedworkload: NetAdapterWorkload
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalRouterLinkPort'
+  sample_value: 'nsxmanager.[1].logicalrouterlinkport.[1]'
+
+logicalrouteruplinkport:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Creates Logical Router Uplink Port
+  linkedworkload: NetAdapterWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  format: vdnet index
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalRouterUpLinkPort'
+  params:
+    - logicalrouteruplinkport
+
+deletelogicalrouteruplinkport:
+  type: component
+  derived_components:
+    - nsxmanager
+  description: Delete Logical Router Uplink Port
+  linkedworkload: NetAdapterWorkload
+  preprocess: ConstructArrayOfObjects
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalRouterUpLinkPort'
+  sample_value: 'nsxmanager.[1].logicalrouteruplinkport.[1]'
+
+read_ip:
+  type: verification
+  derived_components:
+    - nsxmanager
+  method: read_ip
+  preprocess: PreProcessVerification
+  description: 'Used to read manager ip, this key is for
+                verification module'
+  format:
+     'ip': 'string'
+  samplevalue:
+     'ip': 'test'
+  params:
+    - read_ip
+
+read_clock_output:
+  derived_components:
+    - nsxmanager
+  description: Run show clock on NSXManager and verify result with system date command
+  format: string
+  method: read_clock_output
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - read_clock_output
+    - execution_type
+    - clock_difference
+
+clock_difference:
+  description: Time difference of two clocks output in seconds
+  derived_components:
+    - nsxmanager
+  sample_value: '5'
+  format: integer
+  type: parameter
+
+verify_show_certificate:
+  derived_components:
+    - nsxmanager
+  description: Verify show certificate on NSXManager
+  allowed_values:
+    - thumbprint: 'thumbprint'
+  method: verify_show_certificate
+  params:
+    - verify_show_certificate
+    - execution_type
+    - thumprint
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+
+get_system_config:
+  type: verification
+  description: 'Verify System Memory on NSXManager
+                Verify Total Cpus on NSXManager
+                Verify Size of the Storage on NSXManager is as expected
+                Verify tx & rx packets from NSXManager are greater than 0
+                Verify if the uptime is greater than 0'
+  derived_components:
+    - nsxmanager
+  preprocess: PreProcessVerificationAndParameters
+  method: get_system_config
+  format:
+    memory_total: string
+    swap_total: string
+    total_cpus: string
+    sda2_size: string
+    tmpfs_size: string
+    sda6_size: string
+    sda8_size: string
+    packets_received: long
+    packets_sent: long
+    valid_up_time: string
+  params:
+    - get_system_config
+    - execution_type
+    - system_parameter
+
+
+system_parameter:
+  derived_components:
+    - nsxmanager
+  description: System Parameter name running on NSXManager
+  format: string
+  method: ProcessParameters
+  type: parameter
+  sample_value: cpu
+
+set_clock_nsxmgr:
+  derived_components:
+    - nsxmanager
+  description: Run clock set CLI on nsxmanager
+  format: string
+  method: set_clock_nsxmgr
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - set_clock_nsxmgr
+    - execution_type
+    - hr_min_sec
+    - date
+    - month
+    - year
+    - timezone
+
+verify_clock_set:
+  derived_components:
+    - nsxmanager
+  description: Verify time set by clock set CLI on nsxmanager
+  format: string
+  method: verify_clock_set
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - verify_clock_set
+    - execution_type
+    - hr_min_sec
+    - date
+    - month
+    - year
+    - timezone
+    - clock_difference
+
+hr_min_sec:
+  description: Hour Minute Second to set or verify clock
+  derived_components:
+    - nsxmanager
+  sample_value: '10:10:10'
+  format: string
+  type: parameter
+
+date:
+  description: Date to set or verify clock
+  derived_components:
+    - nsxmanager
+  sample_value: 10
+  format: integer
+  type: parameter
+
+month:
+  description: Month to set or verify clock
+  derived_components:
+    - nsxmanager
+  sample_value: 'OCT'
+  format: string
+  type: parameter
+
+year:
+  description: Year to set or verify clock
+  derived_components:
+    - nsxmanager
+  sample_value: 2010
+  format: integer
+  type: parameter
+
+timezone:
+  description: Timezone to set or verify clock
+  derived_components:
+    - nsxmanager
+  sample_value: 'UTC'
+  format: string
+  type: parameter
+
+base_url:
+  derived_components:
+    - nsxmanager
+  description: NSX url for UI automation
+  format: string
+  sample_value: 'http://nsx_ip/nsxapi/index.html?automation=true'
+  type: parameter
+
+list_commands:
+  derived_components:
+    - nsxmanager
+  description: Get list of commands on NSXManager
+  method: list_commands
+  params:
+    - list_commands
+    - execution_type
+    - terminal
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+
+terminal:
+  description: If set to 'true' command gets executed on configuring terminal
+  derived_components:
+    - nsxmanager
+  sample_value: 'true'
+  format: string
+  type: parameter
+
+get_content:
+  derived_components:
+    - nsxmanager
+  description: Get contents of the CLI executed on NSXManager
+  format: string
+  method: get_content
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - get_content
+    - execution_type
+    - content_type
+    - file_name
+
+content_type:
+  description: Type of the content that will be retrieved
+  derived_components:
+    - nsxmanager
+  sample_value: 'help'
+  format: string
+  type: parameter
+
+file_name:
+  description: Name of the file
+  derived_components:
+    - nsxmanager
+  sample_value: 'cli.log'
+  format: string
+  type: parameter
+
+list_log_files:
+  derived_components:
+    - nsxmanager
+  description: Get list of log files on NSXManager
+  method: list_log_files
+  params:
+    - list_log_files
+    - execution_type
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+
+hostname:
+  description: Hostname of server
+  derived_components:
+    - nsxmanager
+  sample_value: 'NSXManager-101'
+  format: string
+  type: parameter
+
+trace_route:
+  derived_components:
+    - nsxmanager
+  description: Trace route of specified hostname or IP from NSXManager
+  method: trace_route
+  params:
+    - trace_route
+    - hostname
+    - execution_type
+  format:
+    hostname: string
+    route:
+      - ipaddress: string
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+
+set_hostname:
+  derived_components:
+    - nsxmanager
+  description: Change NSXManager hostname
+  method: set_hostname
+  params:
+    - set_hostname
+    - execution_type
+    - hostname
+  preprocess: PreProcessNestedParametersForAction
+  format: boolean
+  type: action
+
+read_hostname:
+  derived_components:
+    - nsxmanager
+  description: Run show hostname on NSXManager and return output
+  method: read_hostname
+  params:
+    - read_hostname
+    - execution_type
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  format:
+    hostname: string
+
+run_command:
+  derived_components:
+    - nsxmanager
+  description: Run CLI on NSXManager
+  method: run_command
+  params:
+    - run_command
+    - execution_type
+    - terminal
+    - command
+  format:
+    status: string
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+
+status:
+  description: Return success/failure of CLI execution
+  derived_components:
+    - nsxmanager
+  sample_value: 0
+  format: string
+  type: parameter
+
+exit_from_terminal:
+  derived_components:
+    - nsxmanager
+  description: Exit from comfigure terminal mode
+  method: exit_from_terminal
+  params:
+    - exit_from_terminal
+    - execution_type
+    - exit_using
+  format:
+    status: string
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+
+hostnode:
+  type: component
+  description: Host Registration with NSX Manager
+  derived_component:
+    - nsxmanager
+  linkedworkload: HostWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::HostNode'
+  params:
+    - hostnode
+    - query_params
+
+deletehostnode:
+  derived_components:
+    - nsxmanager
+  description: Removes host from inventory
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'NSXManger.[1].hostnode.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::HostNode'
+
+get_server_auth:
+  derived_components:
+    - nsxmanager
+  description: Get Tacacs Server Authentication
+  method: get_server_auth
+  format:
+    version: string
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - get_server_auth
+    - execution_type
+
+set_user_password:
+  derived_components:
+    - nsxmanager
+  description: Change NSXManager hostname
+  method: set_user_password
+  params:
+    - set_user_password
+    - execution_type
+  preprocess: PreProcessNestedParametersForAction
+  format: boolean
+  type: action
+  sample_values:
+    username: 'admin'
+    password: 'default'
+
+show_arp:
+  derived_components:
+    - nsxmanager
+  description: Run and verify show arp CLI
+  method: show_arp
+  params:
+    - show_arp
+    - execution_type
+  preprocess: PreProcessVerificationAndParameters
+  format: string
+  type: verification
+
+show_ip_sockets:
+  derived_components:
+    - nsxmanager
+  description: Run show IP Sockets CLI
+  method: show_ip_sockets
+  params:
+    - show_ip_sockets
+    - execution_type
+  preprocess: PreProcessVerificationAndParameters
+  format: string
+  type: verification
+
+get_ip_route:
+  type: verification
+  description: 'Verify the ip address of the default gateway for default
+                routes is correct'
+  derived_components:
+    - nsxmanager
+  preprocess: PreProcessVerificationAndParameters
+  method: get_ip_route
+  format:
+    gateway_matched: string
+  params:
+    - get_ip_route
+    - execution_type
+
+gateway_matched:
+  description: Gateway match value
+  derived_components:
+    - nsxmanager
+  format: string
+  type: parameter
+
+search_log:
+  derived_components:
+    - nsxmanager
+  description: Verify log content on NSX Manager.
+  format: string
+  method: search_log
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - search_log
+    - execution_type
+    - file_name
+    - search_string
+
+search_string:
+  description: Name of the string to be searched
+  derived_components:
+    - nsxmanager
+  sample_value: 'Exception'
+  format: string
+  type: parameter
+
+get_cluster_details:
+  derived_components:
+    - nsxmanager
+  description: 'Verify cluster status on NSX Manager.'
+  format: string
+  method: get_cluster_details
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - get_cluster_details
+    - execution_type
+
+get_file_systems:
+  derived_components:
+    - nsxmanager
+  description: 'Verify size of the displayed File Systems on NSXManager
+                is according to the provided storage size'
+  format: string
+  method: get_file_systems
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - get_file_systems
+    - execution_type
+
+verify_file_present:
+  derived_components:
+    - nsxmanager
+  description: 'Verify if the desired file is present on NSXManager'
+  format: string
+  method: verify_file_present
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - verify_file_present
+    - execution_type
+    - file_name
+
+verify_password_encrypted:
+  derived_components:
+    - nsxmanager
+  description: 'Verify all user passwords are encrypted.'
+  format: string
+  method: verify_password_encrypted
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - verify_password_encrypted
+    - execution_type
+
+get_global_config:
+  derived_components:
+    - nsxmanager
+  description: Get NSXManager Global Configuration
+  method: get_global_config
+  format:
+    gateway_matched: string
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - get_global_config
+    - execution_type
+
+create_tech_support_tar:
+  derived_components:
+    - nsxmanager
+  description: 'Create tech-support tar file'
+  format: string
+  method: create_tech_support_tar
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - create_tech_support_tar
+    - execution_type
+    - file_name
+  sample_value:
+    file_name: 'tech_support_log.tgz'
+
+get_dir_list:
+  derived_components:
+    - nsxmanager
+  description: 'Get the file(s) list present in nsxcli filestore'
+  format: string
+  method: get_dir_list
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - get_dir_list
+    - execution_type
+
+network_partitioning:
+  type: action
+  description: Isolate target ip from current device
+  derived_components:
+    - nsxmanager
+    - nsxcontroller
+  format:
+    operation: 'ref: operation'
+    ip_address: ip address of target, like controller, manager...
+    protocol: 'tcp/udp'
+    port: specific port you want partitioning
+  preprocess: PreProcessNestedParametersForAction
+  method: network_partitioning
+  params:
+    - network_partitioning
+  sample_value:
+    ip_address: 'nsxmanager.[1]->manager_ip'
+    operation: 'set'
+    protocol: 'tcp'
+    port: '5671'
+
+aaa_provider:
+  type: component
+  description: Component for aaa provider
+  derived_components:
+    - nsxmanager
+  linkedworkload: AAAWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::AAA'
+  params:
+    - aaa_provider
+
+messagingclientmap:
+  type: component
+  description: Get Messaging on NSXManager
+  derived_components:
+    - nsxmanager
+  linkedworkload: MessagingWorkload
+  preprocess: PreProcessSubComponentsInPython
+  method: CreateComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Messaging'
+  params:
+    - messagingclient
+
+delete_file:
+  type: action
+  description: delete given file on controller
+  derived_components:
+    - nsxmanager
+    - nsxcontroller
+  format:
+    file_name: string
+    execution_type: cmd
+  preprocess: PreProcessNestedParametersForAction
+  method: delete_file
+  params:
+    - delete_file
+  sample_value:
+    file_name: '/opt/vmware/etc/bootstrap-config'
+    execution_type: 'cmd'
+
+get_ping_output:
+  derived_components:
+    - nsxmanager
+  description: 'return IP or Hostname ping status'
+  format: string
+  method: get_ping_output
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - get_ping_output
+    - execution_type
+    - ip
+    - hostname
+
+packet_loss:
+  derived_components:
+    - nsxmanager
+  description: 'Number of packets lost during transfer'
+  format: integer
+  type: parameter
+  sample_value: 0
+
+debug_packet_capture:
+  derived_components:
+    - nsxmanager
+  description: 'Run debug packet capture interface INTERFACE CLI'
+  format: string
+  method: debug_packet_capture
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - debug_packet_capture
+    - execution_type
+    - vnic_name
+  sample_value:
+    vnic_name: 'mgmt'
+
+set_banner_motd:
+  derived_components:
+    - nsxmanager
+  description: 'Set banner message using banner motd CLI'
+  format: string
+  method: set_banner_motd
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - set_banner_motd
+    - execution_type
+    - message
+  sample_value:
+    message: 'Hello World!!'
+
+message:
+  derived_components:
+    - nsxmanager
+  description: 'Message string for banner motd'
+  format: string
+  type: parameter
+  sample_value: 'Hello World!!'
+
+get_motd:
+  derived_components:
+    - nsxmanager
+  description: 'return content of /etc/motd.tail file'
+  format: string
+  method: get_motd
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - get_motd
+    - execution_type
+    - message
+
+get_process_monitor:
+  derived_components:
+    - nsxmanager
+  description: 'return content of show process monitor CLI'
+  format: string
+  method: get_process_monitor
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - get_process_monitor
+    - execution_type
+
+read_system_memory:
+  derived_components:
+    - nsxmanager
+  description: Read /proc/meminfo file to get the system memory details
+  method: read_system_memory
+  params:
+    - read_system_memory
+    - execution_type
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  format: string
+
+set_ntp_server:
+  derived_components:
+    - nsxmanager
+  description: 'Configure ntp server'
+  format: string
+  method: set_ntp_server
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - set_ntp_server
+    - execution_type
+    - hostname
+    - ip
+    - reset
+  sample_value:
+    hostname: 'time.vmware.com'
+
+reset:
+  derived_components:
+    - nsxmanager
+  description: 'Reset NTP server associations'
+  format: string
+  type: parameter
+  sample_value: 'yes'
+
+get_ntp_associations:
+  derived_components:
+    - nsxmanager
+  description: 'return table having show ntp associations CLI output'
+  format: string
+  method: get_ntp_associations
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - get_ntp_associations
+    - execution_type
+
+get_aggregation_transportnode_status:
+  derived_components:
+    - nsxmanager
+  description: 'Get status summary of all transport nodes under MP.'
+  format:
+    result_count: "ref: count"
+    transport_nodes: "ref: transport_nodes"
+  method: get_aggregation_transportnode_status
+  preprocess: PreProcessVerification
+  type: verification
+  params:
+    - get_aggregation_transportnode_status
+    - execution_type
+  sample_value:
+    result_count: 2
+    transport_nodes:
+      - uuid: foo
+        tunnel_status: up
+      - uuid: bar
+        tunnel_status: down
+
+transport_nodes:
+  derived_components:
+    - nsxmanager
+  description: 'List of transport node stats.'
+  format:
+    - status: "ref: status"
+      uuid: "ref: node_uuid"
+      control_connection_status: "ref: control_connection_status"
+      pnic_status: "ref: pnic_status"
+      mgmt_connection_status: "ref: mgmt_connection_status"
+      tunnel_status: "ref: tunnel_status"
+  type: parameter
+  sample_value:
+    - status: UP
+      uuid: foo
+      control_connection_status:
+        status: UP
+        up_count: 2
+        down_count: 0
+      pnic_status:
+        status: UP
+        up_count: 3
+        down_count: 0
+      mgmt_connection_status: UP
+      tunnel_status:
+        status: UP
+        bfd_diagnostic:
+          concatenated_path_down_count: 0
+          administratively_down_count: 0
+          no_diagnostic_count: 1
+          path_down_count: 0
+          reverse_concatenated_path_down_count: 0
+          control_detection_time_expired_count: 0
+          echo_function_failed_count: 0
+          forwarding_plane_reset_count: 0
+        bfd_status:
+          admin_down_count: 0
+          up_count: 2
+          down_count: 0
+          init_count: 0
+        up_count: 1
+        down_count: 0
+
+cidr:
+  derived_components:
+    - nsxmanager
+  description: 'CIDR value'
+  format: string
+  type: parameter
+  sample_value: 'A.B.C.D/M'
+
+configure_ip_route:
+  derived_components:
+    - nsxmanager
+  description: 'Set, reset ip route'
+  format: string
+  method: configure_ip_route
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - configure_ip_route
+    - execution_type
+    - cidr
+    - gateway
+    - reset
+  sample_value:
+    cidr: 'A.B.C.D/M'
+    gateway: 'W.X.Y.Z'
+
+show_ip_route:
+  derived_components:
+    - nsxmanager
+  description: 'Returns table having cidr and gateway of each ip route'
+  format: string
+  method: show_ip_route
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - show_ip_route
+    - execution_type
+
+ipdiscovery_profile:
+  type: component
+  description: Creates IP Discovery switching profile.
+  derived_components:
+    - nsxmanager
+  dependency:
+  method: CreateComponent
+  linkedworkload: IPDiscoveryProfileWorkload
+  params:
+    - ipdisovery_profile
+    - execution_type
+  format:
+    resource_type: string
+    arp_snooping_enabled: string
+    dhcp_snpooping_enabled: string
+  preprocess: PreProcessNSXSubComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::IPDiscoveryProfile'
+
+deleteipdiscovery_profile:
+  type: component
+  description: Delete IP Discovery switching profile.
+  derived_components:
+    - nsxmanager
+  dependency:
+    - ipdiscovery_profile
+  format: vdnet index
+  sample_value: 'nsxmanager.[1].ipdiscovery_profile.[1]'
+  method: DeleteComponent
+  preprocess: PreProcessDeleteComponentsAndParameters
+  postprocess: RemoveReplicatedSubComponentObjects
+  objtype:
+      nsxmanager: 'VDNetLib::NSXManager::IPDiscoveryProfile'
+  params:
+    - execution_type
+
+configure_tacacs_server:
+  derived_components:
+    - nsxmanager
+  description: 'configure a new TACACS+ server'
+  format: string
+  method: configure_tacacs_server
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - configure_tacacs_server
+    - address
+    - secret_key
+  sample_value:
+    address: '10.112.11.174'
+    secret_key: 'testing123'
+
+configure_auth_type:
+  derived_components:
+    - nsxmanager
+  description: 'configure authentication type'
+  format: string
+  method: configure_auth_type
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - configure_auth_type
+    - auth_type
+  sample_value:
+    auth_type: 'pap'
+
+auth_type:
+  derived_components:
+    - nsxmanager
+  description: specifies authentication type
+  format: string
+  sample_value:
+      auth_type: "pap"
+  type: parameter
+
+address:
+  derived_components:
+    - nsxmanager
+  description: hostname/ip address of server
+  format: string
+  method: GetComponentAttribute
+  sample_value:
+      address: "10.112.11.176"
+  type: parameter
+
+secret_key:
+  derived_components:
+    - nsxmanager
+  description: specifies shared secret authentication key
+  format: string
+  sample_value:
+      secret_key: "testing123"
+  type: parameter
+
+nodebackuprestore:
+  derived_components:
+    - nsxmanager
+  description: Create NSXManager Node level backup
+  method: CreateComponent
+  params:
+    - nodebackuprestore
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: SnapshotWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::NodeBackupRestore'
+
+deletenodebackup:
+  derived_components:
+    - nsxmanager
+  description: Delete NSXManager Node level backup
+  format: string
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: PreProcessDeleteComponentsAndParameters
+  params:
+    - deletenodebackup
+  sample_value: 'nsxmanager.[1].nodebackuprestore.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::NodeBackupRestore'
+
+clusterbackuprestore:
+  derived_components:
+    - nsxmanager
+  description: Create NSXManager Cluster level backup
+  method: CreateComponent
+  params:
+    - clusterbackuprestore
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: SnapshotWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::ClusterBackupRestore'
+
+deleteclusterbackup:
+  derived_components:
+    - nsxmanager
+  description: Delete NSXManager Cluster level backup
+  format: string
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: PreProcessDeleteComponentsAndParameters
+  params:
+    - deleteclusterbackup
+  sample_value: 'nsxmanager.[1].clusterbackuprestore.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::ClusterBackupRestore'
+
+copy_file:
+  derived_components:
+    - nsxmanager
+  description: 'Copy the given file to and from given URL using copy CLI'
+  format: string
+  method: copy_file
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - copy_file
+    - execution_type
+    - source_file_name
+    - dest_file_name
+    - username
+    - password
+    - ifname
+  sample_value:
+    source_file_name: 'tech_support.tar.gz'
+    dest_file_name: 'tech_support.tar.gz'
+    ifname: 'eth0'
+
+ifname:
+  derived_components:
+    - nsxmanager
+  description: 'Interface name'
+  format: string
+  type: parameter
+  sample_value: 'eth0'
+
+delete_file_after_copy:
+  derived_components:
+    - nsxmanager
+  description: 'delete file after using copy cli'
+  format: boolean
+  type: parameter
+  sample_value: 'yes'
+
+move_file:
+  derived_components:
+    - nsxmanager
+  description: 'Move file from one path to other on NSXManager'
+  format: string
+  method: move_file
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - move_file
+    - execution_type
+    - file_name
+    - source_path
+    - destination_path
+    - dest_file_name
+  sample_value:
+    file_name: 'cluster_backup'
+
+state_synch_node:
+  derived_components:
+    - nsxmanager
+  description: Create state synch node component in vdnet
+  method: CreateComponent
+  params:
+    - state_synch_node
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: ClusterWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::StateSynchNode'
+
+globaldistributedlogicalrouter:
+  type: component
+  description: Deploy a GDLR from NSX Manager and replicate in vdnet
+  linkedworkload: VMWorkload
+  method: CreateApplianceVM
+  params:
+    - globaldistributedlogicalrouter
+  postprocess: PostProcessApplianceVM
+  preprocess: PreProcessNSXSubComponent
+  derived_components:
+    - vsm
+  objtype:
+    vsm: 'VDNetLib::VSM::VSE::VSE'
+
+deleteglobaldistributedlogicalrouter:
+  type: component
+  derived_components:
+    - vsm
+  description: Delete a GDLR from NSX Manager and de-replicate objs
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].globaldistributedlogicalrouter.[1]'
+  objtype:
+    vsm: 'VDNetLib::VSM::VSE::VSE'
+
+replicator_sync:
+  type: action
+  description: Actions like SyncAll/Sync specific GLS etc on Replicator
+  allowed_values:
+    - syncall
+    - synclogicalswitches
+    - synclogicalrouters
+  derived_components:
+    - vsm
+  format: string
+  method: update
+  params:
+    - switches
+    - routers
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: register
+  objtype:
+    vsm: 'VDNetLib::VSM::VSMOperations'
+
+globaltransportzone:
+  type: component
+  description: Creates a global transport zone on VSM
+  derived_components:
+    - vsm
+  linkedworkload: TransportZoneWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - globaltransportzone
+    - execution_type
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  objtype:
+    vsm: 'VDNetLib::VSM::GlobalTransportZone'
+  dependency:
+    - vxlancontroller
+    - vdncluster
+
+deleteglobaltransportzone:
+  type: component
+  derived_components:
+    - vsm
+  description: Deletes a global transport zone on VSM
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].globaltransportzone.[1]'
+  objtype:
+    vsm: 'VDNetLib::VSM::NetworkScope'
+  dependency:
+    - deletevse
+    - deleteglobaldistributedlogicalrouter
+
+delete_backend_file:
+  derived_components:
+    - nsxmanager
+  description: 'Delete file from specified path on NSXManager'
+  format: string
+  method: delete_backend_file
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - delete_backend_file
+    - execution_type
+    - file_name
+    - path
+  sample_value:
+    file_name: 'cluster_backup.zip'
+
+check_cluster_backup_file:
+  derived_components:
+    - nsxmanager
+  description: check only one cluster backup file exists
+  format: string
+  method: check_cluster_backup_file
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - execution_type
+    - path
+
+check_node_backup_file:
+  derived_components:
+    - nsxmanager
+  description: check separate node backup file exists
+  format: string
+  method: check_node_backup_file
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - execution_type
+    - path
+
+replicator_role:
+  dependency:
+    - reconfigure
+  derived_components:
+    - nsx
+  description: Reconfigures NSX Manager
+  format: string
+  method: CreateAndVerifyComponent
+  params:
+    - replicator_role
+  preprocess: PreProcessNSXHashTypeAPI
+  sample_value: primary
+  type: action
+  allowed_values:
+    - primary
+    - standalone
+
+firewall_rule:
+  type: action
+  method: configure_firewall_rule
+  description: Adds or removes a firewall rule to/from the host.
+  preprocess: PreProcessNestedParametersForAction
+  params:
+    - firewall_rule
+  derived_components:
+    - nsxcontroller
+  format:
+    strict: bool
+    rule_operation: 'ref: rule_operation'
+    chain: 'ref: chain'
+    destinationip: 'ref: destinationip'
+    protocol: 'ref: protocol'
+    protocol_options: 'ref: protocol_options'
+    action: 'ref: action'
+    match_extensions: 'ref: match_extensions'
+    ruleset: 'ref: ruleset'
+  sample_value:
+    strict: true
+    rule_operation: 'add'
+    chain: 'INPUT'
+    destinationip: 'kvm.[1]'
+    protocol: 'udp'
+    protocol_options:
+      'destination_port': 1111
+    action: 'ACCEPT'
+    match_extensions:
+      'comment_match_ext':
+        'comment': 'Example Rule'
+    ruleset: 'rabbitmqproxy'
+
+chain:
+  type: param
+  description: "Name of the chain in which to insert/delete the rule"
+  format: string
+  sample_value: 'INPUT'
+
+protocol_options:
+  type: param
+  description: "Protocol options to be used while configuring the rules"
+  format: hash
+  sample_value:
+    'dport': 1111
+
+match_extensions:
+  type: param
+  description: "Contains name as well as options for which match extension modules need to be loaded"
+  format: hash
+  sample_value:
+     'comment_match_ext':
+       'comment': 'Example Rule'
+
+comment_match_ext:
+  type: param
+  description: "Comment match extension name"
+  format: hash
+  sample_value:
+    'comment': 'Example rule'
+
+destination_port: &DESTINATION_PORT
+  type: param
+  description: "Destination port"
+  format: integer
+  sample_value: 1111
+
+source_port: *DESTINATION_PORT
+
+comment:
+  type: param
+  description: "Comment option for the comment match extension module"
+  format: string
+  sample_value: 'Example rule'
+
+protocol:
+  allowed_value:
+    - tcp
+    - udp
+    - icmp
+  derived_components:
+    - all
+  description: This key specifies the protocol used
+  format: string
+  sample_value: tcp
+  type: parameter
+
+rule_operation:
+  allowed_value:
+    - add
+    - edit
+    - remove
+    - enable
+    - disable
+  derived_components:
+    - kvm
+    - esx
+  description: 'This key specifies the  rule operation '
+  format: string
+  sample_value: add
+  type: parameter
+
+action:
+  allowed_value:
+    - ACCEPT
+    - DROP
+    - QUEUE
+    - RETURN
+  derived_components:
+    - kvm
+  description: 'Action to be performed on the packets matching the rule'
+  format: string
+  sample_value: accept
+  type: parameter
+
+delete_tor:
+  description: Removes a Top of Rack Switch on NSX
+  linkedworkload: SwitchWorkload
+  method: DeleteComponent
+  params:
+    - tor
+  preprocess: ConstructArrayOfObjects
+  postprocess: RemoveSubComponentObjects
+  type: component
+
+delete_tor_binding:
+  description: Removes a binding on a TOR Switch
+  linkedworkload: PortWorkload
+  method: DeleteComponent
+  params:
+    - tor_binding
+  preprocess: ConstructArrayOfObjects
+  postprocess: RemoveSubComponentObjects
+  type: component
+
+ptep:
+  description: Adds a PTEP to the ptep cluster
+  linkedworkload: ClusterWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - ptep
+  preprocess: PreProcessNSXSubComponent
+  type: component
+
+remove_ptep:
+  description: Removes PTEPs from the ptep cluster
+  linkedworkload: ClusterWorkload
+  method: RemovePTEP
+  params:
+    - remove_ptep
+  preprocess: PreProcessNSXSubComponent
+  type: component
+
+reboot:
+  derived_components:
+    - nsxmanager
+  description: Reboot nsx manager
+  format: string
+  method: reboot
+  params:
+    - reboot
+  preprocess: PreProcessNestedParametersForAction
+  sample_value:
+    execution_type: cli
+  type: action
+
+globalvnipool:
+  derived_components:
+    - vsm
+  description: Creates a range of Global SegmentID on NSX
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - segmentidrange
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+
+globalmulticastiprange:
+  derived_components:
+    - vsm
+  description: Creates a range of Global MulticastIP address on NSX
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - multicastiprange
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+
+localvnipool: *SEGMENT_ID_RANGE
+localmulticastiprange: *MULTICAST_IP_RANGE
+localtransportzone: *NETWORK_SCOPE
+
+route:
+  derived_components:
+    - nsxmanager
+  description: Add route on NSXManager
+  method: CreateComponent
+  params:
+    - route
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: RulesWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Route'
+
+dns:
+  derived_components:
+    - nsxmanager
+  description: Configure Domain name server on NSXManager
+  method: CreateComponent
+  params:
+    - dns
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: NetworkServicesWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::DNS'
+
+deleteroute:
+  derived_components:
+    - nsxmanager
+  description: Delete route from NSXManager
+  method: DeleteComponent
+  params:
+    - deleteroute
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].route.[1]'
+  linkedworkload: RulesWorkload
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Route'
+
+nsxslave:
+  dependency:
+    - replicator_role
+  derived_components:
+    - vsm
+  description: Registers VSM slave with VSM Master Replicator service
+  linkedworkload: RegistrationWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - neutronpeer
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+
+deleteglobalvnipool:
+  type: component
+  description: Delete global VNIPool from NSXManager
+  derived_components:
+    - nsxmanager
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].globalvnipool.[1]'
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::GlobalVNIPool'
+
+deleteglobalmulticastiprange :
+  dependency:
+    - deletenetworkscope
+  derived_components:
+    - vsm
+  description: Delete multicastiprange obj from test session
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].globalmulticastiprange.[1]'
+  type: component
+
+deletensxslave: *DELETE_NEUTRON_PEER
+
+httpd_service_cert:
+  derived_components:
+    - nsxmanager
+  description: Configure Httpd Service Certificate for NSXManager
+  method: CreateComponent
+  params:
+    - httpd_service_cert
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  linkedworkload: CertificateWorkload
+  format: vdnet index
+  sample_value: 'nsxmanager.[1].httpd_service_cert.[1]'
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::Httpd'
+
+setuuid:
+  allowed_values:
+    - true
+  derived_components:
+    - vsm
+  description: Set UUID of NSX Manager
+  format: boolean
+  method: GetUUID
+  params:
+    - setuuid
+  preprocess: PreProcessShiftTypeAPI
+  postprocess: PostProcessUpdateObjectItself
+  sample_value: true
+  type: action
+
+clistring:
+  description: Name of the expected string in result
+  format: string
+  type: parameter
+
+verifyclicommand:
+  derived_components:
+    - nsx
+  description: Execute a centralized cli on nsx manager and verify it outputs
+  format: string
+  method: VerifyCliCommand
+  params:
+    - verifyclicommand
+    - clistring
+    - host
+    - controller
+    - switch
+    - vm
+    - adapter
+    - bridge
+  preprocess: PreProcessVerification
+  type: verification
+  sample_value: "show logical-switch <host-id> <vni>"
+
+bridge:
+  derived_components:
+    - vse
+  description: Get the corresponding bridge Obj
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'vsm.[1].vse.[1].bridge.[1]'
+  type: parameter
+
+getptepattributes:
+  derived_components:
+    - nsx
+  description: verifies all the attributes of a ptep cluster
+  format:
+    'ptepclusterentry[?]contains': string
+  method: GetPTEPEndpointAttributes
+  params:
+    - verifyptepattributes
+  preprocess: PreProcessVerification
+  sample_value:
+    'ptepclusterentry[?]contains': 'host.[1]'
+  type: verification
+
+replicator_status:
+  dependency:
+    - reconfigure
+    - replicator_role
+  derived_components:
+    - vsm
+  description: Read the status of replicator service and pass if status matches
+  format: string
+  method: ReadReplicatorServiceStatus
+  params:
+    - replicator_status
+  preprocess: PreProcessVerification
+  sample_value: primary
+  type: verification
+  allowed_values:
+    - RUNNING
+    - STOPPED
+
+globalipset:
+  derived_components:
+    - vsm
+  description: Creates IPSet on Universal scope
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - globalipset
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  format:
+    name: 'ref: name'
+    description: 'ref: description'
+    value: 'ref: value'
+  sample_value:
+    name: 'UniversalMACSet-1'
+    value: '00:01:02:03:04:05'
+    description: 'MACs'
+  type: component
+
+deleteglobalipset:
+  derived_components:
+    - nsx
+  description: Deletes an IPSet in neutron or vsm
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].ipset.[2]'
+  type: component
+
+globalmacset:
+  derived_components:
+    - vsm
+  description: Creates IPSet on Universal scope
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - globalmacset
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  format:
+    name: 'ref: name'
+    description: 'ref: description'
+    value: 'ref: value'
+  sample_value:
+    name: 'UniversalMACSet-1'
+    value: '00:01:02:03:04:05'
+    description: 'MACs'
+  type: component
+
+deleteglobalmacset:
+  derived_components:
+    - nsx
+  description: Deletes a MACSet grouping object in vsm
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].macset.[2]'
+  type: component
+
+globalsecuritygroup:
+  derived_components:
+    - vsm
+  description: Creates a security group for firewall
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - globalsecuritygroup
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  format:
+    name: 'ref: name'
+    description: 'ref: description'
+    type:
+      typename: string
+    scope:
+      id: string
+      objecttypename: string
+      name: string
+    member:
+      - grouping_object_id: vdnet index
+        isuniversal: true/false
+      - grouping_object_id: vdnet index
+        isuniversal: true/false
+  sample_value:
+    name: 'UniversalSecurityGroup-1'
+    description: 'SecurityGroups'
+    type:
+      typename: 'SecurityGroup'
+    scope:
+      id: 'universalroot-0'
+      objecttypename: 'UniversalRoot'
+      name: 'Universal'
+    member:
+      - grouping_object_id: 'vsm.[1].globalipset.[2]'
+        isuniversal: 'true'
+      - grouping_object_id: 'vsm.[1].globalmacset.[2]'
+        isuniversal: 'true'
+  type: component
+
+deleteglobalsecuritygroup:
+  derived_components:
+    - nsx
+  description: Deletes SecurityGroup object
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].securitygroup.[1]'
+  type: component
+
+get_logicalswitch_list:
+  derived_components:
+    - nsx
+  description: verify logical switch list
+  format: string
+  method: GetLogicalswitchList
+  params:
+    - get_logicalswitch_list
+    - target
+  preprocess: PreProcessVerification
+  type: verification
+  sample_value:
+     'target': "host.[2]"
+
+get_host_list_for_logicalswitch:
+  derived_components:
+    - nsx
+  description: verify logical switch list for an host
+  format: string
+  method: GetHostListForLogicalSwitch
+  params:
+    - get_host_list_for_logicalswitch
+    - switch
+  preprocess: PreProcessVerification
+  type: verification
+  sample_value: 'vsm.[1].networkscope.[1].virtualwire.[2]'
+controller:
+  derived_components:
+    - nsx
+  description: Get the corresponding controller Obj
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'vsm.[1].vxlancontroller.[1]'
+  type: parameter
+target:
+  derived_components:
+    - nsx
+  description: Get for esx or logical switch obj which is used for verification module
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'vsm.[1].networkscope.[1].virtualwire.[1] or host.[1]'
+  type: parameter
+
+get_mac_table:
+  derived_components:
+    - nsx
+  description: verify mac table on controller for logical switch
+  format: string
+  method: GetMacTable
+  params:
+    - get_mac_table
+    - target
+    - controller
+    - switch
+  preprocess: PreProcessVerification
+  type: verification
+  sample_value:
+     'target': "vsm.[1].networkscope.[1].virtualwire.[2]"
+     'controller' : "vsm.[1].vxlancontroller.[1]"
+
+read_replication_status:
+  derived_components:
+    - vsm
+  description: Read the status of replication
+  params:
+    - read_replication_status
+  format:
+    'syncState[?]equal_to': string
+    'nsxManagersStatusList[?]contain_once':
+      - vsmId: vdnet index
+        syncState: string
+  method: ReadReplicationStatus
+  preprocess: PreProcessVerification
+  sample_value:
+    'syncState[?]equal_to': 'IN_SYNC'
+    'nsxManagersStatusList[?]contain_once':
+      - vsmId: 'vsm.[2]->id'
+        syncState: 'IN_SYNC'
+  type: verification
+
+bfd:
+  description: Create a BFD global configuration object
+  linkedworkload: GatewayWorkload
+  derived_components:
+    - vsm
+  method: CreateAndVerifyComponent
+  params:
+    - bfd
+  preprocess: PreProcessNSXSubComponent
+  type: component
+  sample_value:
+      'bfd':
+         '[1]':
+             'bfd_enabled': true
+             'probe_interval': 100
+
+read_entity_replication_status:
+  derived_components:
+    - vsm
+  description: Read the status of replication for an entity
+  params:
+    - read_entity_replication_status
+    - object_type
+    - object_id
+  format:
+    objectId: vdnet index
+    isInSync: 'boolean'
+    elements:
+        - vsmId: 'PRIMARY'
+          objectExists: boolean
+        - vsmId: vdnet index ->id
+          objectExists: boolean
+  method: ReadEntityReplicationStatus
+  preprocess: PreProcessVerificationAndParameters
+  sample_value:
+    objectId: 'vsm.[1].globalsecuritygroup.[1]->id'
+    isInSync: 'true'
+    elements:
+        - vsmId: 'PRIMARY'
+          objectExists: 'true'
+        - vsmId: 'vsm.[2]->id'
+          objectExists: 'true'
+  type: verification
+
+object_id:
+  description: id of the any component
+  format: string
+  method: ProcessParameters
+  type: parameter
+  sample_value: 'vsm.[1].globalsecuritygroup.[1]'
+
+object_type:
+  description: type of the any component
+  format: string
+  method: ProcessParameters
+  type: parameter
+  sample_value: 'SecurityGroup'
+
+globalapplicationservice:
+  derived_components:
+    - nsx
+    - vsm
+  description: Creates Service grouping object with universal scope
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - globalapplicationservice
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  format:
+    name: string
+    value: string
+    source_port: string
+    application_protocol: string
+  sample_value:
+    name: "Service-1"
+    value: "1234"
+    source_port: "5678"
+    application_protocol: "TCP"
+  type: component
+
+globalapplicationservicegroup:
+  derived_components:
+    - nsx
+    - vsm
+  description: Creates ServiceGroup grouping object with universal scope
+  linkedworkload: GroupingObjectWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - applicationservicegroup
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  format:
+    name: string
+    description: string
+  sample_value:
+    name: "ServiceGroup-1"
+    description: "service group-1 creation"
+  type: component
+
+get_global_bfd:
+  type: verification
+  description: 'get global BFD status'
+  derived_components:
+    - vsm
+  preprocess: PreProcessVerification
+  method: get_global_bfd
+  format:
+    bfd_enabled: boolean
+    probe_interval: Integer
+  params:
+    - get_global_bfd
+  sample_value:
+    'get_global_bfd':
+        'bfd_enabled[?]equal_to': true
+        'probe_interval[?]equal_to': 100
+
+get_arp_table:
+  derived_components:
+    - nsx
+  description: verify arp table on controller for logical switch
+  format: string
+  method: GetArpTable
+  params:
+    - get_arp_table
+    - target
+    - controller
+    - switch
+  preprocess: PreProcessVerification
+  type: verification
+  sample_value:
+     'target': "vsm.[1].networkscope.[1].virtualwire.[2]"
+     'controller' : "vsm.[1].vxlancontroller.[1]"
+
+get_vtep_table:
+  derived_components:
+    - nsx
+  description: verify mac table on controller for logical switch
+  format: string
+  method: GetVTEPTable
+  params:
+    - get_vtep_table
+    - target
+    - controller
+    - switch
+  preprocess: PreProcessVtepTableForLogicalSwitch
+  type: verification
+  sample_value:
+     'target': "vsm.[1].networkscope.[1].virtualwire.[2]"
+     'controller' : "vsm.[1].vxlancontroller.[1]"
+
+get_controllers:
+  derived_components:
+    - nsx
+  description: get all controller's information
+  format: string
+  method: GetControllers
+  params:
+    - get_controllers
+  preprocess: PreProcessVerification
+  type: verification
+
+get_vni_brief:
+  derived_components:
+    - nsx
+  description: get vni brief information
+  format: string
+  method: GetVNIBrief
+  params:
+    - get_vni_brief
+    - target
+    - controller
+  preprocess: PreProcessVerification
+  type: verification
+
+get_vni_connection:
+  derived_components:
+    - nsx
+  description: get connection information for vni
+  format: string
+  method: GetVNIConnection
+  params:
+    - get_vni_connection
+    - switch
+    - controller
+  preprocess: PreProcessVerification
+  type: verification
+
+read_replicator_role:
+  derived_components:
+    - vsm
+  description: Read replicator role from NSX
+  params:
+    - read_replicator_role
+  format:
+      role: string
+  method: ReadReplicatorRole
+  preprocess: PreProcessVerificationAndParameters
+  sample_value:
+    role: PRIMARY
+  type: verification
+
+globaldfwsection:
+  derived_components:
+    - vsm
+  description: Create empty Global DFW section
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - globaldfwsection
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+  sample_value:
+     'globaldfwsection':
+        '[1]':
+           layer: 'layer3'
+           sectionname: 'global-L3-section-1'
+  objtype:
+    vsm: 'VDNetLib::VSM::GlobalDFWSections'
+
+deleteglobaldfwsection:
+  derived_components:
+    - vsm
+  description: Deletes Global DFW section.
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].globaldfwsection.[1]'
+  type: component
+  objtype:
+    vsm: 'VDNetLib::VSM::GlobalDFWSections'
+
+globalfirewallrule:
+  derived_components:
+    - vsm
+  description: Configure the Global DFW rules for NSX
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - globalfirewallrule
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+  sample_value:
+     globalfirewallrule:
+        '[1]':
+           name: 'GlobalRule-1'
+           action: 'Deny'
+           logging_enabled: 'true'
+           section: 'vsm.[1].globaldfwsection.[1]'
+           sources:
+              -
+                 type: 'IPSet'
+                 value: 'vsm.[1].globalipset.[1]'
+              -
+                 type: 'SecurityGroup'
+                 value: 'vsm.[1].globalsecuritygroup.[1]'
+           destinations:
+              -
+                 type: 'IPSet'
+                 value: 'vsm.[1].globalipset.[1]'
+              -
+                 type: 'SecurityGroup'
+                 value: 'vsm.[1].globalsecuritygroup.[1]'
+           affected_service:
+              -
+                 protocolname: 'TCP'
+              -
+                 protocolname: 'UDP'
+           appliedto:
+              -
+                 type: 'VirtualWire'
+                 value: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+  objtype:
+    vsm: 'VDNetLib::VSM::GlobalDFWRules'
+
+deleteglobalfirewallrule:
+  derived_components:
+    - distributed firewall
+  description: Deletes Global DFW rule.
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].globalfirewallrule.[1]'
+  type: component
+  objtype:
+    vsm: 'VDNetLib::VSM::GlobalDFWRules'
+
+excludelist:
+  type: component
+  derived_components:
+    - nsx
+    - nsxmanager
+  description: Configures an exclude list for dfw
+  linkedworkload: ServiceWorkload
+  method: CreateComponent
+  params:
+    - excludelist
+  preprocess: PreProcessNSXSubComponent
+  postprocess: StoreSubComponentObjects
+  objtype:
+     nsxmanager: 'VDNetLib::NSXManager::DFW::DFWExcludeList'
+
+size:
+  description: Size of text(in bytes) to append to a file
+  derived_components:
+    - nsxmanager
+  format: Integer
+  type: parameter
+  sample_value: 1024
+
+append_string:
+  type: parameter
+  description: "string that needs to be appended"
+  format: string
+  sample_value: 'example'
+
+file_append:
+  derived_components:
+    - nsxmanager
+  description: Append text to log file
+  format:
+    file_name: string
+    size: Integer
+  method: file_append
+  params:
+    - execution_type
+    - file_name
+    - size
+    - append_string
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  sample_value:
+    file_name: '/var/log/rabbitmq/rabbitmq-test.log'
+    size: 1024
+    append_string: 'foo'
+
+force_sync_replication:
+  derived_components:
+    - vsm
+  description: Forces replicator to sync with all NSX managers
+  method: force_sync_replication
+  preprocess: PreProcessNSXHashTypeAPI
+  params:
+    - force_sync_replication
+  format:
+    force_sync_replication: boolean
+  sample_value:
+    force_sync_replication: 'true'
+  type: action
+
+grep_after:
+  type: parameter
+  description: "string to use to find context prior to desired string"
+  format: string
+  sample_value: 'foo'
+
+grep_string:
+  type: parameter
+  description: "string that you're looking for in a grep"
+  format: string
+  sample_value: 'example'
+
+max_wait:
+  type: parameter
+  description: "maximum wait time in seconds"
+  format: integer
+  sample_value: 30
+
+query_file:
+  type: action
+  description: wait for a string to appears in desired file
+  derived_components:
+    - nsxmanager
+  format: boolean
+  sample_value: true
+  preprocess: PreProcessNestedParametersForAction
+  method: query_file
+  params:
+    - execution_type
+    - file_name
+    - grep_after
+    - grep_string
+    - max_wait
+    - interval
+    - pattern
+    - count
+
+find_pattern_count:
+  type: action
+  description: count the number of patterns in desired file
+  derived_components:
+    - nsxmanager
+  format: boolean
+  sample_value: true
+  preprocess: PreProcessNestedParametersForAction
+  method: find_pattern_count
+  params:
+    - execution_type
+    - file_name
+    - grep_after
+    - grep_string
+    - pattern
+
+bridgecluster:
+  derived_components:
+    -nsxmanager
+  linkedworkload: ClusterWorkload
+  description: Create bridge cluster
+  params:
+     - bridgecluster
+  format:
+    - name: string
+      bridge_nodes: 'ref bridge_nodes'
+  method: CreateComponent
+  sample_value:
+    - name : 'bridgecluster1'
+      bridge_nodes:
+        - nsxmanager.transportnode.[1]
+          nsxmanager.transportnode.[2]
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::BridgeCluster'
+
+deletebridgecluster:
+  type: component
+  description: Delete Bridge Cluster from NSXManager
+  derived_components:
+    - nsxmanager
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].bridgecluster.[1]'
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::BridgeCluster'
+
+bridgeendpoint:
+  derived_components:
+    -nsxmanager
+  description: Create bridge endpoint
+  linkedworkload: BridgeWorkload
+  params:
+     - bridgeendpoint
+  format:
+    - name: 'name of the bridge endpoint'
+      vlan_id: 'ref vlan_id'
+      node_id: 'ref node_id'
+      ha: 'ref ha'
+      guest_vlan: 'ref guest_vlan'
+  method: CreateComponent
+  preprocess: PreProcessSubComponentsInPython
+  postprocess: StoreSubComponentObjects
+  sample_value:
+    - name: 'endpoint'
+      node_id: 'nsxmanager.[1].bridgecluster.[1]->id'
+      vlan_id: '16'
+      ha: 1
+      guest_vlan: 0
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::BridgeEndpoint'
+
+deletebridgeendpoint:
+  type: component
+  description: Delete bridgeenpoint from NSXManager
+  derived_components:
+    - nsxmanager
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].bridgeendpoint.[1]'
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::BridgeEndpoint'
+
+get_tor_instance:
+  type: verification
+  description: 'get tor instances list'
+  derived_components:
+    - vsm
+  preprocess: PreProcessVerification
+  method: get_tor_instance
+  params:
+    - get_tor_instance
+  sample_value:
+    'get_tor_instance[?]not_contains':
+        table:
+            - name: 'torgateway1'
+            - name: 'torgateway2'
+
+get_tor_binding:
+  type: verification
+  description: 'get tor binding list'
+  derived_components:
+    - vsm
+  preprocess: PreProcessVerification
+  method: get_tor_binding
+  params:
+    - get_tor_binding
+  sample_value:
+    'get_tor_binding[?]not_contains':
+        table:
+            - tor_id: 'vsm.[1].tor.[1]->id'
+              tor_switch_name: 'torgateway.[1].torswitch.[1]'
+              tor_port_name: 'torgateway.[1].torswitch.[1].torport.[1]'
+              vlan: 21
+            - tor_id: 'vsm.[1].tor.[1]->id'
+              tor_switch_name: 'torgateway.[1].torswitch.[1]'
+              tor_port_name: 'torgateway.[1].torswitch.[1].torport.[2]'
+              vlan: 22
+
+get_ptep_cluster:
+  type: verification
+  description: 'get tor ptep cluster list'
+  derived_components:
+    - vsm
+  preprocess: PreProcessVerification
+  method: get_ptep_cluster
+  params:
+    - get_ptep_cluster
+  sample_value:
+    'get_ptep_cluster[?]contain_once':
+        table:
+           - id: 'esx.[4]->MORId'
+           - id: 'esx.[5]->MORId'
+           - id: 'esx.[6]->MORId'
+
+set_node_id:
+  allowed_values:
+    - true
+  derived_components:
+    - vsm
+  description: Set Node ID of NSX Manager
+  dependency:
+    - reconfigure
+  format: boolean
+  method: GetNodeID
+  params:
+    - set_node_id
+  preprocess: PreProcessShiftTypeAPI
+  postprocess: PostProcessUpdateObjectItself
+  sample_value: true
+  type: action
+
+node_cleanup:
+  derived_components:
+    - nsxmanager
+  description: 'run script from specified path on NSXManager'
+  format: string
+  method: node_cleanup
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+  params:
+    - node_cleanup
+    - execution_type
+
+lldp_profile:
+  derived_components:
+    - nsxmanager
+  description: profile for uplink policies
+  linkedworkload: ProfileWorkload
+  method: CreateComponent
+  params:
+    - lldp_profile
+  postprocess: StoreSubComponentObjects
+  format:
+    - name: 'ref: name'
+      send_enabled: 'ref: send_enabled'
+      resource_type: 'ref: resource_type'
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LldpProfile'
+  sample_value:
+         - name: 'profile1'
+           send_enabled: '1600'
+           resource_type: 'lldplink'
+
+delete_lldp_profile:
+  type: component
+  description: Delete LLDP profile from NSXManager
+  derived_components:
+    - nsxmanager
+  method: DeleteComponent
+  format: vdnet index
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].lldp_profile.[1]'
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LldpProfile'
+
+switch_security_profile:
+  derived_components:
+    - nsxmanager
+  description: profile for switch security
+  linkedworkload: ProfileWorkload
+  method: CreateComponent
+  params:
+    - switch_security_profile
+  postprocess: StoreSubComponentObjects
+  format:
+    - name: 'ref: name'
+      bpdu_filter: 'ref: bpdu_filter'
+      dhcp_filter: 'ref: dhcp_filter'
+      rate_limits: 'ref: rate_limits'
+      resource_type: 'ref: resource_type'
+  smaple_value:
+    - name: 'security1'
+      bpdu_filter:
+        - enabled: 'true'
+          macaddresses:
+            - macaddresses
+      dhpc_filter:
+        - server_block: 'true'
+          client_block: 'false'
+      rate_limits:
+        - tx_broadcast: 20
+          rx_broadcast: 10
+          tx_multicast: 20
+          rx_multicast: 10
+      resource_type: SwitchSecuritySwitchingProfile
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::SwitchSecurityProfile'
+
+delete_switch_security_profile:
+  type: component
+  description: Delete switch security profile from NSXManager
+  derived_components:
+    - nsxmanager
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].switch_security_profile.[1]'
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::SwitchSecurityProfile'
+
+spoof_guard_profile:
+  derived_components:
+    - nsxmanager
+  description: profile for spoof guard
+  linkedworkload: ProfileWorkload
+  method: CreateComponent
+  params:
+    - spoof_guard_profile
+  postprocess: StoreSubComponentObjects
+  format:
+    - name: 'ref: name'
+      white_list: 'ref: white_list'
+      resource_type: 'ref: resource_type'
+  sample_value:
+    - name: 'spoof1'
+      white_list:
+        - LPORT_BINDINGS
+      resource_type: SpoofGuardSwitchingProfile
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::SpoofGuardProfile'
+
+delete_spoof_guard_profile:
+  type: component
+  description: Delete spoof guard profile from NSXManager
+  derived_components:
+    - nsxmanager
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'nsxmanager.[1].spoof_guard_profile.[1]'
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::SpoofGuardProfile'
+
+mtep_probe_interval:
+  description: the time interval (in millisec) between probe packets for MTEP tunnels
+  format: integer
+  type: parameter
+  sample_value: 1000
+
+utep_probe_interval:
+  description: the time interval (in millisec) between probe packets for non-MTEP tunnels
+  format: integer
+  type: parameter
+  sample_value: 1000
+
+bfd_probe_interval:
+  description: the time interval (in millisec) between probe packets for heartbeat purpose
+  format: integer
+  type: parameter
+  sample_value: 1000
+
+configure_ip_detection:
+  derived_components:
+    - vsm
+  description: configure dhcp snooping and arp snooping detection type
+  method: configure_ip_detection
+  params:
+    - configure_ip_detection
+    - scopeid
+    - dhcpsnoopenabled
+    - arpsnoopenabled
+  preprocess: PreProcessNSXHashTypeAPI
+  type: action
+  format:
+    scopeid: string
+    dhcpsnoopenabled: string
+    arpsnoopenabled: string
+  sample_value:
+    scopeid : 'globalroot-0'
+    dhcpsnoopenabled : 'true'
+    arpsnoopenabled : 'true'
+
+verify_realized_state:
+  derived_components:
+    - nsxmanager
+  description: Verifies the realized state of a component on the manager.
+  method:  wait_for_realized_state
+  params:
+    - desired_state
+    - empty_on_success
+    - timeout
+  preprocess: PreProcessNestedParametersForAction
+  format:
+    desired_state: 'success'
+    timeout: 10
+    emtpy_on_success: false
+  type: action
+
+desired_state:
+  description: Desired state of the entity that we expect to see on the manager.
+  format: success
+  type: parameter
+
+empty_on_success:
+  description: Flag to indicate that if we don't get any data for a GET call on
+    entity then we should consider this as a success state (This is due to the
+    product behavior where checking the realized state of an already deleted
+    entity will return nothing.)
+  format: true
+  type: parameter
+  method: ConvertToPythonBool
+
+tunnel_process:
+  type: action
+  description: Kill/Check tunnel to other conntroller on controller
+  derived_components:
+    - nsxcontroller
+  format:
+    operation: 'ref: operation'
+    endpoints: controller, to get ip address
+  preprocess: PreProcessNestedParametersForAction
+  method: tunnel_process
+  params:
+    - tunnel_process
+  sample_value:
+    endpoints: 'nsxcontroller.[1]'
+    operation: 'kill'
+
+get_node_status:
+  description: Get cluster node status
+  derived_components:
+    - nsxmanager
+  format: string
+  method: get_node_status
+  params:
+    - execution_type
+    - node_id
+    - get_node_status
+  preprocess: PreProcessVerification
+  sample_value:
+    get_node_status[?]contain_once:
+      control_cluster_status:
+        control_cluster_status: CONNECTED
+        mgmt_connection_status:
+          connectivity_status: CONNECTED
+  type: verification
+
+get_node_interfaces:
+  description: Get cluster node interfaces
+  derived_components:
+    - nsxmanager
+  format: string
+  method: get_node_interfaces
+  params:
+    - execution_type
+    - node_id
+    - get_node_interfaces
+  preprocess: PreProcessVerification
+  sample_value:
+    get_node_interfaces[?]contain_once:
+      result_count: 2
+      results:
+        - interface_id: lo
+          link_status: up
+          admin_status: up
+        - interface_id: mgmt
+          link_status: up
+          admin_status: up
+  type: verification

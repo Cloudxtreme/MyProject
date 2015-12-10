@@ -1,0 +1,144 @@
+TestEdgeClusterOperations:
+    Product: "NSXTransformers"
+    Category: "Edge"
+    Component: "EdgeRegistration"
+    Developer: "sureshkoli"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat-02'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: "/NSXTransformers/EDGE/Clustering"
+    TestName: "Verify you cannot remove a node from cluster when its consumed in a LR uplink."
+    Summary: "Verify you cannot remove a node from cluster when its consumed in a LR uplink."
+    Procedure: "1. Create Cluster.
+                2. Create and Add Nodes in cluster.
+                3. Create a LR.
+                4. Configure an uplink using the edge node on LR
+                5. Configure a downlink on this LR.
+                5. Try removing the node from cluster; this should fail as the node is consumed in the LR."
+    ExpectedResult: "Verify you cannot remove a node from cluster when its consumed in a LR uplink."
+
+    TestbedSpec: *L3_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        Sequence:
+              - ['DiscoverHostnodes']
+              - ['CreateTransportZone']
+              - ['CreateUplinkProfile']
+              - ['CreateTransportNodes']
+              - ['CreateFabricProfile']
+              - ['DiscoverEdgeNodeId']
+              - ['CreateEdgeNode2']
+              - ['CreateEdgeClusterWithEdgeNode']
+              - ['CreateLogicalSwitch1ForTIER0']
+              - ['CreateLogicalSwitch2ForTIER0']
+              - ['CreateLogicalPortForUplinkForTIER0']
+              - ['CreateLogicalPortForDownlinkForTIER0']
+              - ['CreateTIER0LogicalRouterForEdge']         # for Tier0 router
+              - ['CreateDownlinkLogicalRouterPortForEdge']  # for Tier0 router
+              - ['CreateUplinkLogicalRouterPortForEdge']    # for Tier0 router
+               #TODO: Try deleting the edge node - should fail;
+              - ["RemoveNode1FromEdgeCluster"]
+              - ['DeleteLogicalRouterUplinkPort']
+               #Try removing the node once more; should succeed this time
+              - ["RemoveNode1FromEdgeClusterAfterDeletingUplink"]
+        ExitSequence:
+              - ['DeleteLogicalRouterPort']
+              - ['DeleteLogicalRouter']
+              - ['DeleteEdgeCluster']
+              - ['DeleteFabricProfile']
+              - ['DeleteEdgeNode2']
+              - ['DeleteLogicalPorts']
+              - ['DeleteLogicalSwitches']
+              - ['DeleteTransportNodes']
+              - ['DeleteUplinkProfile']
+              - ['DeleteTransportZone']
+
+        CreateEdgeNode2: *CREATE_EDGE_NODE_02
+
+        RemoveNode1FromEdgeCluster:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].edgecluster.[1]"
+            ExpectedResult:
+                status_code: EINVALID
+            reconfigure: true
+            name: 'Edge_Cluster_1_update'
+            summary: "Edge Cluster updated through automation"
+            members:
+              - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+            fabric_profile_bindings:
+              - resource_type: "FabricProfileClusterKeepAlive"
+                # enter the fabric_profile_id: uuid1
+                fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        RemoveNode1FromEdgeClusterAfterDeletingUplink:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].edgecluster.[1]"
+            reconfigure: true
+            name: 'Edge_Cluster_1_update'
+            summary: "Edge Cluster updated through automation"
+            members:
+              - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+            fabric_profile_bindings:
+              - resource_type: "FabricProfileClusterKeepAlive"
+                # enter the fabric_profile_id: uuid1
+                fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        CreateFabricProfile: *CREATE_FABRIC_PROFILE
+
+        DiscoverEdgeNodeId: *DISCOVER_EDGE_NODE_ID
+
+        DiscoverHostnodes: *DISCOVER_HOST_NODES
+
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01--ESX
+
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01--ESX
+
+        CreateTransportNodes: *CREATE_TRANSPORT_NODE_01--ESX
+
+        DeleteTransportZone: *DELETE_TRANSPORT_ZONE_01--ESX
+
+        DeleteUplinkProfile: *DELETE_UPLINK_PROFILE_01--ESX
+
+        DeleteTransportNodes: *DELETE_TRANSPORT_NODE_01--ESX
+
+        CreateEdgeClusterWithEdgeNode: *CREATE_CLUSTER_WITH_TWO_EDGE_NODES
+
+        # create logical switches for Tier0
+        CreateLogicalSwitch1ForTIER0: *CREATE_LOGICAL_SWITCH_01_TIER0
+        CreateLogicalSwitch2ForTIER0: *CREATE_LOGICAL_SWITCH_02_TIER0
+
+        # create 2 logical port on switch 1 for uplink for tier0
+        CreateLogicalPortForUplinkForTIER0: *CREATE_LOGICAL_PORT_FOR_UPLINK_TIER0
+
+        # create 1 logical port on switch 2 for downlink for tier0
+        CreateLogicalPortForDownlinkForTIER0: *CREATE_LOGICAL_PORT_FOR_DOWNLINK_TIER0
+
+        CreateTIER0LogicalRouterForEdge: *CREATE_LOGICAL_ROUTER_TIER0
+
+        CreateDownlinkLogicalRouterPortForEdge: *CREATE_DOWNLINK_LOGICAL_ROUTER_PORT
+
+        CreateUplinkLogicalRouterPortForEdge: *CREATE_UPLINK_LOGICAL_ROUTER_PORT
+
+        DeleteEdgeNode2: *DELETE_EDGE_NODE_02
+
+        DeleteEdgeCluster: *DELETE_EDGE_CLUSTER
+
+        DeleteFabricProfile: *DELETE_FABRIC_PROFILE
+
+        DeleteLogicalRouter: *DELETE_LOGICAL_ROUTER
+
+        DeleteLogicalRouterPort: *DELETE_LOGICAL_ROUTER_PORT
+
+        DeleteLogicalRouterUplinkPort: *DELETE_LOGICAL_ROUTER_UPLINK_PORT
+
+        DeleteLogicalPorts: *DELETE_LOGICAL_PORT
+
+        DeleteLogicalSwitches: *DELETE_LOGICAL_SWITCH

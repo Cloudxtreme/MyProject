@@ -1,0 +1,45 @@
+#!/bin/bash
+
+ROOT=$(dirname $(readlink -f $(which "$0")))/..
+OPTION="$@"
+[[ $a == z* ]]
+source $ROOT/main/path_setup
+staf_path_set=0
+perl_path_set=0
+python_path_set=0
+which staf
+if [ $? -ne 0 ]; then
+    set_staf_path
+    let "staf_path_set = 1"
+else
+    export LD_LIBRARY_PATH="/usr/local/staf/lib/$PERLDIR":$LD_LIBRARY_PATH
+    export PERLLIB="/usr/local/staf/lib/$PERLDIR":$PERLLIB
+fi
+which perl
+if [ $? -ne 0 ]; then
+    set_perl_path
+    let "perl_path_set = 1"
+    PERL=perl
+fi
+which python
+if [ $? -ne 0 ]; then
+    set_python_path
+    let "python_path_set = 1"
+fi
+
+log_environment
+if [ $staf_path_set -ne 0 ]; then
+    printf "Staf was not found on local system, path set for toolchains\n" >> $ENVIRONMENT_LOG
+fi
+if [ $perl_path_set -ne 0 ]; then
+    printf "Perl was not found on local system, path set for toolchains\n" >> $ENVIRONMENT_LOG
+fi
+if [ $python_path_set -ne 0 ]; then
+    printf "Python was not found on local system, path set for toolchains\n\n" >> $ENVIRONMENT_LOG
+fi
+
+printf "\n\n=======Constants used in path determination are as follows========\n\n" >> $ENVIRONMENT_LOG
+printf "STAFBASE was:\n$STAFBASE\n\n" >>  $ENVIRONMENT_LOG
+printf "PERLLIB was:\n$PERLLIB\n\n" >>  $ENVIRONMENT_LOG
+printf "ROOT was:\n$ROOT\n\n" >>  $ENVIRONMENT_LOG
+perl $ROOT/scripts/remoteAgent.pl $OPTION

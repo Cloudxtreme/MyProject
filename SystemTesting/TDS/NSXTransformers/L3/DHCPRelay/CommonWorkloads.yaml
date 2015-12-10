@@ -1,0 +1,3605 @@
+{% include 'yaml/nsxtransformers/rtqa_builds.yaml' %}
+{% include 'TDS/NSXTransformers/Common/Topo_Clusters.yaml' %}
+Workloads: &CommonWorkloads
+    <<: *Topo_3MP_3CCP
+# Grouping of steps from the tests
+    NSXManagerClusterSetup:
+            - ['ClusterSetup']
+            - ['ClusterVerification']
+    TransportZoneSetup:
+        KVM: &TransportZoneSetup--KVM
+           - ['RegisterHosts--KVM']
+           - ['NSXManagerClusterSetup']
+           - ['DiscoverFabricHosts--KVM']
+           - ['RegisterAllControllers']
+           - ['JoinController1ToCluster']
+           - ['JoinController2ToCluster']
+           - ['JoinController3ToCluster']
+           - ['VerifyCCPCluster']
+           - ['CreateTransportZone']
+           - ['CreateUplinkProfile']
+           - ['CreateTransportNode--KVM']
+           - ['DiscoverVteps--KVM']
+           - ['ConfigureHostVTEP1IP--KVM']
+           - ['VerifyVtepConnectivity']
+        ESX: &TransportZoneSetup--ESX
+           - ['RegisterHosts--ESX']
+           - ['NSXManagerClusterSetup']
+           - ['DiscoverFabricHosts--ESX']
+           - ['RegisterAllControllers']
+           - ['JoinController1ToCluster']
+           - ['JoinController2ToCluster']
+           - ['JoinController3ToCluster']
+           - ['VerifyCCPCluster']
+           - ['CreateTransportZone']
+           - ['CreateUplinkProfile']
+           - ['CreateTransportNode--ESX']
+           - ['DiscoverVteps--ESX']
+           - ['ConfigureHostVTEP1IP--ESX']
+           - ['VerifyVtepConnectivity']
+    TransportZoneHybridSetup:
+           - ['RegisterHosts--KVM', 'RegisterHosts--ESX']
+           - ['NSXManagerClusterSetup']
+           - ['Discover4FabricHost--KVM', 'Discover4FabricHost--ESX']
+           - ['RegisterAllControllers']
+           - ['JoinController1ToCluster']
+           - ['JoinController2ToCluster']
+           - ['JoinController3ToCluster']
+           - ['VerifyCCPCluster']
+           - ['CreateTransportZone']
+           - ['CreateUplinkProfile']
+           - ['CreateTransportNodeHost1--KVM', 'CreateTransportNodeHost1--ESX' ]
+           - ['DiscoverVteps--ESX', 'DiscoverVteps--KVM']
+           - ['ConfigureHostVTEP1IP--KVM', 'ConfigureHostVTEP1IP--ESX']
+           - ['VerifyVtepConnectivityESXKVM']
+    TransportZoneStressSetup:
+        KVM: &TransportZoneStressSetup--KVM
+            - ['Register5Hosts--KVM']
+            - ['NSXManagerClusterSetup']
+            - ['Discover5FabricHosts--KVM']
+            - ['RegisterAllControllers']
+            - ['JoinController1ToCluster']
+            - ['JoinController2ToCluster']
+            - ['JoinController3ToCluster']
+            - ['VerifyCCPCluster']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['Create5TransportNode--KVM']
+            - ['DiscoverVtepsHost1-5--KVM']
+            - ['ConfigureHost1-5VTEP1IP--KVM']
+            - ['VerifyVtepConnectivity']
+        ESX: &TransportZoneStressSetup--ESX
+            - ['Register5Hosts--ESX']
+            - ['NSXManagerClusterSetup']
+            - ['Discover5FabricHosts--ESX']
+            - ['RegisterAllControllers']
+            - ['JoinController1ToCluster']
+            - ['JoinController2ToCluster']
+            - ['JoinController3ToCluster']
+            - ['VerifyCCPCluster']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['Create5TransportNode--ESX']
+            - ['DiscoverVtepsHost1-5--ESX']
+            - ['ConfigureHost1-5VTEP1IP--ESX']
+            - ['VerifyVtepConnectivity']
+    L2SetupAndWiringTopo1:
+        KVM: &L2SetupAndWiringTopo1--KVM
+           - ['Create3LogicalSwitches']
+           - ['Create2VIFsKVM1']
+           - ['Create1DHCPServerVIFKVM3']
+           - ['VifAttachmentVM1Switch1--KVM', 'VifAttachmentVM2Switch2--KVM']
+           - ['VifAttachmentDHCPServer1Switch3--KVM']
+           - ['PoweronAllVMs']
+        ESX: &L2SetupAndWiringTopo1--ESX
+           - ['Create3LogicalSwitches']
+           - ['VifAttachmentVM1Switch1--ESX', 'VifAttachmentVM2Switch2--ESX']
+           - ['VifAttachmentDHCPServer1Switch3--ESX']
+           - ['PoweronAllVMs']
+    L2SetupAndWiringTopo1Hybrid:
+           - ['Create3LogicalSwitches']
+           - ['Create2VIFsKVM1']
+           - ['VifAttachmentVM1Switch1--KVM', 'VifAttachmentVM2Switch2--KVM']
+           - ['VifAttachmentDHCPServer1Switch3--ESX']
+           - ['PoweronAllVMs']
+    L2SetupAndWiringTopo2:
+        KVM: &L2SetupAndWiringTopo2--KVM
+           - ['Create6LogicalSwitches']
+           - ['Create2VIFsKVM1', 'Create1VIFKVM2']
+           - ['Create2DHCPServerVIFKVM3', 'Create1DHCPServerVIFKVM4']
+           - ['VifAttachmentVM1Switch1--KVM',
+              'VifAttachmentVM2Switch2--KVM', 'VifAttachmentVM3Switch3--KVM']
+           - ['VifAttachmentDHCPServer123Switch456--KVM']
+           - ['PoweronAllVMs']
+        ESX: &L2SetupAndWiringTopo2--ESX
+           - ['Create6LogicalSwitches']
+           - ['VifAttachmentVM1Switch1--ESX',
+              'VifAttachmentVM2Switch2--ESX', 'VifAttachmentVM3Switch3--ESX']
+           - ['VifAttachmentDHCPServer123Switch456--ESX']
+           - ['PoweronAllVMs']
+    L2SetupAndWiringTopo3:
+        KVM: &L2SetupAndWiringTopo3--KVM
+           - ['Create3LogicalSwitches']
+           - ['Create2VIFsKVM1', 'Create1VIFKVM2']
+           - ['Create1DHCPServerVIFKVM3']
+           - ['VifAttachmentVM1Switch1--KVM', 'VifAttachmentVM2Switch2--KVM',
+              'VifAttachmentVM3Switch1--KVM']
+           - ['VifAttachmentDHCPServer1Switch3--KVM']
+           - ['PoweronAllVMs']
+        ESX: &L2SetupAndWiringTopo3--ESX
+           - ['Create3LogicalSwitches']
+           - ['VifAttachmentVM1Switch1--ESX', 'VifAttachmentVM2Switch2--ESX',
+              'VifAttachmentVM3Switch1--ESX']
+           - ['VifAttachmentDHCPServer1Switch3--ESX']
+           - ['PoweronAllVMs']
+    L2SetupAndWiringHybridTopo3:
+           - ['Create3LogicalSwitches']
+           - ['Create2VIFsKVM1', 'Create1VIFKVM2']
+           - ['VifAttachmentVM1Switch1--KVM', 'VifAttachmentVM2Switch2--KVM',
+              'VifAttachmentVM3Switch1--KVM']
+           - ['VifAttachmentDHCPServer1Switch3--ESX']
+           - ['PoweronAllVMs']
+    L2SetupAndWiringNorthSouthTopo2:
+        KVM: &L2SetupAndWiringNorthSouthTopo2--KVM
+           - ['Create3LogicalSwitches']
+           - ['Create2VIFsKVM1']
+           - ['VifAttachmentVM1Switch1--KVM', 'VifAttachmentVM2Switch2--KVM']
+           - ['VifAttachmentDHCPServer123Switch3--ESX']
+           - ['PoweronAllVMs']
+        ESX: &L2SetupAndWiringNorthSouthTopo2--ESX
+           - ['Create3LogicalSwitches']
+           - ['VifAttachmentVM1Switch1--ESX', 'VifAttachmentVM2Switch2--ESX']
+           - ['VifAttachmentDHCPServer123Switch3--ESX']
+           - ['PoweronAllVMs']
+    L2SetupAndWiringHybridDHCPServerTopo1:
+        KVM: &L2SetupAndWiringHybridDHCPServerTopo1--KVM
+            - ['Create6LogicalSwitches']
+            - ['Create2VIFsKVM1', 'Create1VIFKVM2']
+            - ['VifAttachmentVM1Switch1--KVM', 'VifAttachmentVM2Switch2--KVM',
+               'VifAttachmentVM3Switch4--KVM']
+            - ['VifAttachmentDHCPServer1Switch6--ESX',
+               'VifAttachmentDHCPServer2Switch3--ESX',
+               'VifAttachmentDHCPServer3Switch5--ESX']
+            - ['VifAttachmentDHCPServer4Switch6--ESX']
+            - ['PoweronAllVMs']
+        ESX: &L2SetupAndWiringHybridDHCPServerTopo1--ESX
+            - ['Create6LogicalSwitches']
+            - ['VifAttachmentVM1Switch1--ESX', 'VifAttachmentVM2Switch2--ESX',
+               'VifAttachmentVM3Switch4--ESX']
+            - ['VifAttachmentDHCPServer1Switch6--ESX',
+               'VifAttachmentDHCPServer2Switch3--ESX',
+               'VifAttachmentDHCPServer3Switch5--ESX']
+            - ['VifAttachmentDHCPServer4Switch6--ESX']
+            - ['PoweronAllVMs']
+    L2SetupAndWiringStressTopo1:
+        KVM: &L2SetupAndWiringStressTopo1--KVM
+            - ['Create3LogicalSwitches']
+            - ['Create2VIFKVM1', 'Create2VIFKVM2', 'Create2VIFKVM3',
+               'Create2VIFKVM4', 'Create2VIFKVM5']
+            - ['Create1DHCPServerVIFKVM2']
+            - ['VifAttachmentVM1-10Switch1--KVM']
+            - ['VifAttachmentDHCPServer1Switch3--KVM']
+        ESX: &L2SetupAndWiringStressTopo1--ESX
+            - ['Create3LogicalSwitches']
+            - ['VifAttachmentVM1-10Switch1--ESX']
+            - ['VifAttachmentDHCPServer1Switch3--ESX']
+    L2SetupAndWiringStressTopo2:
+        KVM: &L2SetupAndWiringStressTopo2--KVM
+            - ['Create3LogicalSwitches']
+            - ['Create2VIFKVM1', 'Create2VIFKVM2', 'Create2VIFKVM3',
+               'Create2VIFKVM4', 'Create2VIFKVM5']
+            - ['VifAttachmentVM1Switch1--KVM', 'VifAttachmentVM2Switch2--KVM']
+            - ['VifAttachmentDHCPServer1-8Switch3--KVM']
+        ESX: &L2SetupAndWiringStressTopo2--ESX
+            - ['Create3LogicalSwitches']
+            - ['VifAttachmentVM1Switch1--ESX', 'VifAttachmentVM2Switch2--ESX']
+            - ['VifAttachmentDHCPServer1-8Switch3--ESX']
+    CommonDHCPServerConfigTopo1:
+           - ['ConfigureDHCPserverVif1IP']
+           - ['AddRouteDHCPserver']
+           - ['SetupDHCPServer1']
+           - ['EnableDHCPServer1Oninterface']
+           - ['AddDefaultConfigurationDHCPServerinterface']
+           - ['AddConfigurationnetwork1DHCPServer1interface']
+           - ['AddConfigurationnetwork2DHCPServer1interface']
+           - ['SetStaticBindingDHCP1VM1']
+           - ['SetStaticBindingDHCP1VM2']
+           - ['RestartDHCPServer1']
+    DHCPServerConfigTopo1:
+        KVM: &DHCPServerConfigTopo1--KVM
+           - ['PoweronDHCPServer1']
+           - ['CommonDHCPServerConfigTopo1']
+        ESX: &DHCPServerConfigTopo1--ESX
+           - ['PoweronDHCPServer1']
+           - ['CommonDHCPServerConfigTopo1']
+    DHCPServerHybridNorthSouthConfigTopo1:
+           - ['PoweronDHCPServer1']
+           - ['ConfigureDHCPserverVif1IP']
+           - ['AddRouteDHCPserver']
+           - ['SetupDHCPServer1']
+           - ['EnableDHCPServer1Oninterface--ESX']
+           - ['AddDefaultConfigurationDHCPServerinterface']
+           - ['AddConfigurationnetwork1DHCPServer1interface']
+           - ['AddConfigurationnetwork2DHCPServer1interface']
+           - ['SetStaticBindingDHCP1VM1']
+           - ['SetStaticBindingDHCP1VM2']
+           - ['RestartDHCPServer1']
+    CommonDHCPServerConfigTopo2:
+            - ['ConfigureDHCPserver1Vif1IP']
+            - ['ConfigureDHCPserver2Vif1IP',
+               'ConfigureDHCPserver3Vif1IP']
+            - ['AddRouteDHCPserver1']
+            - ['AddRouteDHCPserver2',
+               'AddRouteDHCPserver3']
+            - ['SetupDHCPServer1']
+            - ['SetupDHCPServer2', 'SetupDHCPServer3']
+            - ['EnableDHCPServer1Oninterface']
+            - ['EnableDHCPServer2Oninterface',
+               'EnableDHCPServer3Oninterface']
+            - ['AddDefaultConfigurationDHCPServer1interface']
+            - ['AddDefaultConfigurationDHCPServer2interface',
+               'AddDefaultConfigurationDHCPServer3interface']
+            - ['AddConfigurationnetwork1DHCPServer1interface']
+            - ['AddConfigurationnetwork1DHCPServer2interface',
+               'AddConfigurationnetwork2DHCPServer3interface']
+            - ['AddConfigurationnetwork2DHCPServer2interface',
+               'AddConfigurationnetwork3DHCPServer3interface']
+            - ['SetStaticBindingDHCP1VM1']
+            - ['SetStaticBindingDHCP2VM1']
+            - ['SetStaticBindingDHCP3VM3']
+            - ['SetStaticBindingDHCP2VM2']
+            - ['SetStaticBindingDHCP3VM2']
+            - ['RestartDHCPServer1']
+            - ['RestartDHCPServer2',
+               'RestartDHCPServer3']
+    DHCPServerConfigTopo2:
+        KVM: &DHCPServerConfigTopo2--KVM
+            - ['PoweronDHCPServer1']
+            - ['PoweronDHCPServer2',
+               'PoweronDHCPServer3']
+            - ['CommonDHCPServerConfigTopo2']
+        ESX: &DHCPServerConfigTopo2--ESX
+            - ['PoweronDHCPServer1', 'PoweronDHCPServer2',
+               'PoweronDHCPServer3']
+            - ['CommonDHCPServerConfigTopo2']
+    CommonDHCPServerConfigTopo3:
+            - ['ConfigureDHCPserver1Vif1IP']
+            - ['ConfigureDHCPserver2Vif1IP',
+               'ConfigureDHCPserver3Vif1IP']
+            - ['AddRouteDHCPserver1']
+            - ['AddRouteDHCPserver2',
+               'AddRouteDHCPserver3']
+            - ['SetupDHCPServer1']
+            - ['SetupDHCPServer2', 'SetupDHCPServer3']
+            - ['EnableDHCPServer1Oninterface']
+            - ['EnableDHCPServer2Oninterface',
+               'EnableDHCPServer3Oninterface']
+            - ['AddDefaultConfigurationDHCPServer1interface']
+            - ['AddDefaultConfigurationDHCPServer2interface',
+               'AddDefaultConfigurationDHCPServer3interface']
+            - ['AddConfigurationnetwork1DHCPServer1interface']
+            - ['AddConfigurationnetwork1DHCPServer2interface',
+               'AddConfigurationnetwork2DHCPServer3interface']
+            - ['AddConfigurationnetwork2DHCPServer2interface',
+               'AddConfigurationnetwork3DHCPServer3interface']
+            - ['SetStaticBindingDHCP1VM1']
+            - ['SetStaticBindingDHCP2VM1']
+            - ['SetStaticBindingDHCP2VM2']
+            - ['SetStaticBindingDHCP3VM2']
+            - ['RestartDHCPServer1']
+            - ['RestartDHCPServer2',
+               'RestartDHCPServer3']
+    DHCPServerConfigTopo3:
+        KVM: &DHCPServerConfigTopo3--KVM
+            - ['PoweronDHCPServer1']
+            - ['PoweronDHCPServer2',
+               'PoweronDHCPServer3']
+            - ['CommonDHCPServerConfigTopo3']
+        ESX: &DHCPServerConfigTopo3--ESX
+            - ['PoweronDHCPServer1', 'PoweronDHCPServer2',
+               'PoweronDHCPServer3']
+            - ['CommonDHCPServerConfigTopo3']
+    DHCPServerConfigNorthSouthTopo2:
+            - ['PoweronDHCPServer1', 'PoweronDHCPServer2',
+               'PoweronDHCPServer3']
+            - ['ConfigureDHCPserver1Vif1IP', 'ConfigureDHCPserver2Vif1IP',
+               'ConfigureDHCPserver3Vif1IP']
+            - ['AddRouteDHCPserver1', 'AddRouteDHCPserver2',
+               'AddRouteDHCPserver3']
+            - ['SetupDHCPServer1', 'SetupDHCPServer2', 'SetupDHCPServer3']
+            - ['EnableDHCPServer1Oninterface--ESX', 'EnableDHCPServer2Oninterface--ESX',
+               'EnableDHCPServer3Oninterface--ESX']
+            - ['AddDefaultConfigurationDHCPServer1interface',
+               'AddDefaultConfigurationDHCPServer2interface',
+               'AddDefaultConfigurationDHCPServer3interface']
+            - ['AddConfigurationnetwork1DHCPServer1interface',
+               'AddConfigurationnetwork1DHCPServer2interface',
+               'AddConfigurationnetwork1DHCPServer3interface']
+            - ['AddConfigurationnetwork2DHCPServer3interface']
+            - ['SetStaticBindingDHCP1VM1']
+            - ['SetStaticBindingDHCP2VM1']
+            - ['SetStaticBindingDHCP3VM2']
+            - ['SetStaticBindingDHCP3VM1']
+            - ['RestartDHCPServer1', 'RestartDHCPServer2',
+               'RestartDHCPServer3']
+    DHCPServerConfigHybridDHCPServerTopo1:
+            - ['PoweronDHCPServer1', 'PoweronDHCPServer2',
+               'PoweronDHCPServer3', 'PoweronDHCPServer4']
+            - ['ConfigureDHCPserver1Vif1IP', 'ConfigureDHCPserver2Vif1IP',
+               'ConfigureDHCPserver3Vif1IP' ,'ConfigureDHCPserver4Vif1IP']
+            - ['AddRouteDHCPserver1', 'AddRouteDHCPserver2',
+               'AddRouteDHCPserver3', 'AddRouteDHCPserver4']
+            - ['SetupDHCPServer1', 'SetupDHCPServer2', 'SetupDHCPServer3',
+               'SetupDHCPServer4']
+            - ['EnableDHCPServer1Oninterface--ESX', 'EnableDHCPServer2Oninterface--ESX',
+               'EnableDHCPServer3Oninterface--ESX', 'EnableDHCPServer4Oninterface--ESX']
+            - ['AddDefaultConfigurationDHCPServer1interface',
+               'AddDefaultConfigurationDHCPServer2interface']
+            - ['AddDefaultConfigurationDHCPServer3interface',
+               'AddDefaultConfigurationDHCPServer4interface']
+            - ['AddDefaultConfigurationDHCPServer1VM1', 'AddDefaultConfigurationDHCPServer2VM1']
+            - ['AddDefaultConfigurationDHCPServer3VM2', 'AddDefaultConfigurationDHCPServer4VM2']
+            - ['AddDefaultConfigurationDHCPServer3VM3', 'AddDefaultConfigurationDHCPServer4VM3']
+            - ['SetStaticBindingDHCP1VM1']
+            - ['SetStaticBindingDHCP2VM1']
+            - ['SetStaticBindingDHCP3VM2']
+            - ['SetStaticBindingDHCP4VM2']
+            - ['SetStaticBindingDHCP3VM3']
+            - ['SetStaticBindingDHCP4VM3']
+            - ['RestartDHCPServer1', 'RestartDHCPServer2',
+               'RestartDHCPServer3', 'RestartDHCPServer4']
+    CommonDHCPServerConfigStressTopo1:
+            - ['ConfigureDHCPserverVif1IP']
+            - ['AddRouteDHCPserver']
+            - ['SetupDHCPServer1']
+            - ['EnableDHCPServer1Oninterface']
+            - ['AddConfigurationnetwork3DHCPServer1interface']
+            - ['AddStormDynamicDHCPConfiguration']
+            - ['RestartDHCPServer1']
+    DHCPServerConfigStressTopo1:
+        KVM: &DHCPServerConfigStressTopo1--KVM
+            - ['PoweronDHCPServer1']
+            - ['CommonDHCPServerConfigStressTopo1']
+        ESX: &DHCPServerConfigStressTopo1--ESX
+            - ['PoweronDHCPServer1']
+            - ['CommonDHCPServerConfigStressTopo1']
+    CommonDHCPServerConfigStressTopo2:
+            - ['ConfigureDHCPserver1Vif1IP', 'ConfigureDHCPserver3Vif1IP',
+               'ConfigureDHCPserver5Vif1IP', 'ConfigureDHCPserver7Vif1IP']
+            - ['ConfigureDHCPserver2Vif1IP', 'ConfigureDHCPserver4Vif1IP',
+               'ConfigureDHCPserver6Vif1IP', 'ConfigureDHCPserver8Vif1IP']
+            - ['AddRoute8DHCPservers']
+            - ['Setup8DHCPServers']
+            - ['EnableDHCPServerOninterfacesStress8DHCPServers']
+            - ['AddDefaultConfigurationStress8DHCPServerinterface']
+            - ['AddDynamicDHCPConfigurationVM1Stress8DHCPServers']
+            - ['AddDynamicDHCPConfigurationVM2Stress8DHCPServers']
+            - ['Restart8DHCPServers']
+    DHCPServerConfigStressTopo2:
+        KVM: &DHCPServerConfigStressTopo2--KVM
+            - ['PoweronDHCPServer1', 'PoweronDHCPServer3',
+               'PoweronDHCPServer5', 'PoweronDHCPServer7']
+            - ['PoweronDHCPServer2', 'PoweronDHCPServer4',
+               'PoweronDHCPServer6', 'PoweronDHCPServer8']
+            - ['CommonDHCPServerConfigStressTopo2']
+        ESX: &DHCPServerConfigStressTopo2--ESX
+            - ['PoweronDHCPServer1', 'PoweronDHCPServer2', 'PoweronDHCPServer3',
+               'PoweronDHCPServer4', 'PoweronDHCPServer5', 'PoweronDHCPServer6',
+               'PoweronDHCPServer7', 'PoweronDHCPServer8']
+            - ['CommonDHCPServerConfigStressTopo2']
+    L3SetupandWiringTopo1:
+           - ['Create3LogicalPorts']
+           - ['CreateTLR1']
+           - ['Create3TLRPorts']
+    L3SetupandWiringTopo2:
+           - ['Create6LogicalPorts']
+           - ['CreateLogicalRouter']
+           - ['Create6LRPorts']
+    L3SetupandWiringTopoNorthSouth1: &L3SetupandWiringTopoNorthSouth1
+            - ['Create3LogicalPorts']
+            - ['Create1LRPortLS3']
+            - ['CreateTLR1']
+            - ['Create2TLRPorts']
+            - ['PLRTLRLinksetup']
+            - ['SetTLR1RouteAdvertisementTopoNorthSouth1']
+    PLRTLRLinksetup:
+            - ['CreateProviderLogicalRouter']
+            - ['CreateUplinksPLR']
+            - ['CreateRouterLinkInterfacePLR']
+            - ['CreateRouterLinkInterfaceTLR']
+    L3SetupandWiringTopoNorthSouth2: *L3SetupandWiringTopoNorthSouth1
+    L3SetupandWiringTopoNorthSouth3: *L3SetupandWiringTopoNorthSouth1
+    L3SetupandWiringHybridDHCPServerTopo1:
+            - ['Create6LogicalPorts']
+            - ['Create1LRPortLS6']
+            - ['CreateTLR1']
+            - ['Create3TLRPorts']
+            - ['CreateProviderLogicalRouter']
+            - ['CreateUplinksPLRSwitch6']
+            - ['CreateRouterLinkInterfacePLR']
+            - ['CreateRouterLinkInterfaceTLR']
+            - ['CreateSwitchLinkInterfacePLR']
+            - ['SetTLR1RouteAdvertisementHybridTopo1']
+    EdgeSetup:
+            - ['RegisterEdgeNode01']
+            - ['RegisterEdgeNode02']
+            - ['DiscoverEdgeNodeIds']
+            - ['CreateFabricProfile']
+            - ['CreateEdgeCluster']
+    CommonEdgeWiring:
+            - ['DiscoverEdge1Vnics']
+            - ['DiscoverEdge2Vnics']
+            #- ['DiscoverTransitLS']
+            #- ['AttachEdge1Vnic3ToTransitLS']
+    EdgeWiringNorthSouthTopo1:
+            - ['CommonEdgeWiring']
+            #- ['AttachEdge1Vnic2ToLS3']
+    EdgeWiringHybridNorthSouthTopo1:
+            - ['CommonEdgeWiring']
+            #- ['AttachEdge1Vnic2ToLS6']
+    CommonDHCPRelayconfig:
+           - ['CreateDHCPRelayService1']
+           - ['CreateService1BindingLRPort1']
+           - ['CreateService1BindingLRPort2']
+    DHCPRelayconfigStressTopo2:
+           - ['CreateStress8DHCPServersDHCPRelayServiceProfile1']
+           - ['CommonDHCPRelayconfig']
+    DHCPRelayconfigTopo1:
+           - ['CreateDHCPRelayServiceProfile1']
+           - ['CommonDHCPRelayconfig']
+    DHCPRelayconfigTopo2:
+           - ['CreateDHCPRelayServiceProfilesServer12',
+              'CreateDHCPRelayServiceProfilesServer23']
+           - ['CreateDHCPRelayService1', 'CreateDHCPRelayService2']
+           - ['CreateService1BindingLRPort1', 'CreateService2LRPort23Binding']
+    DHCPRelayconfigTopo3:
+            - ['CreateDHCPRelayServiceProfile1Server1',
+               'CreateDHCPRelayServiceProfile2Server2',
+               'CreateDHCPRelayServiceProfile3Server3']
+            - ['CreateDHCPRelayService1', 'CreateDHCPRelayService2', 'CreateDHCPRelayService3']
+            - ['CreateService1BindingLRPort1', 'CreateService2LRPort23Binding']
+    DHCPRelayconfigNorthSouthTopo2:
+            - ['CreateDHCPRelayServiceProfilesServer123',
+               'CreateDHCPRelayServiceProfilesServer3']
+            - ['CreateDHCPRelayService1', 'CreateDHCPRelayService2']
+            - ['CreateService1BindingLRPort1', 'CreateService2BindingLRPort2']
+    DHCPRelayconfigHybridDHCPServerTopo1:
+            - ['CreateDHCPRelayServiceProfilesServer12', 'CreateDHCPRelayServiceProfilesServer34']
+            - ['CreateDHCPRelayService1', 'CreateDHCPRelayService2']
+            - ['CreateService1BindingLRPort1', 'CreateService2BindingLRPort2']
+            - ['CreateService2BindingPLRPort1']
+    CommonCleanupEastWest:
+           - ['DeleteDHCPRelayService']
+           - ['DeleteDHCPRelayServiceProfile']
+           - ['DeleteLogicalRouterPort']
+           - ['DeleteLogicalRouter']
+           - ['DeleteLogicalPort']
+           - ['DeleteLogicalSwitch']
+           - ['DeleteTransportNode']
+           - ['DeleteUplinkProfile']
+           - ['DeleteTransportZone']
+           - ['PoweroffAllVMs']
+           - ['UndiscoverHostNodes']
+           - ['ClusterCleanup']
+    CleanupTopo1:
+        KVM: &CleanupTopo1--KVM
+           - ['PowerOnAllCCPNode']
+           - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding']
+           - ['DeleteVM1Vif1--KVM', 'DeleteVifdhcpserver1--KVM']
+           - ['DeleteVM2Vif1--KVM']
+           - ['CommonCleanupEastWest']
+           - ['PoweroffDHCPServers']
+           - ['UnregisterHosts--KVM']
+        ESX: &CleanupTopo1--ESX
+           - ['PowerOnAllCCPNode']
+           - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding']
+           - ['PoweroffDHCPServers']
+           - ['DeleteVM1Vif1--ESX', 'DeleteVifdhcpserver1--ESX', 'DeleteVM2Vif1--ESX']
+           - ['CommonCleanupEastWest']
+           - ['UnregisterHosts--ESX']
+    CleanupTopo2:
+        KVM: &CleanupTopo2--KVM
+            - ['DeleteLRPort1DHCPRelayServiceBinding',
+               'DeleteLRPort2DHCPRelayServiceBinding',
+               'DeleteLRPort3DHCPRelayServiceBinding']
+            - ['PoweroffDHCPServers']
+            - ['DeleteVifdhcpservers--KVM']
+            - ['DeleteVMsVif--KVM']
+            - ['CommonCleanupEastWest']
+            - ['UnregisterHosts--KVM']
+        ESX: &CleanupTopo2--ESX
+            - ['DeleteLRPort1DHCPRelayServiceBinding',
+               'DeleteLRPort2DHCPRelayServiceBinding',
+               'DeleteLRPort3DHCPRelayServiceBinding']
+            - ['PoweroffDHCPServers']
+            - ['DeleteVMsVif--ESX']
+            - ['DeleteVifdhcpservers--ESX']
+            - ['CommonCleanupEastWest']
+            - ['UnregisterHosts--ESX']
+    CleanupTopo3:
+        KVM: &CleanupTopo3--KVM
+            - ['CleanupTopo1']
+            - ['DeleteVM3Vif1--KVM']
+        ESX: &CleanupTopo3--ESX
+            - ['CleanupTopo1']
+            - ['DeleteVM3Vif1--ESX']
+    CommonCleanupNorthSouth:
+           - ['DeleteDHCPRelayService']
+           - ['DeleteDHCPRelayServiceProfile']
+           #- ['ReconnectEdgeVnic2ToVMNetwork']
+           #- ['ReconnectEdgeVnic3ToVMNetwork']
+           #- ['DeleteTransitLSNode']
+           - ['DeleteLogicalRouterPort']
+           - ['DeleteLogicalRouterUplinkPort']
+           - ['DeleteLogicalRouterLinkPort']
+           - ['DeleteLogicalRouter']
+           - ['DeleteEdgeCluster']
+           - ['DeleteALLFabricProfile']
+           - ['DeleteEdgeNode']
+           - ['DeleteLogicalPort']
+           - ['DeleteLogicalSwitch']
+           - ['DeleteTransportNode']
+           - ['DeleteUplinkProfile']
+           - ['DeleteTransportZone']
+           - ['PoweroffAllVMs']
+           - ['UndiscoverHostNodes']
+           - ['ClusterCleanup']
+    CleanupTopoNorthSouth1:
+        KVM: &CleanupTopoNorthSouth1--KVM
+           - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding']
+           - ['PoweroffDHCPServers']
+           - ['DeleteVifdhcpserver1--ESX']
+           - ['DeleteVM1Vif1--KVM']
+           - ['DeleteVM2Vif1--KVM']
+           - ['CommonCleanupNorthSouth']
+           - ['UnregisterHosts--KVM']
+           - ['Unregister4Host--ESX']
+        ESX: &CleanupTopoNorthSouth1--ESX
+           - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding']
+           - ['PoweroffDHCPServers']
+           - ['DeleteVM1Vif1--ESX', 'DeleteVifdhcpserver1--ESX', 'DeleteVM2Vif1--ESX']
+           - ['CommonCleanupNorthSouth']
+           - ['UnregisterHosts--ESX']
+    CleanupTopoNorthSouth2:
+        KVM: &CleanupTopoNorthSouth2--KVM
+           - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding']
+           - ['PoweroffDHCPServers']
+           - ['DeleteVifdhcpservers--ESX']
+           - ['DeleteVM1Vif1--KVM']
+           - ['DeleteVM2Vif1--KVM']
+           - ['CommonCleanupNorthSouth']
+           - ['UnregisterHosts--KVM']
+           - ['Unregister4Host--ESX']
+        ESX: &CleanupTopoNorthSouth2--ESX
+           - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding']
+           - ['PoweroffDHCPServers']
+           - ['DeleteVM1Vif1--ESX', 'DeleteVifdhcpservers--ESX', 'DeleteVM2Vif1--ESX']
+           - ['CommonCleanupNorthSouth']
+           - ['UnregisterHosts--ESX']
+    CleanupTopoNorthSouth3:
+        KVM: &CleanupTopoNorthSouth3--KVM
+           - ['CleanupTopoNorthSouth1']
+           - ['DeleteVM3Vif1--KVM']
+        ESX: &CleanupTopoNorthSouth3--ESX
+           - ['CleanupTopoNorthSouth1']
+           - ['DeleteVM3Vif1--ESX']
+    CleanupTopoHybridDHCPServer1:
+        KVM: &CleanupTopoHybridDHCPServer1--KVM
+            - ['DeleteLRPort1DHCPRelayServiceBinding',
+               'DeleteLRPort2DHCPRelayServiceBinding',
+               'DeletePLRPort1DHCPRelayServiceBinding']
+            - ['PoweroffDHCPServers']
+            - ['DeleteVif4dhcpservers--ESX']
+            - ['DeleteVMsVif--KVM']
+            - ['CommonCleanupNorthSouth']
+            - ['UnregisterHosts--KVM']
+            - ['Unregister4Host--ESX']
+        ESX: &CleanupTopoHybridDHCPServer1--ESX
+            - ['DeleteLRPort1DHCPRelayServiceBinding',
+               'DeleteLRPort2DHCPRelayServiceBinding',
+               'DeletePLRPort1DHCPRelayServiceBinding']
+            - ['PoweroffDHCPServers']
+            - ['DeleteVMsVif--ESX', 'DeleteVif4dhcpservers--ESX']
+            - ['CommonCleanupNorthSouth']
+            - ['UnregisterHosts--ESX']
+    CleanupStressTopo1:
+        KVM: &CleanupStressTopo1--KVM
+           - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding']
+           - ['PoweroffDHCPServers']
+           - ['DeleteVifdhcpserver1--KVM']
+           - ['DeleteVifsVM1-10--KVM']
+           - ['CommonCleanupEastWest']
+           - ['UnregisterHosts--KVM']
+           - ['UndiscoverHostNodes']
+           - ['ClusterCleanup']
+        ESX: &CleanupStressTopo1--ESX
+           - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding']
+           - ['PoweroffDHCPServers']
+           - ['DeleteVifdhcpserver1--ESX']
+           - ['DeleteVifsVM1-10--ESX']
+           - ['CommonCleanupEastWest']
+           - ['UnregisterHosts--ESX']
+           - ['UndiscoverHostNodes']
+           - ['ClusterCleanup']
+    CleanupStressTopo2:
+        KVM: &CleanupStressTopo2--KVM
+           - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding']
+           - ['PoweroffDHCPServers']
+           - ['DeleteVifsDHCPServers1-8--KVM']
+           - ['DeleteVM1Vif1--KVM', 'DeleteVM2Vif1--KVM']
+           - ['CommonCleanupEastWest']
+           - ['UnregisterHosts--KVM']
+           - ['UndiscoverHostNodes']
+           - ['ClusterCleanup']
+        ESX: &CleanupStressTopo2--ESX
+           - ['DeleteLRPort1DHCPRelayServiceBinding', 'DeleteLRPort2DHCPRelayServiceBinding']
+           - ['PoweroffDHCPServers']
+           - ['DeleteVifsDHCPServers1-8--ESX']
+           - ['DeleteVM1Vif1--ESX', 'DeleteVM2Vif1--ESX']
+           - ['CommonCleanupEastWest']
+           - ['UnregisterHosts--ESX']
+           - ['UndiscoverHostNodes']
+           - ['ClusterCleanup']
+
+# Clustering related workloads
+    RemoveNSXController2-3FromCluster: &REMOVE_NSXCONTROLLER2-3_FROM_CLUSTER
+        - ['StopController2']
+        - ['StopController3']
+        - ['RemoveCCPNode2FromCluster']
+        - ['RemoveCCPNode3FromCluster']
+        - ['UnregisterController2']
+        - ['UnregisterController3']
+        - ['DeleteBootStrapOnController2']
+        - ['DeleteBootStrapOnController3']
+        - ['DeleteControllerNodeUUIDFileOnController2']
+        - ['DeleteControllerNodeUUIDFileOnController3']
+    RemoveNSXController2FromCluster: &REMOVE_NSXCONTROLLER2_FROM_CLUSTER
+        - ['StopController2']
+        - ['RemoveCCPNode2FromCluster']
+        - ['UnregisterController2']
+        - ['DeleteBootStrapOnController2']
+        - ['DeleteControllerNodeUUIDFileOnController2']
+    ReadLS1VniMasterCCP:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            controllers: "nsxcontroller.[-1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            PersistData: "Yes"
+            read_switch_ccp_mapping:
+                'master_ccp_ip[?]defined': ''
+
+    RebootHost1-2: &RebootHost1-2
+       RebootHost1-2--ESX: &RebootHost1-2--ESX
+            Type: 'Host'
+            TestHost: 'esx.[1-2]'
+            reboot: 'yes'
+       RebootHost1-2--KVM: &RebootHost1-2--KVM
+            Type: 'Host'
+            TestHost: 'kvm.[1-2]'
+            reboot: 'yes'
+
+    RebootMP1:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        reboot:
+           execution_type: cli
+
+    RebootMP2:
+        Type: NSX
+        TestNSX: 'nsxmanager.[2]'
+        reboot:
+           execution_type: cli
+
+    RebootMP3:
+        Type: NSX
+        TestNSX: 'nsxmanager.[3]'
+        reboot:
+           execution_type: cli
+
+    RebootMPs:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1-3]'
+        reboot:
+           execution_type: cli
+
+    PowerOffCCPNode1: &POWER_OFF_CCP_NODE_1
+        Type: VM
+        TestVM: nsxcontroller.[1]
+        vmstate: poweroff
+
+    PowerOffCCPNode2: &POWER_OFF_CCP_NODE_2
+        Type: VM
+        TestVM: nsxcontroller.[2]
+        vmstate: poweroff
+
+    PowerOffCCPNode3: &POWER_OFF_CCP_NODE_3
+        Type: VM
+        TestVM: nsxcontroller.[3]
+        vmstate: poweroff
+
+    PowerOnCCPNode1: &POWER_ON_CCP_NODE_1
+        Type: VM
+        TestVM: nsxcontroller.[1]
+        vmstate: poweron
+
+    PowerOnCCPNode2: &POWER_ON_CCP_NODE_2
+        Type: VM
+        TestVM: nsxcontroller.[2]
+        vmstate: poweron
+
+    PowerOnCCPNode3: &POWER_ON_CCP_NODE_3
+        Type: VM
+        TestVM: nsxcontroller.[3]
+        vmstate: poweron
+
+    RebootCCPNode1: &REBOOT_CCP_NODE_1
+        Type: VM
+        TestVM: nsxcontroller.[1]
+        vmstate: reboot
+
+    RebootCCPNode2: &REBOOT_CCP_NODE_2
+        Type: VM
+        TestVM: nsxcontroller.[2]
+        vmstate: reboot
+
+    RebootCCPNode3: &REBOOT_CCP_NODE_3
+        Type: VM
+        TestVM: nsxcontroller.[3]
+        vmstate: reboot
+
+    PowerOnAllCCPNode: &POWER_ON_ALL_CCP_NODE
+        Type: VM
+        TestVM: nsxcontroller.[-1]
+        vmstate: poweron
+
+    PowerOffAllCCPNode: &POWER_OFF_ALL_CCP_NODE
+        Type: VM
+        TestVM: nsxcontroller.[-1]
+        vmstate: powerff
+
+    PowerOffMasterCCP: &POWER_OFF_MASTER_CCP
+        Type: Switch
+        TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+        controllers: "nsxcontroller.[-1]"
+        switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->master_ccp_ip"
+        controllervmstate: poweroff
+        sleepbetweenworkloads:  "30"
+
+    PowerOffSlaveCCP1: &POWER_OFF_SLAVE_CCP_1
+        Type: Switch
+        TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+        controllers: "nsxcontroller.[-1]"
+        switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->slave_ccp_1_ip"
+        controllervmstate: poweroff
+
+    PowerOffSlaveCCP2: &POWER_OFF_SLAVE_CCP_2
+        Type: Switch
+        TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+        controllers: "nsxcontroller.[-1]"
+        switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->slave_ccp_2_ip"
+        controllervmstate: poweroff
+
+    PowerOnMasterCCP: &POWER_ON_MASTER_CCP
+        Type: Switch
+        TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+        controllers: "nsxcontroller.[-1]"
+        switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->master_ccp_ip"
+        controllervmstate: poweron
+        sleepbetweenworkloads: "30"
+
+    PowerOnSlaveCCP1: &POWER_ON_SLAVE_CCP_1
+        Type: Switch
+        TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+        controllers: "nsxcontroller.[-1]"
+        switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->slave_ccp_1_ip"
+        controllervmstate: poweron
+        sleepbetweenworkloads: "30"
+
+    PowerOnSlaveCCP2: &POWER_ON_SLAVE_CCP_2
+        Type: Switch
+        TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+        controllers: "nsxcontroller.[-1]"
+        switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->slave_ccp_2_ip"
+        controllervmstate: poweron
+        sleepbetweenworkloads: "30"
+
+    RebootMasterCCP: &REBOOT_MASTER_CCP
+        Type: Switch
+        TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+        controllers: "nsxcontroller.[-1]"
+        switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->master_ccp_ip"
+        controllervmstate: reboot
+        sleepbetweenworkloads: "30"
+
+    RebootSlaveCCP1: &REBOOT_SLAVE_CCP_1
+        Type: Switch
+        TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+        controllers: "nsxcontroller.[-1]"
+        switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->slave_ccp_1_ip"
+        controllervmstate: reboot
+        sleepbetweenworkloads: "30"
+
+    RebootSlaveCCP2: &REBOOT_SLAVE_CCP_2
+        Type: Switch
+        TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+        controllers: "nsxcontroller.[-1]"
+        switchccpmapping: "nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->slave_ccp_2_ip"
+        controllervmstate: reboot
+        sleepbetweenworkloads: "30"
+
+    RegisterController1: &REGISTER_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        set_nsx_registration:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    RegisterController2: &REGISTER_CONTROLLER_2
+        Type: Controller
+        TestController: 'nsxcontroller.[2]'
+        set_nsx_registration:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    RegisterController3: &REGISTER_CONTROLLER_3
+        Type: Controller
+        TestController: 'nsxcontroller.[3]'
+        set_nsx_registration:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    RegisterAllController: &REGISTER_ALL_CONTROLLERS
+        Type: Controller
+        TestController: 'nsxcontroller.[-1]'
+        set_nsx_registration:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    UnregisterController1: &UNREGISTER_CONTROLLER_1
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        deleteclusternode: 'nsxcontroller.[1].clusternode.[1]'
+
+    UnregisterController2: &UNREGISTER_CONTROLLER_2
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        deleteclusternode: 'nsxcontroller.[2].clusternode.[2]'
+
+    UnregisterController3: &UNREGISTER_CONTROLLER_3
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        deleteclusternode: 'nsxcontroller.[3].clusternode.[3]'
+
+    DeleteController_1: &DELETE_CONTROLLER_1
+        Type: 'Root'
+        TestNode: 'root.[1]'
+        deletevm: nsxcontroller.[1]
+        sleepbetweenworkloads: '20'
+
+    DeleteController_2: &DELETE_CONTROLLER_2
+        Type: 'Root'
+        TestNode: 'root.[1]'
+        deletevm: nsxcontroller.[2]
+        sleepbetweenworkloads: '20'
+
+    DeleteController_3: &DELETE_CONTROLLER_3
+        Type: 'Root'
+        TestNode: 'root.[1]'
+        deletevm: nsxcontroller.[3]
+        sleepbetweenworkloads: '20'
+
+    DeployNSXController1: &DEPLOY_CONTROLLER_1
+        Type: 'Root'
+        TestNode: 'root.[1]'
+        nsxcontroller:
+            '[1]':
+                <<: *nsxsuite
+                username: admin
+                password: default
+                cmd_username: root
+                cmd_password: vmware
+                installtype: 'nested'
+                network: 'VM Network'
+                esx: 'esx.[100]'
+
+    DeployNSXController2: &DEPLOY_CONTROLLER_2
+        Type: 'Root'
+        TestNode: 'root.[1]'
+        nsxcontroller:
+            '[2]':
+                <<: *nsxsuite
+                username: admin
+                password: default
+                cmd_username: root
+                cmd_password: vmware
+                installtype: 'nested'
+                network: 'VM Network'
+                esx: 'esx.[100]'
+
+    DeployNSXController3: &DEPLOY_CONTROLLER_3
+        Type: 'Root'
+        TestNode: 'root.[1]'
+        nsxcontroller:
+            '[3]':
+                <<: *nsxsuite
+                username: admin
+                password: default
+                cmd_username: root
+                cmd_password: vmware
+                installtype: 'nested'
+                network: 'VM Network'
+                esx: 'esx.[100]'
+
+    Deploy3NSXControllers: &DEPLOY_3_CONTROLLERS
+        Type: 'Root'
+        TestNode: 'root.[1]'
+        nsxcontroller:
+            '[1-3]':
+                <<: *nsxsuite
+                username: admin
+                password: default
+                cmd_username: root
+                cmd_password: vmware
+                installtype: 'nested'
+                network: 'VM Network'
+                esx: 'esx.[100]'
+
+    AddMPNode1ToCluster: &ADD_MPNODE_1_TO_CLUSTER
+        Type: NSX
+        TestNSX: "nsxmanager.[1]"
+        clusternode:
+            '[1]':
+                mgr_role_config:
+                    username: 'admin'
+                    password: 'default'
+                    node_type: 'AddManagementNodeSpec'
+                    manager_ip: "nsxmanager.[1]"
+                    manager_thumbprint: "nsxmanager.[1]"
+
+    AddMPNode2ToCluster: &ADD_MPNODE_2_TO_CLUSTER
+        <<: *ADD_MPNODE_1_TO_CLUSTER
+        clusternode:
+            '[2]':
+                mgr_role_config:
+                    username: 'admin'
+                    password: 'default'
+                    node_type: 'AddManagementNodeSpec'
+                    manager_ip: "nsxmanager.[2]"
+                    manager_thumbprint: "nsxmanager.[2]"
+
+    AddMPNode3ToCluster: &ADD_MPNODE_3_TO_CLUSTER
+        <<: *ADD_MPNODE_1_TO_CLUSTER
+        clusternode:
+            '[3]':
+                mgr_role_config:
+                    username: 'admin'
+                    password: 'default'
+                    node_type: 'AddManagementNodeSpec'
+                    manager_ip: "nsxmanager.[3]"
+                    manager_thumbprint: "nsxmanager.[3]"
+
+    StopController1: &STOP_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        configure_service_state:
+            state: 'stop'
+            service_name: 'controller'
+
+    StopController2: &STOP_CONTROLLER_2
+        <<: *STOP_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    StopController3: &STOP_CONTROLLER_3
+        <<: *STOP_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    StartController1: &START_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        configure_service_state:
+            state: 'start'
+            service_name: 'controller'
+
+    StartController2: &START_CONTROLLER_2
+        <<: *START_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    StartController3: &START_CONTROLLER_3
+        <<: *START_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    RemoveCCPNode3FromCluster: &REMOVE_CCPNODE_FROM_CLUSTER_3
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        remove_ccp_cluster_node:
+            controller_ip: 'nsxcontroller.[3]'
+            force: 'yes'
+            execution_type: 'cli'
+
+    RemoveCCPNode2FromCluster: &REMOVE_CCPNODE_FROM_CLUSTER_2
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        remove_ccp_cluster_node:
+            controller_ip: 'nsxcontroller.[2]'
+            force: 'yes'
+            execution_type: 'cli'
+
+    RemoveCCPNode1FromCluster:
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        remove_ccp_cluster_node:
+            controller_ip: 'nsxcontroller.[1]'
+            force: 'yes'
+            execution_type: 'cli'
+
+    RemoveMP_Node2: &REMOVE_MP_NODE_2
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deleteclusternode:  "nsxmanager.[1].clusternode.[2]"
+
+    RemoveMP_Node3: &REMOVE_MP_NODE_3
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deleteclusternode:  "nsxmanager.[1].clusternode.[3]"
+
+    DeleteBootStrapOnController3: &DELETE_BOOT_STRAP_ON_CONTROLLER3
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[3]'
+        delete_backend_file:
+            file_name: 'bootstrap-config'
+            execution_type: 'cmd'
+            path: '/opt/vmware/etc'
+
+    DeleteControllerNodeUUIDFileOnController3: &DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER3
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[3]'
+        delete_backend_file:
+            file_name: 'node-uuid'
+            execution_type: 'cmd'
+            path: '/opt/vmware/etc'
+
+    DeleteBootStrapOnController2: &DELETE_BOOT_STRAP_ON_CONTROLLER2
+        <<: *DELETE_BOOT_STRAP_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[2]'
+
+    DeleteControllerNodeUUIDFileOnController2: &DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER2
+        <<: *DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[2]'
+
+    DeleteBootStrapOnController1: &DELETE_BOOT_STRAP_ON_CONTROLLER1
+        <<: *DELETE_BOOT_STRAP_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[1]'
+
+    DeleteControllerNodeUUIDFileOnController1: &DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER1
+        <<: *DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[1]'
+
+    DeleteControllerInfoFileOnControllers:
+           Type: 'NSX'
+           TestNSX: 'nsxcontroller.[1-3]'
+           delete_backend_file:
+               file_name: 'bootstrap-config'
+               execution_type: 'cmd'
+               path: '/opt/vmware/etc'
+
+    DeleteControllerNodeUUIDFileOnControllers:
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[1-3]'
+        delete_backend_file:
+            file_name: 'node-uuid'
+            execution_type: 'cmd'
+            path: '/opt/vmware/etc'
+
+    SetProtonServiceIdFor_Node1: &SET_PROTON_SERVICE_ID_FOR_NODE_1
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        nsxservice:
+          '[1]':
+            map_object: true
+            id_: 'proton'
+
+    SetProtonServiceIdFor_Node2: &SET_PROTON_SERVICE_ID_FOR_NODE_2
+        <<: *SET_PROTON_SERVICE_ID_FOR_NODE_1
+        TestNSX: "nsxmanager.[2]"
+
+    SetProtonServiceIdFor_Node3: &SET_PROTON_SERVICE_ID_FOR_NODE_3
+        <<: *SET_PROTON_SERVICE_ID_FOR_NODE_1
+        TestNSX: "nsxmanager.[3]"
+
+    StopProtonServiceOn_Node1: &STOP_PROTON_SERVICE_ON_NODE_1
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+          state: 'stop'
+          service_name: 'proton'
+
+    StopProtonServiceOn_Node2: &STOP_PROTON_SERVICE_ON_NODE_2
+        <<: *STOP_PROTON_SERVICE_ON_NODE_1
+        TestService: "nsxmanager.[2].nsxservice.[1]"
+
+    StopProtonServiceOn_Node3: &STOP_PROTON_SERVICE_ON_NODE_3
+        <<: *STOP_PROTON_SERVICE_ON_NODE_1
+        TestService: "nsxmanager.[3].nsxservice.[1]"
+
+    StartProtonServiceOn_Node1: &START_PROTON_SERVICE_ON_NODE_1
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+          state: 'start'
+          service_name: 'proton'
+
+    StartProtonServiceOn_Node2: &START_PROTON_SERVICE_ON_NODE_2
+        <<: *START_PROTON_SERVICE_ON_NODE_1
+        TestService: "nsxmanager.[2].nsxservice.[1]"
+
+    StartProtonServiceOn_Node3: &START_PROTON_SERVICE_ON_NODE_3
+        <<: *START_PROTON_SERVICE_ON_NODE_1
+        TestService: "nsxmanager.[3].nsxservice.[1]"
+
+    RestartProtonServiceOn_Node1: &RESTART_PROTON_SERVICE_ON_NODE_1
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+          state: 'restart'
+          service_name: 'proton'
+
+    DeleteRabbitMQCredentailOnController1: &DELETE_RMQ_CREDENTAIL_ON_CONTROLLER_1
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[1]'
+        delete_backend_file:
+            file_name: 'bootstrap-config'
+            execution_type: 'cmd'
+            path: '/opt/vmware/etc'
+
+    DeleteRabbitMQCredentailOnController2: &DELETE_RMQ_CREDENTAIL_ON_CONTROLLER_2
+        <<: *DELETE_RMQ_CREDENTAIL_ON_CONTROLLER_1
+        TestNSX: 'nsxcontroller.[2]'
+
+    DeleteRabbitMQCredentailOnController3: &DELETE_RMQ_CREDENTAIL_ON_CONTROLLER_3
+        <<: *DELETE_RMQ_CREDENTAIL_ON_CONTROLLER_1
+        TestNSX: 'nsxcontroller.[3]'
+
+    DeleteNodeUUIDOnController1: &DELETE_NODE_UUID_ON_CONTROLLER_1
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[1]'
+        delete_backend_file:
+            file_name: 'node-uuid'
+            execution_type: 'cmd'
+            path: '/opt/vmware/etc'
+
+    DeleteNodeUUIDOnController2: &DELETE_NODE_UUID_ON_CONTROLLER_2
+        <<: *DELETE_NODE_UUID_ON_CONTROLLER_1
+        TestNSX: 'nsxcontroller.[2]'
+
+    DeleteNodeUUIDOnController3: &DELETE_NODE_UUID_ON_CONTROLLER_3
+        <<: *DELETE_NODE_UUID_ON_CONTROLLER_1
+        TestNSX: 'nsxcontroller.[3]'
+
+# Transport node related workloads
+    CreateTransportZone: &CREATE_TRANSPORT_ZONE_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[1]':
+                name: autogenerate
+                transport_zone_type: 'OVERLAY'
+                switch_name: 'nsxvswitch'
+    DiscoverFabricHosts:
+        KVM: &DiscoverFabricHosts--KVM
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            hostnode:
+                '[1-4]':
+                    discover: 'true'
+                    ip_addresses: 'kvm.[x=hostnode_index]'
+        ESX: &DiscoverFabricHosts--ESX
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            hostnode:
+                '[1-4]':
+                    discover: 'true'
+                    ip_addresses: 'esx.[x=hostnode_index]'
+    Discover4FabricHost:
+        KVM: &Discover4FabricHost--KVM
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            hostnode:
+                '[1-4]':
+                    discover: 'true'
+                    ip_addresses: 'kvm.[x=hostnode_index]'
+        ESX: &Discover4FabricHost--ESX
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            hostnode:
+                '[5-8]':
+                    discover: 'true'
+                    ip_addresses: 'esx.[x=hostnode_index-4]'
+    DiscoverVteps:
+        ESX: &DiscoverVteps--ESX
+          Type: Host
+          TestHost: 'esx.[1-4]'
+          vtep:
+              '[1]':
+                  execution_type: 'cli'
+                  discover: 'true'
+                  name: 'vmk10'
+        KVM: &DiscoverVteps--KVM
+          Type: Host
+          TestHost: 'kvm.[1-4]'
+          vtep:
+              '[1]':
+                  discover: 'true'
+                  name: 'nsx-vtep0.0'
+
+    VerifyVtepConnectivity:
+      KVM: &VerifyVtepConnectivity--KVM
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "kvm.[2].vtep.[1]"
+            SupportAdapter: "kvm.[1].vtep.[1]"
+            TestDuration  : "10"
+            connectivitytest: 0
+      ESX: &VerifyVtepConnectivity--ESX
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "esx.[1].vtep.[1]"
+            SupportAdapter: "esx.[2].vtep.[1]"
+            TestDuration  : "10"
+            connectivitytest: 0
+    VerifyVtepConnectivityESXKVM:
+        SupportAdapter: kvm.[1].vtep.[1]
+        TestAdapter: esx.[4].vtep.[1]
+        TestDuration: 10
+        ToolName: ping
+        Type: Traffic
+        connectivitytest: 0
+    RegisterController: &RegisterController
+        Type: Controller
+        TestController: nsxcontroller.[1]
+        set_nsx_registration: &SET_NSX_REGISTRATION1
+            manager_ip: nsxmanager.[1]
+            manager_thumbprint: nsxmanager.[1]
+            execution_type: cli
+    RegisterAllControllers: &RegisterAllControllers
+        Type: Controller
+        TestController: 'nsxcontroller.[-1]'
+        set_nsx_registration:
+            <<: *SET_NSX_REGISTRATION1
+    SetControllerOnHosts:
+        ESX: &SetControllerOnHosts--ESX
+            Type: Host
+            TestHost: 'esx.[1-4]'
+            set_nsx_controller:
+                controller_ip: 'nsxcontroller.[1]'
+                node_id: 'nsxmanager.[1].transportnode.[1]'
+                execution_type: 'cli'
+        KVM: &SetControllerOnHosts--KVM
+            Type: Host
+            TestHost: 'kvm.[1-4]'
+            set_nsx_controller:
+                controller_ip: 'nsxcontroller.[1]'
+                node_id: 'nsxmanager.[1].transportnode.[1]'
+                execution_type: 'cmd'
+    SetControllerOnHost1:
+        ESX: &SetControllerOnHost1--ESX
+            Type: Host
+            TestHost: 'esx.[1]'
+            set_nsx_controller:
+                controller_ip: 'nsxcontroller.[1]'
+                node_id: 'nsxmanager.[1].transportnode.[2]'
+                execution_type: 'cli'
+        KVM: &SetControllerOnHost1--KVM
+            Type: Host
+            TestHost: 'kvm.[1]'
+            set_nsx_controller:
+                controller_ip: 'nsxcontroller.[1]'
+                node_id: 'nsxmanager.[1].transportnode.[1]'
+                execution_type: 'cmd'
+    RegisterHosts:
+        KVM: &RegisterHosts--KVM
+            Type: Host
+            TestHost: 'kvm.[1-4]'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+        ESX: &RegisterHosts--ESX
+            Type: Host
+            TestHost: 'esx.[1-4]'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+    Register1Host:
+        KVM: &Register1Host--KVM
+            Type: Host
+            TestHost: 'kvm.[1]'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+        ESX: &Register1Host--ESX
+            Type: Host
+            TestHost: 'esx.[1]'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+    Register5Hosts:
+        KVM: &Register5Hosts--KVM
+            Type: Host
+            TestHost: 'kvm.[1-5]'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+        ESX: &Register5Hosts--ESX
+            Type: Host
+            TestHost: 'esx.[1-5]'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+    JoinController1ToCluster: &JoinController1ToCluster
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clusternode:
+            '[1]': &CCP_CLUSTER_NODE1
+                controller_ip: 'nsxcontroller.[1]'
+                execution_type: 'cli'
+
+    JoinController2ToCluster: &JoinController2ToCluster
+        Type: Controller
+        TestController: 'nsxcontroller.[2]'
+        clusternode:
+            '[2]':
+                <<: *CCP_CLUSTER_NODE1
+
+    JoinController3ToCluster: &JoinController3ToCluster
+        Type: Controller
+        TestController: 'nsxcontroller.[3]'
+        clusternode:
+            '[3]':
+                <<: *CCP_CLUSTER_NODE1
+
+    VerifyCCPCluster: &VerifyCCPCluster
+        Type: "ClusterNode"
+        Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+        execution_type: 'cli'
+        'get_cluster_node':
+            'id_[?]equal_to': nsxcontroller.[1].clusternode.[1]
+            'in_majority[?]equal_to': "true"
+            'cluster_nodes[?]contain_once':
+                - controller_ip: "nsxcontroller.[1]"
+                  id_: "nsxcontroller.[1].clusternode.[1]"
+                  status: "active"
+                - controller_ip: "nsxcontroller.[2]"
+                  id_: "nsxcontroller.[2].clusternode.[2]"
+                  status: "active"
+                - controller_ip: "nsxcontroller.[3]"
+                  id_: "nsxcontroller.[3].clusternode.[3]"
+                  status: "active"
+    RebootCCPNodeTemplate: &REBOOT_CCPNODE_TEMPLATE
+        Type: VM
+        vmstate: reboot
+
+    RebootCCPNode1: &RebootCCPNode1
+        <<: *REBOOT_CCPNODE_TEMPLATE
+        TestVM: nsxcontroller.[1]
+
+    RebootCCPNode2: &RebootCCPNode2
+        <<: *REBOOT_CCPNODE_TEMPLATE
+        TestVM: nsxcontroller.[2]
+
+    RebootCCPNode3: &RebootCCPNode3
+        <<: *REBOOT_CCPNODE_TEMPLATE
+        TestVM: nsxcontroller.[3]
+
+    RebootAllCCPNodes: &RebootAllCCPNodes
+        <<: *REBOOT_CCPNODE_TEMPLATE
+        TestVM: nsxcontroller.[-1]
+    CreateUplinkProfile: &CREATE_UPLINK_PROFILE
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            UplinkProfile:
+                '[1]':
+                    mtu: 1600
+                    teaming:
+                        active:
+                            - adapter_name: 'uplink1'
+                              adapter_type: 'PNIC'
+                        policy: 'FAILOVER_ORDER'
+                    vlan: '0'
+                    resource_type: 'UplinkHostSwitchProfile'
+    UnregisterHosts:
+       ESX: &UnregisterHosts--ESX
+          Type: Host
+          TestHost: 'esx.[1-4]'
+          remove_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+       KVM: &UnregisterHosts--KVM
+          Type: Host
+          TestHost: 'kvm.[-1]'
+          remove_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+    Unregister4Host:
+       ESX: &Unregister4Host--ESX
+          Type: Host
+          TestHost: 'esx.[1-4]'
+          remove_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+       KVM: &Unregister4Host--KVM
+          Type: Host
+          TestHost: 'kvm.[1-4]'
+          remove_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+    ConfigureHostVTEP1IP:
+        ESX: &ConfigureHostVTEP1IP--ESX
+            Type: NetAdapter
+            TestAdapter: esx.[1-4].vtep.[1]
+            IPv4: auto
+        KVM: &ConfigureHostVTEP1IP--KVM
+            Type: NetAdapter
+            TestAdapter: kvm.[1-4].vtep.[1]
+            IPv4: auto
+    CreateTransportNode:
+        KVM: &CreateTransportNode--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            transportnode:
+                    '[1-4]':
+                        node_id: nsxmanager.[1].hostnode.[x=transportnode_index]
+                        host_switches:
+                              - switch_name: 'nsxvswitch'
+                                host_switch_profile_ids:
+                                    - key: 'UplinkHostSwitchProfile'
+                                      value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                                uplinks:
+                                   - device_name: "eth1"
+                                     adapter_name: "uplink1"
+                        transport_zone_endpoint:
+                            - transport_zone_id: nsxmanager.[1].transportzone.[1]
+        ESX: &CreateTransportNode--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[1-4]':
+                    node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                    host_switches:
+                          - switch_name: 'nsxvswitch'
+                            host_switch_profile_ids:
+                               - key: 'UplinkHostSwitchProfile'
+                                 value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                            uplinks:
+                               - device_name: 'vmnic1'
+                                 adapter_name: 'uplink1'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+    CreateTransportNodeHost1:
+        KVM: &CreateTransportNodeHost1--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            transportnode:
+                    '[1-4]':
+                        node_id: nsxmanager.[1].hostnode.[x=transportnode_index]
+                        host_switches:
+                              - switch_name: 'nsxvswitch'
+                                host_switch_profile_ids:
+                                    - key: 'UplinkHostSwitchProfile'
+                                      value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                                uplinks:
+                                   - device_name: "eth1"
+                                     adapter_name: "uplink1"
+                        transport_zone_endpoint:
+                            - transport_zone_id: nsxmanager.[1].transportzone.[1]
+        ESX: &CreateTransportNodeHost1--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[5-8]':
+                    node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                    host_switches:
+                          - switch_name: 'nsxvswitch'
+                            host_switch_profile_ids:
+                               - key: 'UplinkHostSwitchProfile'
+                                 value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                            uplinks:
+                               - device_name: 'vmnic1'
+                                 adapter_name: 'uplink1'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+    CreateTransportNodeHost1-2:
+        KVM: &CreateTransportNodeHost1-2--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            transportnode:
+                    '[1-2]':
+                        node_id: nsxmanager.[1].hostnode.[x=transportnode_index]
+                        host_switches:
+                              - switch_name: 'nsxvswitch'
+                                host_switch_profile_ids:
+                                    - key: 'UplinkHostSwitchProfile'
+                                      value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                                uplinks:
+                                   - device_name: "eth1"
+                                     adapter_name: "uplink1"
+                        transport_zone_endpoint:
+                            - transport_zone_id: nsxmanager.[1].transportzone.[1]
+        ESX: &CreateTransportNodeHost1-2--ESX
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[1-2]':
+                    node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                    host_switches:
+                          - switch_name: 'nsxvswitch'
+                            host_switch_profile_ids:
+                               - key: 'UplinkHostSwitchProfile'
+                                 value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                            uplinks:
+                               - device_name: 'vmnic1'
+                                 adapter_name: 'uplink1'
+                    transport_zone_endpoint:
+                        - transport_zone_id: nsxmanager.[1].transportzone.[1]
+    SetControllerOnHost1-5:
+            KVM: &SetControllerOnHost1-5--KVM
+                Type: Host
+                TestHost: 'kvm.[1-5]'
+                set_nsx_controller:
+                    controller_ip: 'nsxcontroller.[1]'
+                    node_id: 'nsxmanager.[1].transportnode.[x=host_index]'
+                    execution_type: 'cmd'
+            ESX: &SetControllerOnHost1-5--ESX
+                Type: Host
+                TestHost: 'esx.[1-5]'
+                set_nsx_controller:
+                    controller_ip: 'nsxcontroller.[1]'
+                    node_id: 'nsxmanager.[1].transportnode.[x=host_index]'
+                    execution_type: 'cli'
+    ConfigureHost1-5VTEP1IP:
+            KVM: &ConfigureHost1-5VTEP1IP--KVM
+                Type: NetAdapter
+                TestAdapter: kvm.[1-5].vtep.[1]
+                IPv4: auto
+            ESX: &ConfigureHost1-5VTEP1IP--ESX
+                Type: NetAdapter
+                TestAdapter: esx.[1-5].vtep.[1]
+                IPv4: auto
+    Create5TransportNodes:
+            KVM: &Create5TransportNode--KVM
+                TestNSX: nsxmanager.[1]
+                Type: NSX
+                transportnode:
+                        '[1-5]':
+                            node_id: nsxmanager.[1].hostnode.[x=transportnode_index]
+                            host_switches:
+                                  - switch_name: 'nsxvswitch'
+                                    host_switch_profile_ids:
+                                        - key: 'UplinkHostSwitchProfile'
+                                          value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                                    uplinks:
+                                       - device_name: "eth1"
+                                         adapter_name: "uplink1"
+                            transport_zone_endpoint:
+                                - transport_zone_id: nsxmanager.[1].transportzone.[1]
+            ESX: &Create5TransportNode--ESX
+                Type: NSX
+                TestNSX: nsxmanager.[1]
+                transportnode:
+                    '[1-5]':
+                        node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                        host_switches:
+                              - switch_name: 'nsxvswitch'
+                                host_switch_profile_ids:
+                                   - key: 'UplinkHostSwitchProfile'
+                                     value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                                uplinks:
+                                   - device_name: 'vmnic1'
+                                     adapter_name: 'uplink1'
+                        transport_zone_endpoint:
+                            - transport_zone_id: nsxmanager.[1].transportzone.[1]
+    Discover5FabricHosts:
+            KVM: &Discover5FabricHosts--KVM
+                Type: NSX
+                TestNSX: 'nsxmanager.[1]'
+                hostnode:
+                    '[1-5]':
+                        discover: 'true'
+                        ip_addresses: 'kvm.[x=hostnode_index]'
+            ESX: &Discover5FabricHosts--ESX
+                Type: NSX
+                TestNSX: 'nsxmanager.[1]'
+                hostnode:
+                    '[1-5]':
+                        discover: 'true'
+                        ip_addresses: 'esx.[x=hostnode_index]'
+    DiscoverVtepsHost1-5:
+        KVM: &DiscoverVtepsHost1-5--KVM
+            Type: Host
+            TestHost: 'kvm.[1-5]'
+            vtep:
+                '[1]':
+                    discover: 'true'
+                    name: 'nsx-vtep0.0'
+        ESX: &DiscoverVtepsHost1-5--ESX
+            Type: Host
+            TestHost: 'esx.[1-5]'
+            vtep:
+                '[1]':
+                    execution_type: 'cli'
+                    discover: 'true'
+                    name: 'vmk10'
+
+# Switch/Router wiring related workloads
+    CreateLogicalSwitch: &CREATE_LOGICAL_SWITCH_01
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1]':
+                name: 'ls-demo'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP
+    Create3LogicalSwitches: &CREATE_3_LOGICAL_SWITCHES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1-3]':
+                name: 'autogenerate'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP
+    Create2LogicalSwitches: &CREATE_2_LOGICAL_SWITCHES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1-2]':
+                name: 'autogenerate'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP
+    Create6LogicalSwitches: &CREATE_6_LOGICAL_SWITCHES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1-6]':
+                name: 'autogenerate'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP
+    RealizeLogicalports: &REALIZE_LOGICALPORTS
+         Type: NSX
+         TestNSX: nsxmanager.[1]
+         logicalport:
+             '[1-2]':
+                 discover: true
+                 vif: 'vm.[1-2].vif.[1]'
+    Create3LogicalPorts: &CREATE_3LPORTS
+          Type: NSX
+          TestNSX: nsxmanager.[1]
+          logicalport:
+              '[3-5]':
+                  switch_id: nsxmanager.[1].logicalswitch.[x=logicalport_index-2]
+                  name: 'autogenerate'
+                  admin_state: UP
+                  attachment:
+                     attachment_type: 'LOGICALROUTER'
+                     id: ''
+    Create1LRPortLS3:
+          Type: NSX
+          TestNSX: nsxmanager.[1]
+          logicalport:
+              '[6]':
+                  switch_id: nsxmanager.[1].logicalswitch.[3]
+                  name: 'autogenerate'
+                  admin_state: UP
+                  attachment:
+                     attachment_type: 'LOGICALROUTER'
+                     id: ''
+    Create2LogicalPorts: &CREATE_2LPORTS
+          Type: NSX
+          TestNSX: nsxmanager.[1]
+          logicalport:
+              '[3-4]':
+                  switch_id: nsxmanager.[1].logicalswitch.[x=logicalport_index-2]
+                  name: 'autogenerate'
+                  admin_state: UP
+                  attachment:
+                     attachment_type: 'LOGICALROUTER'
+                     id: ''
+    Create6LogicalPorts: &CREATE_6LPORTS
+         Type: NSX
+         TestNSX: nsxmanager.[1]
+         logicalport:
+             '[3-8]':
+                 switch_id: nsxmanager.[1].logicalswitch.[x=logicalport_index-2]
+                 name: 'autogenerate'
+                 admin_state: UP
+                 attachment:
+                     attachment_type: 'LOGICALROUTER'
+                     id: ''
+    Create1LRPortLS6:
+         Type: NSX
+         TestNSX: nsxmanager.[1]
+         logicalport:
+             '[9]':
+                 switch_id: nsxmanager.[1].logicalswitch.[6]
+                 name: 'autogenerate'
+                 admin_state: UP
+                 attachment:
+                     attachment_type: 'LOGICALROUTER'
+                     id: ''
+
+    Create6LRPorts: &CREATE_6_LRPORTS
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         logicalrouterport:
+             '[1]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-1'
+                 summary: "LRPort1 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[3]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.7.1'
+             '[2]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-2'
+                 summary: "LRPort2 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[4]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.8.1'
+             '[3]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-3'
+                 summary: "LRPort3 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[5]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.9.1'
+             '[4]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-4'
+                 summary: "LRPort4 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[6]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.10.1'
+             '[5]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-5'
+                 summary: "LRPort5 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[7]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.11.1'
+             '[6]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-6'
+                 summary: "LRPort6 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[8]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.12.1'
+    SetTLR1RouteAdvertisementTopoNorthSouth1:
+           Type: "Router"
+           TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+           routeadvertisements:
+            '[1]':
+                enableadvertisement: 'true'
+                advertise_routes:
+                    - name: 'Advertisement for TLR-01 Downlink Network'
+                      summary: 'Advertisement for TLR-01 downlinks'
+                      network:
+                          - '192.168.7.0/24'
+                          - '192.168.8.0/24'
+    SetTLR1RouteAdvertisementHybridTopo1:
+           Type: "Router"
+           TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+           routeadvertisements:
+            '[1]':
+                enableadvertisement: 'true'
+                advertise_routes:
+                    - name: 'Advertisement for TLR-01 Downlink Network'
+                      summary: 'Advertisement for TLR-01 downlinks'
+                      network:
+                          - '192.168.7.0/24'
+                          - '192.168.8.0/24'
+                          - '192.168.9.0/24'
+    CreateLogicalRouter: &CREATE_LOGICAL_ROUTER
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouter:
+                '[1]':
+                    name: 'lrouter-1'
+                    router_type: "TIER1"
+                    summary: "LRouter created through automation"
+    CreateLRPort: &CREATE_LR_PORT
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouterport:
+                '[1]':
+                    logical_router_id: nsxmanager.[1].logicalrouter.[1]
+                    name: 'lrouterport-1'
+                    resource_type: "LogicalRouterDownLinkPort"
+                    summary: "LRPort created through automation"
+                    macaddress: '00:A0:C9:14:C8:29'
+    CreateTLR1: &CREATE_TLR1
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         sleepbetweenworkloads: '10'
+         logicalrouter:
+             '[1]':
+                 name: 'lrouter-1'
+                 router_type: "TIER1"
+                 summary: "LRouter created through automation"
+    Create3TLRPorts: &CREATE_3_TLRPORTS
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         logicalrouterport:
+             '[1]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-1'
+                 summary: "LRPort1 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[3]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.7.1'
+             '[2]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-2'
+                 summary: "LRPort2 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[4]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.8.1'
+             '[3]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-3'
+                 summary: "LRPort3 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[5]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.9.1'
+    Create2TLRPorts: &CREATE_2_TLRPORTS
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         logicalrouterport:
+             '[1]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-1'
+                 summary: "LRPort1 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[3]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.7.1'
+             '[2]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-2'
+                 summary: "LRPort2 created through automation"
+                 linked_switch_port_id: "nsxmanager.[1].logicalport.[4]->id"
+                 resource_type: "LogicalRouterDownLinkPort"
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                       - '192.168.8.1'
+    CreateProviderLogicalRouter: &CREATE_PLR_01
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: '10'
+            logicalrouter:
+                '[2]':
+                    name: 'Tier0-LR-1'
+                    summary: 'Tier0 Logical Router (PLR) - 01'
+                    router_type: 'TIER0'
+                    cluster_id: 'nsxmanager.[1].edgecluster.[1]'
+    CreateUplinksPLR: &CREATE_PLR_01_UPLINKS
+           Type: NSX
+           TestNSX: 'nsxmanager.[1]'
+           logicalrouteruplinkport:
+               '[1]':
+                   logical_router_id: 'nsxmanager.[1].logicalrouter.[2]'
+                   name: 'plr1_uplink1'
+                   summary: 'Uplink 1 for PLR 01'
+                   linked_switch_port_id: 'nsxmanager.[1].logicalport.[5]->id'
+                   resource_type: 'LogicalRouterUpLinkPort'
+                   gateway_cluster_member_index: [0]
+                   subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                           - '192.168.9.1'
+               '[2]':
+                   logical_router_id: 'nsxmanager.[1].logicalrouter.[2]'
+                   name: 'plr1_uplink2'
+                   summary: 'Uplink 2 for PLR 01'
+                   linked_switch_port_id: 'nsxmanager.[1].logicalport.[6]->id'
+                   resource_type: 'LogicalRouterUpLinkPort'
+                   gateway_cluster_member_index: [1]
+                   subnets:
+                       - prefixlen: 24
+                         ip_addresses:
+                           - '192.168.9.9'
+
+    CreateRouterLinkInterfaceTLR: &CREATE_RTR_LINK_TLR_01
+           Type: NSX
+           TestNSX: 'nsxmanager.[1]'
+           sleepbetweenworkloads: '20'
+           logicalrouterlinkport:
+                '[1]':
+                    logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                    name: 'tlr1_plr1_router_link'
+                    linked_router_port_id: 'nsxmanager.[1].logicalrouterlinkport.[2]->id'
+                    resource_type: 'LogicalRouterLinkPort'
+    CreateRouterLinkInterfacePLR: &CREATE_RTR_LINK_PLR_01
+          Type: NSX
+          TestNSX: 'nsxmanager.[1]'
+          sleepbetweenworkloads: '20'
+          logicalrouterlinkport:
+              '[2]':
+                  logical_router_id: 'nsxmanager.[1].logicalrouter.[2]'
+                  resource_type: 'LogicalRouterLinkPort'
+                  name: 'plr1_router_link'
+
+# Vif wiring related workloads
+    Create2VIFsKVM1: &CREATE_2VIFS_KVM1
+            Type: VM
+            TestVM: vm.[1-2]
+            vif:
+                '[1]':
+                    backing: kvm.[1].bridge.[1]
+    Create1VIFKVM2: &CREATE_1VIF_KVM2
+            Type: VM
+            TestVM: vm.[3]
+            vif:
+                '[1]':
+                    backing: kvm.[2].bridge.[1]
+    Create1DHCPServerVIFKVM3: &CREATE_1DHCP_SERVER_VIF_KVM3
+            Type: VM
+            TestVM: dhcpserver.[1]
+            vif:
+                '[1]':
+                    backing: kvm.[3].bridge.[1]
+    Create1DHCPServerVIFKVM2: &CREATE_1DHCP_SERVER_VIF_KVM2
+            Type: VM
+            TestVM: dhcpserver.[1]
+            vif:
+                '[1]':
+                    backing: kvm.[2].bridge.[1]
+    Create2DHCPServerVIFKVM3: &CREATE_2DHCP_SERVER_VIF_KVM3
+            Type: VM
+            TestVM: dhcpserver.[1-2]
+            vif:
+                '[1]':
+                    backing: kvm.[3].bridge.[1]
+    Create3DHCPServerVIFKVM2: &CREATE_3DHCP_SERVER_VIF_KVM2
+            Type: VM
+            TestVM: dhcpserver.[1-3]
+            vif:
+                '[1]':
+                    backing: kvm.[2].bridge.[1]
+    Create1DHCPServerVIFKVM4: &CREATE_1DHCP_SERVER_VIF_KVM4
+            Type: VM
+            TestVM: dhcpserver.[3]
+            vif:
+                '[1]':
+                    backing: kvm.[4].bridge.[1]
+    VifAttachmentVM1Switch1:
+        ESX: &VifAttachmentVM1Switch1--ESX
+            Type: VM
+            TestVM: 'vm.[1]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[x=vm_index]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+        KVM: &VifAttachmentVM1Switch1--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[11]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: vm.[1].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+    VifAttachmentVM2Switch2:
+        ESX: &VifAttachmentVM2Switch2--ESX
+            Type: VM
+            TestVM: 'vm.[2]'
+            vnic:
+               '[1]':
+                   driver: "vmxnet3"
+                   portgroup: "nsxmanager.[1].logicalswitch.[x=vm_index]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+        KVM: &VifAttachmentVM2Switch2--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[12]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: vm.[2].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[2]
+    VifAttachmentVM3Switch3:
+        KVM: &VifAttachmentVM3Switch3--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[13]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: vm.[3].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[3]
+        ESX: &VifAttachmentVM3Switch3--ESX
+            Type: VM
+            TestVM: 'vm.[3]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[x=vm_index]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+    VifAttachmentVM3Switch4:
+        KVM: &VifAttachmentVM3Switch4--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[13]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: vm.[3].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[4]
+        ESX: &VifAttachmentVM3Switch4--ESX
+            Type: VM
+            TestVM: 'vm.[3]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[4]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+    VifAttachmentVM3Switch1:
+        KVM: &VifAttachmentVM3Switch1--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[13]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: vm.[3].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+        ESX: &VifAttachmentVM3Switch1--ESX
+            Type: VM
+            TestVM: 'vm.[3]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[1]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+    VifAttachmentDHCPServer1Switch3:
+        KVM: &VifAttachmentDHCPServer1Switch3--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[14]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: dhcpserver.[1].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[3]
+        ESX: &VifAttachmentDHCPServer1Switch3--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[1]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[3]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+    VifAttachmentDHCPServer2Switch3:
+        KVM: &VifAttachmentDHCPServer2Switch3--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[14]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: dhcpserver.[2].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[3]
+        ESX: &VifAttachmentDHCPServer2Switch3--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[2]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[3]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+    VifAttachmentDHCPServer3Switch5:
+        KVM: &VifAttachmentDHCPServer3Switch5--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[14]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: dhcpserver.[3].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[5]
+        ESX: &VifAttachmentDHCPServer3Switch5--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[3]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[5]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+    VifAttachmentDHCPServer1-8Switch3:
+        KVM: &VifAttachmentDHCPServer1-8Switch3--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[200-207]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: dhcpserver.[x=logicalport_index-199].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[3]
+        ESX: &VifAttachmentDHCPServer1-8Switch3--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[1-8]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[3]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+    VifAttachmentDHCPServer123Switch3:
+        KVM: &VifAttachmentDHCPServer123Switch3--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[14-16]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: dhcpserver.[x=logicalport_index-13].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[3]
+        ESX: &VifAttachmentDHCPServer123Switch3--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[1-3]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[3]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+    VifAttachmentDHCPServer123Switch456:
+        KVM: &VifAttachmentDHCPServer123Switch456--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[14-16]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: dhcpserver.[x=logicalport_index-13].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[x=logicalport_index-10]
+        ESX: &VifAttachmentDHCPServer123Switch456--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[1-3]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[x=3+dhcpserver_index]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+    VifAttachmentVM1-10Switch1:
+        KVM: &VifAttachmentVM1-10Switch1--KVM
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalport:
+                '[10-19]':
+                    admin_state: UP
+                    attachment:
+                        attachment_type: VIF
+                        id_: vm.[x=logicalport_index-9].vif.[1]->uuid
+                    switch_id: nsxmanager.[1].logicalswitch.[1]
+        ESX: &VifAttachmentVM1-10Switch1--ESX
+            Type: VM
+            TestVM: 'vm.[1-10]'
+            vnic:
+               '[1]':
+                   driver: "e1000"
+                   portgroup: "nsxmanager.[1].logicalswitch.[1]"
+                   connected: 1
+                   startconnected: 1
+                   allowguestcontrol: 1
+    VifAttachmentDHCPServerSwitch6:
+        ESX: &VifAttachmentDHCPServerSwitch6--ESX
+              Type: DHCPServer
+              vnic:
+                 '[1]':
+                     driver: "e1000"
+                     portgroup: "nsxmanager.[1].logicalswitch.[6]"
+                     connected: 1
+                     startconnected: 1
+                     allowguestcontrol: 1
+    VifAttachmentDHCPServer1Switch6--ESX:
+              <<: *VifAttachmentDHCPServerSwitch6--ESX
+              TestDHCPServer: 'dhcpserver.[1]'
+    VifAttachmentDHCPServer4Switch6--ESX:
+              <<: *VifAttachmentDHCPServerSwitch6--ESX
+              TestDHCPServer: 'dhcpserver.[4]'
+    VifAttachmentDHCPServer23Switch45--ESX:
+              Type: DHCPServer
+              TestDHCPServer: 'dhcpserver.[2-3]'
+              vnic:
+                 '[1]':
+                     driver: "e1000"
+                     portgroup: "nsxmanager.[1].logicalswitch.[x=2+dhcpserver_index]"
+                     connected: 1
+                     startconnected: 1
+                     allowguestcontrol: 1
+
+# Edge creation workloads
+    RegisterEdgeNode: &REGISTER_EDGE_NODE
+          Type: Gateway
+          register_nsx_edge_node:
+              manager_username: 'admin'
+              manager_password: 'default'
+              manager_ip: 'nsxmanager.[1]'
+              manager_thumbprint: 'nsxmanager.[1]'
+              execution_type: 'cli'
+    RegisterEdgeNode01: &REGISTER_EDGE_NODE_01
+          <<: *REGISTER_EDGE_NODE
+          TestGateway: 'nsxedge.[1]'
+    RegisterEdgeNode02:
+          <<: *REGISTER_EDGE_NODE
+          TestGateway: 'nsxedge.[2]'
+    DiscoverEdgeNodeIds: &DISCOVER_EDGE_NODE_IDS
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            edgenode:
+                '[1-2]':
+                    discover: 'true'
+                    resource_type: "EdgeNode"
+                    ipaddresses:
+                        - 'nsxedge.[x]->management_ip'
+    CreateFabricProfile: &CREATE_FABRIC_PROFILE
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        fabricprofile:
+            '[1]':
+                name: 'Fabric_Profile_PLR_uplink_cluster'
+                summary: "Fabric Profile for PLR uplink edge cluster"
+                resource_type: "FabricProfileClusterKeepAlive"
+                hello_interval: 20000
+                declare_dead_timer: 60000
+    CreateEdgeCluster: &CREATE_EDGE_CLUSTER
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        edgecluster:
+            '[1]':
+                name: 'edge_cluster_plr1'
+                summary: 'Edge cluster for PLR1 uplinks'
+                members:
+                  - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+                  - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+                fabric_profile_bindings:
+                  - resource_type: "FabricProfileClusterKeepAlive"
+                    fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+    DiscoverEdge1Vnics:
+        Type:  VM
+        TestVM: 'nsxedge.[1]'
+        vnic:
+            '[1-3]':
+                discover: 'true'
+    DiscoverEdge2Vnics:
+        Type:  VM
+        TestVM: 'nsxedge.[2]'
+        vnic:
+            '[1-3]':
+                discover: 'true'
+    AttachEdge1Vnic2ToLS3:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[2]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[3]
+        connected: 1
+        startconnected: 1
+    AttachEdge1Vnic2ToLS6:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[2]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[6]
+        connected: 1
+        startconnected: 1
+    AttachEdge2Vnic2ToLS4:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[2].vnic.[2]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[4]
+        connected: 1
+        startconnected: 1
+    AttachEdge2Vnic2ToLS6:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[2].vnic.[2]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[6]
+        connected: 1
+        startconnected: 1
+    AttachEdge2Vnic2ToLS3:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[2].vnic.[2]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[3]
+        connected: 1
+        startconnected: 1
+    DiscoverTransitLS: &DISCOVER_TRANSIT_LS
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+           '[500]':
+                discover: 'true'
+                logical_router_id: 'nsxmanager.[1].logicalrouter.[2]'
+    AttachEdge1Vnic3ToTransitLS:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[3]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[500]
+        connected: 1
+        startconnected: 1
+    AttachEdge2Vnic3ToTransitLS:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[2].vnic.[3]'
+        reconfigure: 'true'
+        portgroup: nsxmanager.[1].logicalswitch.[500]
+# DHCP Relay configuration creation related workloads
+    CreateDHCPRelayServiceProfile1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            dhcprelay_profile:
+                '[1]':
+                    resource_type: 'DhcpRelayProfile'
+                    ipaddresses:
+                      - '192.168.9.4'
+    CreateServiceProfileBinding: &CREATE_SERVICE_PROFILE_BINDING
+            Type: "NetAdapter"
+            reconfigure: true
+            service_bindings:
+              - resource_type: 'DhcpRelayService'
+                service_id: nsxmanager.[1].dhcprelay_service.[1]->profile_id
+    CreateService1BindingLRPort1: &CREATE_SERVICE1_BINDING_LR_PORT1
+            <<: *CREATE_SERVICE_PROFILE_BINDING
+            Testadapter: "nsxmanager.[1].logicalrouterport.[1]"
+    CreateService1BindingLRPort2: &CREATE_SERVICE1_BINDING_LR_PORT2
+            <<: *CREATE_SERVICE_PROFILE_BINDING
+            Testadapter: "nsxmanager.[1].logicalrouterport.[2]"
+    CreateService2BindingLRPort2: &CREATE_SERVICE2_BINDING_LR_PORT2
+            Type: "NetAdapter"
+            Testadapter: "nsxmanager.[1].logicalrouterport.[2]"
+            reconfigure: true
+            service_bindings:
+              - resource_type: 'DhcpRelayService'
+                service_id: nsxmanager.[1].dhcprelay_service.[2]->profile_id
+    CreateService2LRPort23Binding: &CREATE_SERVICE2_LRPORT23_BINDING
+            Type: "NetAdapter"
+            Testadapter: "nsxmanager.[1].logicalrouterport.[2-3]"
+            reconfigure: true
+            service_bindings:
+              - resource_type: 'DhcpRelayService'
+                service_id: nsxmanager.[1].dhcprelay_service.[2]->profile_id
+    CreateService2LRPort2Binding: &CREATE_SERVICE2_LRPORT2_BINDING
+            Type: "NetAdapter"
+            Testadapter: "nsxmanager.[1].logicalrouterport.[2]"
+            reconfigure: true
+            service_bindings:
+              - resource_type: 'DhcpRelayService'
+                service_id: nsxmanager.[1].dhcprelay_service.[2]->profile_id
+    CreateDHCPRelayService1: &CREATE_DhcpRelayService
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            dhcprelay_service:
+                '[1]':
+                    resource_type: 'DhcpRelayService'
+                    dhcp_relay_profile_id: nsxmanager.[1].dhcprelay_profile.[1]->profile_id
+    CreateDHCPRelayService2: &CREATE_DhcpRelayService2
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            dhcprelay_service:
+                '[2]':
+                    resource_type: 'DhcpRelayService'
+                    dhcp_relay_profile_id: nsxmanager.[1].dhcprelay_profile.[2]->profile_id
+    CreateDHCPRelayService3: &CREATE_DhcpRelayService3
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            dhcprelay_service:
+                '[3]':
+                    resource_type: 'DhcpRelayService'
+                    dhcp_relay_profile_id: nsxmanager.[1].dhcprelay_profile.[3]->profile_id
+
+# DHCP Relay configuration verification workloads
+    VerifyDHCPRelayEnabledLRPort12cli:
+        KVM: &VerifyDHCPRelayEnabledLRPort12cli--KVM
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            get_dhcp_relay_info: true
+            endpoints: 'kvm.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.9.4"]
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.9.4"]
+        ESX: &VerifyDHCPRelayEnabledLRPort12cli--ESX
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            endpoints: 'esx.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.9.4"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.9.4"
+    VerifyDHCPRelayEnabledLRPort123cli:
+        KVM: &VerifyDHCPRelayEnabledLRPort123cli--KVM
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            get_dhcp_relay_info: true
+            endpoints: 'kvm.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.10.4", "192.168.11.4"]
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.11.4", "192.168.12.4"]
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[3]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.11.4", "192.168.12.4"]
+        ESX: &VerifyDHCPRelayEnabledLRPort123cli--ESX
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            endpoints: 'esx.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.10.4,192.168.11.4"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.11.4,192.168.12.4"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[3]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.11.4,192.168.12.4"
+    VerifyDHCPRelayEnabledLRPort123cliUpdate:
+        KVM: &VerifyDHCPRelayEnabledLRPort123cliUpdate--KVM
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            get_dhcp_relay_info: true
+            endpoints: 'kvm.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.10.4"]
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.11.4"]
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[3]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.11.4"]
+        ESX: &VerifyDHCPRelayEnabledLRPort123cliUpdate--ESX
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            endpoints: 'esx.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.10.4"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.11.4"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[3]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.11.4"
+    VerifyDHCPRelayEnabledLRPort123cliPostUpdate:
+        KVM: &VerifyDHCPRelayEnabledLRPort123cliPostUpdate--KVM
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            get_dhcp_relay_info: true
+            endpoints: 'kvm.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.11.4"]
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.12.4"]
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[3]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.11.4"]
+        ESX: &VerifyDHCPRelayEnabledLRPort123cliPostUpdate--ESX
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            endpoints: 'esx.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.11.4"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.12.4"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[3]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.11.4"
+    VerifyDHCPRelayEnabledLRPort12cli8Servers:
+        KVM: &VerifyDHCPRelayEnabledLRPort12cli8Servers--KVM
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            get_dhcp_relay_info: true
+            endpoints: 'kvm.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.9.10", "192.168.9.11",
+                                           "192.168.9.4", "192.168.9.5",
+                                           "192.168.9.6", "192.168.9.7",
+                                           "192.168.9.8", "192.168.9.9"]
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.9.10", "192.168.9.11",
+                                           "192.168.9.4", "192.168.9.5",
+                                           "192.168.9.6", "192.168.9.7",
+                                           "192.168.9.8", "192.168.9.9"]
+        ESX: &VerifyDHCPRelayEnabledLRPort12cli8Servers--ESX
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            endpoints: 'esx.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.9.4,192.168.9.5,192.168.9.6,192.168.9.7,192.168.9.8,192.168.9.9,192.168.9.10,192.168.9.11"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.9.4,192.168.9.5,192.168.9.6,192.168.9.7,192.168.9.8,192.168.9.9,192.168.9.10,192.168.9.11"
+    VerifyDHCPRelayDisabledLRPort12cli:
+        KVM: &VerifyDHCPRelayDisabledLRPort12cli--KVM
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            endpoints: 'kvm.[1]'
+            execution_type: 'cli'
+            noofretries: "3"
+            get_dhcp_relay_info: true
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "undef"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "undef"
+        ESX: &VerifyDHCPRelayDisabledLRPort12cli--ESX
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            endpoints: 'esx.[1]'
+            execution_type: 'cli'
+            noofretries: "3"
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "not enabled"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "not enabled"
+    VerifyDHCPRelayDisabledLRPort1cli:
+        KVM: &VerifyDHCPRelayDisabledLRPort1cli--KVM
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            endpoints: 'kvm.[1]'
+            execution_type: 'cli'
+            noofretries: "3"
+            get_dhcp_relay_info: true
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "undef"
+        ESX: &VerifyDHCPRelayDisabledLRPort1cli--ESX
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            endpoints: 'esx.[1]'
+            execution_type: 'cli'
+            noofretries: "3"
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "not enabled"
+    VerifyDHCPRelayDisabledLRPort2cli:
+        KVM: &VerifyDHCPRelayDisabledLRPort2cli--KVM
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            endpoints: 'kvm.[1]'
+            execution_type: 'cli'
+            noofretries: "3"
+            get_dhcp_relay_info: true
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "undef"
+        ESX: &VerifyDHCPRelayDisabledLRPort2cli--ESX
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            endpoints: 'esx.[1]'
+            execution_type: 'cli'
+            noofretries: "3"
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "not enabled"
+    VerifyDHCPRelayEnabledKVMTLRPort12cli:
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            get_dhcp_relay_info: true
+            endpoints: 'kvm.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.10.4", "192.168.9.4"]
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.10.5", "192.168.12.4"]
+    VerifyDHCPRelayEnabledKVMPLRPort1cli:
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[2]
+            logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            get_dhcp_relay_info: true
+            endpoints: 'kvm.[1]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[4]->lr_port_id"
+                      dhcp_relay_servers: ["192.168.10.5", "192.168.12.4"]
+    VerifyDHCPRelayEnabledESXTLRPort12cli:
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[1]
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            endpoints: 'esx.[1-2]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[1]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.10.4,192.168.9.4"
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[2]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.10.5,192.168.12.4"
+    VerifyDHCPRelayEnabledESXPLRPort1cli:
+            Type: "Router"
+            TestRouter: nsxmanager.[1].logicalrouter.[2]
+            logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+            execution_type: 'cli'
+            noofretries: "3"
+            endpoints: 'esx.[1-2]'
+            'get_logical_router_ports[?]contain_once':
+                table:
+                    - lrport_uuid: "nsxmanager.[1].logicalrouterport.[4]->lr_port_id"
+                      dhcp_relay_servers: "server list: 192.168.10.5,192.168.12.4"
+
+# VM related workloads
+    PoweronAllVMs:
+           Type: VM
+           TestVM: 'vm.[-1]'
+           vmstate: poweron
+    PoweroffAllVMs:
+          Type: VM
+          TestVM: 'vm.[-1]'
+          vmstate: poweroff
+    PoweronDHCPServer1: &POWERON_DHCP_SERVER1
+           Type: DHCPServer
+           TestDHCPServer: 'dhcpserver.[1]'
+           vmstate: poweron
+    PoweronDHCPServer2: &POWERON_DHCP_SERVER2
+           Type: DHCPServer
+           TestDHCPServer: 'dhcpserver.[2]'
+           vmstate: poweron
+    PoweronDHCPServer3: &POWERON_DHCP_SERVER3
+           Type: DHCPServer
+           TestDHCPServer: 'dhcpserver.[3]'
+           vmstate: poweron
+    PoweronDHCPServer4: &POWERON_DHCP_SERVER4
+           Type: DHCPServer
+           TestDHCPServer: 'dhcpserver.[4]'
+           vmstate: poweron
+    PoweronDHCPServer5: &POWERON_DHCP_SERVER5
+           Type: DHCPServer
+           TestDHCPServer: 'dhcpserver.[5]'
+           vmstate: poweron
+    PoweronDHCPServer6: &POWERON_DHCP_SERVER6
+           Type: DHCPServer
+           TestDHCPServer: 'dhcpserver.[6]'
+           vmstate: poweron
+    PoweronDHCPServer7: &POWERON_DHCP_SERVER7
+           Type: DHCPServer
+           TestDHCPServer: 'dhcpserver.[7]'
+           vmstate: poweron
+    PoweronDHCPServer8: &POWERON_DHCP_SERVER8
+           Type: DHCPServer
+           TestDHCPServer: 'dhcpserver.[8]'
+           vmstate: poweron
+    PoweroffDHCPServers: &POWER_OFF_DHCP_SERVERS
+          Type: DHCPServer
+          TestDHCPServer: 'dhcpserver.[-1]'
+          vmstate: poweroff
+    PoweroffDHCPServer3: &POWER_OFF_DHCPSERVER3
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[3]'
+            vmstate: poweroff
+    PoweroffDHCPServer2: &POWER_OFF_DHCPSERVER2
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[2]'
+            vmstate: poweroff
+    RestartDHCPServer: &RESTART_DHCP_SERVER
+            Type: "DHCPServer"
+            restart_dhcp_server:
+              execution_type: 'cmd'
+    RestartDHCPServer1: &RESTART_DHCP_SERVER1
+            <<: *RESTART_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[1]"
+    RestartDHCPServer2: &RESTART_DHCP_SERVER2
+            <<: *RESTART_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[2]"
+    RestartDHCPServer3: &RESTART_DHCP_SERVER3
+            <<: *RESTART_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[3]"
+    RestartDHCPServer4: &RESTART_DHCP_SERVER4
+            <<: *RESTART_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[4]"
+    SetupDHCPServer: &SETUP_DHCP_SERVER
+            Type: "DHCPServer"
+            unconfigure_dhcp_server:
+               execution_type: "cmd"
+    SetupDHCPServer1: &SETUP_DHCP_SERVER1
+            <<: *SETUP_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[1]"
+    SetupDHCPServer2: &SETUP_DHCP_SERVER2
+            <<: *SETUP_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[2]"
+    SetupDHCPServer3: &SETUP_DHCP_SERVER3
+            <<: *SETUP_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[3]"
+    SetupDHCPServer4: &SETUP_DHCP_SERVER4
+            <<: *SETUP_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[4]"
+    InstallDhcpServer: &INSTALL_DHCP_SERVER
+            Type: "DHCPServer"
+            install_dhcp_server:
+               execution_type: "cmd"
+    InstallDhcpServer1: &INSTALL_DHCP_SERVER1
+            <<: *INSTALL_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[1]"
+    InstallDhcpServer2: &INSTALL_DHCP_SERVER2
+            <<: *INSTALL_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[2]"
+    InstallDhcpServer3: &INSTALL_DHCP_SERVER3
+            <<: *INSTALL_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[3]"
+    InstallDhcpServer4: &INSTALL_DHCP_SERVER4
+            <<: *INSTALL_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[4]"
+    InstallDhcpServer1-8:
+            <<: *INSTALL_DHCP_SERVER
+            TestDHCPServer: "dhcpserver.[1-8]"
+    EnableDHCPServer1Oninterface:
+        ESX: &EnableDHCPServer1Oninterface--ESX
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1]"
+            enable_dhcp_server_on_interfaces:
+               execution_type: "cmd"
+               adapter_interface: 'dhcpserver.[1].vnic.[1]'
+        KVM: &EnableDHCPServer1Oninterface--KVM
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1]"
+            enable_dhcp_server_on_interfaces:
+               execution_type: "cmd"
+               adapter_interface: 'dhcpserver.[1].vif.[1]'
+    EnableDHCPServer2Oninterface:
+        ESX: &EnableDHCPServer2Oninterface--ESX
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[2]"
+            enable_dhcp_server_on_interfaces:
+               execution_type: "cmd"
+               adapter_interface: 'dhcpserver.[2].vnic.[1]'
+        KVM: &EnableDHCPServer2Oninterface--KVM
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[2]"
+            enable_dhcp_server_on_interfaces:
+               execution_type: "cmd"
+               adapter_interface: 'dhcpserver.[2].vif.[1]'
+    EnableDHCPServer3Oninterface:
+        ESX: &EnableDHCPServer3Oninterface--ESX
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[3]"
+            enable_dhcp_server_on_interfaces:
+               execution_type: "cmd"
+               adapter_interface: 'dhcpserver.[3].vnic.[1]'
+        KVM: &EnableDHCPServer3Oninterface--KVM
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[3]"
+            enable_dhcp_server_on_interfaces:
+               execution_type: "cmd"
+               adapter_interface: 'dhcpserver.[3].vif.[1]'
+    EnableDHCPServer4Oninterface:
+        ESX: &EnableDHCPServer4Oninterface--ESX
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[4]"
+            enable_dhcp_server_on_interfaces:
+               execution_type: "cmd"
+               adapter_interface: 'dhcpserver.[4].vnic.[1]'
+        KVM: &EnableDHCPServer4Oninterface--KVM
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[4]"
+            enable_dhcp_server_on_interfaces:
+               execution_type: "cmd"
+               adapter_interface: 'dhcpserver.[4].vif.[1]'
+    DeleteVifdhcpserver1:
+        KVM: &DeleteVifdhcpserver1--KVM
+            Type: VM
+            TestVM: 'dhcpserver.[1]'
+            deletevif: 'dhcpserver.[1].vif.[1]'
+        ESX: &DeleteVifdhcpserver1--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[1]'
+            deletevnic: 'dhcpserver.[1].vnic.[1]'
+    DeleteVifdhcpserver2:
+        KVM: &DeleteVifdhcpserver2--KVM
+            Type: VM
+            TestVM: 'dhcpserver.[2]'
+            deletevif: 'dhcpserver.[2].vif.[1]'
+        ESX: &DeleteVifdhcpserver2--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[2]'
+            deletevnic: 'dhcpserver.[2].vnic.[1]'
+    DeleteVifdhcpserver3:
+        KVM: &DeleteVifdhcpserver3--KVM
+            Type: VM
+            TestVM: 'dhcpserver.[3]'
+            deletevif: 'dhcpserver.[3].vif.[1]'
+        ESX: &DeleteVifdhcpserver3--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[3]'
+            deletevnic: 'dhcpserver.[3].vnic.[1]'
+    DeleteVif3dhcpservers:
+        KVM: &DeleteVifdhcpservers--KVM
+            Type: VM
+            TestVM: 'dhcpserver.[1-3]'
+            deletevif: 'dhcpserver.[x=dhcpserver_index].vif.[1]'
+        ESX: &DeleteVifdhcpservers--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[1-3]'
+            deletevnic: 'dhcpserver.[x=dhcpserver_index].vnic.[1]'
+    DeleteVif4dhcpservers:
+        KVM: &DeleteVif4dhcpservers--KVM
+            Type: VM
+            TestVM: 'dhcpserver.[1-4]'
+            deletevif: 'dhcpserver.[x=dhcpserver_index].vif.[1]'
+        ESX: &DeleteVif4dhcpservers--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[1-4]'
+            deletevnic: 'dhcpserver.[x=dhcpserver_index].vnic.[1]'
+    DeleteVifsDHCPServers1-8:
+        ESX: &DeleteVifsDHCPServers1-8--ESX
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[1-8]'
+            deletevnic: 'dhcpserver.[x=dhcpserver_index].vnic.[1]'
+        KVM: &DeleteVifsDHCPServers1-8--KVM
+            Type: DHCPServer
+            TestDHCPServer: 'dhcpserver.[1-8]'
+            deletevif: 'dhcpserver.[x=dhcpserver_index].vif.[1]'
+    AddConfigurationnetwork1DHCPServer1interface: &DHCP_RELAY_SERVER1_NETWORK1
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1]"
+            configure_dhcp_server:
+               execution_type: "cmd"
+               dhcp_type: 'dynamic'
+               subnet: '192.168.7.0'
+               netmask: '255.255.255.0'
+    AddConfigurationnetwork2DHCPServer1interface: &DHCP_RELAY_SERVER1_NETWORK2
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1]"
+            configure_dhcp_server:
+               execution_type: "cmd"
+               dhcp_type: 'dynamic'
+               subnet: '192.168.8.0'
+               netmask: '255.255.255.0'
+    AddConfigurationnetwork3DHCPServer1interface: &DHCP_RELAY_SERVER1_NETWORK3
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1]"
+            configure_dhcp_server:
+               execution_type: "cmd"
+               dhcp_type: 'dynamic'
+               subnet: '192.168.9.0'
+               netmask: '255.255.255.0'
+    AddConfigurationnetwork1DHCPServer2interface: &DHCP_RELAY_SERVER2_NETWORK1
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[2]"
+            configure_dhcp_server:
+               execution_type: "cmd"
+               dhcp_type: 'dynamic'
+               subnet: '192.168.7.0'
+               netmask: '255.255.255.0'
+    AddConfigurationnetwork2DHCPServer2interface: &DHCP_RELAY_SERVER2_NETWORK2
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[2]"
+            configure_dhcp_server:
+               execution_type: "cmd"
+               dhcp_type: 'dynamic'
+               subnet: '192.168.8.0'
+               netmask: '255.255.255.0'
+    AddConfigurationnetwork3DHCPServer2interface: &DHCP_RELAY_SERVER2_NETWORK3
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[2]"
+            configure_dhcp_server:
+               execution_type: "cmd"
+               dhcp_type: 'dynamic'
+               subnet: '192.168.9.0'
+               netmask: '255.255.255.0'
+    AddConfigurationnetwork1DHCPServer3interface: &DHCP_RELAY_SERVER3_NETWORK1
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[3]"
+            configure_dhcp_server:
+               execution_type: "cmd"
+               dhcp_type: 'dynamic'
+               subnet: '192.168.7.0'
+               netmask: '255.255.255.0'
+    AddConfigurationnetwork2DHCPServer3interface: &DHCP_RELAY_SERVER3_NETWORK2
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[3]"
+            configure_dhcp_server:
+               execution_type: "cmd"
+               dhcp_type: 'dynamic'
+               subnet: '192.168.8.0'
+               netmask: '255.255.255.0'
+    AddConfigurationnetwork3DHCPServer3interface: &DHCP_RELAY_SERVER3_NETWORK3
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[3]"
+            configure_dhcp_server:
+               execution_type: "cmd"
+               dhcp_type: 'dynamic'
+               subnet: '192.168.9.0'
+               netmask: '255.255.255.0'
+    Setup8DHCPServers:
+            Type: "DHCPServer"
+            unconfigure_dhcp_server:
+               execution_type: "cmd"
+            TestDHCPServer: "dhcpserver.[1-8]"
+    AddDefaultConfigurationStress8DHCPServerinterface:
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1-8]"
+            configure_dhcp_server:
+               execution_type: 'cmd'
+               dhcp_type: 'dynamic'
+               subnet: '192.168.9.0'
+               netmask: '255.255.255.0'
+    AddStormDynamicDHCPConfiguration:
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1]"
+            configure_dhcp_server:
+               execution_type: 'cmd'
+               dhcp_type: 'dynamic'
+               subnet: '192.168.7.0'
+               netmask: '255.255.255.0'
+               ip_range: '192.168.7.1 - 192.168.7.100'
+    AddDynamicDHCPConfigurationVM1Stress8DHCPServers:
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1-8]"
+            configure_dhcp_server:
+               execution_type: 'cmd'
+               dhcp_type: 'dynamic'
+               subnet: '192.168.7.0'
+               netmask: '255.255.255.0'
+               ip_range: '192.168.7.1 - 192.168.7.100'
+    AddDynamicDHCPConfigurationVM2Stress8DHCPServers:
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1-8]"
+            configure_dhcp_server:
+               execution_type: 'cmd'
+               dhcp_type: 'dynamic'
+               subnet: '192.168.8.0'
+               netmask: '255.255.255.0'
+               ip_range: '192.168.8.1 - 192.168.8.100'
+    Restart8DHCPServers:
+            Type: "DHCPServer"
+            TestDHCPServer: "dhcpserver.[1-8]"
+            restart_dhcp_server:
+              execution_type: 'cmd'
+    CreateStress8DHCPServersDHCPRelayServiceProfile1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            dhcprelay_profile:
+                  '[1]':
+                      resource_type: 'DhcpRelayProfile'
+                      ipaddresses:
+                        - '192.168.9.4'
+                        - '192.168.9.5'
+                        - '192.168.9.6'
+                        - '192.168.9.7'
+                        - '192.168.9.8'
+                        - '192.168.9.9'
+                        - '192.168.9.10'
+                        - '192.168.9.11'
+    ConfigureVM1Vif1IP:
+        ESX: &ConfigureVM1Vif1IP--ESX
+            Type: NetAdapter
+            Testadapter: 'vm.[1].vnic.[1]'
+            ipv4:       'dhcp'
+        KVM: &ConfigureVM1Vif1IP--KVM
+            Type: NetAdapter
+            Iterations: 3
+            Testadapter: 'vm.[1].vif.[1]'
+            ipv4:       'dhcp'
+    ConfigureVM2Vif1IP:
+        ESX: &ConfigureVM2Vif1IP--ESX
+            Type: NetAdapter
+            Testadapter: 'vm.[2].vnic.[1]'
+            ipv4:       'dhcp'
+        KVM: &ConfigureVM2Vif1IP--KVM
+            Type: NetAdapter
+            Iterations: 3
+            Testadapter: 'vm.[2].vif.[1]'
+            ipv4:       'dhcp'
+    ConfigureVM3Vif1IP:
+        ESX: &ConfigureVM3Vif1IP--ESX
+            Type: NetAdapter
+            Testadapter: 'vm.[3].vnic.[1]'
+            ipv4:       'dhcp'
+        KVM: &ConfigureVM3Vif1IP--KVM
+            Type: NetAdapter
+            Iterations: 3
+            Testadapter: 'vm.[3].vif.[1]'
+            ipv4:       'dhcp'
+    PoweroffVMs: &POWER_OFF_VMS
+          Type: VM
+          TestVM: 'vm.[-1]'
+          vmstate: poweroff
+    DeleteVM1Vif1:
+        ESX: &DeleteVM1Vif1--ESX
+            Type: VM
+            TestVM: 'vm.[1]'
+            deletevnic: 'vm.[1].vnic.[1]'
+        KVM: &DeleteVM1Vif1--KVM
+            Type: VM
+            TestVM: 'vm.[1]'
+            deletevif: 'vm.[1].vif.[1]'
+    DeleteVMsVif:
+        ESX: &DeleteVMsVif--ESX
+            Type: VM
+            TestVM: 'vm.[1-3]'
+            deletevnic: 'vm.[x=vm_index].vnic.[1]'
+        KVM: &DeleteVMsVif--KVM
+            Type: VM
+            TestVM: 'vm.[1-3]'
+            deletevif: 'vm.[x=vm_index].vif.[1]'
+    DeleteVM2Vif1:
+        ESX: &DeleteVM2Vif1--ESX
+            Type: VM
+            TestVM: 'vm.[2]'
+            deletevnic: 'vm.[2].vnic.[1]'
+        KVM: &DeleteVM2Vif1--KVM
+            Type: VM
+            TestVM: 'vm.[2]'
+            deletevif: 'vm.[2].vif.[1]'
+    DeleteVM3Vif1:
+        ESX: &DeleteVM3Vif1--ESX
+            Type: VM
+            TestVM: 'vm.[3]'
+            deletevnic: 'vm.[3].vnic.[1]'
+        KVM: &DeleteVM3Vif1--KVM
+            Type: VM
+            TestVM: 'vm.[3]'
+            deletevif: 'vm.[3].vif.[1]'
+    DeleteVifsVM1-10:
+        ESX: &DeleteVifsVM1-10--ESX
+            Type: VM
+            TestVM: 'vm.[1-10]'
+            deletevnic: 'vm.[x=vm_index].vnic.[1]'
+        KVM: &DeleteVifsVM1-10--KVM
+            Type: VM
+            TestVM: 'vm.[1-10]'
+            deletevif: 'vm.[x=vm_index].vif.[1]'
+    VerifyNoVM1Vif1IP:
+        KVM: &VerifyNoVM1Vif1IP--KVM
+            Type: 'NetAdapter'
+            Testadapter: vm.[1].vif.[1]
+            sleepbetweenworkloads: 30
+            read:
+               ip[?]not_defined: ''
+        ESX: &VerifyNoVM1Vif1IP--ESX
+            Type: 'NetAdapter'
+            Testadapter: vm.[1].vnic.[1]
+            sleepbetweenworkloads: 30
+            read:
+               ip[?]equal_to: 'NULL'
+    VerifyNoVM2Vif1IP:
+        KVM: &VerifyNoVM2Vif1IP--KVM
+            Type: 'NetAdapter'
+            Testadapter: vm.[2].vif.[1]
+            sleepbetweenworkloads: 30
+            read:
+               ip[?]not_defined: ''
+        ESX: &VerifyNoVM2Vif1IP--ESX
+            Type: 'NetAdapter'
+            Testadapter: vm.[2].vnic.[1]
+            sleepbetweenworkloads: 30
+            read:
+               ip[?]equal_to: 'NULL'
+    VerifyNoVM3Vif1IP:
+        KVM: &VerifyNoVM3Vif1IP--KVM
+            Type: 'NetAdapter'
+            Testadapter: vm.[3].vif.[1]
+            sleepbetweenworkloads: 30
+            read:
+               ip[?]not_defined: ''
+        ESX: &VerifyNoVM3Vif1IP--ESX
+            Type: 'NetAdapter'
+            Testadapter: vm.[3].vnic.[1]
+            sleepbetweenworkloads: 30
+            read:
+               ip[?]equal_to: 'NULL'
+    StartTSharkDHCPServer1: &START_TSHARK_TEMPLATE
+          Type: VM
+          TestVM: 'dhcpserver.[1]'
+          capture:
+              tool: 'tshark'
+              file_name: '/tmp/tshark123.cap'
+              adapter_name: 'eth1'
+              execution_type: 'cmd'
+          expectedresult: 'Ignore'
+    StartTSharkDHCPServer1-3:
+          <<: *START_TSHARK_TEMPLATE
+          TestVM: 'dhcpserver.[1-3]'
+    StartTSharkDHCPServer1-4:
+          <<: *START_TSHARK_TEMPLATE
+          TestVM: 'dhcpserver.[1-4]'
+    StartTSharkDHCPServer1-8:
+          <<: *START_TSHARK_TEMPLATE
+          TestVM: 'dhcpserver.[1-8]'
+    StartTSharkDHCPServer2:
+          <<: *START_TSHARK_TEMPLATE
+          TestVM: 'dhcpserver.[2]'
+    StartTSharkDHCPServer3:
+          <<: *START_TSHARK_TEMPLATE
+          TestVM: 'dhcpserver.[3]'
+    StartTSharkDHCPServer4:
+          <<: *START_TSHARK_TEMPLATE
+          TestVM: 'dhcpserver.[4]'
+    StartTSharkVM1-2:
+          <<: *START_TSHARK_TEMPLATE
+          TestVM: 'vm.[1-2]'
+    StartTSharkVM1-3:
+          <<: *START_TSHARK_TEMPLATE
+          TestVM: 'vm.[1-3]'
+    StartTSharkVM2:
+          <<: *START_TSHARK_TEMPLATE
+          TestVM: 'vm.[2]'
+
+    StopTSharkDHCPServer1: &STOP_TSHARK_TEMPLATE
+          Type: VM
+          TestVM: 'dhcpserver.[1]'
+          sleepbetweenworkloads: "30"
+          tool: 'tshark'
+          execution_type: 'cmd'
+          file_name: '/tmp/tshark123.cap'
+          stop_capture: true
+          read_filter: '-T fields -E header=y -e ip.src -e ip.dst -e eth.src -e eth.dst -e arp.dst.proto_ipv4 -e arp.src.proto_ipv4'
+          'get_capture_data[?]defined':
+             table: {}
+          expectedresult: 'Ignore'
+
+    StopTSharkDHCPServer2:
+         <<: *STOP_TSHARK_TEMPLATE
+         TestVM: 'dhcpserver.[2]'
+         'get_capture_data[?]defined':
+             table: {}
+
+    StopTSharkDHCPServer3:
+         <<: *STOP_TSHARK_TEMPLATE
+         TestVM: 'dhcpserver.[3]'
+         'get_capture_data[?]defined':
+             table: {}
+
+    StopTSharkDHCPServer4:
+         <<: *STOP_TSHARK_TEMPLATE
+         TestVM: 'dhcpserver.[4]'
+         'get_capture_data[?]defined':
+             table: {}
+
+    StopTSharkDHCPServer1-4:
+         <<: *STOP_TSHARK_TEMPLATE
+         TestVM: 'dhcpserver.[1-4]'
+         'get_capture_data[?]defined':
+             table: {}
+
+    StopTSharkDHCPServer1-3:
+         <<: *STOP_TSHARK_TEMPLATE
+         TestVM: 'dhcpserver.[1-3]'
+         'get_capture_data[?]defined':
+             table: {}
+
+    StopTSharkDHCPServer1-8:
+         <<: *STOP_TSHARK_TEMPLATE
+         TestVM: 'dhcpserver.[1-8]'
+         'get_capture_data[?]defined':
+             table: {}
+
+    StopTSharkVM1-2:
+         <<: *STOP_TSHARK_TEMPLATE
+         TestVM: 'vm.[1-2]'
+         'get_capture_data[?]defined':
+             table: {}
+
+    StopTSharkVM2:
+         <<: *STOP_TSHARK_TEMPLATE
+         TestVM: 'vm.[2]'
+         'get_capture_data[?]defined':
+             table: {}
+
+    StopTSharkVM1-3:
+         <<: *STOP_TSHARK_TEMPLATE
+         TestVM: 'vm.[1-3]'
+         'get_capture_data[?]defined':
+             table: {}
+
+# Clean up related workloads
+    UndiscoverHostNodes:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletehostnode: nsxmanager.[1].hostnode.[-1]
+            skipmethod: 1
+    DeleteDHCPRelayServiceProfileError: &DELETE_DhcpRelayService_PROFILE_ERROR
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletedhcprelay_profile: "nsxmanager.[1].dhcprelay_profile.[1]"
+            ExpectedResult:
+                status_code: "BAD_REQUEST"
+    DeleteDHCPRelayServiceProfile: &DELETE_DhcpRelayService_PROFILES
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletedhcprelay_profile: "nsxmanager.[1].dhcprelay_profile.[-1]"
+    DeleteDHCPRelayService: &DELETE_DhcpRelayService
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletedhcprelay_service: "nsxmanager.[1].dhcprelay_service.[-1]"
+    DeleteLRPort1DHCPRelayServiceBinding: &DELETE_LRPORT1_DhcpRelayService_BINDING
+            Type: "NetAdapter"
+            Testadapter: "nsxmanager.[1].logicalrouterport.[1]"
+            reconfigure: true
+            service_bindings: []
+    DeleteLRPort2DHCPRelayServiceBinding: &DELETE_LRPORT2_DhcpRelayService_BINDING
+            Type: "NetAdapter"
+            Testadapter: "nsxmanager.[1].logicalrouterport.[2]"
+            reconfigure: true
+            service_bindings: []
+    DeleteLRPort3DHCPRelayServiceBinding: &DELETE_LRPORT3_DhcpRelayService_BINDING
+            Type: "NetAdapter"
+            Testadapter: "nsxmanager.[1].logicalrouterport.[3]"
+            reconfigure: true
+            service_bindings: []
+    DeletePLRPort1DHCPRelayServiceBinding: &DELETE_PLRPORT1_DhcpRelayService_BINDING
+            Type: "NetAdapter"
+            Testadapter: "nsxmanager.[1].logicalrouterport.[4]"
+            reconfigure: true
+            service_bindings: []
+    DeleteUplinkProfile: &DELETE_UPLINK_PROFILES
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       deleteuplinkprofile: 'nsxmanager.[1].uplinkprofile.[-1]'
+    DeleteTransportNode: &DELETE_TRANSPORT_NODES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletetransportnode: 'nsxmanager.[1].transportnode.[-1]'
+    DeleteTransportNode1-2:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletetransportnode: 'nsxmanager.[1].transportnode.[1-2]'
+    DeleteTransportZone: &DELETE_TRANSPORT_ZONES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletetransportzone: 'nsxmanager.[1].transportzone.[-1]'
+    DeleteLogicalPort: &DELETE_LOGICAL_PORTS
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+        query_params:
+           detach: 'true'
+    DeleteLogicalSwitch: &DELETE_LOGICAL_SWITCHES
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[-1]'
+    DeleteLogicalRouter: &DELETE_LOGICAL_ROUTERS
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletelogicalrouter: "nsxmanager.[1].logicalrouter.[-1]"
+    DeleteLogicalRouterPort: &DELETE_LOGICAL_ROUTER_PORTS
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[-1]"
+    DeleteLogicalRouterUplinkPort: &DELETE_LOGICAL_ROUTER_UPLINK_PORTS
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        sleepbetweenworkloads: '10'
+        deletelogicalrouteruplinkport: "nsxmanager.[1].logicalrouteruplinkport.[-1]"
+    DeleteLogicalRouterLinkPort: &DELETE_LOGICAL_ROUTER_LINK_PORTS
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletelogicalrouterlinkport: "nsxmanager.[1].logicalrouterlinkport.[-1]"
+    DeleteTransitLSNode: &DELETE_TRANSIT_LS_NODE
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        skipmethod: 1
+        deletelogicalswitch: nsxmanager.[1].logicalswitch.[500]
+    DeleteEdgeNode: &DELETE_EDGE_NODE
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteedgenode: "nsxmanager.[1].edgenode.[-1]"
+    DeleteEdgeCluster: &DELETE_EDGE_CLUSTER
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteedgecluster: "nsxmanager.[1].edgecluster.[1]"
+    DeleteALLFabricProfile: &DELETE_FABRIC_PROFILE
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletefabricprofile: "nsxmanager.[1].fabricprofile.[-1]"
+    ReconnectEdgeVnic2ToVMNetwork:
+            Type: NetAdapter
+            TestAdapter: 'nsxedge.[1].vnic.[2]'
+            reconfigure: 'true'
+            network: 'VM Network'
+    ReconnectEdgeVnic3ToVMNetwork:
+            Type: NetAdapter
+            TestAdapter: 'nsxedge.[1].vnic.[3]'
+            reconfigure: 'true'
+            network: 'VM Network'
+    EnableDHCPServer1Oninterface--ESX: *EnableDHCPServer1Oninterface--ESX
+    EnableDHCPServer2Oninterface--ESX: *EnableDHCPServer2Oninterface--ESX
+    EnableDHCPServer3Oninterface--ESX: *EnableDHCPServer3Oninterface--ESX
+    EnableDHCPServer4Oninterface--ESX: *EnableDHCPServer4Oninterface--ESX
+    RegisterHosts--KVM: *RegisterHosts--KVM
+    UnregisterHosts--KVM: *UnregisterHosts--KVM
+    Unregister4Host--KVM: *Unregister4Host--KVM
+    DiscoverFabricHosts--KVM: *DiscoverFabricHosts--KVM
+    Discover5FabricHosts--KVM: *Discover5FabricHosts--KVM
+    Register5Hosts--KVM: *Register5Hosts--KVM
+    Register1Host--KVM: *Register1Host--KVM
+    CreateTransportNode--KVM: *CreateTransportNode--KVM
+    SetControllerOnHosts--KVM: *SetControllerOnHosts--KVM
+    SetControllerOnHost1-5--KVM: *SetControllerOnHost1-5--KVM
+    SetControllerOnHost1--KVM: *SetControllerOnHost1--KVM
+    DiscoverVteps--KVM: *DiscoverVteps--KVM
+    DiscoverVtepsHost1-5--KVM: *DiscoverVtepsHost1-5--KVM
+    ConfigureHostVTEP1IP--KVM: *ConfigureHostVTEP1IP--KVM
+    ConfigureHost1-5VTEP1IP--KVM: *ConfigureHost1-5VTEP1IP--KVM
+    Discover4FabricHost--KVM: *Discover4FabricHost--KVM
+    CreateTransportNodeHost1--KVM: *CreateTransportNodeHost1--KVM
+    Create5TransportNode--KVM: *Create5TransportNode--KVM
+    VifAttachmentVM1Switch1--KVM: *VifAttachmentVM1Switch1--KVM
+    VifAttachmentVM2Switch2--KVM: *VifAttachmentVM2Switch2--KVM
+    VifAttachmentDHCPServer1Switch3--KVM: *VifAttachmentDHCPServer1Switch3--KVM
+    VifAttachmentDHCPServer3Switch5--KVM: *VifAttachmentDHCPServer3Switch5--KVM
+    VifAttachmentDHCPServer2Switch3--KVM: *VifAttachmentDHCPServer2Switch3--KVM
+    VifAttachmentVM3Switch3--KVM: *VifAttachmentVM3Switch3--KVM
+    VifAttachmentVM3Switch4--KVM: *VifAttachmentVM3Switch4--KVM
+    VifAttachmentDHCPServer123Switch456--KVM: *VifAttachmentDHCPServer123Switch456--KVM
+    VifAttachmentDHCPServer123Switch3--KVM: *VifAttachmentDHCPServer123Switch3--KVM
+    VifAttachmentVM3Switch1--KVM: *VifAttachmentVM3Switch1--KVM
+    VifAttachmentVM1-10Switch1--KVM: *VifAttachmentVM1-10Switch1--KVM
+    VifAttachmentDHCPServer1-8Switch3--KVM: *VifAttachmentDHCPServer1-8Switch3--KVM
+    DeleteVM1Vif1--KVM: *DeleteVM1Vif1--KVM
+    DeleteVifsVM1-10--KVM: *DeleteVifsVM1-10--KVM
+    DeleteVifdhcpserver1--KVM: *DeleteVifdhcpserver1--KVM
+    DeleteVM2Vif1--KVM: *DeleteVM2Vif1--KVM
+    DeleteVifdhcpservers--KVM: *DeleteVifdhcpservers--KVM
+    DeleteVif4dhcpservers--KVM: *DeleteVif4dhcpservers--KVM
+    DeleteVifsDHCPServers1-8--KVM: *DeleteVifsDHCPServers1-8--KVM
+    DeleteVMsVif--KVM: *DeleteVMsVif--KVM
+    DeleteVM3Vif1--KVM: *DeleteVM3Vif1--KVM
+    RegisterHosts--ESX: *RegisterHosts--ESX
+    UnregisterHosts--ESX: *UnregisterHosts--ESX
+    Unregister4Host--ESX: *Unregister4Host--ESX
+    Register5Hosts--ESX: *Register5Hosts--ESX
+    Register1Host--ESX: *Register1Host--ESX
+    DiscoverFabricHosts--ESX: *DiscoverFabricHosts--ESX
+    Discover5FabricHosts--ESX: *Discover5FabricHosts--ESX
+    CreateTransportNode--ESX: *CreateTransportNode--ESX
+    SetControllerOnHosts--ESX: *SetControllerOnHosts--ESX
+    SetControllerOnHost1-5--ESX: *SetControllerOnHost1-5--ESX
+    SetControllerOnHost1--ESX: *SetControllerOnHost1--ESX
+    DiscoverVteps--ESX: *DiscoverVteps--ESX
+    DiscoverVtepsHost1-5--ESX: *DiscoverVtepsHost1-5--ESX
+    ConfigureHostVTEP1IP--ESX: *ConfigureHostVTEP1IP--ESX
+    ConfigureHost1-5VTEP1IP--ESX: *ConfigureHost1-5VTEP1IP--ESX
+    Discover4FabricHost--ESX: *Discover4FabricHost--ESX
+    CreateTransportNodeHost1--ESX: *CreateTransportNodeHost1--ESX
+    Create5TransportNode--ESX: *Create5TransportNode--ESX
+    VifAttachmentVM1Switch1--ESX: *VifAttachmentVM1Switch1--ESX
+    VifAttachmentVM2Switch2--ESX: *VifAttachmentVM2Switch2--ESX
+    VifAttachmentDHCPServer1Switch3--ESX: *VifAttachmentDHCPServer1Switch3--ESX
+    VifAttachmentDHCPServer123Switch3--ESX: *VifAttachmentDHCPServer123Switch3--ESX
+    VifAttachmentVM3Switch3--ESX: *VifAttachmentVM3Switch3--ESX
+    VifAttachmentVM3Switch4--ESX: *VifAttachmentVM3Switch4--ESX
+    VifAttachmentDHCPServer123Switch456--ESX: *VifAttachmentDHCPServer123Switch456--ESX
+    VifAttachmentVM3Switch1--ESX: *VifAttachmentVM3Switch1--ESX
+    VifAttachmentVM1-10Switch1--ESX: *VifAttachmentVM1-10Switch1--ESX
+    VifAttachmentDHCPServer1-8Switch3--ESX: *VifAttachmentDHCPServer1-8Switch3--ESX
+    DeleteVM1Vif1--ESX: *DeleteVM1Vif1--ESX
+    DeleteVifsVM1-10--ESX: *DeleteVifsVM1-10--ESX
+    DeleteVifdhcpserver1--ESX: *DeleteVifdhcpserver1--ESX
+    DeleteVM2Vif1--ESX: *DeleteVM2Vif1--ESX
+    DeleteVifdhcpservers--ESX: *DeleteVifdhcpservers--ESX
+    DeleteVif4dhcpservers--ESX: *DeleteVif4dhcpservers--ESX
+    DeleteVifsDHCPServers1-8--ESX: *DeleteVifsDHCPServers1-8--ESX
+    VifAttachmentDHCPServer3Switch5--ESX: *VifAttachmentDHCPServer3Switch5--ESX
+    VifAttachmentDHCPServer2Switch3--ESX: *VifAttachmentDHCPServer2Switch3--ESX
+    DeleteVMsVif--ESX: *DeleteVMsVif--ESX
+    DeleteVM3Vif1--ESX: *DeleteVM3Vif1--ESX
+
+CommonESXTestSteps: &CommonESXTestSteps
+    TransportZoneSetup: *TransportZoneSetup--ESX
+    TransportZoneStressSetup: *TransportZoneStressSetup--ESX
+    L2SetupAndWiringTopo1: *L2SetupAndWiringTopo1--ESX
+    L2SetupAndWiringTopo2: *L2SetupAndWiringTopo2--ESX
+    L2SetupAndWiringTopo3: *L2SetupAndWiringTopo3--ESX
+    L2SetupAndWiringNorthSouthTopo2: *L2SetupAndWiringNorthSouthTopo2--ESX
+    L2SetupAndWiringHybridDHCPServerTopo1: *L2SetupAndWiringHybridDHCPServerTopo1--ESX
+    L2SetupAndWiringStressTopo1: *L2SetupAndWiringStressTopo1--ESX
+    L2SetupAndWiringStressTopo2: *L2SetupAndWiringStressTopo2--ESX
+    DHCPServerConfigTopo1: *DHCPServerConfigTopo1--ESX
+    DHCPServerConfigTopo2: *DHCPServerConfigTopo2--ESX
+    DHCPServerConfigTopo3: *DHCPServerConfigTopo3--ESX
+    DHCPServerConfigStressTopo1: *DHCPServerConfigStressTopo1--ESX
+    DHCPServerConfigStressTopo2: *DHCPServerConfigStressTopo2--ESX
+    EnableDHCPServer1Oninterface: *EnableDHCPServer1Oninterface--ESX
+    EnableDHCPServer2Oninterface: *EnableDHCPServer2Oninterface--ESX
+    EnableDHCPServer3Oninterface: *EnableDHCPServer3Oninterface--ESX
+    EnableDHCPServer4Oninterface: *EnableDHCPServer4Oninterface--ESX
+    CleanupTopo1: *CleanupTopo1--ESX
+    CleanupTopo2: *CleanupTopo2--ESX
+    CleanupTopo3: *CleanupTopo3--ESX
+    CleanupTopoNorthSouth1: *CleanupTopoNorthSouth1--ESX
+    CleanupTopoNorthSouth2: *CleanupTopoNorthSouth2--ESX
+    CleanupTopoNorthSouth3: *CleanupTopoNorthSouth3--ESX
+    CleanupTopoHybridDHCPServer1: *CleanupTopoHybridDHCPServer1--ESX
+    CleanupStressTopo1: *CleanupStressTopo1--ESX
+    CleanupStressTopo2: *CleanupStressTopo2--ESX
+    ConfigureVM1Vif1IP: *ConfigureVM1Vif1IP--ESX
+    ConfigureVM2Vif1IP: *ConfigureVM2Vif1IP--ESX
+    ConfigureVM3Vif1IP: *ConfigureVM3Vif1IP--ESX
+    VerifyDHCPRelayEnabledLRPort12cli: *VerifyDHCPRelayEnabledLRPort12cli--ESX
+    VerifyDHCPRelayEnabledLRPort123cli: *VerifyDHCPRelayEnabledLRPort123cli--ESX
+    VerifyDHCPRelayDisabledLRPort12cli: *VerifyDHCPRelayDisabledLRPort12cli--ESX
+    VerifyDHCPRelayDisabledLRPort1cli: *VerifyDHCPRelayDisabledLRPort1cli--ESX
+    VerifyDHCPRelayDisabledLRPort2cli: *VerifyDHCPRelayDisabledLRPort2cli--ESX
+    VerifyDHCPRelayEnabledLRPort123cliUpdate: *VerifyDHCPRelayEnabledLRPort123cliUpdate--ESX
+    VerifyDHCPRelayEnabledLRPort123cliPostUpdate: *VerifyDHCPRelayEnabledLRPort123cliPostUpdate--ESX
+    VerifyDHCPRelayEnabledLRPort12cli8Servers: *VerifyDHCPRelayEnabledLRPort12cli8Servers--ESX
+    VerifyNoVM1Vif1IP: *VerifyNoVM1Vif1IP--ESX
+    VerifyNoVM2Vif1IP: *VerifyNoVM2Vif1IP--ESX
+    VerifyNoVM3Vif1IP: *VerifyNoVM3Vif1IP--ESX
+    RebootHost1-2: *RebootHost1-2--ESX
+    CreateTransportNodeHost1-2: *CreateTransportNodeHost1-2--ESX
+    VerifyVtepConnectivity: *VerifyVtepConnectivity--ESX
+
+CommonKVMTestSteps: &CommonKVMTestSteps
+    TransportZoneSetup: *TransportZoneSetup--KVM
+    TransportZoneStressSetup: *TransportZoneStressSetup--KVM
+    L2SetupAndWiringTopo1: *L2SetupAndWiringTopo1--KVM
+    L2SetupAndWiringTopo2: *L2SetupAndWiringTopo2--KVM
+    L2SetupAndWiringTopo3: *L2SetupAndWiringTopo3--KVM
+    L2SetupAndWiringNorthSouthTopo2: *L2SetupAndWiringNorthSouthTopo2--KVM
+    L2SetupAndWiringHybridDHCPServerTopo1: *L2SetupAndWiringHybridDHCPServerTopo1--KVM
+    L2SetupAndWiringStressTopo1: *L2SetupAndWiringStressTopo1--KVM
+    L2SetupAndWiringStressTopo2: *L2SetupAndWiringStressTopo2--KVM
+    DHCPServerConfigTopo1: *DHCPServerConfigTopo1--KVM
+    DHCPServerConfigTopo2: *DHCPServerConfigTopo2--KVM
+    DHCPServerConfigTopo3: *DHCPServerConfigTopo3--KVM
+    DHCPServerConfigStressTopo1: *DHCPServerConfigStressTopo1--KVM
+    DHCPServerConfigStressTopo2: *DHCPServerConfigStressTopo2--KVM
+    EnableDHCPServer1Oninterface: *EnableDHCPServer1Oninterface--KVM
+    EnableDHCPServer2Oninterface: *EnableDHCPServer2Oninterface--KVM
+    EnableDHCPServer3Oninterface: *EnableDHCPServer3Oninterface--KVM
+    EnableDHCPServer4Oninterface: *EnableDHCPServer4Oninterface--KVM
+    CleanupTopo1: *CleanupTopo1--KVM
+    CleanupTopo2: *CleanupTopo2--KVM
+    CleanupTopo3: *CleanupTopo3--KVM
+    CleanupTopoNorthSouth1: *CleanupTopoNorthSouth1--KVM
+    CleanupTopoNorthSouth2: *CleanupTopoNorthSouth2--KVM
+    CleanupTopoNorthSouth3: *CleanupTopoNorthSouth3--KVM
+    CleanupTopoHybridDHCPServer1: *CleanupTopoHybridDHCPServer1--KVM
+    CleanupStressTopo1: *CleanupStressTopo1--KVM
+    CleanupStressTopo2: *CleanupStressTopo2--KVM
+    ConfigureVM1Vif1IP: *ConfigureVM1Vif1IP--KVM
+    ConfigureVM2Vif1IP: *ConfigureVM2Vif1IP--KVM
+    ConfigureVM3Vif1IP: *ConfigureVM3Vif1IP--KVM
+    VerifyDHCPRelayEnabledLRPort12cli: *VerifyDHCPRelayEnabledLRPort12cli--KVM
+    VerifyDHCPRelayEnabledLRPort123cli: *VerifyDHCPRelayEnabledLRPort123cli--KVM
+    VerifyDHCPRelayDisabledLRPort12cli: *VerifyDHCPRelayDisabledLRPort12cli--KVM
+    VerifyDHCPRelayDisabledLRPort1cli: *VerifyDHCPRelayDisabledLRPort1cli--KVM
+    VerifyDHCPRelayDisabledLRPort2cli: *VerifyDHCPRelayDisabledLRPort2cli--KVM
+    VerifyDHCPRelayEnabledLRPort123cliUpdate: *VerifyDHCPRelayEnabledLRPort123cliUpdate--KVM
+    VerifyDHCPRelayEnabledLRPort123cliPostUpdate: *VerifyDHCPRelayEnabledLRPort123cliPostUpdate--KVM
+    VerifyDHCPRelayEnabledLRPort12cli8Servers: *VerifyDHCPRelayEnabledLRPort12cli8Servers--KVM
+    VerifyNoVM1Vif1IP: *VerifyNoVM1Vif1IP--KVM
+    VerifyNoVM2Vif1IP: *VerifyNoVM2Vif1IP--KVM
+    VerifyNoVM3Vif1IP: *VerifyNoVM3Vif1IP--KVM
+    RebootHost1-2: *RebootHost1-2--KVM
+    CreateTransportNodeHost1-2: *CreateTransportNodeHost1-2--KVM
+    VerifyVtepConnectivity: *VerifyVtepConnectivity--KVM

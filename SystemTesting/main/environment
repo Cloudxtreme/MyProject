@@ -1,0 +1,67 @@
+#!/bin/bash
+ROOT=$(dirname $(dirname $(readlink -f $BASH_SOURCE)))
+USE_LOCAL_TOOLCHAIN=${USE_LOCAL_TOOLCHAIN:-0}
+VDNET_MC_SETUP=${VDNET_MC_SETUP:-1}
+MACHINE_TYPE=`uname -m`
+if [ $VDNET_MC_SETUP = 1 ]; then
+   echo "Running VDNET_MC_SETUP to setup vdnet environment on MC"
+   . $ROOT/main/setup
+else
+   echo "VDNET_MC_SETUP is set to 0, so skipping MC setup"
+fi
+
+if [ -z "$TOOLCHAIN" -o ! -d "$TOOLCHAIN" ]; then
+   if [ $USE_LOCAL_TOOLCHAIN = 1 ]; then
+      #
+      # login to p4 and get local copy of toolchain.
+      # using local copy of toolchain will improve the
+      # performance. If getting local toolchain fails
+      # we just use the toolchain mounted over nfs
+      #
+      . $ROOT/main/get_toolchain
+      if [[ $? -ne 0 ]]; then
+         echo "Warning: vdnet unable to make a local copy of toolchain"
+         echo "Warning: Using toolchain from nfs, this may be slower"
+         TOOLCHAIN=/build/toolchain
+      else
+         TOOLCHAIN=${TOOLCHAIN:-/tmp/vdnet/toolchain}
+      fi
+   else
+      TOOLCHAIN=/build/toolchain
+   fi
+   export TOOLCHAIN
+fi
+
+type=`stat -f -L -c %T $TOOLCHAIN`
+if [ $type == 'nfs' ]; then
+    echo "Warning: Using toolchain from nfs, this may be slower"
+fi
+
+source $ROOT/main/path_setup
+
+set_ld_lib_path
+set_java_path
+set_ant_path
+set_zookeeper_path
+set_git_path
+set_ssh_path
+set_ssl_path
+set_staf_path
+set_perl_path
+set_maven_path
+set_pep8_path
+set_pyflakes_path
+set_pychecker_path
+set_libvirt_path
+set_ovftool_path
+set_python_path
+set_onecloud_path
+set_apache_path
+set_readline_path
+set_curl_path
+# Workaround for bug 1411589 to set paths based on machine architecture.
+if [ ${MACHINE_TYPE} != 'x86_64' ]; then
+   set_wireshark_path
+fi
+# log_environment should always be the last line.
+log_environment

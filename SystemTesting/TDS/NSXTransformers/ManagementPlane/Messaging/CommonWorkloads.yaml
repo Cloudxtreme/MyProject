@@ -1,0 +1,728 @@
+MessagingWorkloads: &MessagingWorkloads
+    GetClients: &GET_CLIENTS
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        messagingclient:
+            '[1-3]':
+                result_object: 'results'
+
+    GetClientsIncludingEdge: &GET_CLIENTS_INCLUDING_EDGE
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        messagingclient:
+            '[1-5]':
+                result_object: 'results'
+
+    VerifyClientList: &VERIFY_CLIENT_LIST
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        get_clients_list:
+            'result_count[?]equal_to': '3'
+
+    VerifyClientListWithEdgeClients: &VERIFY_CLIENT_LIST_WITH_EDGE_CLIENTS
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        get_clients_list:
+            'result_count[?]equal_to': '5'
+
+    PingClient_1: &PING_CLIENT_1
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        noofretries: 3
+        sleepbetweenretry: 60
+        ping_client:
+            'client_status[?]equal_to': 'true'
+
+    PingClient_2: &PING_CLIENT_2
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[2]'
+        noofretries: 3
+        sleepbetweenretry: 60
+        ping_client:
+            'client_status[?]equal_to': 'true'
+
+    PingClient_3: &PING_CLIENT_3
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[3]'
+        noofretries: 3
+        sleepbetweenretry: 60
+        ping_client:
+            'client_status[?]equal_to': 'true'
+
+    PingClient_4: &PING_CLIENT_4
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[4]'
+        noofretries: 3
+        sleepbetweenretry: 60
+        ping_client:
+            'client_status[?]equal_to': 'true'
+
+    PingClient_5: &PING_CLIENT_5
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[5]'
+        noofretries: 3
+        sleepbetweenretry: 60
+        ping_client:
+            'client_status[?]equal_to': 'true'
+
+    GetClientsById: &GET_CLIENT_DETAILS
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        read:
+            'id_[?]equal_to': 'nsxmanager.[1].messagingclient.[1]->client_id'
+
+    GetClientByTypeHv: &GET_CLIENT_BY_TYPE_HV
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        client_type: 'cvn-hv'
+        get_clients_by_type:
+            'result_count[?]equal_to': '2'
+
+    GetClientByTypeCCP: &GET_CLIENT_BY_TYPE_CCP
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        client_type: 'cvn-ccp'
+        get_clients_by_type:
+            'result_count[?]equal_to': '1'
+
+    GetClientByTypeEdge: &GET_CLIENT_BY_TYPE_EDGE
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        client_type: 'cvn-edge'
+        get_clients_by_type:
+            'result_count[?]equal_to': '2'
+
+    GetClientByUnsupportedType: &GET_CLIENT_BY_UNSUPPORTED_TYPE
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        ExpectedResult:
+            status_code: BAD_REQUEST
+        client_type: 'unsupported-type'
+        get_clients_by_type:
+            'result_count[?]equal_to': '0'
+
+    SetClientId: &SET_CLIENT_ID
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        messagingclientmap:
+            '[1]':
+                map_object: true
+                id_: 'incorrect_id'
+
+    GetClientsDetailsUsingIncorrectId: &GET_CLIENT_DETAILS_USING_INCORRECT_ID
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclientmap.[1]'
+        ExpectedResult:
+            status_code: NOT_FOUND
+        read:
+            'id_[?]equal_to': 'nsxmanager.[1].messagingclient.[1]->client_id'
+
+    VerifyHeartbeatStatusOfClient1: &VERIFY_HEARTBEAT_STATUS_OF_CLIENT_1
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        noofretries: 3
+        sleepbetweenretry: 60
+        heartbeat_status:
+            'client_status[?]equal_to': 'UP'
+
+    VerifyHeartbeatStatusOfClient2: &VERIFY_HEARTBEAT_STATUS_OF_CLIENT_2
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[2]'
+        noofretries: 3
+        sleepbetweenretry: 60
+        heartbeat_status:
+            'client_status[?]equal_to': 'UP'
+
+    VerifyHeartbeatStatusOfClient3: &VERIFY_HEARTBEAT_STATUS_OF_CLIENT_3
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[3]'
+        noofretries: 3
+        sleepbetweenretry: 60
+        heartbeat_status:
+            'client_status[?]equal_to': 'UP'
+
+    VerifyHeartbeatStatusOfClient4: &VERIFY_HEARTBEAT_STATUS_OF_CLIENT_4
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[4]'
+        noofretries: 3
+        sleepbetweenretry: 60
+        heartbeat_status:
+            'client_status[?]equal_to': 'UP'
+
+    VerifyHeartbeatStatusOfClient5: &VERIFY_HEARTBEAT_STATUS_OF_CLIENT_5
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[5]'
+        noofretries: 3
+        sleepbetweenretry: 60
+        heartbeat_status:
+            'client_status[?]equal_to': 'UP'
+
+    VerifyDistributedClientCount: &VERIFY_DISTRIBUTED_CLIENT_COUNT
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        broker_list:
+            - broker_id: 'nsxmanager.[1]->node_id'
+            - broker_id: 'nsxmanager.[2]->node_id'
+            - broker_id: 'nsxmanager.[3]->node_id'
+        get_distributed_clients:
+            'result_count[?]equal_to': '3'
+
+    VerifyDistributedClientCountOnMPNode1AndMPNode2: &VERIFY_DISTRIBUTED_CLIENT_COUNT_ON_NODE1_NODE2
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        broker_list:
+            - broker_id: 'nsxmanager.[1]->node_id'
+            - broker_id: 'nsxmanager.[2]->node_id'
+        get_distributed_clients:
+            'result_count[?]equal_to': '3'
+
+    VerifyDistributedClientCountOnMPNode1AndMPNode3: &VERIFY_DISTRIBUTED_CLIENT_COUNT_ON_NODE1_NODE3
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        broker_list:
+            - broker_id: 'nsxmanager.[1]->node_id'
+            - broker_id: 'nsxmanager.[3]->node_id'
+        get_distributed_clients:
+            'result_count[?]equal_to': '3'
+
+    VerifyDistributedClientCountOnMPNode2AndMPNode3: &VERIFY_DISTRIBUTED_CLIENT_COUNT_ON_NODE2_NODE3
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[2].messagingclient.[1]'
+        broker_list:
+            - broker_id: 'nsxmanager.[2]->node_id'
+            - broker_id: 'nsxmanager.[3]->node_id'
+        get_distributed_clients:
+            'result_count[?]equal_to': '3'
+
+    VerifyDistributedClientCountWithEdgeClients: &VERIFY_DISTRIBUTED_CLIENT_COUNT_WITH_EDGE_CLIENTS
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        broker_list:
+            - broker_id: 'nsxmanager.[1]->node_id'
+            - broker_id: 'nsxmanager.[2]->node_id'
+            - broker_id: 'nsxmanager.[3]->node_id'
+        get_distributed_clients:
+            'result_count[?]equal_to': '5'
+
+    VerifyDistributedClientCountWithEdgeClientsOnMPNode1AndMPNode2: &VERIFY_DISTRIBUTED_CLIENT_COUNT_WITH_EDGE_CLIENTS_ON_NODE1_NODE2
+        Type: 'Messaging'
+        TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+        broker_list:
+            - broker_id: 'nsxmanager.[1]->node_id'
+            - broker_id: 'nsxmanager.[2]->node_id'
+        get_distributed_clients:
+            'result_count[?]equal_to': '5'
+
+ApplianceWorkloads: &ApplianceWorkloads
+    RebootMPNode1: &REBOOT_MP_NODE1
+        Type: NSX
+        TestNSX: "nsxmanager.[1]"
+        configure_power_state:
+            state: 'restart'
+
+    VerifyProtonServiceStartedAfterMPNode1Reboot: &VERIFY_MPNODE1_UP
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        execution_type: 'cli'
+        sleepbetweenworkloads: 150
+        get_service_state:
+          'table[?]contain_once':
+                - service_name: 'proton'
+                  service_state: 'running'
+
+    VerifyProtonServiceStartedAfterMPNode2Reboot: &VERIFY_MPNODE2_UP
+        Type: "Service"
+        TestService: "nsxmanager.[2].nsxservice.[1]"
+        execution_type: 'cli'
+        sleepbetweenworkloads: 150
+        get_service_state:
+          'table[?]contain_once':
+                - service_name: 'proton'
+                  service_state: 'running'
+
+    VerifyProtonServiceStartedAfterMPNode3Reboot: &VERIFY_MPNODE3_UP
+        Type: "Service"
+        TestService: "nsxmanager.[3].nsxservice.[1]"
+        execution_type: 'cli'
+        sleepbetweenworkloads: 150
+        get_service_state:
+          'table[?]contain_once':
+                - service_name: 'proton'
+                  service_state: 'running'
+
+    SetServiceId: &SET_SERVICE_ID
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        nsxservice:
+            '[1]':
+                map_object: true
+                id_: 'service'
+
+    RestartProtonService: &RESTART_PROTON_SERVICE
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+            state: 'restart'
+            service_name: 'proton'
+
+    RestartProtonServiceUsingCLI: &RESTART_PROTON_SERVICE_USING_CLI
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+            execution_type: 'cli'
+            state: 'restart'
+            service_name: 'proton'
+
+    StopProtonService: &STOP_PROTON_SERVICE
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+            state: 'stop'
+            service_name: 'proton'
+
+    StartProtonService: &START_PROTON_SERVICE
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+            execution_type: 'cli'
+            state: 'start'
+            service_name: 'proton'
+
+    RestartRabbitmqService: &RESTART_RABBITMQ_SERVICE
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+            state: 'restart'
+            service_name: 'rabbitmq'
+
+    StopRabbitmqService: &STOP_RABBITMQ_SERVICE
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+            state: 'stop'
+            service_name: 'rabbitmq'
+
+    StartRabbitmqService: &START_RABBITMQ_SERVICE
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        configure_service_state:
+            state: 'start'
+            service_name: 'rabbitmq'
+
+    Reboot_MP_Node1_CLI:
+        Type: NSX
+        TestNSX: "nsxmanager.[1]"
+        configure_power_state:
+            state: 'reboot'
+            execution_type: 'cli'
+
+    Reboot_MP_Node2_CLI:
+        Type: NSX
+        TestNSX: "nsxmanager.[2]"
+        configure_power_state:
+            state: 'reboot'
+            execution_type: 'cli'
+
+    Reboot_MP_Node3_CLI:
+        Type: NSX
+        TestNSX: "nsxmanager.[3]"
+        configure_power_state:
+            state: 'reboot'
+            execution_type: 'cli'
+
+    Restart_MP_Node1: &RESTART_MP_NODE_1
+        Type: VM
+        TestVM: "nsxmanager.[1]"
+        vmstate: reboot
+
+    Restart_MP_Node2: &RESTART_MP_NODE_2
+        Type: VM
+        TestVM: "nsxmanager.[2]"
+        vmstate: reboot
+
+    Restart_MP_Node3: &RESTART_MP_NODE_3
+        Type: VM
+        TestVM: "nsxmanager.[3]"
+        vmstate: reboot
+
+    Poweroff_MP_Node1: &POWEROFF_MP_NODE_1
+        Type: VM
+        TestVM: "nsxmanager.[1]"
+        vmstate: poweroff
+
+    Poweroff_MP_Node2: &POWEROFF_MP_NODE_2
+        Type: VM
+        TestVM: "nsxmanager.[2]"
+        vmstate: poweroff
+
+    Poweroff_MP_Node3: &POWEROFF_MP_NODE_3
+        Type: VM
+        TestVM: "nsxmanager.[3]"
+        vmstate: poweroff
+
+    Poweron_MP_Node1: &POWERON_MP_NODE_1
+        Type: VM
+        TestVM: "nsxmanager.[1]"
+        vmstate: poweron
+
+    Poweron_MP_Node2: &POWERON_MP_NODE_2
+        Type: VM
+        TestVM: "nsxmanager.[2]"
+        vmstate: poweron
+
+    Poweron_MP_Node3: &POWERON_MP_NODE_3
+        Type: VM
+        TestVM: "nsxmanager.[3]"
+        vmstate: poweron
+
+    Crash_MP_Node1: &CRASH_MP_NODE_1
+        Type: VM
+        TestVM: "nsxmanager.[1]"
+        vmstate: crash
+
+    Crash_MP_Node2: &CRASH_MP_NODE_2
+        Type: VM
+        TestVM: "nsxmanager.[2]"
+        vmstate: crash
+
+    Crash_MP_Node3: &CRASH_MP_NODE_3
+        Type: VM
+        TestVM: "nsxmanager.[3]"
+        vmstate: crash
+
+    Reboot_CCP_Node1: &REBOOT_CCP_NODE_1
+        Type: VM
+        TestVM: "nsxcontroller.[1]"
+        vmstate: reboot
+
+    Poweroff_CCP_Node1: &POWEROFF_CCP_NODE_1
+        Type: VM
+        TestVM: "nsxcontroller.[1]"
+        vmstate: poweroff
+
+    Poweron_CCP_Node1: &POWERON_CCP_NODE_1
+        Type: VM
+        TestVM: "nsxcontroller.[1]"
+        vmstate: poweron
+
+    Crash_CCP_Node1: &CRASH_CCP_NODE_1
+        Type: VM
+        TestVM: "nsxcontroller.[1]"
+        vmstate: crash
+
+    Restart_EDGE_Node1: &RESTART_EDGE_NODE_1
+        Type: VM
+        TestVM: "nsxedge.[1]"
+        vmstate: reboot
+
+    MapNSXManager1ToCluster: &MAP_NSX_MANAGER_1_TO_CLUSTER
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        cluster:
+            '[1]':
+                map_object: true
+                id_: 1
+
+    MapNSXManager2ToCluster: &MAP_NSX_MANAGER_2_TO_CLUSTER
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[2]'
+        cluster:
+            '[1]':
+                map_object: true
+                id_: 1
+
+    WaitForClusterStatusStableOnNode1: &WAIT_FOR_STABLE_STATE_ON_NODE_1
+        Type: 'Cluster'
+        TestCluster: 'nsxmanager.[1].cluster.[1]'
+        sleepbetweenworkloads: 150
+        wait_for_required_cluster_status:
+            'required_status': 'STABLE'
+            'time_to_monitor': '300'
+
+    WaitForClusterStatusStableOnNode2: &WAIT_FOR_STABLE_STATE_ON_NODE_2
+        Type: 'Cluster'
+        TestCluster: 'nsxmanager.[2].cluster.[1]'
+        wait_for_required_cluster_status:
+            'required_status': 'STABLE'
+            'time_to_monitor': '300'
+
+    WaitForClusterStatusStableOnNode3: &WAIT_FOR_STABLE_STATE_ON_NODE_3
+        Type: 'Cluster'
+        TestCluster: 'nsxmanager.[3].cluster.[1]'
+        wait_for_required_cluster_status:
+            'required_status': 'STABLE'
+            'time_to_monitor': '300'
+
+    WaitForStableClusterState: &WAIT_FOR_STABLE_CLUSTER_STATE
+        - ["MapNSXManager1ToCluster"]
+        - ["WaitForClusterStatusStableOnNode1"]
+        - ["WaitForClusterStatusStableOnNode2"]
+        - ["WaitForClusterStatusStableOnNode3"]
+
+    AddMPNode2ToCluster: &ADD_MP_NODE_2_TO_CLUSTER
+        Type: NSX
+        TestNSX: "nsxmanager.[1]"
+        clusternode:
+            '[2]':
+                mgr_role_config:
+                    username: 'admin'
+                    password: 'default'
+                    node_type: 'AddManagementNodeSpec'
+                    manager_ip: "nsxmanager.[2]"
+                    manager_thumbprint: "nsxmanager.[2]"
+
+    RemoveMP_Node2: &REMOVE_MP_NODE_2
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deleteclusternode:  "nsxmanager.[1].clusternode.[2]"
+
+    BlockNSXController1TrafficFromNSXManager1: &BLOCK_NSXCONTROLLER1_TRAFFIC_FROM_NSXMANAGER1
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        node_network_partitioning:
+            operation: 'set'
+            manager_ip: 'nsxcontroller.[1]->ip'
+            execution_type: 'cli'
+
+    UnblockNSXController1TrafficFromNSXManager1: &UNBLOCK_NSXCONTROLLER1_TRAFFIC_FROM_NSXMANAGER1
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        node_network_partitioning:
+            operation: 'reset'
+            manager_ip: 'nsxcontroller.[1]->ip'
+            execution_type: 'cli'
+
+HostWorkloads: &HostWorkloads
+    RebootMPA: &REBOOT_MPA
+        Type: Host
+        TestHost: 'esx.[1]'
+        configure_service_state:
+            state: 'restart'
+            service_name: 'nsx-mpa'
+            execution_type: 'cli'
+
+    RebootDA: &REBOOT_DA
+        Type: Host
+        TestHost: 'esx.[1]'
+        configure_service_state:
+            state: 'restart'
+            service_name: 'nsx-da'
+            execution_type: 'cli'
+
+    StopDA: &STOP_DA
+        Type: Host
+        TestHost: 'esx.[1]'
+        configure_service_state:
+            state: 'stop'
+            service_name: 'nsx-da'
+            execution_type: 'cli'
+
+    StartDA: &START_DA
+        Type: Host
+        TestHost: 'esx.[1]'
+        configure_service_state:
+            state: 'start'
+            service_name: 'nsx-da'
+            execution_type: 'cli'
+
+    KillDA: &KILL_DA
+        Type: Host
+        TestHost: 'esx.[1]'
+        configure_service_state:
+            state: 'kill'
+            service_name: 'nsx-da'
+            execution_type: 'cli'
+
+    RebootMPAOnKVM: &REBOOT_MPA_ON_KVM
+        Type: Host
+        TestHost: 'kvm.[1]'
+        configure_service_state:
+            state: 'restart'
+            service_name: 'nsx-mpa'
+            execution_type: 'cmd'
+
+    RebootDAOnKVM: &REBOOT_DA_ON_KVM
+        Type: Host
+        TestHost: 'kvm.[1]'
+        configure_service_state:
+            state: 'restart'
+            service_name: 'nsx-da'
+            execution_type: 'cmd'
+
+    StopDAOnKVM: &STOP_DA_ON_KVM
+        Type: Host
+        TestHost: 'kvm.[1]'
+        configure_service_state:
+            state: 'stop'
+            service_name: 'nsx-da'
+            execution_type: 'cmd'
+
+    StartDAOnKVM: &START_DA_ON_KVM
+        Type: Host
+        TestHost: 'kvm.[1]'
+        configure_service_state:
+            state: 'start'
+            service_name: 'nsx-da'
+            execution_type: 'cmd'
+
+    SetNSXManagerOnHost1: &SET_NSXMANAGER_ON_HOST1
+        ESX: &SET_NSXMANAGER_ON_HOST1--ESX
+            Type: Host
+            TestHost: 'esx.[1]'
+            sleepbetweenworkloads: '60'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                execution_type: 'cli'
+                manager_thumbprint: 'nsxmanager.[1]'
+        KVM: &SET_NSXMANAGER_ON_HOST1--KVM
+            Type: Host
+            TestHost: 'kvm.[1]'
+            sleepbetweenworkloads: '60'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                execution_type: 'cli'
+                manager_thumbprint: 'nsxmanager.[1]'
+
+    SetNSXManagerOnHost2: &SET_NSXMANAGER_ON_HOST2
+        ESX: &SET_NSXMANAGER_ON_HOST2--ESX
+            Type: Host
+            TestHost: 'esx.[2]'
+            sleepbetweenworkloads: '60'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                execution_type: 'cli'
+                manager_thumbprint: 'nsxmanager.[1]'
+        KVM: &SET_NSXMANAGER_ON_HOST2--KVM
+            Type: Host
+            TestHost: 'kvm.[2]'
+            sleepbetweenworkloads: '60'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                execution_type: 'cli'
+                manager_thumbprint: 'nsxmanager.[1]'
+
+    RemoveNSXManagerFromHost1: &REMOVE_NSXMANAGER_FROM_HOST1
+        ESX: &REMOVE_NSXMANAGER_FROM_HOST1--ESX
+            Type: Host
+            TestHost: 'esx.[1]'
+            sleepbetweenworkloads: '60'
+            remove_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                execution_type: 'cli'
+                manager_thumbprint: 'nsxmanager.[1]'
+        KVM: &REMOVE_NSXMANAGER_FROM_HOST1--KVM
+            Type: Host
+            TestHost: 'kvm.[1]'
+            sleepbetweenworkloads: '60'
+            remove_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                execution_type: 'cli'
+                manager_thumbprint: 'nsxmanager.[1]'
+
+    RemoveNSXManagerFromHost2: &REMOVE_NSXMANAGER_FROM_HOST2
+        ESX: &REMOVE_NSXMANAGER_FROM_HOST2--ESX
+            Type: Host
+            TestHost: 'esx.[2]'
+            sleepbetweenworkloads: '60'
+            remove_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                execution_type: 'cli'
+                manager_thumbprint: 'nsxmanager.[1]'
+        KVM: &REMOVE_NSXMANAGER_FROM_HOST2--KVM
+            Type: Host
+            TestHost: 'kvm.[2]'
+            sleepbetweenworkloads: '60'
+            remove_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                execution_type: 'cli'
+                manager_thumbprint: 'nsxmanager.[1]'
+
+    RegisterController1: &REGISTER_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        set_nsx_registration:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    JoinController1ToCCPCluster: &ADD_CCP_NODE_1_TO_CCP_CLUSTER
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clusternode:
+            '[1]':
+                controller_ip: 'nsxcontroller.[1]'
+                execution_type: 'cli'
+
+    UnregisterController1: &UNREGISTER_CONTROLLER_1
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        deleteclusternode: 'nsxcontroller.[1].clusternode.[1]'
+
+    StopController1: &STOP_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        configure_service_state:
+            state: 'stop'
+            service_name: 'controller'
+
+    StartController1: &START_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        configure_service_state:
+            state: 'start'
+            service_name: 'controller'
+
+    DeleteBootStrapOnController1: &DELETE_BOOT_STRAP_ON_CONTROLLER1
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[1]'
+        delete_file:
+            file_name: '/opt/vmware/etc/bootstrap-config'
+            execution_type: 'cmd'
+
+    DeleteControllerNodeUUIDFileOnController1: &DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER1
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[1]'
+        delete_file:
+            file_name: '/opt/vmware/etc/node-uuid'
+            execution_type: 'cmd'
+
+    CleanupCCPNode1ForReuse: &CLEANUP_CCP_NODE_1_FOR_REUSE
+        - ['StopController1']
+        - ['UnregisterController1']
+        - ['DeleteBootStrapOnController1']
+        - ['DeleteControllerNodeUUIDFileOnController1']
+
+VMWorkloads: &VMWorkloads
+    AddVm:
+        Type: 'Root'
+        TestNode: 'root.[1]'
+        vm:
+            '[1]':
+                template: 'rhel53-srv-32'
+                host: 'esx.[1]'
+
+    DeleteVm:
+        Type: 'Root'
+        TestNode: 'root.[1]'
+        sleepbetweenworkloads: '10'
+        deletevm: 'vm.[1]'
+
+DeploymentWorkloads: &DeploymentWorkloads
+
+  DeployNSXManager2:
+    Type: 'Root'
+    TestNode: 'root.[1]'
+    nsxmanager:
+      '[2]':
+        'username' : 'admin'
+        'password' : 'default'
+        'build': 'nsx-manager-va:master:beta:official'
+        'esx': 'esx.[1]'
+        'network': 'VM Network'
+        'installtype': 'nested'
+        'cpu': '4'
+
+  DeleteNSXManager2:
+    Type: Root
+    TestNode: 'root.[1]'
+    deletevm: 'nsxmanager.[2]'

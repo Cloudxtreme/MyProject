@@ -1,0 +1,23 @@
+#!/bin/bash
+ROOT=$(dirname $(readlink -f $(which "$0")))/..
+
+STAFBASE=/build/toolchain/lin32/staf-3.4.1
+
+PERLVERSION=5.8.8
+PERLDIR=perl58
+PERLBASE=/build/toolchain/lin32/perl-$PERLVERSION
+
+PERL=$PERLBASE/bin/perl
+
+$PERL -e "use PLSTAF;" &> /dev/null
+if [ $? -ne 0 ]
+then
+    export PATH=$STAFBASE/lib/$PERLDIR:$STAFBASE/bin:/build/toolchain/lin32/jdk-1.6.0_26/bin:$PATH
+    export CLASSPATH=$STAFBASE/lib/JSTAF.jar:$CLASSPATH
+    export STAFCONVDIR=$STAFBASE/codepage
+    export PERLLIB=$STAFBASE/lib/perl58:$STAFBASE/bin
+    export LD_LIBRARY_PATH=$PERLBASE/lib/$PERLVERSION/i686-linux-thread-multi/CORE:$STAFBASE/lib:$STAFBASE/lib/perl58
+    PERL=$PERLBASE/bin/perl
+    echo "Warning: local perl/staf seems to be broken or not installed. Using toolchain instead, this may be slower if your toolchain is automounted over nfs."
+fi
+$PERL $ROOT/main/vdNet.pl "$@"

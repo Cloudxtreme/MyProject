@@ -1,0 +1,71 @@
+MPAKvmTestbedSpec01: &MPA_KVM_TOPOLOGY_01
+    kvm:
+        '[1]':
+            pif:
+                '[1]': {}
+            framework_setup:
+                - disablefirewall
+                - createanchor
+                - copysshkey
+            configure_package:
+                operation: install
+                resource:
+                 - '<url that comes from userinput yaml>'
+            download_files:
+                resource: 'url'
+                destination: '/tmp'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+            bridge:
+                '[1]':
+                    name: nsxvswitch
+                    switch_fail_mode: secure
+                    external_id:
+                        bridge-id: nsx-managed
+
+    nsxmanager:
+        '[1]':
+            ip: none
+
+MPAKvmClusterTestbedSpec01: &MPA_KVM_CLUSTER_01
+    kvm:
+        '[1-2]':
+            pif:
+                '[1]': {}
+            framework_setup:
+                - disablefirewall
+                - createanchor
+                - copysshkey
+            configure_package:
+                operation: install
+                resource:
+                 - '<url that comes from userinput yaml>'
+            download_files:
+                resource: 'url'
+                destination: '/tmp'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+            bridge:
+                '[1]':
+                    name: nsxvswitch
+                    switch_fail_mode: secure
+                    external_id:
+                        bridge-id: nsx-managed
+
+    nsxmanager:
+        '[1]':
+          ip: none
+          clusternode:
+            '[2-3]':
+              mgr_role_config:
+                username: 'admin'
+                password: 'default'
+                node_type: 'AddManagementNodeSpec'
+                manager_ip: "nsxmanager.[x=clusternode_index]"
+                manager_thumbprint: "nsxmanager.[x=clusternode_index]"
+        '[2-3]':
+          ip: none

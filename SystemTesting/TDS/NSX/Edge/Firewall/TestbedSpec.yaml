@@ -1,0 +1,231 @@
+TestbedSpec02: &OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+    vsm:
+        '[1]':
+            'reconfigure': "true"
+            'vc': "vc.[1]"
+            'assignrole': "enterprise_admin"
+#            'ippool':
+#                 '[1]':
+#                     'name'        : 'ip-pool-1'
+#                     'gateway'     : '10.65.31.253'
+#                     'prefixlength': '20'
+#                     'ipranges'    : ['10.65.31.209-10.65.31.210']
+#                 '[2]':
+#                     'name'        : 'ip-pool-2'
+#                     'gateway'     : '10.65.31.253'
+#                     'prefixlength': '20'
+#                     'ipranges'    : ['10.65.31.154-10.65.31.155']
+            'applicationservice':
+                '[1]':
+                    name: "Service-A"
+                    element:
+                        applicationprotocol: TCP
+                    inheritanceallowed: "true"
+                '[2]':
+                    name: "Service-B"
+                    element:
+                        applicationprotocol: ICMP
+                    inheritanceallowed: "true"
+                '[3]':
+                    name: "Service-C"
+                    element:
+                        applicationprotocol: UDP
+                    inheritanceallowed: "true"
+            'applicationservicegroup':
+                '[1]':
+                    name: "ServiceGroup-A"
+                    groupingobject_desc: "Service Group Description-A"
+                    scope:
+                        name: Global
+                        id: globalroot-0
+                    type:
+                        typeName: ApplicationGroup
+                    inheritanceallowed: "true"
+                    metadata:
+                        'expectedresultcode': "201"
+                    'applicationservicegroupmember':
+                        '[1]':
+                            member: "vsm.[1].applicationservice.[1]"
+                        '[2]':
+                            member: "vsm.[1].applicationservice.[2]"
+                        '[3]':
+                            member: "vsm.[1].applicationservice.[3]"
+#            segmentidrange:
+#                 '[1]':
+#                     'name': "AutoGenerate"
+#                     'begin': "6001"
+#                     'end': "99000"
+#            multicastiprange:
+#                 '[1]':
+#                     'name': "AutoGenerate"
+#                     'begin': "239.0.0.0"
+#                     'end': "239.0.0.255"
+#            'VDNCluster':
+#                 '[1]':
+#                     'cluster': "vc.[1].datacenter.[1].cluster.[1]"
+#                     'vibs': "install"
+#                     'switch': "vc.[1].vds.[1]"
+#                     'ippool': "vsm.[1].ippool.[1]"
+#                     'vlan': "22"
+#                     'mtu': "1600"
+#                     'vmkniccount': "1"
+#                     'teaming':
+#                          - "FAILOVER_ORDER"
+#                 '[2]':
+#                     'cluster': "vc.[1].datacenter.[2].cluster.[1]"
+#                     'vibs': "install"
+#                     'switch': "vc.[1].vds.[2]"
+#                     'ippool': "vsm.[1].ippool.[2]"
+#                     'vlan': "22"
+#                     'mtu': "1600"
+#                     'vmkniccount': "1"
+#                     'teaming':
+#                          - "FAILOVER_ORDER"
+#            'networkscope':
+#                 '[1]':
+#                     'name': "1-network-scope-6-2"
+#                     'clusters': "vc.[1].datacenter.[1].cluster.[1]"
+#                     'controlplanemode': "HYBRID_MODE"
+#                     virtualwire:
+#                        '[1]':
+#                            name: "AutoGenerate"
+#                            tenantid: "AutoGenerate"
+#                 '[2]':
+#                     name: "2-network-scope-6-2"
+#                     clusters: "vc.[1].datacenter.[2].cluster.[1]"
+#                     controlplanemode: "HYBRID_MODE"
+#                     virtualwire:
+#                        '[1]':
+#                            name: "AutoGenerate"
+#                            tenantid: "AutoGenerate"
+#            'vxlancontroller':
+#                 '[1]':
+#                     'name': 'AutoGenerate'
+#                     'firstnodeofcluster': 'true'
+#                     'ippool': "vsm.[1].ippool.[1]"
+#                     'resourcepool': 'vc.[1].datacenter.[1].cluster.[1]'
+#                     'host': 'host.[1]'
+#                     'datastoretype': "shared"
+            'gateway':
+                 '[1]':
+                     name: "InternalGateway"
+                     resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+                     datacenter: "vc.[1].datacenter.[1]"
+                     host: "host.[1]"
+                     portgroup: "vc.[1].dvportgroup.[3]"
+                     primaryaddress: "10.65.31.195"
+                     subnetmask: "255.255.255.0"
+                     datastoretype: "shared"
+                     username: "admin"
+                     password: "Node@1234567"
+                     remote_access: "true"
+                 '[2]':
+                     name: "ExternalGateway"
+                     resourcepool: "vc.[1].datacenter.[2].cluster.[1]"
+                     datacenter: "vc.[1].datacenter.[2]"
+                     host: "host.[2]"
+                     portgroup: "vc.[1].dvportgroup.[6]"
+                     primaryaddress: "10.65.31.196"
+                     subnetmask: "255.255.255.0"
+                     datastoretype: "shared"
+                     username: "admin"
+                     password: "Node@1234567"
+                     remote_access: "true"
+
+
+    host:
+        '[1]':
+            vmnic:
+                '[1-2]':
+                    driver: "any"
+        '[2]':
+            vmnic:
+                '[1-2]':
+                    driver: "any"
+    vc:
+        '[1]':
+            datacenter:
+                '[1]':
+                    Cluster:
+                        '[1]':
+                            host: "host.[1]"
+                            name: "Cluster1"
+                '[2]':
+                    Cluster:
+                        '[1]':
+                            host: "host.[2]"
+                            name: "Cluster2"
+            vds:
+                '[1]':
+                    datacenter: "vc.[1].datacenter.[1]"
+                    configurehosts: "add"
+                    host: "host.[1]"
+                    vmnicadapter: "host.[1].vmnic.[2]"
+                    numuplinkports: "1"
+                '[2]':
+                    datacenter: "vc.[1].datacenter.[2]"
+                    configurehosts: "add"
+                    host: "host.[2]"
+                    vmnicadapter: "host.[2].vmnic.[2]"
+                    numuplinkports: "1"
+            dvportgroup:
+                '[1]':
+                    name: "dvpg-VDS1-vlan-16"
+                    vds: "vc.[1].vds.[1]"
+                    vlan: "16"
+                    vlantype: "access"
+                '[2]':
+                    name: "dvpg-VDS1-vlan17"
+                    vds: "vc.[1].vds.[1]"
+                    vlan: "17"
+                    vlantype: "access"
+                '[3]':
+                    name: "dvpg-VDS1-vlan18"
+                    vds: "vc.[1].vds.[1]"
+                    vlan: "18"
+                    vlantype: "access"
+                '[4]':
+                    name: "dvpg-VDS2-vlan-19"
+                    vds: "vc.[1].vds.[2]"
+                    vlan: "19"
+                    vlantype: "access"
+                '[5]':
+                    name: "dvpg-VDS2-vlan17"
+                    vds: "vc.[1].vds.[2]"
+                    vlan: "17"
+                    vlantype: "access"
+                '[6]':
+                    name: "dvpg-VDS2-vlan21"
+                    vds: "vc.[1].vds.[2]"
+                    vlan: "21"
+                    vlantype: "access"
+                '[7]':
+                    name: "dvpg-VDS1-vlan20"
+                    vds: "vc.[1].vds.[1]"
+                    vlan: "20"
+                    vlantype: "access"
+                '[8]':
+                    name: "dvpg-VDS2-vlan20"
+                    vds: "vc.[1].vds.[2]"
+                    vlan: "20"
+                    vlantype: "access"
+    vm:
+        '[1]':
+            host: "host.[1]"
+            datastoreType: "shared"
+#            vmstate: "poweron"
+        '[2]':
+            host: "host.[2]"
+            datastoreType: "shared"
+#            vmstate: "poweron"
+#        '[3]':
+#            datastoretype: "shared"
+#            host: "host.[1]"
+#            datastoreType: "shared"
+##            vmstate: "poweron"
+#        '[4]':
+#            datastoretype: "shared"
+#            host: "host.[2]"
+#            datastoreType: "shared"
+##            vmstate: "poweron"
+#

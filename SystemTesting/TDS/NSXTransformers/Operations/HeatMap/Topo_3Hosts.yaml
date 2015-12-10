@@ -1,0 +1,204 @@
+!include ../../Common/Topo_Clusters.yaml
+
+Topo_3Hosts: &Topo_3Hosts
+    <<: *Topo_3MP_3CCP
+
+    DiscoverHostNodes--ESX:
+        - - DiscoverHostNode1FromESX1
+          - DiscoverHostNode2FromESX2
+          - DiscoverHostNode3FromESX3
+    DiscoverHostNodes--KVM:
+        - - DiscoverHostNode1FromKVM1
+          - DiscoverHostNode2FromKVM2
+          - DiscoverHostNode3FromKVM3
+
+    DiscoverHostVteps--ESX:
+        - - DiscoverESX1Vtep1FromDevice-vmk10
+        - - DiscoverESX2Vtep1FromDevice-vmk10
+        - - DiscoverESX3Vtep1FromDevice-vmk10
+    DiscoverHostVteps--KVM:
+        - - DiscoverKVM1Vtep1FromDevice-nsx-vtep0.0
+        - - DiscoverKVM2Vtep1FromDevice-nsx-vtep0.0
+        - - DiscoverKVM3Vtep1FromDevice-nsx-vtep0.0
+
+    VMSetup--ESX:
+        - - AddVM1Vnic1ToLS1
+        - - AddVM2Vnic1ToLS1
+        - - AddVM3Vnic1ToLS1
+        - - DiscoverLport1FromVM1Vnic1
+        - - DiscoverLport2FromVM2Vnic1
+        - - DiscoverLport3FromVM2Vnic1
+        - - ConfigureVM1Vnic1IP-Auto
+        - - ConfigureVM2Vnic1IP-Auto
+        - - ConfigureVM3Vnic1IP-Auto
+    VMSetup--KVM:
+        - - AddVM1Vif1ToKVM1Bridge1
+        - - AddVM2Vif1ToKVM2Bridge1
+        - - AddVM3Vif1ToKVM2Bridge1
+        - - CreateLP1OnLS1ForVM1Vif1
+        - - CreateLP2OnLS1ForVM2Vif1
+        - - CreateLP3OnLS1ForVM3Vif1
+        - - ConfigureVM1Vif1IP-Auto
+        - - ConfigureVM2Vif1IP-Auto
+        - - ConfigureVM3Vif1IP-Auto
+
+    VMCleanup--ESX:
+        - - DeleteVnic-1_VM-1
+          - DeleteVnic-1_VM-2
+          - DeleteVnic-1_VM-3
+        - - UndiscoverLSP-1-3
+    VMCleanup--KVM:
+        - - DeleteVif-1_VM-1
+          - DeleteVif-1_VM-2
+          - DeleteVif-1_VM-3
+        - - DeleteLSP-1-3
+
+    TNCleanup--ESX:
+        - - DeleteTN-1
+          - DeleteTN-2
+          - DeleteTN-3
+        - - RemoveManagerOnESX-1
+          - RemoveManagerOnESX-2
+          - RemoveManagerOnESX-3
+        - - UndiscoverHostNode-1
+          - UndiscoverHostNode-2
+          - UndiscoverHostNode-3
+    TNCleanup--KVM:
+        - - DeleteTN-1
+          - DeleteTN-2
+          - DeleteTN-3
+        - - RemoveManagerOnKVM-1
+          - RemoveManagerOnKVM-2
+          - RemoveManagerOnKVM-3
+        - - UndiscoverHostNode-1
+          - UndiscoverHostNode-2
+          - UndiscoverHostNode-3
+
+    LogicalCleanup:
+        - - DeleteLS-1
+        - - DeleteUPROF-1
+        - - DeleteTZ-1
+
+    AddPifsToBridges:
+        - - AddPort_ETH-2_Bridge-2_KVM-1
+        - - AddPort_ETH-3_Bridge-3_KVM-1
+        - - AddPort_ETH-2_Bridge-2_KVM-2
+        - - AddPort_ETH-3_Bridge-3_KVM-2
+        - - AddPort_ETH-2_Bridge-2_KVM-3
+        - - AddPort_ETH-3_Bridge-3_KVM-3
+
+    # TODO(gangarm): Autogenerate these.
+    AddPort_ETH-2_Bridge-2_KVM-1:
+        Type: Bridge
+        TestBridge: kvm.[1].bridge.[2]
+        execution_type: cli
+        port:
+            '[1]':
+                name: eth2
+
+    AddPort_ETH-3_Bridge-3_KVM-1:
+        Type: Bridge
+        TestBridge: kvm.[1].bridge.[3]
+        execution_type: cli
+        port:
+            '[2]':
+                name: eth3
+
+    AddPort_ETH-2_Bridge-2_KVM-2:
+        Type: Bridge
+        TestBridge: kvm.[2].bridge.[2]
+        execution_type: cli
+        port:
+            '[1]':
+                name: eth2
+
+    AddPort_ETH-3_Bridge-3_KVM-2:
+        Type: Bridge
+        TestBridge: kvm.[2].bridge.[3]
+        execution_type: cli
+        port:
+            '[2]':
+                name: eth3
+
+    AddPort_ETH-2_Bridge-2_KVM-3:
+        Type: Bridge
+        TestBridge: kvm.[3].bridge.[2]
+        execution_type: cli
+        port:
+            '[1]':
+                name: eth2
+
+    AddPort_ETH-3_Bridge-3_KVM-3:
+        Type: Bridge
+        TestBridge: kvm.[3].bridge.[3]
+        execution_type: cli
+        port:
+            '[2]':
+                name: eth3
+
+    L2Setup--ESX:
+        - - ClusterSetup
+        - - ClusterVerification
+        - - SetManagerOnESX-1-3
+        - - DiscoverHostNodes--ESX
+        - - CreateTZ-1
+        - - CreateUPROF-1_MTU-1600_ACTIVE-1
+        - - CreateTN-1-3_VMNIC-1
+        - - DiscoverHostVteps--ESX
+        - - CreateLS-1_RMODE-MTEP
+        - - VMSetup--ESX
+    L2Setup--KVM:
+        - - ClusterSetup
+        - - ClusterVerification
+        - - SetManagerOnKVM-1-3
+        - - DiscoverHostNodes--KVM
+        - - CreateTZ-1
+        - - CreateUPROF-1_MTU-1600_ACTIVE-1
+        - - CreateTN-1-3_ETH-1
+        - - DiscoverHostVteps--KVM
+        - - CreateLS-1_RMODE-MTEP
+        - - VMSetup--KVM
+        - - AddPifsToBridges
+
+    L2Cleanup--ESX:
+        - - VMCleanup--ESX
+        - - TNCleanup--ESX
+        - - LogicalCleanup
+        - - ClusterCleanup
+    L2Cleanup--KVM:
+        - - VMCleanup--KVM
+        - - TNCleanup--KVM
+        - - LogicalCleanup
+        - - ClusterCleanup
+
+################ Helper Templates ##################
+
+    AggTNStatus_AllUp: &AggTNStatus_AllUp
+        status: UP
+        control_connection_status:
+          status: UP
+          up_count: 1
+          down_count: 0
+        pnic_status:
+          status: UP
+          up_count: 4
+          down_count: 0
+        mgmt_connection_status: UP
+        tunnel_status:
+          status: UP
+          bfd_diagnostic:
+            concatenated_path_down_count: 0
+            administratively_down_count: 0
+            no_diagnostic_count: 1
+            path_down_count: 0
+            reverse_concatenated_path_down_count: 0
+            control_detection_time_expired_count: 0
+            echo_function_failed_count: 0
+            forwarding_plane_reset_count: 0
+          bfd_status:
+            admin_down_count: 0
+            up_count: 1
+            down_count: 0
+            init_count: 0
+          up_count: 1
+          down_count: 0

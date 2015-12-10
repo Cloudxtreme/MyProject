@@ -1,0 +1,2938 @@
+QosWorkloads: &QosWorkloads
+
+##### Local Constants
+    QosWorkloadsAliases:
+        - &QosResourceType "QosSwitchingProfile"
+        - &QosDefaultProfileName "nsx-default-qos-switching-profile"
+        - &QosProfileNameValid
+        - &SignedIntMax32 2147483647
+        - &SignedIntMax32--ESX 268435455875000  # manager-megabit to esx-byte
+        - &SignedIntMax32--KVM 2147483647000000  # manager-megabit to kvm-bit
+        - &IntMax32 4294967295
+        # XXX(jschmidt): Sleep before traffic to alleviate prior traffic test
+        # leaving socket in TIME_WAIT state, which could block the traffic
+        # test due to socket bind failure.
+        - &PreTrafficSocketWait 60
+
+##### Grouped Workload, Qos
+
+    SetQosProfileSystemDefaultOnLPortAllAndLSwitchAll:
+        - ['DiscoverQosProfile1SystemDefault']
+        - ['AssociateQosProfile1ToLPortAll']
+        - ['AssociateQosProfile1ToLSwitchAll']
+
+##### Independent Workloads, Qos
+
+    DiscoverQosProfile1SystemDefault:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                discover: 'true'
+                name: *QosDefaultProfileName
+
+    AssociateQosProfile1ToLPortAll:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[-1]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[1]->id
+              switching_profile_key: *QosResourceType
+
+    AssociateQosProfile1ToLSwitchAll:
+        Type: Switch
+        TestSwitch: nsxmanager.[1].logicalswitch.[-1]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[1]->id
+              switching_profile_key: *QosResourceType
+
+    VerifyQosProfile1SystemDefaultOnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: *QosDefaultProfileName
+            description[?]equal_to: undef
+            resource_type[?]equal_to: *QosResourceType
+            dscp[?]equal_to:
+                priority[?]equal_to: 0
+                mode[?]equal_to: 'TRUSTED'
+            burst_size[?]equal_to: 0
+            class_of_service[?]equal_to: 0
+            peak_bandwidth[?]equal_to: 0
+            average_bandwidth[?]equal_to: 0
+
+    DeleteQosProfileAll:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[-1]
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile1: &DELETE_QOS_PROFILE1
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[1]
+
+    DeleteQosProfile1Force:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[1]
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile2:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[2]
+
+    DeleteQosProfile2Force:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[2]
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile2ForceAndSuppressAlreadyDeleted:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[2]
+        expectedresult:
+            status_code: ['SUCCESS', 'BAD_REQUEST']
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile3:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[3]
+
+    DeleteQosProfile3Force:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[3]
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile3ForceAndSuppressAlreadyDeleted:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[3]
+        expectedresult:
+            status_code: ['SUCCESS', 'BAD_REQUEST']
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile4:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[4]
+
+    DeleteQosProfile4Force:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[4]
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile4ForceAndSuppressAlreadyDeleted:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[4]
+        expectedresult:
+            status_code: ['SUCCESS', 'BAD_REQUEST']
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile5:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[5]
+
+    DeleteQosProfile5Force:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[5]
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile5ForceAndSuppressAlreadyDeleted:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[5]
+        expectedresult:
+            status_code: ['SUCCESS', 'BAD_REQUEST']
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile6:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[6]
+
+    DeleteQosProfile6Force:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[6]
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile6ForceAndSuppressAlreadyDeleted:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[6]
+        expectedresult:
+            status_code: ['SUCCESS', 'BAD_REQUEST']
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile7:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[7]
+
+    DeleteQosProfile7Force:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[7]
+        query_params:
+            unbind: 'true'
+
+    DeleteQosProfile7ForceAndSuppressAlreadyDeleted:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deleteqos_profile: nsxmanager.[1].qos_profile.[7]
+        expectedresult:
+            status_code: ['SUCCESS', 'BAD_REQUEST']
+        query_params:
+            unbind: 'true'
+
+    VerifyFailDeleteQosProfile1:
+        <<: *DELETE_QOS_PROFILE1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfileDefault2:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[2]':
+                name: 'QosProfile2'
+                description: 'Qos profile with system default values.'
+                resource_type: *QosResourceType
+
+    VerifyQosProfileSystemDefaultValues: &VERIFY_QOS_PROFILE_SYSTEM_DEFAULT_VALUES
+        dscp[?]equal_to:
+            priority[?]equal_to: 0
+            mode[?]equal_to: 'TRUSTED'
+        burst_size[?]equal_to: 0
+        class_of_service[?]equal_to: 0
+        peak_bandwidth[?]equal_to: 0
+        average_bandwidth[?]equal_to: 0
+
+    VerifyQosProfileDefaultValues: &VERIFY_QOS_PROFILE_DEFAULT_VALUES
+        dscp[?]equal_to:
+            priority[?]equal_to: 0
+            mode[?]equal_to: 'TRUSTED'
+        burst_size[?]equal_to: 0
+        class_of_service[?]equal_to: 0
+        peak_bandwidth[?]equal_to: 0
+        average_bandwidth[?]equal_to: 0
+
+    VerifyQosProfileCustomInvalidValues: &VERIFY_QOS_PROFILE_CUSTOM_INVALID_VALUES
+        dscp[?]equal_to:
+            priority[?]equal_to: 4
+            mode[?]equal_to: 'TRUSTED'
+        burst_size: 4  # Bytes
+        class_of_service: 4
+        peak_bandwidth: 4  # Mbps
+        average_bandwidth: 4  # Mbps
+
+    QosProfileCustomNormalValues: &QOS_PROFILE_CUSTOM_NORMAL_VALUES_API
+        dscp:
+            priority: 0
+            mode: 'TRUSTED'
+        burst_size: *SignedIntMax32  # Bytes
+        class_of_service: 0
+        peak_bandwidth: 400  # Mbps
+        average_bandwidth: 200  # Mbps
+
+    VerifyQosProfileCustomNormalValuesAPI: &VERIFY_QOS_PROFILE_CUSTOM_NORMAL_VALUES_API
+        average_bandwidth[?]equal_to: 200  # Mbps
+        peak_bandwidth[?]equal_to: 400  # Mbps
+        burst_size[?]equal_to: *SignedIntMax32  # Bytes
+        class_of_service[?]equal_to: 0
+        dscp[?]equal_to:
+            priority[?]equal_to: 0
+            mode[?]equal_to: 'TRUSTED'
+
+    VerifyTableQosProfileDefaultValues--ESX: &VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+        average_bandwidth: undef  # bytes/sec
+        peak_bandwidth: undef  # bytes/sec
+        burst_size: undef  # bytes
+        class_of_service: 0
+        dscp: 'ff'
+        mode: 'trusted'
+
+    VerifyTableQosProfileCustomNormalValues--ESX: &VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_VALUES--ESX
+        average_bandwidth: 25000000  # bytes/sec
+        peak_bandwidth: 50000000  # bytes/sec
+        burst_size: *SignedIntMax32  # bytes
+        class_of_service: 0
+        dscp: 'ff'
+        mode: 'trusted'
+
+    VerifyTableQosProfileCustomNormalUntrustedValues--ESX: &VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_UNTRUSTED_VALUES--ESX
+        average_bandwidth: 25000000  # bytes/sec
+        peak_bandwidth: 50000000  # bytes/sec
+        burst_size: *SignedIntMax32  # bytes
+        class_of_service: 0
+        dscp: 1
+        mode: 'untrusted'
+
+    VerifyTableQosProfileCustomNormalTrustedValues--ESX: &VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES--ESX
+        average_bandwidth: 25000000  # bytes/sec
+        peak_bandwidth: 50000000  # bytes/sec
+        burst_size: *SignedIntMax32  # bytes
+        class_of_service: 0
+        dscp: 'ff'
+        mode: 'trusted'
+
+    VerifyTableQosProfileCustomAverageBandwidthValues--ESX: &VERIFY_TABLE_QOS_PROFILE_CUSTOM_AVERAGE_BANDWIDTH_VALUES--ESX
+        average_bandwidth: 250000  # bytes/sec
+        peak_bandwidth: 250000  # bytes/sec
+        burst_size: 250000  # bytes
+        class_of_service: 0
+        dscp: 'ff'
+        mode: 'trusted'
+
+    VerifyTableQosProfileDefaultValues--KVM: &VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+        dscp: 'undef'
+        mode: 'trusted'
+        average_bandwidth: 'undef'
+        peak_bandwidth: 'undef'
+        burst_size: 'undef'
+        class_of_service: 'undef'
+
+    VerifyTableQosProfileCustomNormalValues--KVM: &VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES--KVM
+        <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+        average_bandwidth: 200000000  # bits/sec
+
+    VerifyTableQosProfileCustomNormalUntrustedValues--ESX: &VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_UNTRUSTED_VALUES--KVM
+        average_bandwidth: 200000000  # bits/sec
+        dscp: 1
+        mode: 'untrusted'
+
+    VerifyTableQosProfileAverageBandwidth1MbitValues--KVM: &VERIFY_TABLE_QOS_PROFILE_AverageBandwidth1Mbit_VALUES--KVM
+        <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+        average_bandwidth: 1000000
+
+    VerifyTableQosProfileSystemDefaultValues--ESX: &VERIFY_TABLE_QOS_PROFILE_SYSTEM_DEFAULT_VALUES--ESX
+        average_bandwidth: 'undef'
+        peak_bandwidth: 'undef'
+        burst_size: 'undef'
+        class_of_service: '0'
+        dscp: 'ff'
+        mode: 'trusted'
+
+    VerifyTableQosProfileSystemDefaultValues--KVM: &VERIFY_TABLE_QOS_PROFILE_SYSTEM_DEFAULT_VALUES--KVM
+        average_bandwidth: 'undef'
+        dscp: 'undef'
+        mode: 'trusted'
+        peak_bandwidth: 'undef'
+        burst_size: 'undef'
+        class_of_service: 'undef'
+
+    QosProfileCustomNormalTrustedValues: &QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES
+        <<: *QOS_PROFILE_CUSTOM_NORMAL_VALUES_API
+        dscp:
+            priority: 1
+            mode: 'TRUSTED'
+
+    VerifyQosProfileCustomNormalTrustedValues: &VERIFY_QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES
+        <<: *VERIFY_QOS_PROFILE_CUSTOM_NORMAL_VALUES_API
+        dscp[?]equal_to:
+            priority[?]equal_to: 1
+            mode[?]equal_to: 'TRUSTED'
+
+    QosProfileCustomNormalUntrustedValues: &QOS_PROFILE_CUSTOM_NORMAL_UNTRUSTED_VALUES
+        <<: *QOS_PROFILE_CUSTOM_NORMAL_VALUES_API
+        dscp:
+            priority: 1
+            mode: 'UNTRUSTED'
+
+    VerifyQosProfileCustomNormalUntrustedValues: &VERIFY_QOS_PROFILE_CUSTOM_NORMAL_UNTRUSTED_VALUES
+        <<: *VERIFY_QOS_PROFILE_CUSTOM_NORMAL_VALUES_API
+        dscp[?]equal_to:
+            priority[?]equal_to: 1
+            mode[?]equal_to: 'UNTRUSTED'
+
+    QosProfileAverageBandwidth2MValues: &QOS_PROFILE_AVERAGE_BANDWIDTH_2M_VALUES
+        average_bandwidth: 2  # Mbps
+        peak_bandwidth: 2  # Mbps
+        burst_size:  250000  # Bytes
+
+    VerifyQosProfileAverageBandwidth2MValues: &VERIFY_QOS_PROFILE_AVERAGE_BANDWIDTH_2M_VALUES
+        <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+        average_bandwidth[?]equal_to: 2  # Mbps
+        peak_bandwidth[?]equal_to: 2  # Mbps
+        burst_size[?]equal_to: 250000  # Bytes
+
+    VerifyQosProfileDefault2OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[2]'
+        read:
+            name[?]equal_to: 'QosProfile2'
+            description[?]equal_to: 'Qos profile with system default values.'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+
+    CreateQosProfileCustom3:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[3]':
+                name: 'QosProfile3'
+                description: 'Qos profile with custom values.'
+                resource_type: *QosResourceType
+                <<: *QOS_PROFILE_CUSTOM_NORMAL_VALUES_API
+
+    VerifyQosProfileCustom3OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[3]'
+        read:
+            name[?]equal_to: 'QosProfile3'
+            description[?]equal_to: 'Qos profile with custom values.'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_CUSTOM_NORMAL_VALUES_API
+
+    CreateQosProfileCustom4:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '4':
+                name: 'QosProfile4'
+                description: 'Qos profile with trusted DSCP.'
+                resource_type: *QosResourceType
+                <<: *QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES
+
+    VerifyQosProfileCustom4OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[4]'
+        read:
+            name[?]equal_to: 'QosProfile4'
+            description[?]equal_to: 'Qos profile with trusted DSCP.'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES
+
+    CreateQosProfileCustom5:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '5':
+                name: 'QosProfile5'
+                description: 'Qos profile with untrusted DSCP.'
+                resource_type: *QosResourceType
+                <<: *QOS_PROFILE_CUSTOM_NORMAL_UNTRUSTED_VALUES
+
+    VerifyQosProfileCustom5OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[5]'
+        read:
+            name[?]equal_to: 'QosProfile5'
+            description[?]equal_to: 'Qos profile with untrusted DSCP.'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_CUSTOM_NORMAL_UNTRUSTED_VALUES
+
+    CreateQosProfileCustom6:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '6':
+                name: 'QosProfile6'
+                description: 'Qos profile with restricted average bandwidth.'
+                resource_type: *QosResourceType
+                <<: *QOS_PROFILE_AVERAGE_BANDWIDTH_2M_VALUES
+
+    VerifyQosProfileCustom6OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[6]'
+        read:
+            name[?]equal_to: 'QosProfile6'
+            description[?]equal_to: 'Qos profile with restricted average bandwidth.'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_AVERAGE_BANDWIDTH_2M_VALUES
+
+    CreateQosProfileCustom7:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[7]':
+                name: 'QosProfile7'
+                description: 'Qos profile with custom values.'
+                resource_type: *QosResourceType
+                <<: *QOS_PROFILE_CUSTOM_NORMAL_VALUES_API
+
+    VerifyQosProfileCustom7OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[7]'
+        read:
+            name[?]equal_to: 'QosProfile7'
+            description[?]equal_to: 'Qos profile with custom values.'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_CUSTOM_NORMAL_VALUES_API
+
+    AssociateQosProfile7ToLogicalSwitch1:
+        Type: Switch
+        TestSwitch: nsxmanager.[1].logicalswitch.[1]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[7]->id
+              switching_profile_key: *QosResourceType
+
+    VerifyQosProfile1OnLogicalSwitch1OnManager:
+        Type: Switch
+        TestSwitch: nsxmanager.[1].logicalswitch.[1]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[1]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile7OnLogicalSwitch1OnManager:
+        Type: Switch
+        TestSwitch: nsxmanager.[1].logicalswitch.[1]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[7]->id
+                  switching_profile_key: *QosResourceType
+
+    AssociateQosProfile3ToLogicalPort1:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[1]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[3]->id
+              switching_profile_key: *QosResourceType
+
+    AssociateQosProfile4ToLogicalSwitch1:
+        Type: Switch
+        TestSwitch: nsxmanager.[1].logicalswitch.[1]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[4]->id
+              switching_profile_key: *QosResourceType
+
+    AssociateQosProfile4ToLogicalPort1:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[1]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[4]->id
+              switching_profile_key: *QosResourceType
+
+    AssociateQosProfile4ToLogicalPort5:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[5]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[4]->id
+              switching_profile_key: *QosResourceType
+
+    AssociateQosProfile5ToLogicalPort2:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[2]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[5]->id
+              switching_profile_key: *QosResourceType
+
+    AssociateQosProfile5ToLogicalPort5:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[5]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[5]->id
+              switching_profile_key: *QosResourceType
+
+    AssociateQosProfile6ToLogicalPort1:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[1]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[6]->id
+              switching_profile_key: *QosResourceType
+
+    VerifyQosProfile1OnLogicalPort1OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[1]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[1]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile1OnLogicalPort5OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[5]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[1]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile1OnLogicalPort2OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[2]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[1]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile2OnLogicalPort1OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[1]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[2]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile3OnLogicalPort1OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[1]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[3]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile7OnLogicalPort1OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[1]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[7]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile7OnLogicalPort2OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[2]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[7]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile4OnLogicalSwitch1OnManager:
+        Type: Switch
+        TestSwitch: nsxmanager.[1].logicalswitch.[1]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[4]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile4OnLogicalPort1OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[1]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[4]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile4OnLogicalPort5OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[5]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[4]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile5OnLogicalPort2OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[2]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[5]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfile5OnLogicalPort5OnManager:
+        Type: Port
+        TestPort: nsxmanager.[1].logicalport.[5]
+        read:
+            switching_profile_ids[?]contain_once:
+                - switching_profile_value: nsxmanager.[1].qos_profile.[5]->id
+                  switching_profile_key: *QosResourceType
+
+    VerifyQosProfileCustom7OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_VALUES--ESX
+
+    VerifyQosProfileCustom7OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES--KVM
+
+    VerifyQosProfileCustom7OnLogicalPort2OnTransportNode2--ESX:
+        Type: Host
+        TestHost: esx.[2]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[2]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_VALUES--ESX
+
+    VerifyQosProfileCustom7OnLogicalPort2OnTransportNode2--KVM:
+        Type: Host
+        TestHost: kvm.[2]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[2]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES--KVM
+
+    VerifyQosProfileCustom3OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_VALUES--ESX
+
+    VerifyQosProfileCustom3OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES--KVM
+
+    VerifyQosProfileCustom4OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES--ESX
+
+    VerifyQosProfileCustom4OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES--KVM
+
+    VerifyQosProfileCustom4OnLogicalPort5OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_VALUES--ESX
+
+    VerifyQosProfileCustom4OnLogicalPort5OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_TRUSTED_VALUES--KVM
+
+    VerifyQosProfileCustom5OnLogicalPort2OnTransportNode2--ESX:
+        Type: Host
+        TestHost: esx.[2]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[2]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_UNTRUSTED_VALUES--ESX
+
+    VerifyQosProfileCustom5OnLogicalPort2OnTransportNode2--KVM:
+        Type: Host
+        TestHost: kvm.[2]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[2]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_NORMAL_UNTRUSTED_VALUES--KVM
+
+    VerifyQosProfileCustom6OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_CUSTOM_AVERAGE_BANDWIDTH_VALUES--ESX
+
+    VerifyQosProfileDefault2OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+
+    VerifyQosProfileSystemDefault1OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_SYSTEM_DEFAULT_VALUES--ESX
+
+    VerifyQosProfileSystemDefault1OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_SYSTEM_DEFAULT_VALUES--KVM
+
+    VerifyQosProfileSystemDefault1OnLogicalPort2OnTransportNode2--ESX:
+        Type: Host
+        TestHost: esx.[2]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[2]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_SYSTEM_DEFAULT_VALUES--ESX
+
+    VerifyQosProfileSystemDefault1OnLogicalPort2OnTransportNode2--KVM:
+        Type: Host
+        TestHost: kvm.[2]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[2]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_SYSTEM_DEFAULT_VALUES--KVM
+
+    TrafficVIF1OnVM1ToVIF1VM2DSCP38Trusted--ESX:
+        Type: Traffic
+        ToolName: iperf
+        L3Protocol: ipv4
+        L4Protocol: udp
+        TestAdapter: vm.[1].vnic.[1]
+        SupportAdapter: vm.[2].vnic.[1]
+        TestDuration: 5
+        udpbandwidth: 10M
+        tos: '0x38'
+        minexpresult: 0
+        verification: VerifyDSCP38TxOnTransportNode1Uplink1--ESX
+    VerifyDSCP38TxOnTransportNode1Uplink1--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[1]
+            pktcapfilter: 'count 100,flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            tos: '0x38'
+            pktcount: '10+'
+            length: '500+'
+
+    TrafficVIF1OnVM1ToVIF1VM2DSCP38Trusted--KVM:
+        Type: Traffic
+        ToolName: iperf
+        L3Protocol: ipv4
+        L4Protocol: udp
+        TestAdapter: vm.[1].vif.[1]
+        SupportAdapter: vm.[2].vif.[1]
+        TestDuration: 5
+        udpbandwidth: 10M
+        tos: '0x38'
+        minexpresult: 0
+        verification: VerifyDSCP38OnTransportNode1--KVM
+    VerifyDSCP38OnTransportNode1--KVM:
+        PktCapVerification:
+            target: kvm.[1].pif.[1]
+            verificationtype: 'pktcap'
+            expectencapsulatedtraffic: 'true'
+            pktcapfilter: 'count 100'
+            tos: '0x38'
+            innertos: '0x38'
+            pktcount: '10+'
+            length: '500+'
+
+    TrafficVIF1OnVM2ToVIF1VM1DSCP38Untrusted4--ESX:
+        Type: Traffic
+        ToolName: iperf
+        L3Protocol: ipv4
+        L4Protocol: udp
+        TestAdapter: vm.[2].vnic.[1]
+        SupportAdapter: vm.[1].vnic.[1]
+        TestDuration: 5
+        udpbandwidth: 10M
+        tos: '0x38'
+        verification: VerifyDSCP4OnTransportNode2--ESX
+    VerifyDSCP4OnTransportNode2--ESX:
+        PktCapVerification:
+            target: esx.[2].vmnic.[1]
+            pktcapfilter: 'count 100,flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            tos: '0x4'
+            innertos: '0x4'
+            pktcount: '10+'
+            length: '500+'
+
+    TrafficVIF1OnVM2ToVIF1VM1DSCP38Untrusted4--KVM:
+        Type: Traffic
+        ToolName: iperf
+        L3Protocol: ipv4
+        L4Protocol: udp
+        TestAdapter: vm.[2].vif.[1]
+        SupportAdapter: vm.[1].vif.[1]
+        TestDuration: 5
+        udpbandwidth: 10M
+        tos: '0x38'
+        verification: VerifyDSCP4OnTransportNode2--KVM
+    VerifyDSCP4OnTransportNode2--KVM:
+        PktCapVerification:
+            target: kvm.[2].pif.[1]
+            verificationtype: 'pktcap'
+            pktcapfilter: 'src host ipv4/kvm.[2].vtep.[1],dst host ipv4/kvm.[1].vtep.[1]'
+            expectencapsulatedtraffic: 'true'
+            pktcapfilter: 'count 100'
+            tos: '0x4'
+            innertos: '0x4'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyTrafficBandwidthMin4VM2VIF1ToVM1VIF1--ESX:
+        Type: Traffic
+        ToolName: iperf
+        TestAdapter: vm.[2].vnic.[1]
+        SupportAdapter: vm.[1].vnic.[1]
+        sleepbetweenworkloads: *PreTrafficSocketWait
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        testduration: 10
+        minexpresult: 4
+
+    VerifyTrafficBandwidthMin4VM2VIF1ToVM1VIF1--KVM:
+        Type: Traffic
+        ToolName: iperf
+        TestAdapter: vm.[2].vif.[1]
+        SupportAdapter: vm.[1].vif.[1]
+        sleepbetweenworkloads: *PreTrafficSocketWait
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        testduration: 10
+        minexpresult: 4
+
+    VerifyTrafficBandwidthMin4VM3VIF1ToVM1VIF1--ESX:
+        Type: Traffic
+        ToolName: iperf
+        TestAdapter: vm.[3].vnic.[1]
+        SupportAdapter: vm.[1].vnic.[1]
+        sleepbetweenworkloads: *PreTrafficSocketWait
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        testduration: 10
+        minexpresult: 4
+
+    VerifyTrafficBandwidthMin4VM3VIF1ToVM1VIF1--KVM:
+        Type: Traffic
+        ToolName: iperf
+        TestAdapter: vm.[3].vif.[1]
+        SupportAdapter: vm.[1].vif.[1]
+        sleepbetweenworkloads: *PreTrafficSocketWait
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        testduration: 10
+        minexpresult: 4
+
+    VerifyTrafficBandwidthMax2Min1VM1VIF1ToVM2VIF1--ESX:
+        Type: Traffic
+        ToolName: iperf
+        TestAdapter: vm.[1].vnic.[1]
+        SupportAdapter: vm.[2].vnic.[1]
+        sleepbetweenworkloads: *PreTrafficSocketWait
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        testduration: 60
+        maxthroughput: 2
+        minexpresult: 1
+
+    VerifyTrafficBandwidthMax2Min1VM1VIF1ToVM2VIF1--KVM:
+        Type: Traffic
+        ToolName: iperf
+        TestAdapter: vm.[1].vif.[1]
+        SupportAdapter: vm.[2].vif.[1]
+        sleepbetweenworkloads: *PreTrafficSocketWait
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        testduration: 60
+        maxthroughput: 2
+        minexpresult: 1
+
+    VerifyTrafficBandwidthMax2Min1VM1VIF1ToVM3VIF1--ESX:
+        Type: Traffic
+        ToolName: iperf
+        TestAdapter: vm.[1].vnic.[1]
+        SupportAdapter: vm.[3].vnic.[1]
+        sleepbetweenworkloads: *PreTrafficSocketWait
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        testduration: 60
+        maxthroughput: 2
+        minexpresult: 1
+
+    VerifyTrafficBandwidthMax2Min1VM1VIF1ToVM3VIF1--KVM:
+        Type: Traffic
+        ToolName: iperf
+        TestAdapter: vm.[1].vif.[1]
+        SupportAdapter: vm.[3].vif.[1]
+        sleepbetweenworkloads: *PreTrafficSocketWait
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        testduration: 60
+        maxthroughput: 2
+        minexpresult: 1
+
+    TrafficVif1Vm5ToVif1Vm6VerifyClassOfService1OnPif2HostNode1--ESX:
+        - [SetHost1Uplink2HwcapVlanTxDisabled--ESX]
+        - [_TrafficVif1Vm5ToVif1Vm6VerifyClassOfService1OnPif2HostNode1--ESX]
+    _TrafficVif1Vm5ToVif1Vm6VerifyClassOfService1OnPif2HostNode1--ESX:
+        Type: Traffic
+        ToolName: iperf
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        TestAdapter: vm.[5].vnic.[1]
+        SupportAdapter: vm.[6].vnic.[1]
+        TestDuration: 5
+        minexpresult: 0
+        verification: VerifyCOSOnTransportNode1Uplink2Tx--ESX
+    VerifyCOSOnTransportNode1Uplink2Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[2]
+            pktcapfilter: 'count 15,vlan 20,src host vm.[5].vnic.[1],dst host vm.[6].vnic.[1],flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            pktcount: '12+'
+            pcp: 0x1
+
+    CreateQosProfile1DSCPModeIllegalEmptyString:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, empty DSCP mode'
+                resource_type: *QosResourceType
+                dscp:
+                    mode: ''
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1DSCPModeIllegalNonemptyString:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, non-empty DSCP mode'
+                resource_type: *QosResourceType
+                dscp:
+                    mode: 'foobar'
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1DSCPModeIllegalTypeInt:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, int DSCP mode'
+                resource_type: *QosResourceType
+                dscp:
+                    mode: 1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1DSCPPriorityIllegalLessThanMin:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, DSCP priority less than min'
+                resource_type: *QosResourceType
+                dscp:
+                    priority: -1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1DSCPPriorityIllegalGreaterThanMax:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, DSCP priority greater than max'
+                resource_type: *QosResourceType
+                dscp:
+                    priority: 64
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1DSCPPriorityIllegalFloat:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, DSCP priority float'
+                resource_type: *QosResourceType
+                dscp:
+                    priority: 1.1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1DSCPPriorityIllegalString:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, DSCP priority string'
+                resource_type: *QosResourceType
+                dscp:
+                    priority: 'foobar'
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1AverageBandwidthIllegalNegativeInt:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, average bandwidth negative int'
+                resource_type: *QosResourceType
+                average_bandwidth: -1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1AverageBandwidthLegalMaxSignedInt32Bit:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, average bandwidth max singed int 32-bit'
+                resource_type: *QosResourceType
+                average_bandwidth: *SignedIntMax32
+
+    CreateQosProfile1AverageBandwidthIllegalMaxUnsignedInt32Bit:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, average bandwidth max int 32-bit'
+                resource_type: *QosResourceType
+                average_bandwidth: *IntMax32
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1AverageBandwidthIllegalFloat:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, average bandwidth float'
+                resource_type: *QosResourceType
+                average_bandwidth: 1.1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1AverageBandwidthIllegalString:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, average bandwidth string'
+                resource_type: *QosResourceType
+                average_bandwidth: 'foobar'
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1BurstSizeIllegalNegativeInt:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, burst size negative int'
+                resource_type: *QosResourceType
+                burst_size: -1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1BurstSizeLegalLargeSignedInt32Bit:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, burst size max signed int 32-bit'
+                resource_type: *QosResourceType
+                burst_size: *SignedIntMax32
+
+    CreateQosProfile1BurstSizeIllegalMaxUnsignedInt32Bit:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, burst size max int 32-bit'
+                resource_type: *QosResourceType
+                burst_size: *IntMax32
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1BurstSizeIllegalFloat:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, burst size float'
+                resource_type: *QosResourceType
+                burst_size: 1.1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1BurstSizeIllegalString:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, burst size string'
+                resource_type: *QosResourceType
+                burst_size: 'foobar'
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1ClassOfServiceIllegalLessThanMin:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, class of service less than min'
+                resource_type: *QosResourceType
+                class_of_service: -1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1ClassOfServiceIllegalGreaterThanMax:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, class of service greater than max'
+                resource_type: *QosResourceType
+                class_of_service: 8
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1ClassOfServiceIllegalFloat:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, class of service float'
+                resource_type: *QosResourceType
+                class_of_service: 1.1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1ClassOfServiceIllegalString:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, class of service string'
+                resource_type: *QosResourceType
+                class_of_service: 'foobar'
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1PeakBandwidthIllegalNegativeInt:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, peak bandwidth negative int'
+                resource_type: *QosResourceType
+                peak_bandwidth: -1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1PeakBandwidthLegalLargeSignedInt32Bit:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, peak bandwidth max signed int 32-bit'
+                resource_type: *QosResourceType
+                peak_bandwidth: *SignedIntMax32
+
+    CreateQosProfile1PeakBandwidthIllegalMaxUnsignedInt32Bit:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, peak bandwidth max int 32-bit'
+                resource_type: *QosResourceType
+                peak_bandwidth: *IntMax32
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1PeakBandwidthIllegalFloat:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, peak bandwidth float'
+                resource_type: *QosResourceType
+                peak_bandwidth: 1.1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1PeakBandwidthIllegalString:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, peak bandwidth string'
+                resource_type: *QosResourceType
+                peak_bandwidth: 'foobar'
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1PeakBandwidth1LessThanAverageBandwidth2Illegal:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, peak bandwidth less than average bandwidth'
+                resource_type: *QosResourceType
+                peak_bandwidth: 1
+                average_bandwidth: 2
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1BurstSizeGreaterThan0WithAverageAndPeak0Illegal:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileNegative'
+                description: 'Qos profile negative test, burst size greater than 0 requires average or peak bandwidth greater than 0'
+                resource_type: *QosResourceType
+                peak_bandwidth: 0
+                average_bandwidth: 0
+                burst_size: 1
+        expectedresult:
+            status_code: BAD_REQUEST
+
+    CreateQosProfile1DscpModeTrusted:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileDscpModeTrusted'
+                description: 'Qos profile valid values test, DSCP mode TRUSTED'
+                resource_type: *QosResourceType
+                dscp:
+                    mode: 'TRUSTED'
+
+    CreateQosProfile1DscpModeUntrusted:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileDscpModeUntrusted'
+                description: 'Qos profile valid values test, DSCP mode UNTRUSTED'
+                resource_type: *QosResourceType
+                dscp:
+                    mode: 'UNTRUSTED'
+
+    CreateQosProfile1DscpPriority0:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileDscpPriority0'
+                description: 'Qos profile valid values test, DSCP priority 0'
+                resource_type: *QosResourceType
+                dscp:
+                    mode: 'UNTRUSTED'
+                    priority: '0'
+
+    CreateQosProfile1DscpPriority63:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileDscpPriority63'
+                description: 'Qos profile valid values test, DSCP priority 63'
+                resource_type: *QosResourceType
+                dscp:
+                    mode: 'UNTRUSTED'
+                    priority: '63'
+
+    CreateQosProfile1ClassOfService0:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileDscpClassOfService0'
+                description: 'Qos profile valid values test, Class of Service 0'
+                resource_type: *QosResourceType
+                class_of_service: 0
+
+    CreateQosProfile1ClassOfService1:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileDscpClassOfService1'
+                description: 'Qos profile valid values test, Class of Service 1'
+                resource_type: *QosResourceType
+                class_of_service: 1
+
+    CreateQosProfile1ClassOfService7:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileDscpClassOfService7'
+                description: 'Qos profile valid values test, Class of Service 7'
+                resource_type: *QosResourceType
+                class_of_service: 7
+
+    CreateQosProfile1AveragePeakBandwidth0:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileAveragePeakBandwidth0'
+                description: 'Qos profile valid values test, average and peak bandwidth 0'
+                resource_type: *QosResourceType
+                average_bandwidth: 0
+                peak_bandwidth: 0
+
+    CreateQosProfile1AveragePeakBandwidth1:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileAveragePeakBandwidth1'
+                description: 'Qos profile valid values test, average and peak bandwidth 1'
+                resource_type: *QosResourceType
+                average_bandwidth: 1
+                peak_bandwidth: 1
+
+    CreateQosProfile1AveragePeakBandwidthMaxSignedInt32Bit:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileAveragePeakBandwidthMaxSignedInt32Bit'
+                description: 'Qos profile valid values test, average and peak bandwidth max signed 32-bit int'
+                resource_type: *QosResourceType
+                average_bandwidth: *SignedIntMax32
+                peak_bandwidth: *SignedIntMax32
+
+    CreateQosProfile1BurstSize0:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileBurstSize0'
+                description: 'Qos profile valid values test, burst size 0'
+                resource_type: *QosResourceType
+                burst_size: 0
+                # burst size is ineffective without peak bandwidth > 0
+                peak_bandwidth: 1
+                # peak bandwidth < average bandwidth is invalid
+                average_bandwidth: 1
+
+    CreateQosProfile1BurstSize1:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileBurstSize1'
+                description: 'Qos profile valid values test, burst size 1'
+                resource_type: *QosResourceType
+                burst_size: 1
+                # burst size is ineffective without peak bandwidth > 0
+                peak_bandwidth: 1
+                # peak bandwidth < average bandwidth is invalid
+                average_bandwidth: 1
+
+    CreateQosProfile1BurstSizeMaxSignedInt32Bit:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileBurstSizeMaxSignedInt32Bit'
+                description: 'Qos profile valid values test, burst size max signed 32-bit int'
+                resource_type: *QosResourceType
+                burst_size: *SignedIntMax32
+                # burst size is ineffective without peak bandwidth > 0
+                peak_bandwidth: 1
+                # peak bandwidth < average bandwidth is invalid
+                average_bandwidth: 1
+
+    VerifyQosProfile1DscpModeTrustedOnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileDscpModeTrusted'
+            description[?]equal_to: 'Qos profile valid values test, DSCP mode TRUSTED'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            dscp[?]equal_to:
+                priority[?]equal_to: 0
+                mode[?]equal_to: 'TRUSTED'
+
+    VerifyQosProfile1DscpModeUntrustedOnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileDscpModeUntrusted'
+            description[?]equal_to: 'Qos profile valid values test, DSCP mode UNTRUSTED'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            dscp[?]equal_to:
+                priority[?]equal_to: 0
+                mode[?]equal_to: 'UNTRUSTED'
+
+    VerifyQosProfile1DscpPriority0OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileDscpPriority0'
+            description[?]equal_to: 'Qos profile valid values test, DSCP priority 0'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            dscp[?]equal_to:
+                priority[?]equal_to: 0
+                mode[?]equal_to: 'UNTRUSTED'
+
+    VerifyQosProfile1DscpPriority63OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileDscpPriority63'
+            description[?]equal_to: 'Qos profile valid values test, DSCP priority 63'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            dscp[?]equal_to:
+                priority[?]equal_to: 63
+                mode[?]equal_to: 'UNTRUSTED'
+
+    VerifyQosProfile1ClassOfService0OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileDscpClassOfService0'
+            description[?]equal_to: 'Qos profile valid values test, Class of Service 0'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            class_of_service[?]equal_to: 0
+
+    VerifyQosProfile1ClassOfService1OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileDscpClassOfService1'
+            description[?]equal_to: 'Qos profile valid values test, Class of Service 1'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            class_of_service[?]equal_to: 1
+
+    VerifyQosProfile1ClassOfService7OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileDscpClassOfService7'
+            description[?]equal_to: 'Qos profile valid values test, Class of Service 7'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            class_of_service[?]equal_to: 7
+
+    VerifyQosProfile1AveragePeakBandwidth0OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileAveragePeakBandwidth0'
+            description[?]equal_to: 'Qos profile valid values test, average and peak bandwidth 0'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            average_bandwidth[?]equal_to: 0
+            peak_bandwidth[?]equal_to: 0
+
+    VerifyQosProfile1AveragePeakBandwidth1OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileAveragePeakBandwidth1'
+            description[?]equal_to: 'Qos profile valid values test, average and peak bandwidth 1'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            average_bandwidth[?]equal_to: 1
+            peak_bandwidth[?]equal_to: 1
+
+    VerifyQosProfile1AveragePeakBandwidthMaxSignedInt32BitOnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileAveragePeakBandwidthMaxSignedInt32Bit'
+            description[?]equal_to: 'Qos profile valid values test, average and peak bandwidth max signed 32-bit int'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            average_bandwidth[?]equal_to: *SignedIntMax32
+            peak_bandwidth[?]equal_to: *SignedIntMax32
+
+    VerifyQosProfile1BurstSize0OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileBurstSize0'
+            description[?]equal_to: 'Qos profile valid values test, burst size 0'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            burst_size[?]equal_to: 0
+            # burst size is ineffective without peak bandwidth > 0
+            peak_bandwidth[?]equal_to: 1
+            # peak bandwidth < average bandwidth is invalid
+            average_bandwidth[?]equal_to: 1
+
+    VerifyQosProfile1BurstSize1OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileBurstSize1'
+            description[?]equal_to: 'Qos profile valid values test, burst size 1'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            burst_size[?]equal_to: 1
+            # burst size is ineffective without peak bandwidth > 0
+            peak_bandwidth[?]equal_to: 1
+            # peak bandwidth < average bandwidth is invalid
+            average_bandwidth[?]equal_to: 1
+
+    VerifyQosProfile1BurstSizeMaxSignedInt32BitOnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileBurstSizeMaxSignedInt32Bit'
+            description[?]equal_to: 'Qos profile valid values test, burst size max signed 32-bit int'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            burst_size[?]equal_to: *SignedIntMax32
+            # burst size is ineffective without peak bandwidth > 0
+            peak_bandwidth[?]equal_to: 1
+            # peak bandwidth < average bandwidth is invalid
+            average_bandwidth[?]equal_to: 1
+
+    AssociateQosProfile1ToLogicalPortX: &AssociateQosProfile1ToLogicalPortX
+        Type: Port
+        #TestPort: nsxmanager.[1].logicalport.[X]
+        reconfigure: "true"
+        switching_profile_ids:
+            - switching_profile_value: nsxmanager.[1].qos_profile.[1]->id
+              switching_profile_key: *QosResourceType
+
+    AssociateQosProfile1ToLogicalPort1:
+        <<: *AssociateQosProfile1ToLogicalPortX 
+        TestPort: nsxmanager.[1].logicalport.[1]
+
+    AssociateQosProfile1ToLogicalPort2:
+        <<: *AssociateQosProfile1ToLogicalPortX 
+        TestPort: nsxmanager.[1].logicalport.[2]
+
+    AssociateQosProfile1ToLogicalPort5:
+        <<: *AssociateQosProfile1ToLogicalPortX 
+        TestPort: nsxmanager.[1].logicalport.[5]
+
+    VerifyQosProfile1DscpModeTrustedOnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'trusted'
+
+    VerifyQosProfile1DscpModeTrustedOnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'trusted'
+
+    VerifyQosProfile1DscpModeTrustedOnLogicalPort5OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'trusted'
+
+    VerifyQosProfile1DscpModeTrustedOnLogicalPort5OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'trusted'
+
+    VerifyQosProfile1DscpModeUntrustedPriority0OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'untrusted'
+                  priority: 0
+
+    VerifyQosProfile1DscpModeUntrustedPriority0OnLogicalPort5OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'untrusted'
+                  dscp: 0
+
+    VerifyQosProfile1DscpModeUntrustedPriority0OnLogicalPort5OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'untrusted'
+                  dscp: 0
+
+    VerifyQosProfile1DscpModeUntrustedOnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'untrusted'
+                  dscp: 0
+
+    VerifyQosProfile1DscpModeUntrustedOnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'untrusted'
+                  dscp: 0
+
+    VerifyQosProfile1DscpPriority0OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'untrusted'
+                  dscp: 0
+
+    VerifyQosProfile1DscpPriority0OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'untrusted'
+                  dscp: 0
+
+    VerifyQosProfile1DscpPriority63OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'untrusted'
+                  dscp: '3f'
+
+    VerifyQosProfile1DscpPriority63OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'untrusted'
+                  dscp: '63'
+
+    VerifyQosProfile1ClassOfService0OnLogicalPort5OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  class_of_service: 0
+
+    VerifyQosProfile1ClassOfService0OnLogicalPort5OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+
+    VerifyQosProfile1ClassOfService1OnLogicalPort5OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  class_of_service: 1
+
+    VerifyQosProfile1ClassOfService1OnLogicalPort5OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  class_of_service: 1
+
+    VerifyQosProfile1ClassOfService1OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  class_of_service: 1
+
+    VerifyQosProfile1ClassOfService1OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contains_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+
+    VerifyQosProfile1ClassOfService7OnLogicalPort5OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  class_of_service: 7
+
+    VerifyQosProfile1ClassOfService7OnLogicalPort5OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+
+    VerifyQosProfile1AveragePeakBandwidth0OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  average_bandwidth: undef
+                  peak_bandwidth: undef
+
+    VerifyQosProfile1AveragePeakBandwidth1OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  average_bandwidth: 125000
+                  peak_bandwidth: 125000
+
+    VerifyQosProfile1AveragePeakBandwidthMaxSignedInt32BitOnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  average_bandwidth: *SignedIntMax32--ESX
+                  peak_bandwidth: *SignedIntMax32--ESX
+
+    VerifyQosProfile1BurstSize0OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  burst_size: undef
+
+    VerifyQosProfile1BurstSize1OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  burst_size: 1
+
+    VerifyQosProfile1BurstSizeMaxSignedInt32BitOnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  burst_size: *SignedIntMax32
+
+    VerifyQosProfile1AveragePeakBandwidth0OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+
+    VerifyQosProfile1AveragePeakBandwidth1OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  average_bandwidth: 1000000
+                  peak_bandwidth: 'undef'
+
+    VerifyQosProfile1AveragePeakBandwidthMaxSignedInt32BitOnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  average_bandwidth: *SignedIntMax32--KVM
+                  peak_bandwidth: 'undef'
+
+    VerifyQosProfile1BurstSize0OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_AverageBandwidth1Mbit_VALUES--KVM
+                  burst_size: 'undef'
+
+    VerifyQosProfile1BurstSize1OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_AverageBandwidth1Mbit_VALUES--KVM
+                  burst_size: 'undef'  # no burst size on KVM
+
+    VerifyQosProfile1BurstSizeMaxSignedInt32BitOnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_AverageBandwidth1Mbit_VALUES--KVM
+                  burst_size: 'undef'  # no burst size on KVM
+
+    CreateQosProfile1DscpModeUntrustedPriority0:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileDscpModeUntrustedPriority0'
+                description: 'Qos profile valid values test, DSCP mode UNTRUSTED, Priority 0'
+                resource_type: *QosResourceType
+                dscp:
+                    mode: 'UNTRUSTED'
+                    priority: 0
+
+    CreateQosProfile1DscpModeUntrustedPriority1:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileDscpModeUntrustedPriority1'
+                description: 'Qos profile valid values test, DSCP mode UNTRUSTED, Priority 1'
+                resource_type: *QosResourceType
+                dscp:
+                    mode: 'UNTRUSTED'
+                    priority: 1
+
+    CreateQosProfile1DscpModeUntrustedPriority63:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        qos_profile:
+            '[1]':
+                name: 'QosProfileDscpModeUntrustedPriority63'
+                description: 'Qos profile valid values test, DSCP mode UNTRUSTED, Priority 63'
+                resource_type: *QosResourceType
+                dscp:
+                    mode: 'UNTRUSTED'
+                    priority: 63
+
+    VerifyQosProfile1DscpModeUntrustedPriority0OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileDscpModeUntrustedPriority0'
+            description[?]equal_to: 'Qos profile valid values test, DSCP mode UNTRUSTED, Priority 0'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            dscp[?]equal_to:
+                priority[?]equal_to: 0
+                mode[?]equal_to: 'UNTRUSTED'
+
+    VerifyQosProfile1DscpModeUntrustedPriority1OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileDscpModeUntrustedPriority1'
+            description[?]equal_to: 'Qos profile valid values test, DSCP mode UNTRUSTED, Priority 1'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            dscp[?]equal_to:
+                priority[?]equal_to: 1
+                mode[?]equal_to: 'UNTRUSTED'
+
+    VerifyQosProfile1DscpModeUntrustedPriority63OnManager:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1].qos_profile.[1]'
+        read:
+            name[?]equal_to: 'QosProfileDscpModeUntrustedPriority63'
+            description[?]equal_to: 'Qos profile valid values test, DSCP mode UNTRUSTED, Priority 63'
+            resource_type[?]equal_to: *QosResourceType
+            <<: *VERIFY_QOS_PROFILE_DEFAULT_VALUES
+            dscp[?]equal_to:
+                priority[?]equal_to: 63
+                mode[?]equal_to: 'UNTRUSTED'
+
+    VerifyQosProfile1DscpModeUntrustedPriority0OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'untrusted'
+                  dscp: 0
+
+    VerifyQosProfile1DscpModeUntrustedPriority1OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'untrusted'
+                  dscp: 1
+
+    VerifyQosProfile1DscpModeUntrustedPriority1OnLogicalPort5OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'untrusted'
+                  dscp: 1
+
+    VerifyQosProfile1DscpModeUntrustedPriority63OnLogicalPort1OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'untrusted'
+                  dscp: '3f'
+
+    VerifyQosProfile1DscpModeUntrustedPriority63OnLogicalPort5OnTransportNode1--ESX:
+        Type: Host
+        TestHost: esx.[1]
+        execution_type: cli
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--ESX
+                  mode: 'untrusted'
+                  dscp: '3f'
+
+    VerifyQosProfile1DscpModeUntrustedPriority0OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'untrusted'
+                  dscp: 0
+
+    VerifyQosProfile1DscpModeUntrustedPriority1OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'untrusted'
+                  dscp: 1
+
+    VerifyQosProfile1DscpModeUntrustedPriority1OnLogicalPort5OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'untrusted'
+                  dscp: 1
+
+    VerifyQosProfile1DscpModeUntrustedPriority63OnLogicalPort1OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[1]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'untrusted'
+                  dscp: '63'
+
+    VerifyQosProfile1DscpModeUntrustedPriority63OnLogicalPort5OnTransportNode1--KVM:
+        Type: Host
+        TestHost: kvm.[1]
+        execution_type: cmd
+        'get_port_qos_info[?]contain_once':
+            table:
+                - port: nsxmanager.[1].logicalport.[5]->id_
+                  <<: *VERIFY_TABLE_QOS_PROFILE_DEFAULT_VALUES--KVM
+                  mode: 'untrusted'
+                  dscp: '63'
+
+    DscpMarkingTrafficTest: &DscpMarkingTrafficTest
+        Type: Traffic
+        ToolName: iperf
+        L3Protocol: ipv4
+        L4Protocol: udp
+        TestDuration: 5
+        sleepbetweenworkloads: *PreTrafficSocketWait
+        udpbandwidth: 10M
+        # Provide additional keys in final workload.
+        # TestAdapter:
+        #SupportAdapter:
+        # tos:
+        # verification:
+
+    DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX: &DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        <<: *DscpMarkingTrafficTest
+        TestAdapter: vm.[1].vnic.[1]
+        SupportAdapter: vm.[2].vnic.[1]
+
+    DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX: &DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        <<: *DscpMarkingTrafficTest
+        TestAdapter: vm.[5].vnic.[1]
+        SupportAdapter: vm.[6].vnic.[1]
+
+    DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM: &DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        <<: *DscpMarkingTrafficTest
+        TestAdapter: vm.[1].vif.[1]
+        SupportAdapter: vm.[2].vif.[1]
+
+    DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM: &DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        <<: *DscpMarkingTrafficTest
+        TestAdapter: vm.[5].vif.[1]
+        SupportAdapter: vm.[6].vif.[1]
+
+    TrafficVIF1VM1DscpPriority4TrustedToVIF1VM2ViaOverlayVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x10'
+        verification: VerifyDscp4InnerDscp4OuterOnTransportNode1Pif1Tx--ESX
+
+    TrafficVIF1VM1DscpPriority4TrustedToVIF1VM2ViaOverlayVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x10'
+        verification: VerifyDscp4OnVM2Pif1Rx--ESX
+
+    TrafficVIF1VM5DscpPriority4TrustedToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x10'
+        verification: VerifyDscp4OnTransportNode1Pif2Tx--ESX
+
+    TrafficVIF1VM5DscpPriority4UnrustedToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x10'
+        verification: VerifyDscp4OnTransportNode1Pif2Tx--ESX
+
+    TrafficVIF1VM5DscpPriority0TrustedToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x0'
+        verification: VerifyDscp0OnTransportNode1Pif2Tx--ESX
+
+    TrafficVIF1VM5DscpPriority4TrustedToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x10'
+        verification: VerifyDscp4OnVM6Pif1Rx--ESX
+
+    TrafficVIF1VM5DscpPriority0TrustedToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x0'
+        verification: VerifyDscp0OnVM6Pif1Rx--ESX
+
+    TrafficVIF1VM1DscpPriority0TrustedToVIF1VM2ViaOverlayVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x0'
+        verification: VerifyDscp0InnerDscp0OuterOnTransportNode1Pif1Tx--ESX
+
+    TrafficVIF1VM1DscpPriority0TrustedToVIF1VM2ViaOverlayVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x0'
+        verification: VerifyDscp0OnVM2Pif1Rx--ESX
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority0ToVIF1VM2ViaOverlayVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x10'
+        verification: VerifyDscp0InnerDscp0OuterOnTransportNode1Pif1Tx--ESX
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x10'
+        verification: VerifyDscp0OnTransportNode1Pif2Tx--ESX
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x10'
+        verification: VerifyDscp1OnTransportNode1Pif2Tx--ESX
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x10'
+        verification: VerifyDscp63OnTransportNode1Pif2Tx--ESX
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x0'
+        verification: VerifyDscp0OnTransportNode1Pif2Tx--ESX
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x0'
+        verification: VerifyDscp1OnTransportNode1Pif2Tx--ESX
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x0'
+        verification: VerifyDscp63OnTransportNode1Pif2Tx--ESX
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority0ToVIF1VM2ViaOverlayVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x10'
+        verification: VerifyDscp0OnVM2Pif1Rx--ESX
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x10'
+        verification: VerifyDscp0OnVM6Pif1Rx--ESX
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x10'
+        verification: VerifyDscp1OnVM6Pif1Rx--ESX
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x10'
+        verification: VerifyDscp63OnVM6Pif1Rx--ESX
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x0'
+        verification: VerifyDscp0OnVM6Pif1Rx--ESX
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x0'
+        verification: VerifyDscp1OnVM6Pif1Rx--ESX
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--ESX
+        tos: '0x0'
+        verification: VerifyDscp63OnVM6Pif1Rx--ESX
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority1ToVIF1VM2ViaOverlayVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x10'
+        verification: VerifyDscp1InnerDscp1OuterOnTransportNode1Pif1Tx--ESX
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority1ToVIF1VM2ViaOverlayVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x10'
+        verification: VerifyDscp1OnVM2Pif1Rx--ESX
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority63ToVIF1VM2ViaOverlayVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x10'
+        verification: VerifyDscp63InnerDscp63OuterOnTransportNode1Pif1Tx--ESX
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority63ToVIF1VM2ViaOverlayVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x10'
+        verification: VerifyDscp63OnVM2Pif1Rx--ESX
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority0ToVIF1VM2ViaOverlayVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x0'
+        verification: VerifyDscp0InnerDscp0OuterOnTransportNode1Pif1Tx--ESX
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority0ToVIF1VM2ViaOverlayVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x0'
+        verification: VerifyDscp0OnVM2Pif1Rx--ESX
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority1ToVIF1VM2ViaOverlayVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x0'
+        verification: VerifyDscp1InnerDscp1OuterOnTransportNode1Pif1Tx--ESX
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority1ToVIF1VM2ViaOverlayVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x0'
+        verification: VerifyDscp1OnVM2Pif1Rx--ESX
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority63ToVIF1VM2ViaOverlayVerifyHostTx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x0'
+        verification: VerifyDscp63InnerDscp63OuterOnTransportNode1Pif1Tx--ESX
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority63ToVIF1VM2ViaOverlayVerifyTenantRx--ESX:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--ESX
+        tos: '0x0'
+        verification: VerifyDscp63OnVM2Pif1Rx--ESX
+
+    TrafficVIF1VM1DscpPriority4TrustedToVIF1VM2ViaOverlayVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x10'
+        verification: VerifyDscp4InnerDscp4OuterOnTransportNode1Pif1Tx--KVM
+
+    TrafficVIF1VM1DscpPriority4TrustedToVIF1VM2ViaOverlayVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x10'
+        verification: VerifyDscp4OnVM2Pif1Rx--KVM
+
+    TrafficVIF1VM5DscpPriority4TrustedToVIF1VM6ViaVLANBackedVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x10'
+        verification: VerifyDscp4OnTransportNode1Pif2Tx--KVM
+
+    TrafficVIF1VM5DscpPriority4UnrustedToVIF1VM6ViaVLANBackedVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x10'
+        verification: VerifyDscp4OnTransportNode1Pif2Tx--KVM
+
+    TrafficVIF1VM5DscpPriority0TrustedToVIF1VM6ViaVLANBackedVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x0'
+        verification: VerifyDscp0OnTransportNode1Pif2Tx--KVM
+
+    TrafficVIF1VM5DscpPriority4TrustedToVIF1VM6ViaVLANBackedVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x10'
+        verification: VerifyDscp4OnVM6Pif1Rx--KVM
+
+    TrafficVIF1VM5DscpPriority0TrustedToVIF1VM6ViaVLANBackedVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x0'
+        verification: VerifyDscp0OnVM6Pif1Rx--KVM
+
+    TrafficVIF1VM1DscpPriority0TrustedToVIF1VM2ViaOverlayVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x0'
+        verification: VerifyDscp0InnerDscp0OuterOnTransportNode1Pif1Tx--KVM
+
+    TrafficVIF1VM1DscpPriority0TrustedToVIF1VM2ViaOverlayVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x0'
+        verification: VerifyDscp0OnVM2Pif1Rx--KVM
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority0ToVIF1VM2ViaOverlayVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x10'
+        verification: VerifyDscp0InnerDscp0OuterOnTransportNode1Pif1Tx--KVM
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x10'
+        verification: VerifyDscp0OnTransportNode1Pif2Tx--KVM
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x10'
+        verification: VerifyDscp1OnTransportNode1Pif2Tx--KVM
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x10'
+        verification: VerifyDscp63OnTransportNode1Pif2Tx--KVM
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x0'
+        verification: VerifyDscp0OnTransportNode1Pif2Tx--KVM
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x0'
+        verification: VerifyDscp1OnTransportNode1Pif2Tx--KVM
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x0'
+        verification: VerifyDscp63OnTransportNode1Pif2Tx--KVM
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority0ToVIF1VM2ViaOverlayVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x10'
+        verification: VerifyDscp0OnVM2Pif1Rx--KVM
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x10'
+        verification: VerifyDscp0OnVM6Pif1Rx--KVM
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x10'
+        verification: VerifyDscp1OnVM6Pif1Rx--KVM
+
+    TrafficVIF1VM5DscpPriority4UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x10'
+        verification: VerifyDscp63OnVM6Pif1Rx--KVM
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority0ToVIF1VM6ViaVLANBackedVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x0'
+        verification: VerifyDscp0OnVM6Pif1Rx--KVM
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority1ToVIF1VM6ViaVLANBackedVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x0'
+        verification: VerifyDscp1OnVM6Pif1Rx--KVM
+
+    TrafficVIF1VM5DscpPriority0UntrustedPriority63ToVIF1VM6ViaVLANBackedVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM5ToVIF1VM6--KVM
+        tos: '0x0'
+        verification: VerifyDscp63OnVM6Pif1Rx--KVM
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority1ToVIF1VM2ViaOverlayVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x10'
+        verification: VerifyDscp1InnerDscp1OuterOnTransportNode1Pif1Tx--KVM
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority1ToVIF1VM2ViaOverlayVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x10'
+        verification: VerifyDscp1OnVM2Pif1Rx--KVM
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority63ToVIF1VM2ViaOverlayVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x10'
+        verification: VerifyDscp63InnerDscp63OuterOnTransportNode1Pif1Tx--KVM
+
+    TrafficVIF1VM1DscpPriority4UntrustedPriority63ToVIF1VM2ViaOverlayVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x10'
+        verification: VerifyDscp63OnVM2Pif1Rx--KVM
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority0ToVIF1VM2ViaOverlayVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x0'
+        verification: VerifyDscp0InnerDscp0OuterOnTransportNode1Pif1Tx--KVM
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority0ToVIF1VM2ViaOverlayVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x0'
+        verification: VerifyDscp0OnVM2Pif1Rx--KVM
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority1ToVIF1VM2ViaOverlayVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x0'
+        verification: VerifyDscp1InnerDscp1OuterOnTransportNode1Pif1Tx--KVM
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority1ToVIF1VM2ViaOverlayVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x0'
+        verification: VerifyDscp1OnVM2Pif1Rx--KVM
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority63ToVIF1VM2ViaOverlayVerifyHostTx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x0'
+        verification: VerifyDscp63InnerDscp63OuterOnTransportNode1Pif1Tx--KVM
+
+    TrafficVIF1VM1DscpPriority0UntrustedPriority63ToVIF1VM2ViaOverlayVerifyTenantRx--KVM:
+        <<: *DscpMarkingTrafficTestVIF1VM1ToVIF1VM2--KVM
+        tos: '0x0'
+        verification: VerifyDscp63OnVM2Pif1Rx--KVM
+
+    VerifyDscp0InnerDscp0OuterOnTransportNode1Pif1Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[1]
+            pktcapfilter: 'count 100,flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            tos: '0x0'
+            innertos: '0x0'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp1InnerDscp1OuterOnTransportNode1Pif1Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[1]
+            pktcapfilter: 'count 100,flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            tos: '0x4'
+            innertos: '0x4'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp4InnerDscp4OuterOnTransportNode1Pif1Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[1]
+            pktcapfilter: 'count 100,flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            tos: '0x10'
+            innertos: '0x10'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp63InnerDscp63OuterOnTransportNode1Pif1Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[1]
+            pktcapfilter: 'count 100,flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            tos: '0xfc'
+            innertos: '0xfc'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp0OnVM2Pif1Rx--ESX:
+        PktCapVerification:
+            target: vm.[2].vnic.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x0'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp1OnVM2Pif1Rx--ESX:
+        PktCapVerification:
+            target: vm.[2].vnic.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x4'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp4OnVM2Pif1Rx--ESX:
+        PktCapVerification:
+            target: vm.[2].vnic.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x10'
+            pktcount: '10+'
+            length: '500+'
+
+
+    VerifyDscp63OnVM2Pif1Rx--ESX:
+        PktCapVerification:
+            target: vm.[2].vnic.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0xfc'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp0OnTransportNode1Pif2Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[2]
+            pktcapfilter: 'count 100,flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            tos: '0x0'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp1OnTransportNode1Pif2Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[2]
+            pktcapfilter: 'count 100,flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            tos: '0x4'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp4OnTransportNode1Pif2Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[2]
+            pktcapfilter: 'count 100,flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            tos: '0x10'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp63OnTransportNode1Pif2Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[2]
+            pktcapfilter: 'count 100,flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            tos: '0xfc'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp0OnVM6Pif1Rx--ESX:
+        PktCapVerification:
+            target: vm.[6].vnic.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x0'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp1OnVM6Pif1Rx--ESX:
+        PktCapVerification:
+            target: vm.[6].vnic.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x4'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp4OnVM6Pif1Rx--ESX:
+        PktCapVerification:
+            target: vm.[6].vnic.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x10'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp63OnVM6Pif1Rx--ESX:
+        PktCapVerification:
+            target: vm.[6].vnic.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0xfc'
+            pktcount: '10+'
+            length: '500+'
+
+    TrafficVIF1VM5SetClassOfService0ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        - [SetHost1Uplink2HwcapVlanTxDisabled--ESX]
+        - [_TrafficVIF1VM5SetClassOfService0ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX]
+    _TrafficVIF1VM5SetClassOfService0ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        Type: Traffic
+        ToolName: iperf
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        TestAdapter: vm.[5].vnic.[1]
+        SupportAdapter: vm.[6].vnic.[1]
+        TestDuration: 5
+        minexpresult: 0
+        verification: VerifyCOS0VIF1VM5ToVIF1VM6OnTransportNode1Uplink2Tx--ESX
+    VerifyCOS0VIF1VM5ToVIF1VM6OnTransportNode1Uplink2Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[2]
+            pktcapfilter: 'count 15,vlan 20,src host vm.[5].vnic.[1],dst host vm.[6].vnic.[1],flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            pktcount: '12+'
+            pcp: 0x0
+
+    TrafficVIF1VM5SetClassOfService1ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        - [SetHost1Uplink2HwcapVlanTxDisabled--ESX]
+        - [_TrafficVIF1VM5SetClassOfService1ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX]
+    _TrafficVIF1VM5SetClassOfService1ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        Type: Traffic
+        ToolName: iperf
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        TestAdapter: vm.[5].vnic.[1]
+        SupportAdapter: vm.[6].vnic.[1]
+        TestDuration: 5
+        minexpresult: 0
+        verification: VerifyCOS1VIF1VM5ToVIF1VM6OnTransportNode1Uplink2Tx--ESX
+    VerifyCOS1VIF1VM5ToVIF1VM6OnTransportNode1Uplink2Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[2]
+            pktcapfilter: 'count 15,vlan 20,src host vm.[5].vnic.[1],dst host vm.[6].vnic.[1],flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            pktcount: '12+'
+            pcp: 0x1
+
+    TrafficVIF1VM5SetClassOfService7ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        - [SetHost1Uplink2HwcapVlanTxDisabled--ESX]
+        - [_TrafficVIF1VM5SetClassOfService7ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX]
+    _TrafficVIF1VM5SetClassOfService7ToVIF1VM6ViaVLANBackedVerifyHostTx--ESX:
+        Type: Traffic
+        ToolName: iperf
+        L3Protocol: ipv4
+        L4Protocol: tcp
+        TestAdapter: vm.[5].vnic.[1]
+        SupportAdapter: vm.[6].vnic.[1]
+        TestDuration: 5
+        minexpresult: 0
+        verification: VerifyCOS7VIF1VM5ToVIF1VM6OnTransportNode1Uplink2Tx--ESX
+    VerifyCOS7VIF1VM5ToVIF1VM6OnTransportNode1Uplink2Tx--ESX:
+        PktCapVerification:
+            target: esx.[1].vmnic.[2]
+            pktcapfilter: 'count 15,vlan 20,src host vm.[5].vnic.[1],dst host vm.[6].vnic.[1],flowdirection tx,capturepoint UplinkSnd'
+            verificationtype: 'pktcapuserworld'
+            pktcount: '12+'
+            pcp: 0x7
+
+    VerifyDscp0InnerDscp0OuterOnTransportNode1Pif1Tx--KVM:
+        PktCapVerification:
+            target: kvm.[1].pif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x0'
+            innertos: '0x0'
+            pktcount: '10+'
+            length: '500+'
+            expectencapsulatedtraffic: 'true'
+
+    VerifyDscp1InnerDscp1OuterOnTransportNode1Pif1Tx--KVM:
+        PktCapVerification:
+            target: kvm.[1].pif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x4'
+            innertos: '0x4'
+            pktcount: '10+'
+            length: '500+'
+            expectencapsulatedtraffic: 'true'
+
+    VerifyDscp4InnerDscp4OuterOnTransportNode1Pif1Tx--KVM:
+        PktCapVerification:
+            target: kvm.[1].pif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x10'
+            innertos: '0x10'
+            pktcount: '10+'
+            length: '500+'
+            expectencapsulatedtraffic: 'true'
+
+    VerifyDscp63InnerDscp63OuterOnTransportNode1Pif1Tx--KVM:
+        PktCapVerification:
+            target: kvm.[1].pif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0xfc'
+            innertos: '0xfc'
+            pktcount: '10+'
+            length: '500+'
+            expectencapsulatedtraffic: 'true'
+
+    VerifyDscp0OnVM2Pif1Rx--KVM:
+        PktCapVerification:
+            target: vm.[2].vif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x0'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp1OnVM2Pif1Rx--KVM:
+        PktCapVerification:
+            target: vm.[2].vif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x4'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp4OnVM2Pif1Rx--KVM:
+        PktCapVerification:
+            target: vm.[2].vif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x10'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp63OnVM2Pif1Rx--KVM:
+        PktCapVerification:
+            target: vm.[2].vif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0xfc'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp0OnTransportNode1Pif2Tx--KVM:
+        PktCapVerification:
+            target: kvm.[1].pif.[2]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x0'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp1OnTransportNode1Pif2Tx--KVM:
+        PktCapVerification:
+            target: kvm.[1].pif.[2]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x4'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp4OnTransportNode1Pif2Tx--KVM:
+        PktCapVerification:
+            target: kvm.[1].pif.[2]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x10'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp63OnTransportNode1Pif2Tx--KVM:
+        PktCapVerification:
+            target: kvm.[1].pif.[2]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0xfc'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp0OnVM6Pif1Rx--KVM:
+        PktCapVerification:
+            target: vm.[6].vif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x0'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp1OnVM6Pif1Rx--KVM:
+        PktCapVerification:
+            target: vm.[6].vif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x4'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp4OnVM6Pif1Rx--KVM:
+        PktCapVerification:
+            target: vm.[6].vif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0x10'
+            pktcount: '10+'
+            length: '500+'
+
+    VerifyDscp63OnVM6Pif1Rx--KVM:
+        PktCapVerification:
+            target: vm.[6].vif.[1]
+            pktcapfilter: 'count 100'
+            verificationtype: 'pktcap'
+            tos: '0xfc'
+            pktcount: '10+'
+            length: '500+'
+
+

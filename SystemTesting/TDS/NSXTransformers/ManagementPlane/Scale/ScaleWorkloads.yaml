@@ -1,0 +1,689 @@
+L2ScaleWorloads: &L2ScaleWorkloads
+
+  LogicalSwitchPayload: &LOGICAL_SWITCH_PAYLOAD
+    name: 'ls-scale'
+    summary: 'Logical Switch created for scale testing'
+    transport_zone_id: nsxmanager.[1].transportzone.[1]
+    admin_state: UP
+    replication_mode: MTEP
+
+  NSXManager1Template: &NSXMANAGER1_TEMPLATE
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    maxtimeout: 86400
+
+  NSXManager2Template: &NSXMANAGER2_TEMPLATE
+    Type: NSX
+    TestNSX: nsxmanager.[2]
+    maxtimeout: 86400
+
+  NSXManager3Template: &NSXMANAGER3_TEMPLATE
+    Type: NSX
+    TestNSX: nsxmanager.[3]
+    maxtimeout: 86400
+
+  CreateLogicalSwitch01To1000FromNode1: &CREATE_LOGICAL_SWITCH_01_TO_1000_FROM_NODE1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalswitch:
+      '[1-1000]':
+        <<: *LOGICAL_SWITCH_PAYLOAD
+
+  CreateLogicalSwitch1001To2000FromNode2: &CREATE_LOGICAL_SWITCH_1001_TO_2000_FROM_NODE2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalswitch:
+      '[1001-2000]':
+        <<: *LOGICAL_SWITCH_PAYLOAD
+
+  CreateLogicalSwitch2001To3000FromNode3: &CREATE_LOGICAL_SWITCH_2001_TO_3000_FROM_NODE3
+    <<: *NSXMANAGER3_TEMPLATE
+    logicalswitch:
+      '[2001-3000]':
+        <<: *LOGICAL_SWITCH_PAYLOAD
+
+  CreateLogicalSwitch3001To4000FromNode1: &CREATE_LOGICAL_SWITCH_3001_TO_4000_FROM_NODE1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalswitch:
+      '[3001-4000]':
+        <<: *LOGICAL_SWITCH_PAYLOAD
+
+  CreateLogicalSwitch4001To5000FromNode2: &CREATE_LOGICAL_SWITCH_4001_TO_5000_FROM_NODE2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalswitch:
+      '[4001-5000]':
+        <<: *LOGICAL_SWITCH_PAYLOAD
+
+  CreateLogicalSwitch5001To6000FromNode3: &CREATE_LOGICAL_SWITCH_5001_TO_6000_FROM_NODE3
+    <<: *NSXMANAGER3_TEMPLATE
+    logicalswitch:
+      '[5001-6000]':
+        <<: *LOGICAL_SWITCH_PAYLOAD
+
+  CreateLogicalSwitch6001To7000FromNode1: &CREATE_LOGICAL_SWITCH_6001_TO_7000_FROM_NODE1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalswitch:
+      '[6001-7000]':
+        <<: *LOGICAL_SWITCH_PAYLOAD
+
+  CreateLogicalSwitch7001To8000FromNode2: &CREATE_LOGICAL_SWITCH_7001_TO_8000_FROM_NODE2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalswitch:
+      '[7001-8000]':
+        <<: *LOGICAL_SWITCH_PAYLOAD
+
+  CreateLogicalSwitch8001To9000FromNode3: &CREATE_LOGICAL_SWITCH_8001_TO_9000_FROM_NODE3
+    <<: *NSXMANAGER3_TEMPLATE
+    logicalswitch:
+      '[8001-9000]':
+        <<: *LOGICAL_SWITCH_PAYLOAD
+
+  CreateLogicalSwitch9001To10000FromNode1: &CREATE_LOGICAL_SWITCH_9001_TO_10000_FROM_NODE1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalswitch:
+      '[9001-10000]':
+        <<: *LOGICAL_SWITCH_PAYLOAD
+
+  VerifyLogicalSwithCountOnControllers:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    execution_type: 'cli'
+    noofretries: 10
+    sleepbetweenretry: 60
+    'get_entry_count':
+      'logical_switch[?]equal_to': 10000
+
+  VerifyLogicalSwitch01OnControllers: &VERIFY_LS01_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    execution_type: 'cli'
+    noofretries: 10
+    sleepbetweenretry: 60
+    switches: 'nsxmanager.[1].logicalswitch.[1]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch1001OnControllers: &VERIFY_LS1001_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    noofretries: 10
+    sleepbetweenretry: 60
+    execution_type: 'cli'
+    switches: 'nsxmanager.[1].logicalswitch.[1001]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[1001]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch2001OnControllers: &VERIFY_LS2001_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    noofretries: 10
+    sleepbetweenretry: 60
+    execution_type: 'cli'
+    switches: 'nsxmanager.[1].logicalswitch.[2001]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[2001]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch3001OnControllers: &VERIFY_LS3001_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    noofretries: 10
+    sleepbetweenretry: 60
+    execution_type: 'cli'
+    switches: 'nsxmanager.[1].logicalswitch.[3001]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[3001]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch4001OnControllers: &VERIFY_LS4001_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    noofretries: 10
+    sleepbetweenretry: 60
+    execution_type: 'cli'
+    switches: 'nsxmanager.[1].logicalswitch.[4001]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[4001]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch5001OnControllers: &VERIFY_LS5001_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    noofretries: 10
+    sleepbetweenretry: 60
+    execution_type: 'cli'
+    switches: 'nsxmanager.[1].logicalswitch.[5001]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[5001]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch6001OnControllers: &VERIFY_LS6001_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    noofretries: 10
+    sleepbetweenretry: 60
+    execution_type: 'cli'
+    switches: 'nsxmanager.[1].logicalswitch.[6001]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[6001]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch7001OnControllers: &VERIFY_LS7001_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    noofretries: 10
+    sleepbetweenretry: 60
+    execution_type: 'cli'
+    switches: 'nsxmanager.[1].logicalswitch.[7001]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[7001]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch8001OnControllers: &VERIFY_LS8001_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    noofretries: 10
+    sleepbetweenretry: 60
+    execution_type: 'cli'
+    switches: 'nsxmanager.[1].logicalswitch.[8001]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[8001]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch9001OnControllers: &VERIFY_LS9001_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    noofretries: 10
+    sleepbetweenretry: 60
+    execution_type: 'cli'
+    switches: 'nsxmanager.[1].logicalswitch.[9001]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[9001]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  VerifyLogicalSwitch10000OnControllers: &VERIFY_LS10000_ON_CONTROLLERS
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    noofretries: 10
+    sleepbetweenretry: 60
+    execution_type: 'cli'
+    switches: 'nsxmanager.[1].logicalswitch.[10000]'
+    'get_logical_switches[?]contain_once':
+      table:
+        - switch_vni: "nsxmanager.[1].logicalswitch.[10000]"
+          replication_mode: 'mtep'
+          binding_type: 'vxstt'
+
+  CreateLogicalPort1To10000OnDifferentLogicalSwitchesFromNSXManager1: &CREATE_LP01_TO_10000_ON_DIFF_LS_FROM_NSXMANAGER1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalport:
+      '[1-10000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[x=logicalport_index]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort1To10000OnLogicalSwitch1FromNSXManager1: &CREATE_LP01_TO_10000_ON_LS01_FROM_NSXMANAGER1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalport:
+      '[1-10000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort10001To20000OnLogicalSwitch1001FromNSXManager2: &CREATE_LP10001_TO_20000_ON_LS1001_FROM_NSXMANAGER2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalport:
+      '[10001-20000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[1001]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort20001To30000OnLogicalSwitch2001FromNSXManager3: &CREATE_LP20001_TO_30000_ON_LS2001_FROM_NSXMANAGER3
+    <<: *NSXMANAGER3_TEMPLATE
+    logicalport:
+      '[20001-30000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[2001]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort30001To40000OnLogicalSwitch3001FromNSXManager1: &CREATE_LP30001_TO_40000_ON_LS3001_FROM_NSXMANAGER1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalport:
+      '[30001-40000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[3001]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort40001To50000OnLogicalSwitch4001FromNSXManager2: &CREATE_LP40001_TO_50000_ON_LS4001_FROM_NSXMANAGER2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalport:
+      '[40001-50000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[4001]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort50001To60000OnLogicalSwitch5001FromNSXManager3: &CREATE_LP50001_TO_60000_ON_LS5001_FROM_NSXMANAGER3
+    <<: *NSXMANAGER3_TEMPLATE
+    logicalport:
+      '[50001-60000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[5001]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort60001To70000OnLogicalSwitch6001FromNSXManager1: &CREATE_LP60001_TO_70000_ON_LS6001_FROM_NSXMANAGER1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalport:
+      '[60001-70000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[6001]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort70001To80000OnLogicalSwitch7001FromNSXManager2: &CREATE_LP70001_TO_80000_ON_LS7001_FROM_NSXMANAGER2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalport:
+      '[70001-80000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[7001]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort80001To90000OnLogicalSwitch8001FromNSXManager3: &CREATE_LP80001_TO_90000_ON_LS8001_FROM_NSXMANAGER3
+    <<: *NSXMANAGER3_TEMPLATE
+    logicalport:
+      '[80001-90000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[8001]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  CreateLogicalPort90001To100000OnLogicalSwitch9001FromNSXManager1: &CREATE_LP90001_TO_100000_ON_LS9001_FROM_NSXMANAGER1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalport:
+      '[90001-100000]':
+        switch_id: 'nsxmanager.[1].logicalswitch.[9001]->switch_id'
+        admin_state: UP
+        attachment:
+          id_: ''
+          attachment_type: VIF
+
+  VerifyLogicalPortCountOnControllers:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    execution_type: 'cli'
+    noofretries: 10
+    sleepbetweenretry: 60
+    'get_entry_count':
+      'logical_switch_port[?]equal_to': 100000
+
+  VerifyLogicalSwitchPortsOnController1ForLogicalSwitch01: &VERIFY_LP_ON_CONTROLLER1_FOR_LS01
+    Type: "ClusterNode"
+    Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+    execution_type: 'cli'
+    noofretries: 10
+    sleepbetweenretry: 60
+    switch_id: 'nsxmanager.[1].logicalswitch.[1]->switch_id'
+    'get_switch_ports[?]contain_once':
+      table:
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[1]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[1001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[2001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[3001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[4001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[5001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[6001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[7001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[8001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[9001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[1]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[10000]->id_"
+
+  VerifyLogicalSwitchPortsOnController2ForLogicalSwitch01: &VERIFY_LP_ON_CONTROLLER2_FOR_LS01
+    <<: *VERIFY_LP_ON_CONTROLLER1_FOR_LS01
+    Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+  VerifyLogicalSwitchPortsOnController3ForLogicalSwitch01: &VERIFY_LP_ON_CONTROLLER3_FOR_LS01
+    <<: *VERIFY_LP_ON_CONTROLLER1_FOR_LS01
+    Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+  VerifyLogicalSwitchPortsOnController1ForLogicalSwitch5001: &VERIFY_LP_ON_CONTROLLER1_FOR_LS5001
+    Type: "ClusterNode"
+    Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+    execution_type: 'cli'
+    noofretries: 10
+    sleepbetweenretry: 60
+    switch_id: 'nsxmanager.[1].logicalswitch.[5001]->switch_id'
+    'get_switch_ports[?]contain_once':
+      table:
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[50001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[51001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[52001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[53001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[54001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[55001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[56001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[57001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[58001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[59001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[5001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[60000]->id_"
+
+  VerifyLogicalSwitchPortsOnController2ForLogicalSwitch5001: &VERIFY_LP_ON_CONTROLLER2_FOR_LS5001
+    <<: *VERIFY_LP_ON_CONTROLLER1_FOR_LS5001
+    Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+  VerifyLogicalSwitchPortsOnController3ForLogicalSwitch5001: &VERIFY_LP_ON_CONTROLLER3_FOR_LS5001
+    <<: *VERIFY_LP_ON_CONTROLLER1_FOR_LS5001
+    Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+  VerifyLogicalSwitchPortsOnController1ForLogicalSwitch9001: &VERIFY_LP_ON_CONTROLLER1_FOR_LS9001
+    Type: "ClusterNode"
+    Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+    execution_type: 'cli'
+    noofretries: 10
+    sleepbetweenretry: 60
+    switch_id: 'nsxmanager.[1].logicalswitch.[9001]->switch_id'
+    'get_switch_ports[?]contain_once':
+      table:
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[90001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[91001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[92001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[93001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[94001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[95001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[96001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[97001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[98001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[99001]->id_"
+        - switch_id: "nsxmanager.[1].logicalswitch.[9001]->switch_id"
+          port_id: "nsxmanager.[1].logicalport.[100000]->id_"
+
+  VerifyLogicalSwitchPortsOnController2ForLogicalSwitch9001: &VERIFY_LP_ON_CONTROLLER2_FOR_LS9001
+    <<: *VERIFY_LP_ON_CONTROLLER1_FOR_LS9001
+    Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+
+  VerifyLogicalSwitchPortsOnController3ForLogicalSwitch9001: &VERIFY_LP_ON_CONTROLLER3_FOR_LS9001
+    <<: *VERIFY_LP_ON_CONTROLLER1_FOR_LS9001
+    Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+
+  CleanupLogicalSwitches:
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[-1]'
+
+  CleanupLogicalPorts:
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+
+L3ScaleWorloads: &L3ScaleWorkloads
+
+  LogicalRouterPayload: &LOGICAL_ROUTER_PAYLOAD
+    name: lrouter
+    router_type: TIER0
+    summary: Logical Router created through automation
+
+  CreateLogicalRouter01To1000FromNode1: &CREATE_LOGICAL_ROUTER_01_TO_1000_FROM_NODE1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalrouter:
+      '[1-1000]':
+        <<: *LOGICAL_ROUTER_PAYLOAD
+
+  CreateLogicalRouter1001To2000FromNode2: &CREATE_LOGICAL_ROUTER_1001_TO_2000_FROM_NODE2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalrouter:
+      '[1001-2000]':
+        <<: *LOGICAL_ROUTER_PAYLOAD
+
+  CreateLogicalRouter2001To3000FromNode3: &CREATE_LOGICAL_ROUTER_2001_TO_3000_FROM_NODE3
+    <<: *NSXMANAGER3_TEMPLATE
+    logicalrouter:
+      '[2001-3000]':
+        <<: *LOGICAL_ROUTER_PAYLOAD
+
+  CreateLogicalRouter3001To4000FromNode1: &CREATE_LOGICAL_ROUTER_3001_TO_4000_FROM_NODE1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalrouter:
+      '[3001-4000]':
+        <<: *LOGICAL_ROUTER_PAYLOAD
+
+  CreateLogicalRouter4001To5000FromNode2: &CREATE_LOGICAL_ROUTER_4001_TO_5000_FROM_NODE2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalrouter:
+      '[4001-5000]':
+        <<: *LOGICAL_ROUTER_PAYLOAD
+
+  VerifyLogicalRouterCountOnControllers:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    execution_type: 'cli'
+    noofretries: 10
+    sleepbetweenretry: 60
+    'get_entry_count':
+      'logical_router[?]equal_to': 5000
+
+  CreateLRP1To1000FromNode1: &CREATE_LRP_01_1000_FROM_NODE1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalrouterport:
+      '[1-1000]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+        name: 'lrouterport'
+        summary: "LRPort created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[x=logicalrouterport_index]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  CreateLRP1001To2000FromNode2: &CREATE_LRP_1001_2000_FROM_NODE2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalrouterport:
+      '[1001-2000]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+        name: 'lrouterport'
+        summary: "LRPort created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[x=logicalrouterport_index]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  CreateLRP2001To3000FromNode3: &CREATE_LRP_2001_3000_FROM_NODE3
+    <<: *NSXMANAGER3_TEMPLATE
+    logicalrouterport:
+      '[2001-3000]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[3]"
+        name: 'lrouterport'
+        summary: "LRPort created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[x=logicalrouterport_index]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  CreateLRP3001To4000FromNode1: &CREATE_LRP_3001_4000_FROM_NODE1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalrouterport:
+      '[3001-4000]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[4]"
+        name: 'lrouterport'
+        summary: "LRPort created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[x=logicalrouterport_index]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  CreateLRP4001To5000FromNode2: &CREATE_LRP_4001_5000_FROM_NODE2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalrouterport:
+      '[4001-5000]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[5]"
+        name: 'lrouterport'
+        summary: "LRPort created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[x=logicalrouterport_index]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  CreateLRP5001To6000FromNode3: &CREATE_LRP_5001_6000_FROM_NODE3
+    <<: *NSXMANAGER3_TEMPLATE
+    logicalrouterport:
+      '[5001-6000]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[6]"
+        name: 'lrouterport'
+        summary: "LRPort created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[x=logicalrouterport_index]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  CreateLRP6001To7000FromNode1: &CREATE_LRP_6001_7000_FROM_NODE1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalrouterport:
+      '[6001-7000]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[7]"
+        name: 'lrouterport'
+        summary: "LRPort created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[x=logicalrouterport_index]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  CreateLRP7001To8000FromNode2: &CREATE_LRP_7001_8000_FROM_NODE2
+    <<: *NSXMANAGER2_TEMPLATE
+    logicalrouterport:
+      '[7001-8000]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[8]"
+        name: 'lrouterport'
+        summary: "LRPort created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[x=logicalrouterport_index]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  CreateLRP8001To9000FromNode3: &CREATE_LRP_8001_9000_FROM_NODE3
+    <<: *NSXMANAGER3_TEMPLATE
+    logicalrouterport:
+      '[8001-9000]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[9]"
+        name: 'lrouterport'
+        summary: "LRPort created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[x=logicalrouterport_index]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  CreateLRP9001To10000FromNode1: &CREATE_LRP_9001_10000_FROM_NODE1
+    <<: *NSXMANAGER1_TEMPLATE
+    logicalrouterport:
+      '[9001-10000]':
+        logical_router_id: "nsxmanager.[1].logicalrouter.[10]"
+        name: 'lrouterport'
+        summary: "LRPort created through automation"
+        linked_switch_port_id: nsxmanager.[1].logicalport.[x=logicalrouterport_index]->id
+        resource_type: "LogicalRouterDownLinkPort"
+        subnets:
+          - prefixlen: 24
+            ip_addresses:
+              - '192.168.1.1'
+
+  VerifyLogicalRouterPortCountOnControllers:
+    Type: "Controller"
+    TestController: 'nsxcontroller.[-1]'
+    execution_type: 'cli'
+    noofretries: 10
+    sleepbetweenretry: 60
+    'get_entry_count':
+      'logical_router_port[?]equal_to': 10000
+
+  CleanupLogicalRouters:
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletelogicalrouter: 'nsxmanager.[1].logicalrouter.[-1]'
+
+  CleanupLogicalRouterPorts:
+    Type: NSX
+    TestNSX: nsxmanager.[1]
+    deletelogicalrouterport: 'nsxmanager.[1].logicalrouterport.[-1]'

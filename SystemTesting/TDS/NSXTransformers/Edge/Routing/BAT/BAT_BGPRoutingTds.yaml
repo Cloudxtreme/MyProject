@@ -1,0 +1,300 @@
+#-------------------------------------------------------------------------------------------------
+#                                    BGP TOPOLOGY
+#-------------------------------------------------------------------------------------------------
+#
+#                                            192.168.40.20
+#                                               +-------+
+#                                               | VM6   |
+#                                               |       |
+#                                               +--+----+
+#                                                  |
+#                                  +---------------+-------------------------+
+#                                  |    Logical Switch 06                    |
+#                                  |                                         |
+#                                  +---------------+-------------------------+
+#                                                  |
+#                                                  |  192.168.40.1
+#                                              +---+---+
+#                                              |  R1   |
+#                                              |       |
+#                                              +---+---+
+#              192.168.50.20                       |  192.168.50.100
+#               +---------+                        |
+#               |         |        +---------------+--------------------------+
+#               |   VM1   +--------+    Logical Switch 01                     |
+#               |         |        |                                          |
+#               +---------+        +----------------+-------------------------+
+#                                                   |
+#                                                   |
+#                            +--------------------------------------------------------+
+#                            | TIER-0               |                                 |
+#                            |                      | 192.168.50.1/24                 |
+#                            |         +------------+-------------------+             |
+#                            |         |                                |             |
+#                            |         |          SR-1                  |             |
+#                            |         +-------------+------------------+             |
+#                            |                       |                                |
+#                            |                    +--+--------+                       |
+#        192.168.60.1        |                    |   DR      |                       |
+#            +------------------------------------+           |                       |
+#            |               |                    +-----+-----+                       |
+#            |               |                          |                             |
+#            |               +--------------------------------------------------------+
+#            |                                          |
+#            |                                          |
+#  +---------+-----------+              +---------------+----------------------+
+#  |   Logical Switch 03 |              |                                      |
+#  |                     |              |                                      |
+#  +---------+-----------+              |                                      |
+#            |                          |              TIER-1                  |
+#        +---+---+                      |                                      |
+#        |       |                      |                                      |
+#        | VM3   |                      |                                      |
+#        |       |                      +-----------------+--------------------+
+#        +-------+                                        |
+#     192.168.60.20                                       |   192.168.70.1
+#                                    +--------------------+------------------------------+
+#                                    |                                                   |
+#                                    |          Logical Switch 04                        |
+#                                    |                                                   |
+#                                    +---------------------+-----------------------------+
+#                                                          |
+#                                                      +---+----+
+#                                                      |        |
+#                                                      |        |
+#                                                      |  VM4   |
+#                                                      |        |
+#                                                      +--------+
+#                                                    192.168.70.20
+#
+#
+#-------------------------------------------------------------------------------------------------
+BAT_Tier0_Tier1_SETUP_Topology:
+    Category: L3
+    Component: Edge
+    Summary: "This test case performs Tier0-Tier1 BGP"
+    Tags: nsx,avalanche,bat
+    Version: 2
+    TestName: BAT_Tier0_Tier1_SETUP_Test
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            - - 'RegisterController'
+            - - 'SetManagerOnHost'
+            - - 'DiscoverHostNodes'
+            - - 'CreateTransportZone'
+            - - 'CreateUplinkProfile'
+            - - 'CreateTransportNodes'
+            - - 'CreateLogicalSwitch01_FOR_UPLINK_SR1'
+            - - 'CreateLogicalSwitch03_For_Tier0_Downlink'
+            - - 'CreateLogicalSwitch04_For_Tier1_Downlink'
+            - - 'CreateLogicalSwitch06_ForExternalRouter'
+            - - 'Create_LogicalPorts_BAT_BGP_Tier0_Tier1'
+
+            # XXX: Tier0 setup
+            - - 'DeployNSXEdge1'
+            - - 'RegisterEdgeNode1WithNSX'
+            - - 'CreateFabricProfile'
+            - - 'DiscoverEdgeNodeId1'
+            - - 'CreateEdgeClusterWithEdgeNode_BAT_Tier0_Basic'
+            - - 'CreateTIER0LogicalRouter'                    # for Tier0 router
+            - - 'CreateTier0DownlinkLogicalRouterPort'        # for Tier0 router
+            - - 'CreateTier0UplinkLogicalRouterPortForSR1'    # for Tier0 router
+
+            # XXX: TIER-0 to TIER1 Connection
+            - - 'CreateTIER1LogicalRouter'
+            - - 'CreateDownlinkTier1LogicalRouterPortOnLS04'
+            - - 'CreateRouterLinkPortOnTIER0Router'
+            - - 'CreateRouterLinkPortOnTIER1Router'
+
+            # XXX: VM operations
+            - - 'VifAttachmentAllVMs_BAT_Tier0_Tier1_BGP'
+            - - 'PowerOnAllVms_BAT_Tier0_Tier1_BGP'
+            - - 'ConfigureIPAllVMVNics_BAT_Tier0_Tier1_BGP'
+            - - 'AddRouteAllVMs_BAT_Tier0_Tier1_BGP'
+
+
+BAT_Tier0_Tier1_BGP_Topology:
+    Category: L3
+    Component: Edge
+    Summary: "This test case performs Tier0-Tier1 BGP"
+    Tags: nsx,avalanche,bat
+    Version: 2
+    TestName: BAT_Tier0_Tier1_BGP_Test
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Route Global Config
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'UpdateBGPNeighboursTier0'
+
+            # XXX Route Redistribution: fromprotocol:Connected,INTERNAL TO Protocol: BGP
+            - - 'AddRouteRedistribution'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'CLI_Show_IP_Route_BGP'
+
+            # XXX Related to Traffic Flow
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20'     # External Router to Tier1 through Tier0 traffic
+            - - 'Traffic_VM6_192_168_40_20_To_VM3_192_168_60_20'     # External Router to Tier0 downlink traffic
+
+        ExitSequence:
+            - - 'Delete_BGP_Configuration'
+
+#--------------------------------------------------------------------------------------------------
+BAT_Tier0_Tier1_BGP_SB_Interface_Disconnect_Topology:
+    Category: L3
+    Component: Edge
+    Summary: "Verify when SRs southbound(SB) interface gets disconnected or
+             southbound network is not reachable then it should stop
+             advertising the southbound networks to the External Router"
+    Tags: nsx,avalanche,bat
+    Version: 2
+    TestName: BAT_Tier0_Tier1_BGP_SB_Interface_Disconnect
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Route Global Config BGP
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'UpdateBGPNeighboursTier0'
+
+            # XXX Route Redistribution: fromprotocol:Connected TO Protocol: BGP
+            - - 'AddRouteRedistribution'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_IP_BGP_Neighbours_Connected'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'CLI_Show_IP_Route_BGP_Connected'
+
+            # XXX Related to Traffic Flow
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20'     # External Router to Tier1 through Tier0 traffic
+            - - 'Traffic_VM6_192_168_40_20_To_VM3_192_168_60_20'     # External Router to Tier0 downlink traffic
+
+            # XXX Now Disconnect the internal transit network of SR1
+            - - 'DiscoverEdgeVnics_SR1'
+            - - 'DisconnectvNic3_InternalTLS_SR1'
+
+            # XXX Verify when SR's SB interface gets disconnected then it should stop advertising the SB Nw to ExRouter
+            - - 'CLI_Show_IP_Route_Disconnect_TLS'
+
+        ExitSequence:
+            - - 'ReConnectvNic3_InternalTLS_SR1'
+            - - 'Delete_BGP_Configuration'
+
+#-----------------------------------------------------------------------------------------------------------------------
+BAT_Tier0_BGP_Redistribute_Connected_Topology:
+    Category: L3
+    Component: Edge
+    Summary: "To verify redistribution into eBGP from connected"
+    Tags: nsx,avalanche,bat
+    Version: 2
+    TestName: BAT_Tier0_BGP_Redistribute_Connected_Test
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            # XXX Route Global Config BGP
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'UpdateBGPNeighboursTier0'
+
+            # XXX Route Redistribution: fromprotocol:Connected TO Protocol: BGP
+            - - 'AddRouteRedistribution_Connected_To_BGP'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_Connected'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_IP_BGP_Neighbours_Connected'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'CLI_Show_IP_Route_BGP_Connected'
+
+            # XXX Related to Traffic Flow
+            - - 'Traffic_VM6_192_168_40_20_To_VM3_192_168_60_20'     # External Router to Tier0 downlink traffic
+
+        ExitSequence:
+            - - 'Delete_BGP_Configuration'
+
+#-----------------------------------------------------------------------------------------------------------------------
+BAT_Tier0_Tier1_BGP_Redistribute_Static_Topology:
+    Category: L3
+    Component: Edge
+    Summary: "To verify redistribution into eBGP from static"
+    Tags: nsx,avalanche,bat
+    Version: 2
+    TestName: BAT_Tier0_Tier1_BGP_Redistribute_Static_Test
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            # XXX Route Global Config BGP
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'UpdateBGPNeighboursTier0'
+
+            # XXX Route Redistribution: fromprotocol:Static TO Protocol: BGP
+            - - 'AddRouteRedistribution_Static_To_BGP'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_IP_BGP_Neighbours_Connected'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'CLI_Show_IP_Route_BGP'
+
+            # XXX Related to Traffic Flow
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_FAIL'     # External Router to Tier1 through Tier0 traffic should fail
+
+            # XXX Add Static Route
+            - - 'Add_Static_Routes_BGP'
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20'     # External Router to Tier1 through Tier0 traffic should pass
+
+        ExitSequence:
+            - - 'Delete_BGP_Configuration'
+
+
+BGP_BAT_CLEANUP_SETUP:
+    Category: L3
+    Component: Edge
+    Summary: "This test case Cleanups the BGP setup"
+    Tags: nsx,avalanche,bat
+    Version: 2
+    TestName: BGP_CLEANUP_SETUP
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            - - 'PowerOffAllVms_BAT_Tier0_Tier1_BGP'
+            - - 'DeleteTestVnics_BGP'
+            - - 'CleanupBasicTier0_Tier1'
+            - - 'CleanupEdge'
+            - - 'DeleteSR1'
+            - - 'UnregisterHosts'
+
+
+

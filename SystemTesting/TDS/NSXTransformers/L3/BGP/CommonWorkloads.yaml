@@ -1,0 +1,95 @@
+WORKLOADS:
+    CreateTransportZone: &CREATE_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[1]':
+                name: autogenerate
+                transport_zone_type: 'OVERLAY' # or VLAN, both case-senstive
+                switch_name: 'logicalswitch'
+
+    CreateLogicalSwitch: &CREATE_LOGICAL_SWITCH
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1]':
+                name: 'ls-demo'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                # replication_mode's value is case sensitive
+                replication_mode: MTEP # source
+
+    CreateLogicalPort: &CREATE_LPORT
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[1]':
+                switch_id: nsxmanager.[1].logicalswitch.[1]
+                name: 'lport-1'
+
+    CreateLRPort: &CREATE_LRPORT
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         logicalrouterport:
+             '[1]':
+                 logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                 name: 'lrouterport-1'
+                 summary: "LRPort1 created through automation"
+                 linked_switch_port_id: nsxmanager.[1].logicalport.[1]->id
+                 subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                         - '192.168.10.2'
+
+    CreateLogicalRouterT0: &CREATE_LOGICALROUTER_T0
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         logicalrouter:
+             '[1]':
+                 name: 'lrouter-1'
+                 summary: "LRouter created through automation"
+                 router_type: "TIER0"
+
+    CreateLogicalRouterT1: &CREATE_LOGICALROUTER_T1
+         Type: "NSX"
+         TestNSX: "nsxmanager.[1]"
+         logicalrouter:
+             '[2]':
+                 name: 'lrouter-2'
+                 summary: "LRouter created through automation"
+                 router_type: "TIER1"
+
+    CleanupNSX: &CLEAN_NSX
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalport : "nsxmanager.[1].logicalport.[-1]"
+        deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[-1]"
+        deletelogicalrouter: "nsxmanager.[1].logicalrouter.[-1]"
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[-1]"
+        deletetransportzone: "nsxmanager.[1].transportzone.[-1]"
+
+    DeleteTransportZone: &DELETETRANSPORTZONE
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletetransportzone: "nsxmanager.[1].transportzone.[-1]"
+
+    DeleteLogicalRouter: &DELETELOGICALROUTER
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalrouter: "nsxmanager.[1].logicalrouter.[-1]"
+
+    DeleteLRPort: &DELETELRPORT
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[-1]"
+
+    DeleteLogicalSwitch: &DELETELOGICALSWITCH
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[-1]"
+
+    DeleteLogicalPort: &DELETELOGICALPORT
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalport : "nsxmanager.[1].logicalport.[-1]"
+

@@ -1,1 +1,0 @@
-Some mock code of SOAP

@@ -1,0 +1,1008 @@
+VXLANRoutingOverBridge:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANRoutingOverBridge"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify vxlan routing works over bridge"
+   Procedure: "1. Create three virtual wires and a dvportgroup
+              2. Create three vms connect 2 vms to 2 vxlans and third to dvportgroup
+              3. Deploy VDR and create a bridge on that with one VXLAN lif common between two
+              4. Make sure multicast/broadcast/unicast traffic works from routing lif
+                 to bridging lif"
+   TestbedSpec: *Routing_over_bridge_Topology1
+   WORKLOADS: &RoutingOverBridgeWorkload1
+      Sequence:
+         - ["CreateVDR"]
+         - ["CreateVWires"]
+         - ["BridgevWire2ToVLAN19"] ###create vxlan lif with vwire1
+         - ["CreateVXLANLIF1"] ### Create common vxlan lif with vwire1
+         - ["CreateVXLANLIF2"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ['PoweronVM1','PoweronVM2','PoweronVM3'] 
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetRouteVM3"]
+         - ["TrafficVXLANtoVXLANRoutingUnicast"]
+         - ["TrafficVXLANtoVLANRoutingUnicast"]
+         - ["TrafficVXLANtoVXLANRoutingMulticast"]
+         - ["TrafficVXLANtoVLANRoutingMulticast"]
+         - ["TrafficVXLANBroadcast"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVDR"]
+         - ["DeleteVWires"]
+      PoweronVM1: &POWERONVM1
+         TestVM: 'vm.[1]'
+         Type: VM
+         vmstate: poweron
+      PoweronVM2: &POWERONVM2
+         TestVM: 'vm.[2]'
+         Type: VM
+         vmstate: poweron
+      PoweronVM3: &POWERONVM3
+         TestVM: 'vm.[3]'
+         Type: VM
+         vmstate: poweron
+
+      CreateVDR: &CREATEVDR
+         Type: NSX
+         TestNSX: "vsm.[1]"
+         vse:
+            '[1]':
+               name: "Edge-1"
+               resourcepool: "vc.[1].datacenter.[1].cluster.[2]"
+               datacenter: "vc.[1].datacenter.[1]"
+               host: "host.[2]" # To pick datastore
+               portgroup: "vc.[1].dvportgroup.[1]"
+               primaryaddress: "10.10.10.11"
+               subnetmask: "255.255.255.0"
+      CreateVXLANLIF1: &CREATEVXLANLIF1
+         Type:    "VM"
+         TestVM: "vsm.[1].vse.[1]"
+         lif:
+            '[1]':
+               name: "lif-vwire1"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+               type: "internal"
+               connected: 1
+               addressgroup:
+                   - addresstype: "primary"
+                     ipv4address: "172.31.1.1"
+                     netmask: "255.255.0.0"
+      CreateVXLANLIF2: &CREATEVXLANLIF2
+         Type:    "VM"
+         TestVM: "vsm.[1].vse.[1]"
+         lif:
+            '[2]':
+               name: "lif-vwire2"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+               type: "internal"
+               connected: 1
+               addressgroup:
+                 - addresstype: "primary"
+                   ipv4address: "172.32.1.1"
+                   netmask: "255.255.0.0"
+      BridgevWire2ToVLAN19: &BRIDGEVWIRE2TOVLAN19
+         Type:  "VM"
+         TestVM : "vsm.[1].vse.[1]"
+         bridge :
+            '[1]':
+               name: "bridge-1"
+               virtualwire: "vsm.[1].networkscope.[1].virtualwire.[1]"
+               portgroup: "vc.[1].dvportgroup.[6]"
+      DeleteVDR: &DELETEVDR
+         Type: "NSX"
+         TestNSX: "vsm.[1]"
+         deletevse: "vsm.[1].vse.[1]"
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-3]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "MULTICAST_MODE"
+      DeleteVWires: &DELETEVWIRES
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         deletevirtualwire: "vsm.[1].networkscope.[1].virtualwire.[-1]"
+      AddVNIC1: &ADDVNIC1
+         Type: "VM"
+         TestVM: "vm.[1]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC2: &ADDVNIC2
+         Type: "VM"
+         TestVM: "vm.[2]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[6]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC3: &ADDVNIC3
+         Type: "VM"
+         TestVM: "vm.[3]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC4: &ADDVNIC4
+         Type: "VM"
+         TestVM: "vm.[4]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      SetIPVM1: &SETIPVM1
+         Type: "NetAdapter"
+         Testadapter: vm.[1].vnic.[1]
+         ipv4: "dhcp"
+      SetIPVM2:
+         Type: "NetAdapter"
+         Testadapter: vm.[2].vnic.[1]
+         ipv4: "dhcp"
+      SetIPVM3:
+         Type: "NetAdapter"
+         Testadapter: vm.[3].vnic.[1]
+         ipv4: "172.32.1.5"
+         netmask: "255.255.0.0"
+      SetRouteVM1ToVXLAN2:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.2.0"
+         gateway: "192.168.1.1"
+      SetRouteVM2ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      SetRouteVM3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.0.0.0"
+         route: "add"
+         network: "172.0.0.0"
+         gateway: "172.32.1.1"
+      SetRouteVM4ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      DeleteVNIC1:
+         Type: "VM"
+         Testvm: "vm.[1]"
+         deletevnic: "vm.[1].vnic.[1]"
+      DeleteVNIC2:
+         Type: "VM"
+         Testvm: "vm.[2]"
+         deletevnic: "vm.[2].vnic.[1]"
+      DeleteVNIC3:
+         Type: "VM"
+         Testvm: "vm.[3]"
+         deletevnic: "vm.[3].vnic.[1]"
+      DeleteVNIC4:
+         Type: "VM"
+         Testvm: "vm.[4]"
+         deletevnic: "vm.[4].vnic.[1]"
+      TrafficVXLANtoVXLANRoutingUnicast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "60"
+      TrafficVXLANtoVLANRoutingUnicast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVXLANtoVXLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "60"
+      TrafficVXLANtoVXLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVXLANtoVLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVXLANBroadcast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "broadcast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         ExpectedResult: "ignore"
+         TestDuration: "60"
+
+
+
+VLANRoutingOverBridge:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VLANRoutingOverBridge"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify vlan routing works over bridge"
+   Procedure: "1. Create one virtual wires and two dvportgroups
+              2. Create three vms connect 2 vms to 2 dvportgroups and third to vxlan
+              3. Deploy VDR and create a bridge on that with one VXLAN lif common between two
+              4. Make sure multicast/broadcast/unicast traffic works from vlan routing lif
+                 to bridging lif"
+   TestbedSpec: *Routing_over_bridge_Topology1
+   WORKLOADS: &RoutingOverBridgeWorkload2
+      Sequence:
+         - ["CreateVDR"]
+         - ["CreateVWires"]
+         - ["BridgevWire2ToVLAN19"] ###create vxlan lif with vwire1
+         - ["CreateVXLANLIF1"] ### Create common vxlan lif with vwire1
+         - ["CreateVLANLIF2"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetRouteVM3"]
+         - ["TrafficVLANtoVXLANRoutingUnicast"]
+         - ["TrafficVLANtoVLANRoutingUnicast"]
+         - ["TrafficVLANtoVXLANRoutingMulticast"]
+         - ["TrafficVLANtoVLANRoutingMulticast"]
+         - ["TrafficVLANBroadcast"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVDR"]
+         - ["DeleteVWires"]
+      CreateVDR: *CREATEVDR
+      CreateVXLANLIF1: *CREATEVXLANLIF1
+      CreateVLANLIF2:
+         Type:    "VM"
+         TestVM: "vsm.[1].vse.[1]"
+         lif:
+            '[2]':
+               name: "lif-vlan2"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               type: "internal"
+               connected: 1
+               addressgroup:
+                  addresstype: "primary"
+                  ipv4address: "172.16.1.1"
+                  netmask: "255.255.0.0"
+      BridgevWire2ToVLAN19: *BRIDGEVWIRE2TOVLAN19
+      DeleteVDR: *DELETEVDR
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "MULTICAST_MODE"
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2: *ADDVNIC2
+      AddVNIC3:
+         Type: "VM"
+         TestVM: "vm.[3]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC4: *ADDVNIC4
+      SetIPVM1: *SETIPVM1
+      SetIPVM2:
+         Type: "NetAdapter"
+         Testadapter: vm.[2].vnic.[1]
+         ipv4: "dhcp"
+      SetIPVM3:
+         Type: "NetAdapter"
+         Testadapter: vm.[3].vnic.[1]
+         ipv4: "dhcp"
+      SetRouteVM1ToVXLAN2:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.2.0"
+         gateway: "192.168.1.1"
+      SetRouteVM2ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      SetRouteVM3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.0.0.0"
+         route: "add"
+         network: "172.0.0.0"
+         gateway: "172.16.1.1"
+      SetRouteVM4ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      DeleteVNIC1:
+         Type: "VM"
+         Testvm: "vm.[1]"
+         deletevnic: "vm.[1].vnic.[1]"
+      DeleteVNIC2:
+         Type: "VM"
+         Testvm: "vm.[2]"
+         deletevnic: "vm.[2].vnic.[1]"
+      DeleteVNIC3:
+         Type: "VM"
+         Testvm: "vm.[3]"
+         deletevnic: "vm.[3].vnic.[1]"
+      DeleteVNIC4:
+         Type: "VM"
+         Testvm: "vm.[4]"
+         deletevnic: "vm.[4].vnic.[1]"
+      TrafficVLANtoVXLANRoutingUnicast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVLANRoutingUnicast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVXLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVXLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANBroadcast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "broadcast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         ExpectedResult: "ignore"
+         TestDuration: "60"
+
+
+VXLANRoutingOverBridgeVXLANSameHost:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VXLANRoutingOverBridgeVXLANSameHost"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify vxlan routing works over bridge with vxlan vm connected to bridge
+             on the same host as the bridge"
+   Procedure: "1. Create two virtual wires and one dvportgroup
+              2. Create three vms connect 2 vms to 2 virtual wires and third to dvportgroup
+              3. Make sure that vm that connects to the vxlan lif of the bridge is deployed
+                 on the same host as the bridge and vlan lif on different host
+              4. Deploy VDR and create a bridge on that with one VXLAN lif common between two
+              5. Make sure multicast/broadcast/unicast traffic works from vxlan routing lif
+                 to bridging lif"
+   TestbedSpec: *Routing_over_bridge_Topology2
+   WORKLOADS: &RoutingOverBridgeWorkload3
+      Sequence:
+         - ["CreateVDR"]
+         - ["CreateVWires"]
+         - ["BridgevWire2ToVLAN19"] ###create vxlan lif with vwire1
+         - ["CreateVXLANLIF1"] ### Create common vxlan lif with vwire1
+         - ["CreateVXLANLIF2"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetRouteVM3"]
+         - ["TrafficVXLANtoVXLANRoutingUnicast"]
+         - ["TrafficVXLANtoVLANRoutingUnicast"]
+         - ["TrafficVXLANtoVXLANRoutingMulticast"]
+         - ["TrafficVXLANtoVLANRoutingMulticast"]
+         - ["TrafficVXLANBroadcast"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVDR"]
+         - ["DeleteVWires"]
+      CreateVDR: *CREATEVDR
+      CreateVXLANLIF1: *CREATEVXLANLIF1
+      CreateVXLANLIF2: *CREATEVXLANLIF2
+      BridgevWire2ToVLAN19: *BRIDGEVWIRE2TOVLAN19
+      DeleteVDR: *DELETEVDR
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "MULTICAST_MODE"
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2: *ADDVNIC2
+      AddVNIC3:
+         Type: "VM"
+         TestVM: "vm.[3]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC4:
+         Type: "VM"
+         TestVM: "vm.[4]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      SetIPVM1: *SETIPVM1
+      SetIPVM2:
+         Type: "NetAdapter"
+         Testadapter: vm.[2].vnic.[1]
+         ipv4: "dhcp"
+      SetIPVM3:
+         Type: "NetAdapter"
+         Testadapter: vm.[3].vnic.[1]
+         ipv4: "172.32.1.5"
+         netmask: "255.255.0.0"
+      SetRouteVM1ToVXLAN2:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.2.0"
+         gateway: "192.168.1.1"
+      SetRouteVM2ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      SetRouteVM3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.0.0.0"
+         route: "add"
+         network: "172.0.0.0"
+         gateway: "172.32.1.1"
+      SetRouteVM4ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      DeleteVNIC1:
+         Type: "VM"
+         Testvm: "vm.[1]"
+         deletevnic: "vm.[1].vnic.[1]"
+      DeleteVNIC2:
+         Type: "VM"
+         Testvm: "vm.[2]"
+         deletevnic: "vm.[2].vnic.[1]"
+      DeleteVNIC3:
+         Type: "VM"
+         Testvm: "vm.[3]"
+         deletevnic: "vm.[3].vnic.[1]"
+      DeleteVNIC4:
+         Type: "VM"
+         Testvm: "vm.[4]"
+         deletevnic: "vm.[4].vnic.[1]"
+      TrafficVXLANtoVXLANRoutingUnicast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "60"
+      TrafficVXLANtoVLANRoutingUnicast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVXLANtoVXLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "60"
+      TrafficVXLANtoVLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVXLANBroadcast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "broadcast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         ExpectedResult: "ignore"
+         TestDuration: "60"
+
+
+VLANRoutingOverBridgeVLANSameHost:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VLANRoutingOverBridge"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify vlan routing works over bridge with vm with vlan bridge lif
+             on same host as bridge"
+   Procedure: "1. Create one virtual wires and two dvportgroups
+              2. Create three vms connect 2 vms to 2 dvportgroups and third to vxlan
+              3. Deploy VDR and create a bridge on that with one VXLAN lif common between two
+              4. Make sure that vm that connects to the vlan lif of the bridge is deployed
+                 on the same host as the bridge and vxlan lif on different host
+              5. Make sure multicast/broadcast/unicast traffic works from vlan routing lif
+                 to bridging lif"
+   TestbedSpec: *Routing_over_bridge_Topology1
+   WORKLOADS: &RoutingOverBridgeWorkload4
+      Sequence:
+         - ["CreateVDR"]
+         - ["CreateVWires"]
+         - ["BridgevWire2ToVLAN19"] ###create vxlan lif with vwire1
+         - ["CreateVXLANLIF1"] ### Create common vxlan lif with vwire1
+         - ["CreateVLANLIF2"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetRouteVM3"]
+         - ["TrafficVLANtoVXLANRoutingUnicast"]
+         - ["TrafficVLANtoVLANRoutingUnicast"]
+         - ["TrafficVLANtoVXLANRoutingMulticast"]
+         - ["TrafficVLANtoVLANRoutingMulticast"]
+         - ["TrafficVLANBroadcast"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVDR"]
+         - ["DeleteVWires"]
+      CreateVDR: *CREATEVDR
+      CreateVXLANLIF1: *CREATEVXLANLIF1
+      CreateVLANLIF2:
+         Type:    "VM"
+         TestVM: "vsm.[1].vse.[1]"
+         lif:
+            '[2]':
+               name: "lif-vwire2"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               type: "internal"
+               connected: 1
+               addressgroup:
+                  addresstype: "primary"
+                  ipv4address: "172.16.1.1"
+                  netmask: "255.255.0.0"
+      BridgevWire2ToVLAN19: *BRIDGEVWIRE2TOVLAN19
+      DeleteVDR: *DELETEVDR
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "MULTICAST_MODE"
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2: *ADDVNIC2
+      AddVNIC3:
+         Type: "VM"
+         TestVM: "vm.[3]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC4:
+         Type: "VM"
+         TestVM: "vm.[4]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      SetIPVM1: *SETIPVM1
+      SetIPVM2:
+         Type: "NetAdapter"
+         Testadapter: vm.[2].vnic.[1]
+         ipv4: "dhcp"
+      SetIPVM3:
+         Type: "NetAdapter"
+         Testadapter: vm.[3].vnic.[1]
+         ipv4: "dhcp"
+      SetRouteVM1ToVXLAN2:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.2.0"
+         gateway: "192.168.1.1"
+      SetRouteVM2ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      SetRouteVM3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.0.0.0"
+         route: "add"
+         network: "172.0.0.0"
+         gateway: "172.16.1.1"
+      SetRouteVM4ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      DeleteVNIC1:
+         Type: "VM"
+         Testvm: "vm.[1]"
+         deletevnic: "vm.[1].vnic.[1]"
+      DeleteVNIC2:
+         Type: "VM"
+         Testvm: "vm.[2]"
+         deletevnic: "vm.[2].vnic.[1]"
+      DeleteVNIC3:
+         Type: "VM"
+         Testvm: "vm.[3]"
+         deletevnic: "vm.[3].vnic.[1]"
+      DeleteVNIC4:
+         Type: "VM"
+         Testvm: "vm.[4]"
+         deletevnic: "vm.[4].vnic.[1]"
+      TrafficVLANtoVXLANRoutingUnicast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVLANRoutingUnicast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVXLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVXLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANBroadcast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "broadcast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         ExpectedResult: "ignore"
+         TestDuration: "60"
+
+
+VLANAndVXLANRoutingOverBridgeVLANAndVXLANSameHost:
+   Component: "NSX"
+   Category: "Networking"
+   TestName: "VLANAndVXLANRoutingOverBridge"
+   Tags: "sanity"
+   version: "2"
+   Summary: "Verify vlan and vxlan routing works over bridge with vms with vlan and vxlan bridge
+             lif on same host as bridge"
+   Procedure: "1. Create one virtual wires and two dvportgroups
+              2. Create three vms connect 2 vms to 2 dvportgroups and third to vxlan
+              3. Deploy VDR and create a bridge on that with one VXLAN lif common between two
+              4. Make sure that vm that connects to the vlan lif of the bridge is deployed
+                 on the same host as the bridge and vxlan lif on different host
+              5. Make sure multicast/broadcast/unicast traffic works from vlan routing lif
+                 to bridging lif"
+   TestbedSpec: *Routing_over_bridge_Topology3
+   WORKLOADS: &RoutingOverBridgeWorkload5
+      Sequence:
+         - ["CreateVDR"]
+         - ["CreateVWires"]
+         - ["BridgevWire2ToVLAN19"] ###create vxlan lif with vwire1
+         - ["CreateVXLANLIF1"] ### Create common vxlan lif with vwire1
+         - ["CreateVLANLIF2"]
+         - ["AddVNIC1"]
+         - ["AddVNIC2"]
+         - ["AddVNIC3"]
+         - ["AddVNIC4"]
+         - ["SetIPVM1"]
+         - ["SetIPVM2"]
+         - ["SetIPVM3"]
+         - ["SetIPVM4"]
+         - ["SetRouteVM3"]
+         - ["SetRouteVM4"]
+         - ["TrafficVLANtoVXLANRoutingUnicast"]
+         - ["TrafficVLANtoVLANRoutingUnicast"]
+         - ["TrafficVLANtoVXLANRoutingMulticast"]
+         - ["TrafficVLANtoVLANRoutingMulticast"]
+         - ["TrafficVLANBroadcast"]
+      ExitSequence:
+         - ["DeleteVNIC1"]
+         - ["DeleteVNIC2"]
+         - ["DeleteVNIC3"]
+         - ["DeleteVNIC4"]
+         - ["DeleteVDR"]
+         - ["DeleteVWires"]
+      CreateVDR: *CREATEVDR
+      CreateVXLANLIF1: *CREATEVXLANLIF1
+      CreateVLANLIF2:
+         Type:    "VM"
+         TestVM: "vsm.[1].vse.[1]"
+         lif:
+            '[2]':
+               name: "lif-vwire2"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               type: "internal"
+               connected: 1
+               addressgroup:
+                  addresstype: "primary"
+                  ipv4address: "172.16.1.1"
+                  netmask: "255.255.0.0"
+      BridgevWire2ToVLAN19: *BRIDGEVWIRE2TOVLAN19
+      DeleteVDR: *DELETEVDR
+      CreateVWires:
+         Type: "TransportZone"
+         TestTransportZone: "vsm.[1].networkscope.[1]"
+         VirtualWire:
+            '[1-2]':
+               name: "AutoGenerate"
+               tenantid: "AutoGenerate"
+               controlplanemode: "MULTICAST_MODE"
+      DeleteVWires: *DELETEVWIRES
+      AddVNIC1: *ADDVNIC1
+      AddVNIC2: *ADDVNIC2
+      AddVNIC3:
+         Type: "VM"
+         TestVM: "vm.[3]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vc.[1].dvportgroup.[3]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      AddVNIC4:
+         Type: "VM"
+         TestVM: "vm.[4]"
+         vnic:
+            '[1]':
+               driver: "e1000"
+               portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+               connected: "1"
+               startconnected: "1"
+               allowguestcontrol: "1"
+      SetIPVM1: *SETIPVM1
+      SetIPVM2:
+         Type: "NetAdapter"
+         Testadapter: vm.[2].vnic.[1]
+         ipv4: "dhcp"
+      SetIPVM3:
+         Type: "NetAdapter"
+         Testadapter: vm.[3].vnic.[1]
+         ipv4: "dhcp"
+      SetIPVM4:
+         Type: "NetAdapter"
+         Testadapter: vm.[4].vnic.[1]
+         ipv4: "172.32.1.5"
+         netmask: "172.32.0.0"
+      SetRouteVM1ToVXLAN2:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[1].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.2.0"
+         gateway: "192.168.1.1"
+      SetRouteVM2ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[2].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      SetRouteVM3:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[3].vnic.[1]"
+         netmask: "255.0.0.0"
+         route: "add"
+         network: "172.0.0.0"
+         gateway: "172.16.1.1"
+      SetRouteVM4:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.0.0.0"
+         route: "add"
+         network: "172.0.0.0"
+         gateway: "172.32.1.1"
+      SetRouteVM4ToVXLAN1:
+         Type: "NetAdapter"
+         TestAdapter: "vm.[4].vnic.[1]"
+         netmask: "255.255.255.0"
+         route: "add"
+         network: "192.168.1.0"
+         gateway: "192.168.2.1"
+      DeleteVNIC1:
+         Type: "VM"
+         Testvm: "vm.[1]"
+         deletevnic: "vm.[1].vnic.[1]"
+      DeleteVNIC2:
+         Type: "VM"
+         Testvm: "vm.[2]"
+         deletevnic: "vm.[2].vnic.[1]"
+      DeleteVNIC3:
+         Type: "VM"
+         Testvm: "vm.[3]"
+         deletevnic: "vm.[3].vnic.[1]"
+      DeleteVNIC4:
+         Type: "VM"
+         Testvm: "vm.[4]"
+         deletevnic: "vm.[4].vnic.[1]"
+      TrafficVLANtoVXLANRoutingUnicast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1],vm.[4].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVLANRoutingUnicast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         TestAdapter: "vm.[3].vnic.[1],vm.[4].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVXLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1],vm.[4].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVXLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1], vm.[4].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANtoVLANRoutingMulticast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "multicast"
+         TestAdapter: "vm.[3].vnic.[1]"
+         SupportAdapter: "vm.[2].vnic.[1]"
+         TestDuration: "60"
+      TrafficVLANBroadcast:
+         Type:  "Traffic"
+         toolName: "iperf"
+         L4Protocol: "tcp,udp"
+         RoutingScheme: "broadcast"
+         TestAdapter: "vm.[3].vnic.[1], vm.[4].vnic.[1]"
+         SupportAdapter: "vm.[1].vnic.[1]"
+         ExpectedResult: "ignore"
+         TestDuration: "60"

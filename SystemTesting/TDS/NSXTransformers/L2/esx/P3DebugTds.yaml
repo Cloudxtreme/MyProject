@@ -1,0 +1,156 @@
+TSO:
+    Product: "NSXTransformers"
+    Component: "TSO"
+    Category: "L2"
+    TestName: "TSO"
+    Version: "2"
+    Tags: "L2, LogicalSwitch"
+    QCPath: *QCPATH--ESX
+    Summary: "To verify that TSO function works well"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P3"
+    Developer: "shawntu"
+    Partnerfacing: "N"
+    TestbedSpec: *FUNCTIONAL_TOPOLOGY_2--ESX
+    WORKLOADS:
+        Sequence:
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['DiscoverVteps']
+            - ['SetControllerOnHost1', 'SetControllerOnHost2',
+               'SetControllerOnHost3', 'SetControllerOnHost4']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1', 'AttachVM3toSwitch1',
+               'AttachVM5toSwitch1', 'AttachVM7toSwitch1']
+            - ['AttachVM2toSwitch2', 'AttachVM4toSwitch2',
+               'AttachVM6toSwitch2', 'AttachVM8toSwitch2']
+            - ['VM1EnableTSOIPV4']
+            - ['VM1EnableIPCheckSum']
+            - ['ConfigureVnicIP']
+            - ['TCPTraffic', 'HasTSOCKOLogOnHost']
+            - ['UDPTraffic', 'HasCKOLogOnHost']
+            - ['ICMPTraffic', 'HasCKOLogOnHost']
+            - ['IPv6Traffic', 'HasTSOCKOLogOnHost']
+
+        ExitSequence:
+            - ['DeleteVM1Vnic1FromLSwitch1',  'DeleteVM3Vnic1FromLSwitch1',
+               'DeleteVM5Vnic1FromLSwitch1',  'DeleteVM7Vnic1FromLSwitch1']
+            - ['DeleteVM2Vnic1FromLSwitch2',  'DeleteVM4Vnic1FromLSwitch2',
+               'DeleteVM6Vnic1FromLSwitch2',  'DeleteVM8Vnic1FromLSwitch2']
+            - ['NSXCleanup']
+
+        NSXCleanup: *NSX_CLEANUP--ESX
+        SetControllerOnHost1: *SET_CONTROLLER_ON_HOST1--ESX
+        SetControllerOnHost2: *SET_CONTROLLER_ON_HOST2--ESX
+        SetControllerOnHost3: *SET_CONTROLLER_ON_HOST3--ESX
+        SetControllerOnHost4: *SET_CONTROLLER_ON_HOST4--ESX
+        DiscoverHostnodes: *DISCOVER_4_HOST_NODES--ESX
+        CreateTransportZone: *CREATE_1_TRANSPORTZONE
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        CreateTransportNodes: *CREATE_4_TRANSPORTNODES--ESX
+        DiscoverVteps: *DISCOVER_VTEPS--ESX
+        CreateLogicalSwitch: *CREATE_2_LOGICALSWITCHES
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--ESX
+        AttachVM2toSwitch2: *ATTACH_VM2_TO_SWITCH_2--ESX
+        AttachVM3toSwitch1: *ATTACH_VM3_TO_SWITCH_1--ESX
+        AttachVM4toSwitch2: *ATTACH_VM4_TO_SWITCH_2--ESX
+        AttachVM5toSwitch1: *ATTACH_VM5_TO_SWITCH_1--ESX
+        AttachVM6toSwitch2: *ATTACH_VM6_TO_SWITCH_2--ESX
+        AttachVM7toSwitch1: *ATTACH_VM7_TO_SWITCH_1--ESX
+        AttachVM8toSwitch2: *ATTACH_VM8_TO_SWITCH_2--ESX
+
+        ConfigureVnicIP:  *CONFIGURE_8VMS_IP--ESX
+
+        VM1EnableTSOIPV4:
+            Type: "NetAdapter"
+            TestAdapter: "vm.[1].vnic.[1]"
+            configure_offload :
+                offload_type : "tsoipv4"
+                enable : "true"
+
+        VM1EnableIPCheckSum:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            configure_offload :
+                offload_type : "tcptxchecksumipv4"
+                enable : "true"
+
+        TCPTraffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            localsendsocketsize : *LOCAL_SEND_SOCKET_SIZE
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            sendmessagesize : *SEND_MESSAGE_SIZE
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            TestDuration  : "100"
+            bursttype     : "stream"
+
+        UDPTraffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            localsendsocketsize : *LOCAL_SEND_SOCKET_SIZE
+            L3Protocol    : "ipv4"
+            L4Protocol    : "udp"
+            sendmessagesize : *SEND_MESSAGE_SIZE
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            TestDuration  : "100"
+
+        ICMPTraffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            pingpktsize   : *SEND_MESSAGE_SIZE
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            TestDuration  : "100"
+
+        IPv6Traffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            localsendsocketsize : *LOCAL_SEND_SOCKET_SIZE
+            L3Protocol    : "ipv6"
+            L4Protocol    : "tcp"
+            sendmessagesize : *SEND_MESSAGE_SIZE
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            TestDuration  : "100"
+            bursttype     : "stream"
+
+        HasTSOCKOLogOnHost:
+            Type        : "Host"
+            TestHost    : "esx.[1]"
+            switch      : "nsxmanager.[1].logicalswitch.[1]"
+            'verifytsockoonhost[?]contains':
+                     - 'tso[?]match': "TSO enabled"
+                       'length[?]>': "10000"
+            noofretries  :  "3"
+            sleepbetweenworkloads : "80"
+
+        HasCKOLogOnHost:
+            Type        : "Host"
+            TestHost    : "esx.[1]"
+            switch      : "nsxmanager.[1].logicalswitch.[1]"
+            'verifytsockoonhost[?]contains':
+                     - 'tso[?]match': "TSO not enabled"
+                       'cko[?]match': "Checksum offloaded and not verified"
+                       'length[?]>': "1000"
+            noofretries  :  "3"
+            sleepbetweenworkloads : "80"
+
+        DeleteVM1Vnic1FromLSwitch1: *DELETE_VM1_VNIC1_LSWITCH1--ESX
+        DeleteVM2Vnic1FromLSwitch2: *DELETE_VM2_VNIC1_LSWITCH2--ESX
+        DeleteVM3Vnic1FromLSwitch1: *DELETE_VM3_VNIC1_LSWITCH1--ESX
+        DeleteVM4Vnic1FromLSwitch2: *DELETE_VM4_VNIC1_LSWITCH2--ESX
+        DeleteVM5Vnic1FromLSwitch1: *DELETE_VM5_VNIC1_LSWITCH1--ESX
+        DeleteVM6Vnic1FromLSwitch2: *DELETE_VM6_VNIC1_LSWITCH2--ESX
+        DeleteVM7Vnic1FromLSwitch1: *DELETE_VM7_VNIC1_LSWITCH1--ESX
+        DeleteVM8Vnic1FromLSwitch2: *DELETE_VM8_VNIC1_LSWITCH2--ESX

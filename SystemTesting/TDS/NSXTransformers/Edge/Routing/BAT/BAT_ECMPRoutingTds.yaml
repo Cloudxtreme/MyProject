@@ -1,0 +1,149 @@
+#------------------------------------------------------------------------------
+#                       ECMP-TOPOLOGY
+#------------------------------------------------------------------------------
+#
+#              192.168.40.20        192.168.40.21
+#                +-------+           +--------+
+#                |  VM6  |           |  VM6'  |
+#                +---+---+           +----+---+
+#                    |                    |
+#              +-----+--------------------+-------+
+#              |       Logical Switch-06          |
+#              +---+------------------------+-----+
+#                  |                        |
+#    192.168.40.1  |                        | 192.168.40.2
+#                  |                        |
+#              +---+---+               +----+---+
+#              |  R1   |               |   R2   |
+#              +---+---+               +----+---+
+#    192.168.50.100|                        |192.168.50.101
+#         +--------+------------------------+-------------+
+#         |            LogicalSwitch-01                   |
+#         +--------|-------------------------|------------+
+#                  |                         |
+#                  |                         |
+#         +--------|-------------------------|-----------+
+#         |    +---|---+                +----|----+      |
+#         |    | SR1   |   TIER-0       |   SR2   |      |
+#         |   192.168.50.1              192.168.50.2     |
+#         |    +-------+                +---------+      |
+#         +--------------------+-------------------------+
+#                              |
+#         +--------------------+------------------------+
+#         |                 TIER-1                      |
+#         +------------------+--------------------------+
+#                            |
+#                            |
+#              +-------------+-----------------+
+#              |     Logical Switch-04         |
+#              +----+---------------------+----+
+#                   |                     |
+#                +--+--+                +-+--+
+#  192.168.70.20 | VM4 |                |VM4'| 192.168.70.21
+#                +-----+                +----+
+#
+#-------------------------------------------------------------------------------------
+ECMP_BASIC_SETUP:
+    Category: L3
+    Component: Edge
+    Summary: "This test case verifies ECMP routes on SRs"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: BAT_Tier0_Tier1_ECMP_Test
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            - - 'RegisterController'
+            - - 'SetManagerOnHost'
+            - - 'DiscoverHostNodes'
+            - - 'CreateTransportZone'
+            - - 'CreateUplinkProfile'
+            - - 'CreateTransportNodes'
+            - - 'CreateLogicalSwitch01_FOR_UPLINK_SR1'
+            - - 'CreateLogicalSwitch04_For_Tier1_Downlink'
+            - - 'CreateLogicalSwitch06_ForExternalRouter'
+            - - 'Create_LogicalPorts_ECMP'
+
+            # XXX: Tier0 setup
+            - - 'DeployNSXEdge1'
+            - - 'RegisterEdgeNode1WithNSX'
+            - - 'CreateFabricProfile'
+            - - 'DiscoverEdgeNodeId1'
+            - - 'CreateEdgeClusterWithEdgeNode_BAT_Tier0_Basic'
+            - - 'CreateTIER0LogicalRouter'                    # for Tier0 router
+            - - 'CreateTier0UplinkLogicalRouterPortForSR1'    # for Tier0 router
+
+            # XXX: TIER-0 to TIER1 Connection
+            - - 'CreateTIER1LogicalRouter'
+            - - 'CreateDownlinkTier1LogicalRouterPortOnLS04'
+            - - 'CreateRouterLinkPortOnTIER0Router'
+            - - 'CreateRouterLinkPortOnTIER1Router'
+
+            # XXX: VM Related Operations
+            - - 'VifAttachmentAllVMs_ECMP'
+            - - 'PowerOnAllVms_ECMP'
+            - - 'ConfigureIPAllVMVNics_ECMP'
+            - - 'AddRouteAllVMs_ECMP'
+
+#---------------------------------------------------------------------------------------
+ECMP_RoutesOnSr_Via_BGP:
+    Category: L3
+    Component: Edge
+    Summary: "This test case verifies ECMP routes on SRs via ECMP"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: BAT_Tier0_Tier1_ECMP_Test
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            # XXX Advertise Route
+            - - 'AdvertiseRouteonTier1'
+
+            # XXX Route Global Config
+            - - 'AddRoutingGlobalConfig'
+
+            # XXX BGP Neighbourship
+            - - 'AddBGPNeighboursTier0_ECMP'
+
+            # XXX Route Redistribution: fromprotocol:Connected,INTERNAL TO Protocol: BGP
+            - - 'AddRouteRedistribution'
+
+            # XXX Verification eBGP Configuration is applied or not
+            - - 'CLI_Show_Configuration_BGP_SR1_ECMP'
+
+            # XXX Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'Show_IP_Route_SR1_ECMP'
+
+            # XX Verify the forwarding table it should 2 routes
+            - - 'Show_IP_Forwarding_SR1_ECMP'
+
+            # XXX Related to Traffic Flow
+            - ['Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20', 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_21']
+
+        ExitSequence:
+            - - 'DeleteAllNeighbours'
+            - - 'DeleteRoutingGlobalConfig'
+            - - 'DeleteRedistributionConfig'
+            - - 'DeleteRouteAdvertisementsOnTier1'
+
+#---------------------------------------------------------------------------------------
+ECMP_CLEANUP_SETUP:
+    Category: L3
+    Component: Edge
+    Summary: "This test case Cleanups the ECMP setup"
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: ECMP_CLEANUP_SETUP
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            - - 'PowerOffAllVms_ECMP'
+            - - 'DeleteTestVnics_ECMP'
+            - - 'CleanupBasicTier0_Tier1'
+            - - 'CleanupEdge'
+            - - 'DeleteSR1'
+            - - 'UnregisterHosts'
+

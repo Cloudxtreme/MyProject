@@ -1,0 +1,1132 @@
+CommonFieldsP0Case: &TDS_COMMON_FIELDS_P0_CASE
+    Product: "Vshield"
+    Component: "ManagementPlane-L3"
+    Category: "MultiVC"
+    TestName:  "VerifyControllerInfoSyncedToHost"
+    Version: "2"
+    Tags: "multivc"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Not Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "adityaj"
+    Partnerfacing: "N"
+
+
+# ------------------------------------------------------------------------------
+# P0
+# ------------------------------------------------------------------------------
+L3Basic:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Summary: This test case verifies L3 East West connectivity works between 2 VC
+             sites
+    Tags: 'TBD'
+    Version: 2
+    TestName: L3Basic
+    TestbedSpec: *L3_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            # TODO: We can group this and launch controller deployment
+            # + vib installation in parallel
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['AllVMsPowerOn']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['VIBInstallVxlanConfigMasterSite',
+               'VIBInstallVxlanConfigAllSlaveSite']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify4GlobalLogicalSwitches']
+            # Check L2 connecitivity first, same site and different site
+            # Even though its verified in L2 P0 tests, this is the first
+            # thing we check when L3 fails
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            # Check L3 connecitivity same site and different site
+            - ['CreateVerifyGlobalDistributedLogicalRouter']
+            - ['CreateVerifyLIFs']
+            - ['VM2OnFirstGlobalLogicalSwitch']
+            - ['VM3OnSecondGlobalLogicalSwitch']
+            - ['VM4OnThirdGlobalLogicalSwitch']
+            - ['VM5OnForthGlobalLogicalSwitch']
+            - ['ConfigureVM2Vnic1IP']
+            - ['ConfigureVM3Vnic1IP']
+            - ['ConfigureVM4Vnic1IP']
+            - ['ConfigureVM5Vnic1IP']
+            - ['AddRouteVM2']
+            - ['AddRouteVM3']
+            - ['AddRouteVM4']
+            - ['AddRouteVM5']
+            - ['AllVMsPingEachOther']
+
+
+        ExitSequence:
+            - ['AllVMsPowerOff']
+            ## This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['Delete_All_Universal_Edges']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigMasterSite']
+            - ['UnconfigureVxlanConfigSlaveSite']
+            - ['Delete_All_Controllers']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+
+        CreateVerify4GlobalLogicalSwitches:
+            Type: TransportZone
+            TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+            globallogicalswitch:
+                '[1-4]':
+                    controlplanemode: UNICAST_MODE
+                    name: AutoGenerate
+                    tenantid: AutoGenerate
+
+ArpFloodGDLRLIF:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Summary: This test case verifies L3 East West connectivity works between 2 VC
+             sites while GDLR lifs is being flooded with arp traffic
+    Tags: 'TBD'
+    Version: 2
+    TestName: ArpFloodGDLRLIF
+    TestbedSpec: *L3_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            # TODO: We can group this and launch controller deployment
+            # + vib installation in parallel
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['AllVMsPowerOn']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['VIBInstallVxlanConfigMasterSite',
+               'VIBInstallVxlanConfigAllSlaveSite']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify4GlobalLogicalSwitches']
+            # Check L2 connecitivity first, same site and different site
+            # Even though its verified in L2 P0 tests, this is the first
+            # thing we check when L3 fails
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            # Check L3 connecitivity same site and different site
+            - ['CreateVerifyGlobalDistributedLogicalRouter']
+            - ['CreateVerifyLIFs']
+            - ['VM2OnFirstGlobalLogicalSwitch']
+            - ['VM3OnSecondGlobalLogicalSwitch']
+            - ['VM4OnThirdGlobalLogicalSwitch']
+            - ['VM5OnForthGlobalLogicalSwitch']
+            - ['ConfigureVM2Vnic1IP']
+            - ['ConfigureVM3Vnic1IP']
+            - ['ConfigureVM4Vnic1IP']
+            - ['ConfigureVM5Vnic1IP']
+            - ['AddRouteVM2']
+            - ['AddRouteVM3']
+            - ['AddRouteVM4']
+            - ['AddRouteVM5']
+            - ['ArpPingLIFIpFromVM2', 'ArpPingLIFIpFromVM3',
+               'ArpPingLIFIpFromVM4', 'ArpPingLIFIpFromVM5',
+               'AllVMsPingEachOther']
+
+
+        ExitSequence:
+            - ['AllVMsPowerOff']
+            # This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['Delete_All_Universal_Edges']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigMasterSite']
+            - ['UnconfigureVxlanConfigSlaveSite']
+            - ['Delete_All_Controllers']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+
+        CreateVerify4GlobalLogicalSwitches:
+            Type: TransportZone
+            TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+            globallogicalswitch:
+                '[1-4]':
+                    controlplanemode: UNICAST_MODE
+                    name: AutoGenerate
+                    tenantid: AutoGenerate
+
+        ArpPingLIFIpFromVM2:
+            Type : "Traffic"
+            toolName: "ArpPing"
+            TestAdapter: "vm.[2].vnic.[1]"
+            SupportAdapter: "172.32.1.1"
+            TestDuration: "600"
+            connectivitytest: "0"
+
+        ArpPingLIFIpFromVM3:
+            Type : "Traffic"
+            toolName: "ArpPing"
+            TestAdapter: "vm.[3].vnic.[1]"
+            SupportAdapter: "172.33.1.1"
+            TestDuration: "600"
+            connectivitytest: "0"
+
+        ArpPingLIFIpFromVM4:
+            Type : "Traffic"
+            toolName: "ArpPing"
+            TestAdapter: "vm.[4].vnic.[1]"
+            SupportAdapter: "172.34.1.1"
+            TestDuration: "600"
+            connectivitytest: "0"
+
+        ArpPingLIFIpFromVM5:
+            Type : "Traffic"
+            toolName: "ArpPing"
+            TestAdapter: "vm.[5].vnic.[1]"
+            SupportAdapter: "172.35.1.1"
+            TestDuration: "600"
+            connectivitytest: "0"
+
+ExpandShrinkGTZForMultiVC:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Summary: |
+        "To verify that after expanding shrinking TZ
+        traffic works fine in same and different VC"
+    Tags: 'TBD'
+    Version: 2
+    TestName: ExpandShrinkGTZFormultiVC
+    TestbedSpec: *L3_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            # TODO: We can group this and launch controller deployment
+            # + vib installation in parallel
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['AllVMsPowerOn']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            ### Do the VIb instalation and configure vxlan on all sites
+            ## since vibs are already configured, it will return as is
+            ## only vxlan will be configured which was unconfigured in exitseq
+            ## of previous testcase
+            - ['VIBInstallVxlanConfigMasterSite',
+               'VIBInstallVxlanConfigAllSlaveSite']
+            ### Here create a GTZ and ping only the VMs on master site
+            - ['CreateVerifyGlobalTransportZone']
+            - ['CreateVerify4GlobalLogicalSwitches']
+            - ['AllVMsOnMasterAddvNICOnSameGlobalLogicalSwitch']
+            - ['VM2OnFirstGlobalLogicalSwitch']
+            - ['VM3OnSecondGlobalLogicalSwitch']
+            - ['CreateVerifyGlobalDistributedLogicalRouter']
+            #- ['VerifyGDLROnHost']
+            - ['CreateVerifyLIFs']
+            - ['ConfigureVM2Vnic1IP']
+            - ['ConfigureVM3Vnic1IP']
+            - ['AddRouteVM2']
+            - ['AddRouteVM3']
+            # Pinging only the VMs which are part of GTZ
+            - ['AllVMsPingEachOtherOnMaster']
+            # Now expand the GTZ on the slave site
+            - ['AddClustersToGTZSlaveSites']
+            - ['AllVMsOnSlaveAddvNICOnSameGlobalLogicalSwitch']
+            - ['VM4OnThirdGlobalLogicalSwitch']
+            - ['VM5OnForthGlobalLogicalSwitch']
+            - ['ConfigureVM4Vnic1IP']
+            - ['ConfigureVM5Vnic1IP']
+            - ['AddRouteVM4']
+            - ['AddRouteVM5']
+            ## Ping the vdr gateway before pinging vms
+            - ['PingLIFIpFromVM2']
+            - ['PingLIFIpFromVM3']
+            - ['PingLIFIpFromVM4']
+            - ['PingLIFIpFromVM5']
+            - ['AllVMsPingEachOther']
+            # Need to remove the vnic from vm.[5]
+            - ['DeleteVnicVM5']
+            # Now shrink the GTZ to remove second cluster on slave site
+            - ['ShrinkGTZToRemoveSecondClusterOnSlaveSite']
+            # Here make sure that traffic between first 3 vms goes thru
+            - ['PingFirstThreeVMs']
+            # Now expand the GTZ to include second cluster on slave site
+            - ['ExpandGTZSecondClusterSlaveSite']
+            # Add vnic on vm5 and assign ip
+            - ['AddVnicVM5OnForthGlobalLogicalSwitch']
+            - ['ConfigureVM5Vnic1IP']
+            - ['AddRouteVM5']
+            # Now all Vms should start pinging each other
+            - ['AllVMsPingEachOther']
+            # Check L3 connecitivity same site and different site
+            #- ['VerifyLIFsOnHost']
+            ## TODO: Ask if pinging router port is supported in product and
+            ## in vdnet
+            #- ['RealizeLogicalports']
+            #- ['AllVMsPingRouterPort']
+            #- ['EvenVMsOnEvenGlobalLogicalSwitch']
+            ## TODO: Check on DHCP feature in GDLR otherwise we will
+            ## have to rely on static IPs
+            ## Use this if GDLR DHCP is not supported
+            ## TODO: More verification
+            ##- ['VerifyRoutes']
+            ##- ['VerifyGDLRArpTable']
+            ##- ['VerifyGDLRLif1ArpTable', 'VerifyGDLRLif2ArpTable']
+
+        ExitSequence:
+            - ['AllVMsPowerOff']
+            ## This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['Delete_All_Universal_Edges']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigMasterSite']
+            - ['UnconfigureVxlanConfigSlaveSite']
+            - ['Delete_All_Controllers']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+            #- ['CleanupVSM']
+            ## VIB uninstall and deleting vxlancontroller is done in
+            ## Testbedcleanup
+
+        DeleteVnicVM5:
+            Type: VM
+            TestVM: 'vm.[5]'
+            deletevnic: 'vm.[5].vnic.[1]'
+
+        CreateVerify4GlobalLogicalSwitches: &4_GLOBAL_LOGICAL_SWITCHES
+            Type: TransportZone
+            TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+            globallogicalswitch:
+                '[1-4]':
+                    controlplanemode: UNICAST_MODE
+                    name: AutoGenerate
+                    tenantid: AutoGenerate
+
+        AllVMsOnMasterAddvNICOnSameGlobalLogicalSwitch: &ALL_VMS_ON_MASTER_SAME_GLS_BACKING
+            Type: VM
+            TestVM: 'vm.[2-3]'
+            vnic:
+                '[1]':
+                    allowguestcontrol: 1
+                    connected: 1
+                    driver: vmxnet3
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                    startconnected: 1
+
+        AllVMsOnSlaveAddvNICOnSameGlobalLogicalSwitch: &ALL_VMS_ON_SLAVE_SAME_GLS_BACKING
+            Type: VM
+            TestVM: 'vm.[4-5]'
+            vnic:
+                '[1]':
+                    allowguestcontrol: 1
+                    connected: 1
+                    driver: vmxnet3
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                    startconnected: 1
+
+        AddVnicVM5OnForthGlobalLogicalSwitch: &ADDVNICVM5ONFORTHGLOBALLOGICALSWITCH
+            Type: VM
+            TestVM: 'vm.[5]'
+            vnic:
+                '[1]':
+                    allowguestcontrol: 1
+                    connected: 1
+                    driver: vmxnet3
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[4]'
+                    startconnected: 1
+
+
+        AllVMsPingEachOtherOnMaster: &ALL_VMS_PING_EACH_OTHER_ON_MASTER
+            Type: Traffic
+            ToolName: Ping
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[3].vnic.[1]'
+            NoofInbound: 1
+            NoofOutbound: 1
+            TestDuration: 60
+            maxtimeout: 128000
+
+        PingFirstThreeVMs: &PING_FIRST_THREE_VMS
+            Type: Traffic
+            ToolName: Ping
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[3-4].vnic.[1]'
+            NoofInbound: 1
+            NoofOutbound: 1
+            TestDuration: 60
+            maxtimeout: 128000
+
+
+XVCVMotionOnGLS:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Summary: |
+        "Verify if vmotion works on GLS and verify traffic simulataneously"
+    Tags: 'TBD'
+    Version: 2
+    TestName: L3Basic
+    TestbedSpec: *L3_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            # TODO: We can group this and launch controller deployment
+            # + vib installation in parallel
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['AllVMsPowerOn']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['VIBInstallVxlanConfigMasterSite',
+               'VIBInstallVxlanConfigAllSlaveSite']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify4GlobalLogicalSwitches']
+            # Check L2 connecitivity first, same site and different site
+            # Even though its verified in L2 P0 tests, this is the first
+            # thing we check when L3 fails
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            # Check L3 connecitivity same site and different site
+            #- ['CreateVerifyGlobalDistributedLogicalRouter']
+            #- ['CreateVerifyLIFs']
+            - ['VM2OnFirstGlobalLogicalSwitch']
+            - ['VM3OnSecondGlobalLogicalSwitch']
+            - ['VM4OnFirstGlobalLogicalSwitch']
+            - ['VM5OnSecondGlobalLogicalSwitch']
+            - ['ConfigureVM2Vnic1IP']
+            - ['ConfigureVM3Vnic1IP']
+            - ['ConfigureVM4Vnic1IPVMotion']
+            - ['ConfigureVM5Vnic1IPVMotion']
+            - ['AddRouteVM2']
+            - ['AddRouteVM3']
+            - ['AddRouteVM4']
+            - ['AddRouteVM5']
+            - ['AllVMsPingEachOther']
+            ##Create vmknics on all hosts with vmotion enabled
+            - ['AddVmotionvmknicsHost2', 'AddVmotionvmknicsHost3']
+            - ['AddVmotionvmknicsHost4', 'AddVmotionvmknicsHost5']
+            # VMotion VM2 to Host 4 across VC
+            # VMotion VM3 to Host 5 and check ping traffic
+            - ['VmotionVM2CrossVC1','VmotionVM3CrossVC1',
+               'AllVMsPingEachOther']
+            # VMotion VM4 to Host2 across VC
+            # VMotion VM5 to Host3 across VC and verify traffic
+            - ['VmotionVM4CrossVC2','VmotionVM5CrossVC2',
+               'AllVMsPingEachOther']
+
+        ExitSequence:
+            - ['AllVMsPowerOff']
+            # This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['Delete_All_Universal_Edges']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigMasterSite']
+            - ['UnconfigureVxlanConfigSlaveSite']
+            - ['Delete_All_Controllers']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+
+        AddVmotionvmknicsHost2:
+            Type:   "Host"
+            TestHost: "esx.[2]"
+            vmknic:
+                '[1]':
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                    configurevmotion: "enable"
+                    ipv4: "172.32.1.10"
+                    netmask: "255.255.0.0"
+
+        AddVmotionvmknicsHost3:
+            Type:   "Host"
+            TestHost: "esx.[3]"
+            vmknic:
+                '[1]':
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+                    configurevmotion: "enable"
+                    ipv4: "172.33.1.10"
+                    netmask: "255.255.0.0"
+
+        AddVmotionvmknicsHost4:
+            Type:   "Host"
+            TestHost: "esx.[4]"
+            vmknic:
+                '[1]':
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                    configurevmotion: "enable"
+                    ipv4: "172.32.1.11"
+                    netmask: "255.255.0.0"
+
+        AddVmotionvmknicsHost5:
+            Type:   "Host"
+            TestHost: "esx.[5]"
+            vmknic:
+                '[1]':
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+                    configurevmotion: "enable"
+                    ipv4: "172.33.1.11"
+                    netmask: "255.255.0.0"
+
+        VmotionVM2CrossVC1: &VMOTIONVM2CROSSVC1
+            Type:       'VM'
+            TestVM:     'vm.[2]'
+            priority:   'high'
+            vmotion:    'xvmotion'
+            portgroup:  'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            dsthost:    'esx.[4]'
+            vc:         'vc.[1]'
+            staytime:   '10'
+
+        VmotionVM3CrossVC1: &VMOTIONVM3CROSSVC1
+            Type:       'VM'
+            TestVM:     'vm.[3]'
+            priority:   'high'
+            vmotion:    'xvmotion'
+            portgroup:  'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+            dsthost:    'esx.[5]'
+            vc:         'vc.[1]'
+            staytime:   '10'
+
+        VmotionVM4CrossVC2: &VMOTIONVM4CROSSVC2
+            Type:       'VM'
+            TestVM:     'vm.[4]'
+            priority:   'high'
+            vmotion:    'xvmotion'
+            portgroup:  'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            dsthost:    'esx.[2]'
+            vc:         'vc.[2]'
+            staytime:   '10'
+
+        VmotionVM5CrossVC2: &VMOTIONVM5CROSSVC2
+            Type:       'VM'
+            TestVM:     'vm.[5]'
+            priority:   'high'
+            vmotion:    'xvmotion'
+            portgroup:  'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+            dsthost:    'esx.[3]'
+            vc:         'vc.[2]'
+            staytime:   '10'
+
+        ConfigureVM4Vnic1IPVMotion:
+            IPv4: 172.32.1.6
+            TestAdapter: 'vm.[4].vnic.[1]'
+            Type: NetAdapter
+            netmask: 255.255.0.0
+
+        ConfigureVM5Vnic1IPVMotion:
+            IPv4: 172.33.1.6
+            TestAdapter: 'vm.[5].vnic.[1]'
+            Type: NetAdapter
+            netmask: 255.255.0.0
+
+        VM4OnFirstGlobalLogicalSwitch:
+            Type: NetAdapter
+            testadapter: 'vm.[4].vnic.[1]'
+            portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            reconfigure: true
+
+        VM5OnSecondGlobalLogicalSwitch:
+            Type: NetAdapter
+            testadapter: 'vm.[5].vnic.[1]'
+            portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+            reconfigure: true
+
+        CreateVerify4GlobalLogicalSwitches:
+            Type: TransportZone
+            TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+            globallogicalswitch:
+                '[1-4]':
+                    controlplanemode: UNICAST_MODE
+                    name: AutoGenerate
+                    tenantid: AutoGenerate
+
+
+# Check with vivek if its P0
+Traceflow:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary: |
+        "verify ping across multiple VC sites in unicast mode of GLS"
+
+GDLRSyncWithTraffic:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Summary: |
+        "1. Verify that on demand sync of GDLR is successful."
+
+MultipleGDLR:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Summary: |
+        "Deploy MultipleDLR and test routing between them
+        They should be isolated"
+    Tags: 'TBD'
+    Version: 2
+    TestName: MultipleGDLR
+    TestbedSpec: *L3_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            # TODO: We can group this and launch controller deployment
+            # + vib installation in parallel
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['AllVMsPowerOn']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['VIBInstallVxlanConfigMasterSite',
+               'VIBInstallVxlanConfigAllSlaveSite']
+            ## Do the VIb instalation and configure vxlan on all sites
+            # since vibs are already configured, it will return as is
+            # only vxlan will be configured which was unconfigured in exitseq
+            # of previous testcase
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify4GlobalLogicalSwitches']
+            # Check L2 connecitivity first, same site and different site
+            # Even though its verified in L2 P0 tests, this is the first
+            # thing we check when L3 fails
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            # Check L3 connecitivity same site and different site
+            - ['CreateVerify2GlobalDistributedLogicalRouters']
+            - ['CreateVerifyLIFsOnGDLR1']
+            - ['CreateVerifyLIFsOnGDLR2']
+
+            #- ['VerifyGDLROnHost']
+            - ['VM2OnFirstGlobalLogicalSwitch']
+            - ['VM3OnSecondGlobalLogicalSwitch']
+            - ['VM4OnThirdGlobalLogicalSwitch']
+            - ['VM5OnForthGlobalLogicalSwitch']
+            #- ['VerifyLIFsOnHost']
+            # TODO: Ask if pinging router port is supported in product and
+            # in vdnet
+            #- ['RealizeLogicalports']
+            #- ['AllVMsPingRouterPort']
+            #- ['EvenVMsOnEvenGlobalLogicalSwitch']
+            # TODO: Check on DHCP feature in GDLR otherwise we will
+            # have to rely on static IPs
+            # Use this if GDLR DHCP is not supported
+            - ['ConfigureVM2Vnic1IP']
+            - ['ConfigureVM3Vnic1IP']
+            - ['ConfigureVM4Vnic1IP']
+            - ['ConfigureVM5Vnic1IP']
+            - ['AddRouteVM2']
+            - ['AddRouteVM3']
+            - ['AddRouteVM4']
+            - ['AddRouteVM5']
+            # Ping the vdr gateway before pinging vms
+            - ['PingLIFIpFromVM2']
+            - ['PingLIFIpFromVM3']
+            - ['PingLIFIpFromVM4']
+            - ['PingLIFIpFromVM5']
+            # Now try pinging across the GVDR and routing should fail
+            # because of GVDR isolation
+            - ['VM2PingingVM4AndVM5Negative']
+            - ['VM3PingingVM4AndVM5Negative']
+             #Now make sure VMs belonging to same GVDR ping each other
+            - ['AllVMsPingEachOtherOnMaster']
+            - ['AllVMsPingEachOtherOnSlave']
+        ExitSequence:
+            - ['AllVMsPowerOff']
+           #  This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['Delete_All_Universal_Edges']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigMasterSite']
+            - ['UnconfigureVxlanConfigSlaveSite']
+            - ['Delete_All_Controllers']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+
+        AllVMsPingEachOtherOnMaster: *ALL_VMS_PING_EACH_OTHER_ON_MASTER
+        AllVMsPingEachOtherOnSlave: &ALL_VMS_PING_EACH_OTHER_ON_SLAVE
+            Type: Traffic
+            ToolName: Ping
+            TestAdapter: 'vm.[4].vnic.[1]'
+            SupportAdapter: 'vm.[5].vnic.[1]'
+            NoofInbound: 1
+            NoofOutbound: 1
+            TestDuration: 60
+            maxtimeout: 128000
+
+        VM2PingingVM4AndVM5Negative: &VM2_PINGING_VM4_AND_VM5_NEGATIVE
+            Type: Traffic
+            ToolName: Ping
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[4-5].vnic.[1]'
+            NoofInbound: 1
+            NoofOutbound: 1
+            TestDuration: 60
+            ExpectedResult: fail
+            maxtimeout: 128000
+
+        VM3PingingVM4AndVM5Negative: &VM3_PINGING_VM4_AND_VM5_NEGATIVE
+            Type: Traffic
+            ToolName: Ping
+            TestAdapter: 'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[4-5].vnic.[1]'
+            NoofInbound: 1
+            NoofOutbound: 1
+            TestDuration: 60
+            ExpectedResult: fail
+            maxtimeout: 128000
+
+        CreateVerify4GlobalLogicalSwitches: *4_GLOBAL_LOGICAL_SWITCHES
+
+
+LIFOperations:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Summary: |
+        "Add/remove"
+        "Connect/disconnect"
+        "Enable/Disable"
+    Tags: 'TBD'
+    Version: 2
+    TestName: LIFOperations
+    TestbedSpec: *L3_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            # TODO: We can group this and launch controller deployment
+            # + vib installation in parallel
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['AllVMsPowerOn']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            ## Do the VIb instalation and configure vxlan on all sites
+            # since vibs are already configured, it will return as is
+            # only vxlan will be configured which was unconfigured in exitseq
+            # of previous testcase
+            - ['VIBInstallVxlanConfigMasterSite',
+               'VIBInstallVxlanConfigAllSlaveSite']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify4GlobalLogicalSwitches']
+            # Check L2 connecitivity first, same site and different site
+            # Even though its verified in L2 P0 tests, this is the first
+            # thing we check when L3 fails
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            # #Check L3 connecitivity same site and different site
+            - ['CreateVerifyGlobalDistributedLogicalRouter']
+            ##- ['VerifyGDLROnHost']
+            - ['CreateVerifyLIF1']
+            - ['CreateVerifyLIF2']
+            - ['CreateVerifyLIF3']
+            - ['CreateVerifyLIF4']
+            ##- ['VerifyLIFsOnHost']
+            - ['VM2OnFirstGlobalLogicalSwitch']
+            - ['VM3OnSecondGlobalLogicalSwitch']
+            - ['VM4OnThirdGlobalLogicalSwitch']
+            - ['VM5OnForthGlobalLogicalSwitch']
+            # TODO: Ask if pinging router port is supported in product and
+            # in vdnet
+            ##- ['RealizeLogicalports']
+            ##- ['AllVMsPingRouterPort']
+            ##- ['EvenVMsOnEvenGlobalLogicalSwitch']
+            # TODO: Check on DHCP feature in GDLR otherwise we will
+            # have to rely on static IPs
+            # Use this if GDLR DHCP is not supported
+            - ['ConfigureVM2Vnic1IP']
+            - ['ConfigureVM3Vnic1IP']
+            - ['ConfigureVM4Vnic1IP']
+            - ['ConfigureVM5Vnic1IP']
+            - ['AddRouteVM2']
+            - ['AddRouteVM3']
+            - ['AddRouteVM4']
+            - ['AddRouteVM5']
+            # Ping the vdr gateway before pinging vms
+            - ['PingLIFIpFromVM2']
+            - ['PingLIFIpFromVM3']
+            - ['PingLIFIpFromVM4']
+            - ['PingLIFIpFromVM5']
+            - ['AllVMsPingEachOther']
+            #Now start the LIF operations
+            - ['ShutdownLif1onGDLR']
+            - ['AllVMsPingEachOtherNegative']
+            - ['UnShutLif1onGDLR']
+            - ['AllVMsPingEachOther']
+            - ['DeleteAllLIFsAllGlobalDistributedLogicalRouters',
+               'AllVMsPingEachOtherNegative']
+            - ['CreateVerifyLIFs']
+            - ['AllVMsPingEachOther']
+        ExitSequence:
+            - ['AllVMsPowerOff']
+            # This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['Delete_All_Universal_Edges']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigMasterSite']
+            - ['UnconfigureVxlanConfigSlaveSite']
+            - ['Delete_All_Controllers']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+
+        CreateVerifyLIF1: &LIF1_ON_GDLR1
+            Type: VM
+            TestVM: 'vsm.[1].globaldistributedlogicalrouter.[1]'
+            global_lif:
+                '[1]':
+                    name: AutoGenerate
+                    type: internal
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                    addressgroup:
+                      - addresstype: primary
+                        ipv4address: 172.32.1.1
+                        netmask: 255.255.0.0
+                    connected: 1
+
+        CreateVerifyLIF2: &LIF2_ON_GDLR1
+            Type: VM
+            TestVM: 'vsm.[1].globaldistributedlogicalrouter.[1]'
+            global_lif:
+                '[2]':
+                    name: AutoGenerate
+                    type: internal
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+                    addressgroup:
+                      - addresstype: primary
+                        ipv4address: 172.33.1.1
+                        netmask: 255.255.0.0
+                    connected: 1
+
+        CreateVerifyLIF3: &LIF3_ON_GDLR1
+            Type: VM
+            TestVM: 'vsm.[1].globaldistributedlogicalrouter.[1]'
+            global_lif:
+                '[3]':
+                    name: AutoGenerate
+                    type: internal
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[3]'
+                    addressgroup:
+                      - addresstype: primary
+                        ipv4address: 172.34.1.1
+                        netmask: 255.255.0.0
+                    connected: 1
+
+        CreateVerifyLIF4: &LIF4_ON_GDLR1
+            Type: VM
+            TestVM: 'vsm.[1].globaldistributedlogicalrouter.[1]'
+            global_lif:
+                '[4]':
+                    name: AutoGenerate
+                    type: internal
+                    portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[4]'
+                    addressgroup:
+                      - addresstype: primary
+                        ipv4address: 172.35.1.1
+                        netmask: 255.255.0.0
+                    connected: 1
+
+        CreateVerify4GlobalLogicalSwitches: *4_GLOBAL_LOGICAL_SWITCHES
+        ShutdownLif1onGDLR: &SHUTDOWN_LIF1_ON_GDLR
+            Type: NetAdapter
+            TestAdapter: 'vsm.[1].globaldistributedlogicalrouter.[1].global_lif.[1]'
+            update:
+                name: AutoGenerate
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                addressgroup:
+                    - addresstype: primary
+                      ipv4address: 172.32.1.1
+                      netmask: 255.255.0.0
+                connected: 0
+
+        UnShutLif1onGDLR: &UNSHUT_LIF1_ON_GDLR
+            Type: NetAdapter
+            TestAdapter: 'vsm.[1].globaldistributedlogicalrouter.[1].global_lif.[1]'
+            update:
+                name: AutoGenerate
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.32.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+
+        AllVMsPingEachOtherNegative:
+            Type: Traffic
+            ToolName: Ping
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[3-5].vnic.[1]'
+            NoofInbound: 1
+            NoofOutbound: 1
+            TestDuration: 60
+            maxtimeout: 128000
+            ExpectedResult: fail
+
+AddSiteAfterGDLRConfig:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Summary: |
+        "To verify L3 traffic works fine across multiple sites for"
+        "late site registration"
+    Tags: 'TBD'
+    Version: 2
+    TestName: "AddSiteAfterGDLRConfig"
+    TestbedSpec: *L3_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            # TODO: We can group this and launch controller deployment
+            # + vib installation in parallel
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['AllVMsPowerOn']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            ### Do the VIb instalation and configure vxlan on all sites
+            ## since vibs are already configured, it will return as is
+            ## only vxlan will be configured which was unconfigured in exitseq
+            ## of previous testcase
+            - ['VIBInstallVxlanConfigMasterSite',
+               'VIBInstallVxlanConfigAllSlaveSite']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['CreateVerify4GlobalLogicalSwitches']
+            # Check L3 connecitivity same site and different site
+            # vxlancontroller deployment in necessary to deploy GVDR
+            # controller is deployed in testbedspec
+            - ['CreateVerifyGlobalDistributedLogicalRouter']
+            - ['CreateVerifyLIFs']
+            ## Do the site registration after creating  global entities
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['AddClustersToGTZSlaveSites']
+            ## Check L2 connecitivity first, same site and different site
+            ## Even though its verified in L2 P0 tests, this is the first
+            ## thing we check when L3 fails
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['VM2OnFirstGlobalLogicalSwitch']
+            - ['VM3OnSecondGlobalLogicalSwitch']
+            - ['VM4OnThirdGlobalLogicalSwitch']
+            - ['VM5OnForthGlobalLogicalSwitch']
+            #- ['VerifyLIFsOnHost']
+            ## TODO: Ask if pinging router port is supported in product and
+            ## in vdnet
+            #- ['RealizeLogicalports']
+            #- ['AllVMsPingRouterPort']
+            #- ['EvenVMsOnEvenGlobalLogicalSwitch']
+            ## TODO: Check on DHCP feature in GDLR otherwise we will
+            ## have to rely on static IPs
+            ## Use this if GDLR DHCP is not supported
+            - ['ConfigureVM2Vnic1IP']
+            - ['ConfigureVM3Vnic1IP']
+            - ['ConfigureVM4Vnic1IP']
+            - ['ConfigureVM5Vnic1IP']
+            - ['AddRouteVM2']
+            - ['AddRouteVM3']
+            - ['AddRouteVM4']
+            - ['AddRouteVM5']
+            ## Ping the vdr gateway before pinging vms
+            - ['PingLIFIpFromVM2']
+            - ['PingLIFIpFromVM3']
+            - ['PingLIFIpFromVM4']
+            - ['PingLIFIpFromVM5']
+            - ['AllVMsPingEachOther']
+
+        ExitSequence:
+            - ['AllVMsPowerOff']
+            # This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['Delete_All_Universal_Edges']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigMasterSite']
+            - ['UnconfigureVxlanConfigSlaveSite']
+            - ['Delete_All_Controllers']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+
+        CreateVerify4GlobalLogicalSwitches: *4_GLOBAL_LOGICAL_SWITCHES
+
+LIFIPOperations:
+    <<: *TDS_COMMON_FIELDS_P0_CASE
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'Datapath'
+    Summary: |
+        "Delete IP while traffic is flowing"
+        "Change IP while traffic is flowing"
+        "Change LIF IP to VM's subnet"
+    Tags: 'TBD'
+    Version: 2
+    TestName: LIFIPOperations
+    TestbedSpec: *L3_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            # TODO: We can group this and launch controller deployment
+            # + vib installation in parallel
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['AllVMsPowerOn']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            ### Do the VIb instalation and configure vxlan on all sites
+            ## since vibs are already configured, it will return as is
+            ## only vxlan will be configured which was unconfigured in exitseq
+            ## of previous testcase
+            - ['VIBInstallVxlanConfigMasterSite',
+               'VIBInstallVxlanConfigAllSlaveSite']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify4GlobalLogicalSwitches']
+            ## Check L2 connecitivity first, same site and different site
+            ## Even though its verified in L2 P0 tests, this is the first
+            ## thing we check when L3 fails
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            # Check L3 connecitivity same site and different site
+            - ['CreateVerifyGlobalDistributedLogicalRouter']
+            # - ['VerifyGDLROnHost']
+            - ['CreateVerifyLIF1']
+            - ['CreateVerifyLIF2']
+            - ['CreateVerifyLIF3']
+            - ['CreateVerifyLIF4']
+            - ['VM2OnFirstGlobalLogicalSwitch']
+            - ['VM3OnSecondGlobalLogicalSwitch']
+            - ['VM4OnThirdGlobalLogicalSwitch']
+            - ['VM5OnForthGlobalLogicalSwitch']
+            #- ['VerifyLIFsOnHost']
+            ## TODO: Ask if pinging router port is supported in product and
+            ## in vdnet
+            #- ['RealizeLogicalports']
+            #- ['AllVMsPingRouterPort']
+            #- ['EvenVMsOnEvenGlobalLogicalSwitch']
+            ## TODO: Check on DHCP feature in GDLR otherwise we will
+            ## have to rely on static IPs
+            ## Use this if GDLR DHCP is not supported
+            - ['ConfigureVM2Vnic1IP']
+            - ['ConfigureVM3Vnic1IP']
+            - ['ConfigureVM4Vnic1IP']
+            - ['ConfigureVM5Vnic1IP']
+            - ['AddRouteVM2']
+            - ['AddRouteVM3']
+            - ['AddRouteVM4']
+            - ['AddRouteVM5']
+            ## Ping the vdr gateway before pinging vms
+            - ['PingLIFIpFromVM2']
+            - ['PingLIFIpFromVM3']
+            - ['PingLIFIpFromVM4']
+            - ['PingLIFIpFromVM5']
+            - ['AllVMsPingEachOther']
+            ##Now start the LIF IP  operations
+            - ['DeleteLif1IPOnGDLR']
+            - ['AllVMsPingEachOtherNegative']
+            - ['ConfigureLif1IPonGDLR']
+            - ['AllVMsPingEachOther']
+            - ['ChangeGatewaySubnetLif1GVDR',
+               'AllVMsPingEachOther']
+            - ['ConfigureLif1IPonGDLR']
+            - ['ChangeLif1IPOnGDLR',
+               'AllVMsPingEachOtherNegative']
+            - ['ConfigureLif1IPonGDLR']
+            - ['AllVMsPingEachOther']
+        ExitSequence:
+            - ['AllVMsPowerOff']
+            # This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['Delete_All_Universal_Edges']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnconfigureVxlanConfigMasterSite']
+            - ['UnconfigureVxlanConfigSlaveSite']
+            - ['Delete_All_Controllers']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+
+        CreateVerifyLIF1: *LIF1_ON_GDLR1
+        CreateVerifyLIF2: *LIF2_ON_GDLR1
+        CreateVerifyLIF3: *LIF3_ON_GDLR1
+        CreateVerifyLIF4: *LIF4_ON_GDLR1
+
+        CreateVerify4GlobalLogicalSwitches: *4_GLOBAL_LOGICAL_SWITCHES
+        DeleteLif1IPOnGDLR: &DELETELIF1IPONGDLR
+            Type: NetAdapter
+            TestAdapter: 'vsm.[1].globaldistributedlogicalrouter.[1].global_lif.[1]'
+            update:
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                connected: 1
+
+
+        ConfigureLif1IPonGDLR: &CONFIGURELIF1IPONGDLR
+            Type: NetAdapter
+            TestAdapter: 'vsm.[1].globaldistributedlogicalrouter.[1].global_lif.[1]'
+            update:
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.32.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+
+        ChangeLif1IPOnGDLR: &CHANGELIF1IPGDLR
+            Type: NetAdapter
+            TestAdapter: 'vsm.[1].globaldistributedlogicalrouter.[1].global_lif.[1]'
+            update:
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.40.1.1
+                    netmask: 255.255.0.0
+                connected: 1
+
+        ChangeGatewaySubnetLif1GVDR: &CHANGEGATEWAYSUBNETLIF1GVDR
+            Type: NetAdapter
+            TestAdapter: 'vsm.[1].globaldistributedlogicalrouter.[1].global_lif.[1]'
+            update:
+                type: internal
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                addressgroup:
+                  - addresstype: primary
+                    ipv4address: 172.32.1.1
+                    netmask: 255.255.255.0
+                connected: 1
+
+        AllVMsPingEachOtherNegative:
+            Type: Traffic
+            ToolName: Ping
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[3-5].vnic.[1]'
+            NoofInbound: 1
+            NoofOutbound: 1
+            TestDuration: 60
+            maxtimeout: 128000
+            ExpectedResult: fail
+

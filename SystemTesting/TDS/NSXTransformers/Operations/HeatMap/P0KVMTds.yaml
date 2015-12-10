@@ -1,0 +1,823 @@
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+!include Topo_3Hosts.yaml
+
+HeatMapAllUp:
+    <<: *P0_KVM_Template
+    TestName: HeatMapAllUp
+    Summary: "Verify scnario where all status are up"
+    AutomationLevel: "Automated"
+    TestbedSpec: *TestbedSpec_3Hosts_3MP_3CCP--KVM
+    WORKLOADS:
+        <<: *Topo_3Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - PingFromVM1Vif1ToVM2Vif1
+            - - PingFromVM2Vif1ToVM3Vif1
+            - - PingFromVM1Vif1ToVM3Vif1
+            - - GetAggTZStatus
+            - - VerifyAggAllTNStatus
+            - - VerifyAggTN1Status
+            - - VerifyAggTN2Status
+            - - VerifyAggTN3Status
+            # Below not implemented in product yet.
+            #- - VerifyRemoteTNStatusForTN1
+            #- - VerifyRemoteTNStatusForTN2
+            #- - VerifyRemoteTNStatusForTN3
+            #- - VerifyTN1TunnelSummary
+            #- - VerifyTN2TunnelSummary
+            #- - VerifyTN3TunnelSummary
+        ExitSequence:
+            - - L2Cleanup--KVM
+
+        GetAggTZStatus:
+            Type: TransportZone
+            TestTransportZone: nsxmanager.[1].transportzone.[1]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                up_count: 3
+                down_count: 0
+                degraded_count: 0
+                unknown_count: 0
+
+        VerifyAggAllTNStatus:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            execution_type: api
+            get_aggregation_transportnode_status[?]contain_once:
+                result_count: 3
+                transport_nodes:
+                    - status: UP
+                      uuid: nsxmanager.[1].transportnode.[1]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: UP
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 2
+                          down_count: 0
+                          init_count: 0
+                        up_count: 2
+                        down_count: 0
+                    - status: UP
+                      uuid: nsxmanager.[1].transportnode.[2]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: UP
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 2
+                          down_count: 0
+                          init_count: 0
+                        up_count: 2
+                        down_count: 0
+                    - status: UP
+                      uuid: nsxmanager.[1].transportnode.[3]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: UP
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 2
+                          down_count: 0
+                          init_count: 0
+                        up_count: 2
+                        down_count: 0
+
+        VerifyAggTN1Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[1]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                <<: *AggTNStatus_AllUp
+                uuid: nsxmanager.[1].transportnode.[1]->node_id
+
+        VerifyAggTN2Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[2]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                <<: *AggTNStatus_AllUp
+                uuid: nsxmanager.[1].transportnode.[2]->node_id
+
+        VerifyAggTN3Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[3]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                <<: *AggTNStatus_AllUp
+                uuid: nsxmanager.[1].transportnode.[3]->node_id
+
+HeatMapTunnelDegraded:
+    <<: *P0_KVM_Template
+    TestName: HeatMapTunnelDegraded
+    Summary: "Test a scenario where only tunnel status is degraded"
+    AutomationLevel: "Automated"
+    TestbedSpec: *TestbedSpec_3Hosts_3MP_3CCP--KVM
+    WORKLOADS:
+        <<: *Topo_3Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - PingFromVM1Vif1ToVM2Vif1
+            - - PingFromVM2Vif1ToVM3Vif1
+            - - PingFromVM1Vif1ToVM3Vif1
+            # Down the vtep on KVM-1. Both tunnels on KVM-1 would show down,
+            # but only 1 tunnel corresponding to KVM-1 will be down on KVM2-3.
+            - - SetDeviceStatus-Down_KVM-1_VTEP-1
+            - - GetAggTZStatus
+            - - VerifyAggAllTNStatus
+            - - VerifyAggTN1Status
+            - - VerifyAggTN2Status
+            - - VerifyAggTN3Status
+            # Below not implemented in product yet.
+            #- - VerifyRemoteTNStatusForTN1
+            #- - VerifyRemoteTNStatusForTN2
+            #- - VerifyRemoteTNStatusForTN3
+            #- - VerifyTN1TunnelSummary
+            #- - VerifyTN2TunnelSummary
+            #- - VerifyTN3TunnelSummary
+        ExitSequence:
+            - - SetDeviceStatus-Up_KVM-1_VTEP-1
+            - - L2Cleanup--KVM
+
+        GetAggTZStatus:
+            Type: TransportZone
+            TestTransportZone: nsxmanager.[1].transportzone.[1]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                up_count: 0
+                down_count: 1
+                degraded_count: 2
+                unknown_count: 0
+
+        VerifyAggAllTNStatus:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            execution_type: api
+            get_aggregation_transportnode_status[?]contain_once:
+                result_count: 3
+                transport_nodes:
+                    - status: DOWN
+                      uuid: nsxmanager.[1].transportnode.[1]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: DOWN
+                        up_count: 0
+                        down_count: 2
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 0
+                          down_count: 2
+                          init_count: 0
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+                    - status: DEGRADED
+                      uuid: nsxmanager.[1].transportnode.[2]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: DEGRADED
+                        up_count: 1
+                        down_count: 1
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 1
+                          down_count: 1
+                          init_count: 0
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+                    - status: DEGRADED
+                      uuid: nsxmanager.[1].transportnode.[3]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: DEGRADED
+                        up_count: 1
+                        down_count: 1
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 1
+                          down_count: 1
+                          init_count: 0
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+
+        VerifyAggTN1Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[1]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                uuid: nsxmanager.[1].transportnode.[1]->node_id
+                status: DOWN
+                control_connection_status:
+                  status: UP
+                  # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                  #up_count: 1
+                  down_count: 0
+                pnic_status:
+                  status: UP
+                  up_count: 4
+                  down_count: 0
+                mgmt_connection_status: UP
+                tunnel_status:
+                  status: DOWN
+                  bfd_diagnostic:
+                    concatenated_path_down_count: 0
+                    administratively_down_count: 0
+                    no_diagnostic_count: 1
+                    path_down_count: 0
+                    reverse_concatenated_path_down_count: 0
+                    control_detection_time_expired_count: 0
+                    echo_function_failed_count: 0
+                    forwarding_plane_reset_count: 0
+                  bfd_status:
+                    admin_down_count: 0
+                    up_count: 0
+                    down_count: 2
+                    init_count: 0
+                  up_count: 0
+                  down_count: 2
+
+        VerifyAggTN2Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[2]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                uuid: nsxmanager.[1].transportnode.[2]->node_id
+                status: DEGRADED
+                control_connection_status:
+                  status: UP
+                  # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                  #up_count: 1
+                  down_count: 0
+                pnic_status:
+                  status: UP
+                  up_count: 4
+                  down_count: 0
+                mgmt_connection_status: UP
+                tunnel_status:
+                  status: DEGRADED
+                  bfd_diagnostic:
+                    concatenated_path_down_count: 0
+                    administratively_down_count: 0
+                    no_diagnostic_count: 1
+                    path_down_count: 0
+                    reverse_concatenated_path_down_count: 0
+                    control_detection_time_expired_count: 0
+                    echo_function_failed_count: 0
+                    forwarding_plane_reset_count: 0
+                  bfd_status:
+                    admin_down_count: 0
+                    up_count: 1
+                    down_count: 1
+                    init_count: 0
+                  up_count: 1
+                  down_count: 1
+
+        VerifyAggTN3Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[3]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                uuid: nsxmanager.[1].transportnode.[3]->node_id
+                status: DEGRADED
+                control_connection_status:
+                  status: UP
+                  # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                  #up_count: 1
+                  down_count: 0
+                pnic_status:
+                  status: UP
+                  up_count: 4
+                  down_count: 0
+                mgmt_connection_status: UP
+                tunnel_status:
+                  status: DEGRADED
+                  bfd_diagnostic:
+                    concatenated_path_down_count: 0
+                    administratively_down_count: 0
+                    no_diagnostic_count: 1
+                    path_down_count: 0
+                    reverse_concatenated_path_down_count: 0
+                    control_detection_time_expired_count: 0
+                    echo_function_failed_count: 0
+                    forwarding_plane_reset_count: 0
+                  bfd_status:
+                    admin_down_count: 0
+                    up_count: 1
+                    down_count: 1
+                    init_count: 0
+                  up_count: 1
+                  down_count: 1
+
+HeatMapTunnelDown:
+    <<: *P0_KVM_Template
+    TestName: HeatMapTunnelDown
+    Summary: "Test a scenario where only tunnel status is down"
+    AutomationLevel: "Automated"
+    WORKLOADS:
+        <<: *Topo_3Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - PingFromVM1Vif1ToVM2Vif1
+            - - PingFromVM2Vif1ToVM3Vif1
+            - - PingFromVM1Vif1ToVM3Vif1
+            - - SetDeviceStatus-Down_KVM-1_VTEP-1
+              - SetDeviceStatus-Down_KVM-2_VTEP-1
+              - SetDeviceStatus-Down_KVM-3_VTEP-1
+            - - GetAggTZStatus
+            - - VerifyAggAllTNStatus
+            - - VerifyAggTN1Status
+            - - VerifyAggTN2Status
+            - - VerifyAggTN3Status
+            # Below not implemented in product yet.
+            #- - VerifyRemoteTNStatusForTN1
+            #- - VerifyRemoteTNStatusForTN2
+            #- - VerifyRemoteTNStatusForTN3
+            #- - VerifyTN1TunnelSummary
+            #- - VerifyTN2TunnelSummary
+            #- - VerifyTN3TunnelSummary
+        ExitSequence:
+            - - SetDeviceStatus-Up_KVM-1_VTEP-1
+              - SetDeviceStatus-Up_KVM-2_VTEP-1
+              - SetDeviceStatus-Up_KVM-3_VTEP-1
+            - - L2Cleanup--KVM
+
+        GetAggTZStatus:
+            Type: TransportZone
+            TestTransportZone: nsxmanager.[1].transportzone.[1]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                up_count: 0
+                down_count: 3
+                degraded_count: 0
+                unknown_count: 0
+
+        VerifyAggAllTNStatus:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            execution_type: api
+            get_aggregation_transportnode_status[?]contain_once:
+                result_count: 3
+                transport_nodes:
+                    - status: DOWN
+                      uuid: nsxmanager.[1].transportnode.[1]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: DOWN
+                        up_count: 0
+                        down_count: 2
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 0
+                          down_count: 2
+                          init_count: 0
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+                    - status: DOWN
+                      uuid: nsxmanager.[1].transportnode.[2]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: DOWN
+                        up_count: 0
+                        down_count: 2
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 0
+                          down_count: 2
+                          init_count: 0
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+                    - status: DOWN
+                      uuid: nsxmanager.[1].transportnode.[2]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: DOWN
+                        up_count: 0
+                        down_count: 2
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 0
+                          down_count: 2
+                          init_count: 0
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+
+        VerifyAggTN1Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[1]
+            execution_type: api
+            get_aggregation_status[?]contain_once: &AggTNStatusTunnelDown
+                uuid: nsxmanager.[1].transportnode.[1]->node_id
+                status: DOWN
+                control_connection_status:
+                  status: UP
+                  # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                  #up_count: 1
+                  down_count: 0
+                pnic_status:
+                  status: UP
+                  up_count: 4
+                  down_count: 0
+                mgmt_connection_status: UP
+                tunnel_status:
+                  status: DOWN
+                  up_count: 0
+                  down_count: 2
+                  bfd_status:
+                    admin_down_count: 0
+                    up_count: 0
+                    down_count: 2
+                    init_count: 0
+                  bfd_diagnostic:
+                    concatenated_path_down_count: 0
+                    administratively_down_count: 0
+                    no_diagnostic_count: 1
+                    path_down_count: 0
+                    reverse_concatenated_path_down_count: 0
+                    control_detection_time_expired_count: 0
+                    echo_function_failed_count: 0
+                    forwarding_plane_reset_count: 0
+
+        VerifyAggTN2Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[2]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                <<: *AggTNStatusTunnelDown
+                uuid: nsxmanager.[1].transportnode.[2]->node_id
+
+        VerifyAggTN3Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[3]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                <<: *AggTNStatusTunnelDown
+                uuid: nsxmanager.[1].transportnode.[3]->node_id
+
+HeatMapControlConnDegraded:
+    <<: *P0_KVM_Template
+    TestName: HeatMapControlConnDegraded
+    Summary: "Test a scenario where control connection is degraded"
+    AutomationLevel: "Manual"
+
+HeatMapControlConnDown:
+    <<: *P0_KVM_Template
+    TestName: HeatMapControlConnDown
+    Summary: "Test a scenario where control connection is down"
+    AutomationLevel: "Manual"
+
+HeatMapPnicDegraded:
+    <<: *P0_KVM_Template
+    TestName: HeatMapPnicDegraded
+    Summary: "Test a scenario where only Pnic status is degraded"
+    AutomationLevel: "Automated"
+    WORKLOADS:
+        <<: *Topo_3Hosts
+        Sequence:
+            - - L2Setup--KVM
+            - - PingFromVM1Vif1ToVM2Vif1
+            - - PingFromVM2Vif1ToVM3Vif1
+            - - PingFromVM1Vif1ToVM3Vif1
+            - - SetDeviceStatus-Down_KVM-1_PIF-2
+            - - GetAggTZStatus
+            - - VerifyAggAllTNStatus
+            - - VerifyAggTN1Status
+            - - VerifyAggTN2Status
+            - - VerifyAggTN3Status
+            # Below not implemented in product yet.
+            #- - VerifyRemoteTNStatusForTN1
+            #- - VerifyRemoteTNStatusForTN2
+            #- - VerifyRemoteTNStatusForTN3
+            #- - VerifyTN1TunnelSummary
+            #- - VerifyTN2TunnelSummary
+            #- - VerifyTN3TunnelSummary
+        ExitSequence:
+            - - SetDeviceStatus-Up_KVM-1_PIF-2
+            - - L2Cleanup--KVM
+
+        GetAggTZStatus:
+            Type: TransportZone
+            TestTransportZone: nsxmanager.[1].transportzone.[1]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                up_count: 2
+                down_count: 0
+                degraded_count: 1
+                unknown_count: 0
+
+        VerifyAggAllTNStatus:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            execution_type: api
+            get_aggregation_transportnode_status[?]contain_once:
+                result_count: 3
+                transport_nodes:
+                    - status: DEGRADED
+                      uuid: nsxmanager.[1].transportnode.[1]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: DEGRADED
+                        up_count: 3
+                        down_count: 1
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: UP
+                        up_count: 2
+                        down_count: 0
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 2
+                          down_count: 0
+                          init_count: 0
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+                    - status: UP
+                      uuid: nsxmanager.[1].transportnode.[2]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: UP
+                        up_count: 2
+                        down_count: 0
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 2
+                          down_count: 0
+                          init_count: 0
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+                    - status: UP
+                      uuid: nsxmanager.[1].transportnode.[2]->node_id
+                      control_connection_status:
+                        status: UP
+                        # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                        #up_count: 1
+                        down_count: 0
+                      pnic_status:
+                        status: UP
+                        up_count: 4
+                        down_count: 0
+                      mgmt_connection_status: UP
+                      tunnel_status:
+                        status: UP
+                        up_count: 2
+                        down_count: 0
+                        bfd_status:
+                          admin_down_count: 0
+                          up_count: 2
+                          down_count: 0
+                          init_count: 0
+                        bfd_diagnostic:
+                          concatenated_path_down_count: 0
+                          administratively_down_count: 0
+                          no_diagnostic_count: 1
+                          path_down_count: 0
+                          reverse_concatenated_path_down_count: 0
+                          control_detection_time_expired_count: 0
+                          echo_function_failed_count: 0
+                          forwarding_plane_reset_count: 0
+
+        VerifyAggTN1Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[1]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                uuid: nsxmanager.[1].transportnode.[1]->node_id
+                status: DEGRADED
+                control_connection_status:
+                  status: UP
+                  # XXX(gangarm): Control-conn up-count is not always 1 (PR-1474612).
+                  #up_count: 1
+                  down_count: 0
+                pnic_status:
+                  status: UP
+                  up_count: 3
+                  down_count: 1
+                mgmt_connection_status: UP
+                tunnel_status:
+                  status: UP
+                  up_count: 2
+                  down_count: 0
+                  bfd_status:
+                    admin_down_count: 0
+                    up_count: 2
+                    down_count: 0
+                    init_count: 0
+                  bfd_diagnostic:
+                    concatenated_path_down_count: 0
+                    administratively_down_count: 0
+                    no_diagnostic_count: 1
+                    path_down_count: 0
+                    reverse_concatenated_path_down_count: 0
+                    control_detection_time_expired_count: 0
+                    echo_function_failed_count: 0
+                    forwarding_plane_reset_count: 0
+
+        VerifyAggTN2Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[2]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                <<: *AggTNStatus_AllUp
+                uuid: nsxmanager.[1].transportnode.[2]->node_id
+
+        VerifyAggTN3Status:
+            Type: TransportNode
+            TestTransportNode: nsxmanager.[1].transportnode.[3]
+            execution_type: api
+            get_aggregation_status[?]contain_once:
+                <<: *AggTNStatus_AllUp
+                uuid: nsxmanager.[1].transportnode.[3]->node_id
+
+HeatMapMgmtConnDown:
+    <<: *P0_KVM_Template
+    TestName: HeatMapMgmtConnDown
+    Summary: "Test a scenario where management connection is down"
+    AutomationLevel: "Manual"
+
+HeatMapBondDegraded:
+    <<: *P0_KVM_Template
+    TestName: HeatMapBondDegraded
+    Summary: "Test a scenario where only bond status is degraded"
+    AutomationLevel: "Manual"
+
+HeatMapNodeDown:
+    <<: *P0_KVM_Template
+    TestName: HeatMapNodeDown
+    Summary: "Test a scenario where single/multiple/all node failures are handled as expected."
+    AutomationLevel: "Manual"

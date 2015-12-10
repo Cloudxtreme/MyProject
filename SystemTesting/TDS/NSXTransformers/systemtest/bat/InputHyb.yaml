@@ -1,0 +1,117 @@
+!include Builds10c8.yaml
+#
+'testbed':
+
+   'network':
+       '[1]':
+            name: 'network-hyb'
+
+   'esx':
+      '[1-6]':
+         <<: *esxbuild
+         installtype: 'linkedclone'
+         vmnic:
+            '[1]':
+               network: network.[1]
+               'driver': 'e1000e'
+         configure_package:
+            <<: *esxpkgs
+
+   'kvm':
+        '[1-4]':
+            <<: *kvmbuild
+            username: root
+            password: ca$hc0w
+            pif:
+                '[1]':
+                    interface: eth1
+                    network: network.[1]
+            configure_package:
+                <<: *kvmpkgs
+                execution_type: cmd
+            framework_setup:
+                - disablefirewall
+                - createanchor
+                - copysshkey
+
+#   'nsxmanager':
+#      '[1]':
+#          <<: *nsxmgrbuild
+#          'username' : 'admin'
+#          'password' : 'default'
+#
+#   'nsxcontroller':
+#      '[1]':
+#          <<: *nsxctrlbuild
+#          'username' : 'admin'
+#          'password' : 'default'
+#          'cmd_username': 'root'
+#          'cmd_password': 'vmware'
+
+# ESX VMs
+   'vm':
+        #'[2,4,5,6,10,11,12,13,16]':
+        '[2,4]':
+            template: 'rhel53-srv-32'
+## KVM VMs
+#   'vm':
+#       '[1,3,7,8,9,14,15]':
+#            template: template_kvm_debian
+#            installtype: fullclone
+
+#   'nsxedge':
+#      '[1-2]':
+#          <<: *edgebuild
+#          username: 'admin'
+#          password: 'C@shc0w12345'
+#          #Supported values are: compact/large/xlarge
+#          edgetype: 'compact'
+#          # esx host ip
+#          esx: 'esx.[11]'  # XXX(dbadiani): Adjust this to use the right
+#                          # ESX as per your topology.
+#          management_network: 'VM Network'
+#          internal_network: 'VM Network'
+#          uplink_network: 'VM Network'
+#          installtype: 'nested'
+
+
+# other vdnet options
+'options':
+    # TODO AND OPTIONS -
+    # 1) experiment with "cachetestbed : 0 | 1" for tescase execution performance by
+    #    not redeploying for multiple testcase series
+    #    --testbed save and --reuse typically for 1 or 2 testcases
+    #    cachetestbed : 0
+    #
+    # 2) if workloads is borderline and timing out, increase local timeout then this
+    #    global time
+    #    'maxWorkloadTimeout': 36000  # global for all workloads
+    #
+    # 3) NSF mount for toolchain has had delays.  Use local toolchain when this happens.
+    #    export USE_LOCAL_TOOLCHAIN=1
+
+    'noTools': 1
+    'dontupgstafsdk': 0
+
+    'snapshotDir': '/tmp-vdnet/vdnet-hyb'
+    'collectLogs' : 0
+    <<: *testrunid-hyb
+    # 'testrunid': 'rtqa10c8-hyb'
+    <<: *nsxsdkbuild
+    'racetrack': 'avalanche-bat@racetrack-dev.eng.vmware.com'
+
+    'src': 'pa-dbc1102:/dbc/pa-dbc1102/jworsnup/nsx-qe/vdnet/automation'
+
+    # 9/27/2014 7:58:13 AM  New from Mo
+    'podspec':  /mts/home4/netfvt/wdc-ucs-guest
+    'vmrepos' :  10.144.136.251:/wdc-protected-02
+    'sharedstorage': 10.144.136.251:/wdc-fvt-1/wdc-vdnetSharedStorage/
+    'mirrors':
+        toolchain: '10.144.136.251:/wdc-fvt-1/toolchain/'
+
+#    'podspec': '/mts/home4/netfvt/prmb-nsbu-private'
+#    'vmrepos': '10.115.160.201:/fvt-protected-02'
+#    'sharedstorage':  '10.115.160.201:/fvt-1/vdnetSharedStorage/'
+
+# //++/++//////////////////////////////
+# last line is empty no spaces, nada, so yaml files join happens correctly

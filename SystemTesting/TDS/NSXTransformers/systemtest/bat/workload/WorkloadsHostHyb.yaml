@@ -1,0 +1,211 @@
+WorkloadsHostHyb: &WorkloadsHostHyb
+
+#---------------------------------------
+# CREATE NSX MANAGEMENT
+#---------------------------------------
+
+### For future, temporarily moved to TestbedSpec.yaml
+#
+#    RegisterController: &REGISTER_CONTROLLER
+#        Type: Controller
+#        TestController: 'nsxcontroller.[1]'
+#        set_nsx_registration:
+#            manager_ip: 'nsxmanager.[1]'
+#            manager_thumbprint: 'nsxmanager.[1]'
+#            execution_type: 'cli'
+
+### For future, temporarily moved to TestbedSpec.yaml
+#
+#    RegisterHostEsx: &REGISTER_HOST_ESX
+#        Type: NSX
+#        TestNSX: 'nsxmanager.[1]'
+#        fabrichost:
+#            '[1-7]':
+#                hypervisor_info:
+#                    ip_addresses: 'esx.[x=fabrichost_index]'
+#                    external_id: 'esx.[x=fabrichost_index]->id'
+#                    os_type: 'ESXI'
+#                host_msg_client_info:
+#                    account_name: 'esx.[x=fabrichost_index]'
+#                    # TODO(gjayavelu): hard-coded value for RTQA#1
+#                    # find what should be the right value
+#                    shared_secret: 'cvn-1-2-3'
+#                    certificate: 'iaWCS2wJhrhXGz0e7iFk7zFO9fM='
+
+### For future, temporarily moved to TestbedSpec.yaml
+#
+# 10/24/2014 9:28:40 AM rtqa07c3: moved to TestbedSpecEsx
+#    SetManagerOnHostEsx: &SET_MANAGER_ON_HOST_ESX
+#        Type: Host
+#        TestHost: 'esx.[1-7]'
+#        set_nsx_manager:
+#            manager_ip: 'nsxmanager.[1]'
+#            manager_thumbprint: 'nsxmanager.[1]'
+#            execution_type: 'cli'
+
+### For future, temporarily moved to TestbedSpec.yaml
+#
+#    DiscoverFabricHostsEsx: &DISCOVER_FABRIC_HOSTS_ESX
+#        Type: NSX
+#        TestNSX: 'nsxmanager.[1]'
+#        fabrichost:
+#            '[1-7]':
+#                discover: 'true'
+#                hypervisor_info:
+#                    ip_addresses: 'esx.[x=fabrichost_index]'
+#---------------------------------------
+# REGISTER HOST NODES
+#---------------------------------------
+
+    RegisterHostEsx: &REGISTER_HOST_ESX
+        Type: Host
+        TestHost: 'esx.[1-6]'  # last host is dedicated for Edge
+        set_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    RegisterHostKvm: &REGISTER_HOST_KVM
+        Type: Host
+        TestHost: 'kvm.[1-4]'  # last host is dedicated for Edge
+        set_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+#---------------------------------------
+# DISCOVER HOST NODES
+#---------------------------------------
+    DiscoverHostEsx: &DISCOVER_HOST_ESX
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        hostnode:
+            '[1-6]':  # last host is dedicated for Edge
+                discover: 'true'
+                ip_addresses: 'esx.[x=hostnode_index]'
+
+    DiscoverHostKvm: &DISCOVER_HOST_KVM
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        hostnode:
+            '[1-4]':  # last host is dedicated for Edge
+                discover: 'true'
+                ip_addresses: 'kvm.[x=hostnode_index]'
+
+#---------------------------------------
+# CREATE TRANSPORT ZONE
+#---------------------------------------
+
+    CreateTransportZone: &CREATE_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[1]':
+                name: autogenerate
+                transport_zone_type: 'OVERLAY' # or VLAN, both case-sensitive
+                switch_name: 'nsxvswitch' # This is new in RTQA7
+
+#---------------------------------------
+# CREATE TRANSPORT NODES
+#---------------------------------------
+
+    CreateTransportNodeEsx: &CREATE_TRANSPORT_NODE_ESX
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportnode:
+            '[1-6]':  # last host is dedicated for Edge
+                node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                host_switches:
+                  - switch_name: 'nsxvswitch'
+                    host_switch_profile_ids:
+                       - key: 'UplinkHostSwitchProfile'
+                         value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                    uplinks:
+                      - device_name: 'vmnic1'
+                        adapter_name: 'uplink1'
+                transport_zone_endpoint:
+                  - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+    CreateTransportNodeKvm: &CREATE_TRANSPORT_NODE_KVM
+
+### For future.  Bug in formula expansion to be fixed in rtqa08
+#
+#            10/10/2014 4:11:30 PM  chat with Salman
+#            bug in VDnet where formula(x=transportnode_index) cannot be used in "vteps:  -device_name: kvm.[1].vtep.[1]"
+#            need to expand this array.  Seems ok with CreateTransportNodeEsx
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            transportnode:
+                '[1-4]':  # last host is dedicated for Edge
+                    node_id: nsxmanager.[1].hostnode.[x=transportnode_index]
+                    host_switches:
+                      - host_switch_profile_ids:
+                          - key: 'UplinkHostSwitchProfile'
+                            value: nsxmanager.[1].uplinkprofile.[1]->id
+                        switch_name: nsxvswitch
+                        uplinks:
+                          - adapter_name: "uplink1"
+                            device_name: "eth1" #  11/21/2014 3:55:47 PM kvm.[x].pif.[1]->interface
+                    transport_zone_endpoint:
+                      - transport_zone_id: nsxmanager.[1].transportzone.[1]
+#---------------------------------------
+# DISCOVER VTEP KVM
+#---------------------------------------
+
+    DiscoverVtepEsx: &DISCOVER_VTEP_ESX
+        Type: Host
+        TestHost: esx.[1-6]
+        vtep:
+            '[1]':
+                discover: 'true'
+                # Name of the VTEP is of form nsx-vtepX.Y where X is the
+                # index of the VTEP interface and Y is the index of the
+                # transport bridge on the host.
+                name: nsx-vtep0.0
+
+    DiscoverVtepKvm: &DISCOVER_VTEP_KVM
+        Type: Host
+        TestHost: kvm.[1-4]
+        vtep:
+            '[1]':
+                discover: 'true'
+                # Name of the VTEP is of form nsx-vtepX.Y where X is the
+                # index of the VTEP interface and Y is the index of the
+                # transport bridge on the host.
+                name: nsx-vtep0.0
+
+#---------------------------------------
+# CONFIGURE VTEP IP
+#---------------------------------------
+
+    ConfigureVtepIpEsx: &CONFIGURE_VTEP_IP_ESX
+        Type: NetAdapter
+        TestAdapter: esx.[1-6].vtep.[1]
+        IPv4: auto
+
+    ConfigureVtepIpKvm: &CONFIGURE_VTEP_IP_KVM
+        Type: NetAdapter
+        TestAdapter: kvm.[1-4].vtep.[1]
+        IPv4: auto
+
+#---------------------------------------
+# SET CONTROLLER ON HOST
+#---------------------------------------
+
+    SetControllerOnHostEsx: &SET_CONTROLLER_ON_HOST_ESX
+        Type: Host
+        TestHost: 'esx.[1-6]'  # last host is dedicated for Edge
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[x=esx_index]'
+            execution_type: 'cli'
+
+    RestartAgentsOnHostsKvmWORKAROUND:
+        Type: Host
+        TestHost: 'kvm.[1-10]'
+        restart_service:
+            service_name: nsx-agent
+            execution_type: cmd
+
+# //++/++//////////////////////////////
+# last line is empty no spaces, nada, so yaml files join happens correctly

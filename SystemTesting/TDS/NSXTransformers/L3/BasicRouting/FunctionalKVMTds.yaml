@@ -1,0 +1,587 @@
+{% include 'TDS/NSXTransformers/L3/BasicRouting/TestbedSpec.yaml' %}
+{% include 'TDS/NSXTransformers/WORKAROUNDS.yaml' %}
+{% include 'TDS/NSXTransformers/L3/BasicRouting/TopoL3-2Hosts-1Edge.yaml' %}
+{% include 'TDS/NSXTransformers/L3/BasicRouting/TopoL3-2Hosts-NoEdge.yaml' %}
+{% include 'TDS/NSXTransformers/L3/BasicRouting/CommonWorkloads.yaml' %}
+{% include 'TDS/NSXTransformers/Common/Topo_Clusters.yaml' %}
+
+tds_template: &tds_template
+    AutomationLevel: Automated
+    Category: L3
+    Component: BasicRouting
+    Duration: 3600
+    ExpectedResult: PASS
+    FullyAutomatable: Y
+    PartnerFacing: N
+    PMT: null
+    Procedure: null
+    Product: NSXTransformers
+    QCPath: KVM
+    Status: Execution Ready
+    TCMSId: null
+    TestcaseLevel: Product
+    TestcaseType: Functional
+    Version: 2
+
+p0_template: &p0_template
+    <<: *tds_template
+    Priority: P0
+
+p1_template: &p1_template
+    <<: *tds_template
+    Priority: P1
+
+BasicConnectivity:
+    <<: *p0_template
+    Developer: miriyalak
+    Summary: |
+        - Connect two lswitches using an lrouter
+        - Verify connectivity across lrouter between lswitches works
+    Tags: cat,nsxtransformers,l3,kvm,noedge
+    TestbedSpec: *L3Topology_2KVM_No_Edge
+    TestName: BasicConnectivity
+    WORKLOADS:
+        <<: *TopoL3_2Hosts_NoEdge
+        <<: *Topo_1MP_3CCP
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+
+            - - PingVM1ToVM2--KVM
+              - PingVM2ToVM1--KVM
+        ExitSequence:
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+BasicARP:
+    <<: *p0_template
+    Developer: miriyalak
+    Summary: |
+        - Verify ARP resolution in a single-tier topology
+        - Run arping instead of ping so arp resolution occurs for every ping
+    Tags: cat,nsxtransformers,l3,kvm,noedge
+    TestbedSpec: *L3Topology_2KVM_No_Edge
+    TestName: BasicARP
+    WORKLOADS:
+        <<: *TopoL3_2Hosts_NoEdge
+        <<: *Topo_1MP_3CCP
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+
+            - - ArpingVM1ToRouter--KVM
+            - - ArpingVM2ToRouter--KVM
+        ExitSequence:
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+BasicConnectedRoutes:
+    <<: *p0_template
+    Developer: miriyalak
+    Summary: |
+        - Verify that there are connected routes in the RIB of the LR for
+          prefixes configured on the logical router ports.
+        - Verify that connected routes have metric=0
+        - Verify that the list of connected routes in the LR RIB get updated
+          when
+            a) new LS is added and connected to LR
+            b) an existing LS is removed from LR
+    Tags: cat,nsxtransformers,l3,kvm,noedge
+    TestbedSpec: *L3Topology_2KVM_No_Edge
+    TestName: BasicConnectedRoutes
+    WORKLOADS:
+        <<: *TopoL3_2Hosts_NoEdge
+        <<: *Topo_1MP_3CCP
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+
+            - - VerifyHost1LRHas3ConnectedRoutes--KVM
+            - - DeleteLR1P2
+            - - VerifyHost1LRHas2ConnectedRoutes--KVM
+            - - CreateLR1P2
+            - - VerifyHost1LRHas3ConnectedRoutes--KVM
+        ExitSequence:
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+BasicDistributedSrDrCreation:
+    <<: *p1_template
+    Developer: miriyalak
+    Summary: |
+        - SR-DR creation in distributed single-tier model
+        - Verify that SR is always instantiated for a PLR in all edge nodes in its
+          cluster
+        - Verify that DR is configured for a PLR (all hypervisors, all edge nodes)
+        - DR/SR Ports Check PLR LIFs can be seen on hypervisor & verify backplane
+          ports are created
+        - Verify backplane switch exists inside the PLR (between DR/SR)
+    Tags: cat,nsxtransformers,l3,kvm,edge
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: BasicDistributedSrDrCreation
+    WORKLOADS:
+        <<: *TopoL3_2Hosts_1Edge
+        <<: *Topo_1MP_3CCP
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+            - - L3SRDRVerifications--KVM
+
+        ExitSequence:
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+BasicDistributedTrafficTest:
+    <<: *p0_template
+    Developer: swalls
+    Summary: |
+        - East-west & north-south traffic in distributed single-tier topo
+        - test unicast traffic
+        - test multiple unique streams (TCP/UDP)
+        - check vMAC is used as SA in forwarded packets
+        - Only north/south traffic should traverse the edge. All other traffic should
+          be one-hop through the DR
+    Tags: cat,nsxtransformers,l3,kvm,noedge
+    TestbedSpec: *L3Topology_2KVM_No_Edge
+    TestName: BasicDistributedTrafficTest
+    WORKLOADS:
+        <<: *TopoL3_2Hosts_NoEdge
+        <<: *Topo_1MP_3CCP
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+
+            - - NetPerfTCPFromVM1Vif1ToVM2Vif1
+            - - NetperfUDPTrafficVM1VM2--KVM
+        ExitSequence:
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+BasicICMPMessages:
+    <<: *p0_template
+    Developer: swalls
+    Summary: |
+        - ICMP messages
+        - Verify that an ICMP Time Exceeded packet is generated when a packet traverses
+            the LR w/ TTL=0
+        - Verify that an ICMP Destination Unreachable packet is generated when a packet
+            traverses the LR w/ an IP the router thinks to be directly connected, but
+            for which an ARP lookup fails (do this for east-west traffic and north-south
+            traffic
+        - Verify that an ICMP Network Unreachable packet is generated when a packet traverses
+            the LR with a destination IP for which a routing table lookup fails
+        - when the packet comes from the uplinks
+        - when the packet comes from an lswitch
+        - when the default route is gone and BGP is not enabled
+    Tags: cat,nsxtransformers,l3,kvm,noedge
+    TestbedSpec: *L3Topology_2KVM_No_Edge
+    TestName: BasicICMPMessages
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_NoEdge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+
+            - - SendTrafficVM1toVM2VerifyTimeExceededReceived--KVM
+            - - AddRouteVM2ToUnreachableNetwork--KVM
+            - - SendTrafficVM2toUnreachableNetworkVerifyNetworkUnknown--KVM
+            - - DeleteRouteVM2ToUnreachableNetwork--KVM
+            - - SendTrafficVM1toNonexistentHostVerifyHostUnknown--KVM
+        ExitSequence:
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+BasicIPAddressAssignment:
+    <<: *p0_template
+    Developer: sqian
+    Status: Draft
+    Summary: |
+        - IP address assignment
+        - Verify that a set of IP addresses can be assigned for each of the PLR interfaces
+          IP may be set for uplink port
+          IP may be set for downlink port
+          IP can not be set for linkport (PR 1358331), IP of linkport depends
+             on external_transit_networks,
+        - Verify that IP address can be optionally specified for the backplane switch
+          between SR-DR in a PLR
+          IP between SR-DR is decided by internal_transit_network
+    Tags: cat,nsxtransformers,l3,kvm,edge
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: BasicIPAddressAssignment
+
+    WORKLOADS:
+        <<: *TopoL3_2Hosts_1Edge
+        <<: *Topo_1MP_3CCP
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM--L3InternalNetworkConfiguration
+            - - CreateLinkPortsPLR1
+            # verify subnet of southboud ip is '111.168.2.0'
+            # if no matched ip is found, below workload would
+            # report failure.
+            - - ReadEdgeVMSouthIpBfdIp
+        ExitSequence:
+            - - DeleteLinkPortsPLR1
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+        CreateLinkPortsPLR1:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            logicalrouterlinkport:
+                '[201]':
+                    logical_router_id: 'nsxmanager.[1].logicalrouter.[1]'
+                    name: 'plr1_link'
+                    summary: 'LinkPort for PLR 01'
+                    resource_type: "LogicalRouterLinkPort"
+
+        DeleteLinkPortsPLR1:
+            Type : NSX
+            TestNSX : 'nsxmanager.[1]'
+            deletelogicalrouterlinkport: 'nsxmanager.[1].logicalrouterlinkport.[201]'
+
+        CreatePLR-1_EDGECLUSTER-1_InternalNetworkConfiguration:
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            logicalrouter:
+                '[1]':
+                    cluster_id: nsxmanager.[1].edgecluster.[1]
+                    name: PLR-1
+                    router_type: TIER0
+                    summary: Provider Logical Router(Tier0) - 1
+                    configuration:
+                             internal_transit_network: '111.168.2.0/24'
+
+        ReadEdgeVMSouthIpBfdIp:
+            SleepBetweenWorkloads: '120'
+            Type: VM
+            TestVM: 'nsxedge.[1]'
+            adapter_label: 'Network adapter 3'
+            southbound_subnet: '111.168.2.0'
+            bfd_subnet: '169.255.255.0'
+            read_edgevnic_southbound_bfd_ips:
+                'southbound_ip[?]defined': ''
+                'bfd_ip[?]defined': ''
+
+#BasicPortStatistics:
+#    Priority: P0
+#    Summary:
+#    - Verify port statistics in single-tier
+#    - east-west traffic, same LS port stats should not change
+#    - east-west traffic, different LS port stats should change
+#    - north-south traffic, port stats should change
+#    TestbedSpec: *L3Topology_2KVM_No_Edge
+
+BasicTTLDecrement:
+    <<: *p0_template
+    Developer: sqian
+    Status: Draft
+    Summary: |
+        - Verify TTL decrement
+        - Any traffic that traverses the LR should have TTL decremented exactly once
+    Tags: cat,nsxtransformers,l3,kvm,edge
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: BasicTTLDecrement
+
+    WORKLOADS:
+        <<: *TopoL3_2Hosts_1Edge
+        <<: *Topo_1MP_3CCP
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+
+            # Verify east-west TTL is decremented
+            - - PingTraffic1
+            # Make sure no packcets without TTL decremented can be captured
+            - - PingTraffic2
+            # Verify Tcp traffic
+            - - ScapyTcpTraffic
+            # Verify Udp traffic
+            - - ScapyUdpTraffic
+
+            # Verify north-south TTL is decremented
+            - - PingNSTraffic1
+            # Make sure no packcets without TTL decremented can be captured
+            - - PingNSTraffic2
+            # Verify Tcp traffic
+            - - ScapyTcpNSTraffic
+            # Verify Udp traffic
+            - - ScapyUdpNSTraffic
+
+        ExitSequence:
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+        PingTraffic1:
+            Type          : 'Traffic'
+            ToolName      : 'ping'
+            TestAdapter   : 'vm.[2].vif.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            TestDuration  : '30'
+            IpTTL         : '11'
+            Verification  : 'Verification_0'
+
+        Verification_0:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': 'count 5,ttl == 10,icmptype == 8,src host ipv4/vm.[2].vif.[1],dst host ipv4/vm.[1].vif.[1]'
+              'pktcount': '1-10'
+
+        PingTraffic2:
+            Type          : 'Traffic'
+            ToolName      : 'ping'
+            TestAdapter   : 'vm.[2].vif.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            TestDuration  : '30'
+            IpTTL         : '11'
+            Verification  : 'Verification_1'
+
+        Verification_1:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': 'count 5,ttl == 11,icmptype == 8,src host ipv4/vm.[2].vif.[1],dst host ipv4/vm.[1].vif.[1]'
+              'pktcount': '0'
+
+        ScapyTcpTraffic:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            TestAdapter:    'vm.[2].vif.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            protocol: 'tcp'
+            IpTTL: 11
+            connectivitytest: '0'
+            Verification  : 'Verification_2'
+
+        Verification_2:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': 'count 5,ttl == 10,src host ipv4/vm.[2].vif.[1],dst host ipv4/vm.[1].vif.[1]'
+              'pktcount': '1-10'
+
+        ScapyUdpTraffic:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            TestAdapter:    'vm.[2].vif.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            protocol: 'udp'
+            IpTTL: 11
+            connectivitytest: '0'
+            Verification  : 'Verification_3'
+
+        Verification_3:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': 'count 5,ttl == 10,src host ipv4/vm.[2].vif.[1],dst host ipv4/vm.[1].vif.[1]'
+              'pktcount': '1-10'
+
+        PingNSTraffic1:
+            Type          : 'Traffic'
+            ToolName      : 'ping'
+            TestAdapter   : 'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            TestDuration  : '30'
+            IpTTL         : '11'
+            Verification  : 'Verification_4'
+
+        Verification_4:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': 'count 5,ttl == 10,icmptype == 8,src host ipv4/vm.[3].vnic.[1],dst host ipv4/vm.[1].vif.[1]'
+              'pktcount': '1-10'
+
+        PingNSTraffic2:
+            Type          : 'Traffic'
+            ToolName      : 'ping'
+            TestAdapter   : 'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            TestDuration  : '30'
+            IpTTL         : '11'
+            Verification  : 'Verification_5'
+
+        Verification_5:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': 'count 5,ttl == 11,icmptype == 8,src host ipv4/vm.[3].vnic.[1],dst host ipv4/vm.[1].vif.[1]'
+              'pktcount': '0'
+
+        ScapyTcpNSTraffic:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            TestAdapter:    'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            protocol: 'tcp'
+            IpTTL: 11
+            connectivitytest: '0'
+            Verification  : 'Verification_6'
+
+        Verification_6:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': 'count 5,ttl == 10,src host ipv4/vm.[3].vnic.[1],dst host ipv4/vm.[1].vif.[1]'
+              'pktcount': '1-10'
+
+        ScapyUdpNSTraffic:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            TestAdapter:    'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[1].vif.[1]'
+            protocol: 'udp'
+            IpTTL: 11
+            connectivitytest: '0'
+            Verification  : 'Verification_7'
+
+        Verification_7:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': 'count 5,ttl == 10,src host ipv4/vm.[3].vnic.[1],dst host ipv4/vm.[1].vif.[1]'
+              'pktcount': '1-10'
+
+BasicToRouterTrafficTest:
+    <<: *p0_template
+    Developer: sqian
+    Status: Draft
+    Summary: |
+        - Traffic specifically to router
+        - Send packets of the following types to the PLR SR/DR ports IP
+        - SR and DR-on-KVM:
+        -   TCP traffic (TCP RST expected in response)
+        -   UDP traffic (ICMP Port Unreachable packet expected)
+        -   ICMP echo requests (ICMP echo response expected)
+        - DR-on-KVM:
+        -   ICMP echo requests (ICMP echo response expected)
+        -   Drop silently and packet other than incoming ICMP echo requests
+    Tags: cat,nsxtransformers,l3,kvm,edge
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: BasicToRouterTrafficTest
+
+    WORKLOADS:
+        <<: *TopoL3_2Hosts_1Edge
+        <<: *Topo_1MP_3CCP
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+
+            # Traffic verification (icmp,tcp and udp) for DR and SR
+            - - ScapyPingDR
+            - - ScapyTcpDR
+            - - ScapyUdpDR
+            - - ScapyPingSR
+            - - ScapyTcpSR
+            - - ScapyUdpSR
+        ExitSequence:
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+        ScapyPingDR:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            TestAdapter:    'vm.[1].vif.[1]'
+            protocol: 'icmp'
+            DestinationAddress: '192.168.1.1'
+            connectivitytest: '0'
+            Verification  : 'Verification_DR_0'
+
+        Verification_DR_0:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': "count 5,icmptype == 0,src host ipv4/192.168.1.1,dst host ipv4/vm.[1].vif.[1]"
+              'pktcount': '1-10'
+
+        ScapyTcpDR:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            TestAdapter:    'vm.[1].vif.[1]'
+            protocol: 'tcp'
+            DestinationAddress: '192.168.1.1'
+            connectivitytest: '0'
+            Verification  : 'Verification_DR_1'
+
+        Verification_DR_1:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': "count 5,src host ipv4/192.168.1.1,dst host ipv4/vm.[1].vif.[1]"
+              'pktcount': '1-10'
+
+        ScapyUdpDR:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            TestAdapter:    'vm.[1].vif.[1]'
+            protocol: 'udp'
+            DestinationAddress: '192.168.1.1'
+            connectivitytest: '0'
+            Verification  : 'Verification_DR_2'
+
+        Verification_DR_2:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': "count 5,src host ipv4/192.168.1.1,dst host ipv4/vm.[1].vif.[1]"
+              'pktcount': '1-10'
+
+        ScapyPingSR:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            TestAdapter:    'vm.[1].vif.[1]'
+            protocol: 'icmp'
+            DestinationAddress: '192.168.50.1'
+            connectivitytest: '0'
+            Verification  : 'Verification_1'
+
+        Verification_1:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': "count 5,icmptype == 0,src host ipv4/192.168.50.1,dst host ipv4/vm.[1].vif.[1]"
+              'pktcount': '1-10'
+
+        ScapyTcpSR:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            TestAdapter:    'vm.[1].vif.[1]'
+            protocol: 'tcp'
+            DestinationAddress: '192.168.50.1'
+            connectivitytest: '0'
+            Verification  : 'Verification_2'
+
+        Verification_2:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': "count 5,tcp-rst != 0,src host ipv4/192.168.50.1,dst host ipv4/vm.[1].vif.[1]"
+              'pktcount': '1-10'
+
+        ScapyUdpSR:
+            Type: 'Traffic'
+            toolName: 'scapy'
+            TestAdapter:    'vm.[1].vif.[1]'
+            protocol: 'udp'
+            DestinationAddress: '192.168.50.1'
+            connectivitytest: '0'
+            Verification  : 'Verification_3'
+
+        Verification_3:
+           'PktCapVerificaton':
+              'verificationtype': 'pktcap'
+              'target': 'vm.[1].vif.[1]'
+              'pktcapfilter': "count 5,icmpcode == 3,src host ipv4/192.168.50.1,dst host ipv4/vm.[1].vif.[1]"
+              'pktcount': '1-10'

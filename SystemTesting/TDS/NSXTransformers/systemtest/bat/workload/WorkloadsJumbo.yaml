@@ -1,0 +1,52 @@
+WorkloadsJumbo: &WorkloadsJumbo
+
+#---------------------------------------
+# SET JUMBO FRAMES
+#---------------------------------------
+    Create9kUplinkProfile: &CREATE_9K_UPLINK_PROFILE
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        UplinkProfile:
+            '[1]':
+                mtu: 9000
+                teaming:
+                    active:
+                      - adapter_name: 'uplink1'
+                        adapter_type: 'PNIC'
+                    policy: 'FAILOVER_ORDER'
+                vlan: '0'
+                resource_type: 'UplinkHostSwitchProfile'
+
+    Set9kMtuOnHostEsx: &SET_9K_MTU_ON_HOST_ESX
+        Type: 'Host'
+        TestHost: 'esx.[1-7]'
+        set_switch_mtu:  # set mtu on nvswitch
+            execution_type: 'cli'
+            value: '8950'
+            vmnic_name: 'vmnic1'
+
+    Set9kMtuOnHostKvm: &SET_9K_MTU_ON_HOST_KVM
+        Type: 'NetAdapter'
+        TestAdapter: "kvm.[1-7].pif.[1]"
+        mtu: 9000
+
+    Set9kMtuOnVmESX: &SET_9K_MTU_ON_VM_ESX
+        Type: 'NetAdapter'
+        TestAdapter: "vm.[1-12].vnic.[1]"
+        mtu: 9000
+
+    Set9kMtuOnVmKvm: &SET_9K_MTU_ON_VM_KVM
+        Type: 'NetAdapter'
+        TestAdapter: "vm.[1-12].vif.[1]"
+        mtu: 9000
+
+#    11/26/2014 10:43:22 AM
+#    Logical switch MTU.  When MP sets UplinkProfile MTU it configure opaque switch, DVS, logical switch for this MTU
+
+#    Set9kMTUOnVM1OnHost1:
+#        Type: 'Host'
+#        TestHost: "kvm.[1-12]"
+#        set_adapter_mtu: &SET_ADAPTER_MTU
+#            adapter_name: "vm.[x=kvm_index].vif.[1]"
+#            execution_type: "cmd"
+#            value: 9000

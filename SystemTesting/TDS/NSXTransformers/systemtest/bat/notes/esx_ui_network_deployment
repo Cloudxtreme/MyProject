@@ -1,0 +1,395 @@
+
+1/20/2015 9:30:02 AM
+
+UI deployment of NSX network
+
+testrunid: rtqa10c10-esx-api
+
+vdnet-esx:main$ ./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TenantsLocalValidateNetwork.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetwork/$(date +%Y%02m%02d-%02k%02M%02S) --testbed save
+
+Session log file: /tmp-vdnet/vdnet/TenantsLocalValidateNetwork/20150120-120150/vdnet.log
+Racetrack link  : http://racetrack-dev.eng.vmware.com/result.php?id=592205
+Base log dir for this session: /tmp-vdnet/vdnet/TenantsLocalValidateNetwork/20150120-120150
+
+ifconfig eth1 20.1.1.10 netmask 255.255.255.0
+ip route add 20.0.0.0/8 dev eth1
+
+esx.1 ip address: 10.146.110.247
+esx.2 ip address: 10.146.109.54
+esx.3 ip address: 10.146.105.195
+esx.4 ip address: 10.146.107.153
+esx.5 ip address: 10.146.107.35
+esx.6 ip address: 10.146.108.144
+esx.7 ip address: 10.146.110.179
+esx.8 ip address: 10.146.101.154
+esx.9 ip address: 10.146.103.56
+esx.10 ip address: 10.146.103.84
+esx.11 ip address: 10.146.106.60
+nsxcontroller.1 ip address: 10.146.109.129
+nsxmanager.1 ip address: 10.146.101.17
+
+VM:  1-rhel53-srv-32-local-1003-f9137dd5-602d-4761-b1c0-3d69c990329f, IP address: 10.146.111.30
+VM:  2-rhel53-srv-32-local-1003-c0469024-6b53-4541-9d09-d7616fab9514, IP address: 10.146.111.229
+VM:  3-rhel53-srv-32-local-1003-fa940042-033f-4be3-9b5c-82f81b5dee44, IP address: 10.146.110.52
+VM:  4-rhel53-srv-32-local-1003-04132458-c29e-4699-bb20-bc53e29a2983, IP address: 10.146.111.18
+VM:  5-rhel53-srv-32-local-1003-b171ef1c-da2c-4c28-89d6-caf0dc182f9e, IP address: 10.146.107.62
+VM:  6-rhel53-srv-32-local-1003-2738eb86-3fff-44e8-a5f8-64474526af4b, IP address: 10.146.107.8
+VM:  7-rhel53-srv-32-local-1003-5ac2d846-f9a8-437e-801d-48e57b5aae12, IP address: 10.146.105.49
+VM:  8-rhel53-srv-32-local-1003-7a7940ae-24a8-4743-91e9-54b1767876ec, IP address: 10.146.100.229
+VM:  9-rhel53-srv-32-local-1003-ebe6a27d-86a2-476c-9885-6dd0210c02ee, IP address: 10.146.107.102
+VM: 10-rhel53-srv-32-local-1003-38fac93f-8e12-4c05-8df4-1252f1c458df, IP address: 10.146.105.147
+VM: 11-rhel53-srv-32-local-1003-0f58fd91-2a6f-4e81-8afb-6f61e4b45621, IP address: 10.146.106.132
+VM: 12-rhel53-srv-32-local-1003-6768f8fe-05d7-452d-b929-49b08d443ee3, IP address: 10.146.101.216
+VM: 13-rhel53-srv-32-local-1003-cfb0bc84-37c4-40d0-9b4b-ee4ea0934c06, IP address: 10.146.108.73
+VM: 14-rhel53-srv-32-local-1003-2c80ba6a-f4df-4a92-8ace-ef11326160e9, IP address: 10.146.104.122
+VM: 15-rhel53-srv-32-local-1003-d2ee5426-632d-4832-884c-043a68b70299, IP address: 10.146.109.25
+VM: 16-rhel53-srv-32-local-1003-3d0905de-1a84-488b-b758-c8b37fd83b29, IP address: 10.146.107.27
+
+
+========================================================================
+NSX MANAGER UI -> NETWORK DEPOYMENT
+========================================================================
+
+Notes:
+as network is created via UI, double check using API that all is correct
+
+----------------------------------------
+- testbed deployment:
+----------------------------------------
+    based on BAT "TenantsLocalValidateNetwork --save" testbed:
+        deployed ESX hosts, RHEL VMs, NSX Manager, NSX Controller
+        VIBs installed,
+
+----------------------------------------
+- registration:
+----------------------------------------
+    controller & ESXi hosts are VDnet registered and listed in UI
+
+----------------------------------------
+- create transport zone
+----------------------------------------
+VERIFY: ${CURLGET}/api/v1/transport-zones
+
+{
+  "cursor" : "003608554825-f959-4be0-9399-d710ed16f684TZ1",
+  "result_count" : 1,
+  "results" : [ {
+    "revision" : 0,
+    "id" : "08554825-f959-4be0-9399-d710ed16f684",
+    "display_name" : "TZ1",
+    "description" : "transport zone 1",
+    "resource_type" : "TransportZone",
+    "transport_type" : "OVERLAY",
+    "host_switch_name" : "opaque-switch-1",
+    "_last_modified_user" : "admin",
+    "_last_modified_time" : 1421776909095,
+    "_create_time" : 1421776909095,
+    "_create_user" : "admin",
+    "_schema" : "/v1/schema/TransportZone"
+  } ]
+
+----------------------------------------
+- create uplink profile
+----------------------------------------
+
+VERIFY ${CURLGET}/api/v1/host-switch-profiles
+
+{
+  "result_count" : 1,
+  "results" : [ {
+    "resource_type" : "UplinkHostSwitchProfile",
+    "revision" : 0,
+    "id" : "8a307f6c-d69e-4c40-9985-cafd76c40362",
+    "display_name" : "UplinkProfile1",
+    "description" : "uplink profile 1",
+    "resource_type" : "UplinkHostSwitchProfile",
+    "system_defined" : false,
+    "mtu" : 1600,
+    "teaming" : {
+      "standby_list" : [ ],
+      "active_list" : [ {
+        "uplink_name" : "uplink-1",
+        "uplink_type" : "PNIC"
+      } ],
+      "policy" : "FAILOVER_ORDER"
+    },
+    "transport_vlan" : 0,
+    "_last_modified_user" : "admin",
+    "_last_modified_time" : 1421777275545,
+    "_create_time" : 1421777275545,
+    "_create_user" : "admin"
+  } ]
+
+----------------------------------------
+- create transport IP pool manually
+----------------------------------------
+
+1387120: UI: no ability to create IP Pool for transport nodes
+
+CREATE: curl -k -u admin:default -H 'Content-Type: application/json' -X POST https://10.146.101.17:443/api/v1/pools/ip-pools -d '{ "display_name":"ip-pool-1", "description":"IP Pool 1", "subnets":[ { "dns_nameservers":[ "192.168.110.10" ], "allocation_ranges":[ { "start":"192.168.150.100", "end":"192.168.150.200" }], "gateway_ip":"192.168.150.2", "cidr":"192.168.150.0/24" }] }'
+
+curl -k -u admin:default -H 'Content-Type: aplication/json' -X GET https://10.146.101.17:443/api/v1/pools/ip-pools
+{
+  "cursor" : "0036ad49c8ff-dbe5-454e-a7f9-901c228c3311ip-pool-1",
+  "sort_by" : "displayName",
+  "sort_ascending" : true,
+  "result_count" : 1,
+  "results" : [ {
+    "revision" : 0,
+    "id" : "ad49c8ff-dbe5-454e-a7f9-901c228c3311",
+    "display_name" : "ip-pool-1",
+    "description" : "IP Pool 1",
+    "resource_type" : "IpPool",
+    "subnets" : [ {
+      "dns_nameservers" : [ "192.168.110.10" ],
+      "allocation_ranges" : [ {
+        "start" : "192.168.150.100",
+        "end" : "192.168.150.200"
+      } ],
+      "gateway_ip" : "192.168.150.2",
+      "cidr" : "192.168.150.0/24"
+    } ],
+    "_last_modified_user" : "admin",
+    "_last_modified_time" : 1421778730092,
+    "_create_time" : 1421778730092,
+    "_create_user" : "admin"
+  } ]
+}
+----------------------------------------
+- create 11 transport nodes
+----------------------------------------
+
+1387125: UI: on Add Transport Note screen, description field is missing
+TESTBLOCKER
+1387152 - UI: on Add Transport Node: Error "Unrecognized field migrate_mgmt_interfaces"
+
+
+egrep "external_id|ip_addresses" nodes.txt
+
+esx.1    "external_id" : "1e1d98fa-a0c8-11e4-b186-fd819a4df8e1",
+    "ip_addresses" : [ "10.146.110.247" ],
+esx.2    "external_id" : "1706a340-a0c8-11e4-a720-f93cc8f75bb2",
+    "ip_addresses" : [ "10.146.109.54" ],
+esx.3    "external_id" : "19070e8c-a0c8-11e4-87bb-c961d23c415e",
+    "ip_addresses" : [ "10.146.105.195" ],
+esx.4    "external_id" : "24ff7d30-a0c8-11e4-92ee-afa74c2e470d",
+    "ip_addresses" : [ "10.146.107.153" ],
+esx.5    "external_id" : "2401e00a-a0c8-11e4-80d6-5fe3dda4d7fc",
+    "ip_addresses" : [ "10.146.107.35" ],
+esx.6    "external_id" : "1975c570-a0c8-11e4-a61b-ad0a1c52f871",
+    "ip_addresses" : [ "10.146.108.144" ],
+esx.7    "external_id" : "1ad2398a-a0c8-11e4-bff5-7f9565e3f238",
+    "ip_addresses" : [ "10.146.110.179" ],
+esx.8    "external_id" : "1e98ee91-a0c8-11e4-9fa8-9ff970007a52",
+    "ip_addresses" : [ "10.146.101.154" ],
+esx.9    "external_id" : "1de015c0-a0c8-11e4-8137-d144d3235c94",
+    "ip_addresses" : [ "10.146.103.56" ],
+esx.10    "external_id" : "2102e9d1-a0c8-11e4-adc5-2743a2a682ac",
+    "ip_addresses" : [ "10.146.103.84" ],
+esx.11    "external_id" : "1eb7554f-a0c8-11e4-9ed5-f75f1bade128",
+    "ip_addresses" : [ "10.146.106.60" ],
+
+
+
+----------------------------------------
+- workaround, API call to create Transport Node
+----------------------------------------
+
+curl -k -u admin:default -H 'Content-Type: application/json' -X POST https://10.146.101.17:443/api/v1/transport-nodes -d '  { "description":"Transport Node ESX 1", "display_name":"TN_ESX_1", "node_id":"1e1d98fa-a0c8-11e4-b186-fd819a4df8e1", "host_switches":[ { "host_switch_name": "opaque-switch-1", "static_ip_pool_id": "ad49c8ff-dbe5-454e-a7f9-901c228c3311", "host_switch_profile_ids": [ { "key":"UplinkHostSwitchProfile", "value":"8a307f6c-d69e-4c40-9985-cafd76c40362" } ], "pnics":[ { "uplink_name":"uplink-1", "device_name":"vmnic1" }] }], "transport_zone_endpoints":[ { "transport_zone_id":"08554825-f959-4be0-9399-d710ed16f684" }] } '
+
+{
+  "revision" : 0,
+  "id" : "773f810b-04e5-4a71-a994-709573cbae10",
+  "display_name" : "TN_ESX_1",
+  "description" : "Transport Node ESX 1",
+  "resource_type" : "TransportNode",
+  "host_switches" : [ {
+    "pnics" : [ {
+      "device_name" : "vmnic1",
+      "uplink_name" : "uplink-1"
+    } ],
+    "host_switch_profile_ids" : [ {
+      "value" : "8a307f6c-d69e-4c40-9985-cafd76c40362",
+      "key" : "UplinkHostSwitchProfile"
+    } ],
+    "static_ip_pool_id" : "ad49c8ff-dbe5-454e-a7f9-901c228c3311",
+    "host_switch_name" : "opaque-switch-1"
+  } ],
+  "transport_zone_endpoints" : [ {
+    "transport_zone_id" : "08554825-f959-4be0-9399-d710ed16f684"
+  } ],
+  "node_id" : "1e1d98fa-a0c8-11e4-b186-fd819a4df8e1",
+  "_last_modified_user" : "admin",
+  "_last_modified_time" : 1421789299355,
+  "_create_time" : 1421789299355,
+  "_create_user" : "admin"
+}
+
+
+curl -k -u admin:default -H 'Content-Type: application/json' -X GET https://10.146.101.17:443/api/v1/transport-nodes
+{
+  "cursor" : "0036773f810b-04e5-4a71-a994-709573cbae10TN_ESX_1",
+  "result_count" : 1,
+  "results" : [ {
+    "revision" : 0,
+    "id" : "773f810b-04e5-4a71-a994-709573cbae10",
+    "display_name" : "TN_ESX_1",
+    "description" : "Transport Node ESX 1",
+    "resource_type" : "TransportNode",
+    "host_switches" : [ {
+      "pnics" : [ {
+        "device_name" : "vmnic1",
+        "uplink_name" : "uplink-1"
+      } ],
+      "host_switch_profile_ids" : [ {
+        "value" : "8a307f6c-d69e-4c40-9985-cafd76c40362",
+        "key" : "UplinkHostSwitchProfile"
+      } ],
+      "static_ip_pool_id" : "ad49c8ff-dbe5-454e-a7f9-901c228c3311",
+      "host_switch_name" : "opaque-switch-1"
+    } ],
+    "transport_zone_endpoints" : [ {
+      "transport_zone_id" : "08554825-f959-4be0-9399-d710ed16f684"
+    } ],
+    "node_id" : "1e1d98fa-a0c8-11e4-b186-fd819a4df8e1",
+    "_last_modified_user" : "admin",
+    "_last_modified_time" : 1421789299355,
+    "_create_time" : 1421789299355,
+    "_create_user" : "admin"
+  } ]
+}
+
+----------------------------------------
+- create logical switches
+----------------------------------------
+
+vdnet-kvm:20150120-125257$ ${CURLGET}/api/v1/logical-switches
+HTTP/1.1 200 OK
+Set-Cookie: JSESSIONID=AA909342542EBEB4D5128CEC77963351; Path=/; Secure; HttpOnly
+Server: vShield Manager
+Set-Cookie: JSESSIONID=3FE8EC04ECFEC39A9DA6D9EFEEB1BBB1; Path=/nsxapi/; HttpOnly
+Date: Tue, 20 Jan 2015 21:57:00 GMT
+Content-Type: application/json;charset=UTF-8
+Transfer-Encoding: chunked
+
+{
+  "cursor" : "003677726cfa-8901-449b-8882-f05f6bb75f24LS-2",
+  "result_count" : 2,
+  "results" : [ {
+    "revision" : 0,
+    "id" : "c9fc0bf8-5e4b-4fb0-ad02-c2c2816eae86",
+    "display_name" : "LS-1",
+    "description" : "logical switch 1",
+    "resource_type" : "LogicalSwitch",
+    "transport_zone_id" : "08554825-f959-4be0-9399-d710ed16f684",
+    "replication_mode" : "MTEP",
+    "admin_state" : "UP",
+    "vni" : 28168,
+    "vlan" : 0,
+    "switching_profile_ids" : [ {
+      "value" : "64814784-7896-3901-9741-badeff705639",
+      "key" : "IpDiscoverySwitchingProfile"
+    }, {
+      "value" : "93b4b7e8-f116-415d-a50c-3364611b5d09",
+      "key" : "PortMirroringSwitchingProfile"
+    }, {
+      "value" : "f313290b-eba8-4262-bd93-fab5026e9495",
+      "key" : "QosSwitchingProfile"
+    } ],
+    "_last_modified_user" : "admin",
+    "_last_modified_time" : 1421790950899,
+    "_create_time" : 1421790950899,
+    "_create_user" : "admin",
+    "_schema" : "/v1/schema/LogicalSwitch"
+  }, {
+    "revision" : 0,
+    "id" : "77726cfa-8901-449b-8882-f05f6bb75f24",
+    "display_name" : "LS-2",
+    "description" : "logical switch 2",
+    "resource_type" : "LogicalSwitch",
+    "transport_zone_id" : "08554825-f959-4be0-9399-d710ed16f684",
+    "replication_mode" : "MTEP",
+    "admin_state" : "UP",
+    "vni" : 9096,
+    "vlan" : 0,
+    "switching_profile_ids" : [ {
+      "value" : "64814784-7896-3901-9741-badeff705639",
+      "key" : "IpDiscoverySwitchingProfile"
+    }, {
+      "value" : "93b4b7e8-f116-415d-a50c-3364611b5d09",
+      "key" : "PortMirroringSwitchingProfile"
+    }, {
+      "value" : "f313290b-eba8-4262-bd93-fab5026e9495",
+      "key" : "QosSwitchingProfile"
+    } ],
+    "_last_modified_user" : "admin",
+    "_last_modified_time" : 1421790963093,
+    "_create_time" : 1421790963093,
+    "_create_user" : "admin",
+    "_schema" : "/v1/schema/LogicalSwitch"
+  } ]
+}
+
+----------------------------------------
+- VIF attachments using Host Client
+----------------------------------------
+
+- use MAC Host Client to add network card and attach to LS-1 (logical switch).  VIF and opaque switch created.
+
+~ # net-dvs -l | grep opaque
+                com.vmware.common.opaqueDvs = true ,    propType = CONFIG
+                com.vmware.common.alias = opaque-switch-1 ,     propType = CONFIG
+                com.vmware.extraconfig.opaqueDvs.pnicZone = 08554825-f959-4be0-9399-d710ed16f684 ,      propType = CONFIG
+                com.vmware.extraconfig.opaqueDvs.status = up ,  propType = CONFIG
+                com.vmware.common.portset.opaque = false ,      propType = RUNTIME
+                com.vmware.port.opaque.network.id = c9fc0bf8-5e4b-4fb0-ad02-c2c2816eae86 ,      propType = RUNTIME
+                com.vmware.port.opaque.network.type = nsx.LogicalSwitch ,       propType = RUNTIME
+
+${CURLGET}/api/v1/fabric/vifs
+
+{
+    "id" : "564d6eb6-4597-c6ea-838e-76a7239091e4-4000",
+    "resource_type" : "VirtualNetworkInterface",
+    "mac_address" : "00:0c:29:90:91:e4",
+    "device_key" : "4000",
+    "external_id" : "564d6eb6-4597-c6ea-838e-76a7239091e4-4000",
+    "device_name" : "Network adapter 1",
+    "lport_attachment_id" : "1af82458-1a50-407c-82d0-5552bbf5355a",
+    "owner_vm_id" : "03f9133a-1372-4a31-a5e5-9637e1f1b4ab"
+  }, {
+
+----------------------------------------
+- create logical switche ports
+----------------------------------------
+VERIFIED 9 ports, LS-1 thru LS-6
+
+${CURLGET}/api/v1/logical-ports
+
+{
+  "cursor" : "00366340d1a0-3cc5-482a-a313-48c05c54251dnnuullll",
+  "result_count" : 9,
+  "results" : [ {
+    "revision" : 1,
+    "id" : "886d52d8-25da-45f7-8a1f-6ae838f363af",
+    "resource_type" : "LogicalPort",
+    "logical_switch_id" : "08c90737-3b6a-4d6d-b8db-035359c4d282",
+    "admin_state" : "UP",
+    "attachment" : {
+      "id" : "3959f4e8-283f-4926-b48c-db2732b6555b",
+      "attachment_type" : "VIF"
+    },
+    "switching_profile_ids" : [ {
+      "value" : "64814784-7896-3901-9741-badeff705639",
+      "key" : "IpDiscoverySwitchingProfile"
+    }, {
+      "value" : "93b4b7e8-f116-415d-a50c-3364611b5d09",
+      "key" : "PortMirroringSwitchingProfile"
+    }, {
+      "value" : "f313290b-eba8-4262-bd93-fab5026e9495",
+      "key" : "QosSwitchingProfile"
+    } ],
+    "_last_modified_user" : "system",
+    "_last_modified_time" : 1421796166145,
+    "_create_time" : 1421796166139,
+    "_create_user" : "system"
+  }, {

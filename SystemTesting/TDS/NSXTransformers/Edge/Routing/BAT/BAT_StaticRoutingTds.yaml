@@ -1,0 +1,175 @@
+#----------------------------------------------------------------------------------
+#                     STATIC ROUTING TOPOLOGY
+#----------------------------------------------------------------------------------
+#
+#                    192.168.40.20               192.168.40.21
+#                       +-----+                   +-----+
+#                       | VM6 |                   | VM6'|
+#                       +--+--+                   +--+--+
+#                          |                         |
+#                   +------+-------------------------+------+
+#                   |         Logical_Switch_06             |
+#                   +------+--------------------------+-----+
+#                          |                          |
+#            192.168.40.1  |                          | 192.168.40.2
+#                       +--+-+                     +--+-+
+#                       | R1 |                     | R2 |
+#                       |    |                     |    |
+#                       +--+-+                     +--+-+
+#                          |                          |
+#                          |                          |
+#            192.168.50.100|                          |  192.168.51.100
+#                   +------+-+----+          +--------+-----+
+#                   | LSwitch|01  |          | LSwitch_02   |
+#                   +-----+--+----+          +---------+----+
+#                         |                            |
+#                         |                            |
+#              +---------------------------------------------------+
+#              |          |                            |           |
+#              |   +----+-+--+                     +---+-+-----+   |
+#              |   |  SR-1   |      TIER-0         |   SR-2    |   |
+#              |  192.168.50.1/24                  192.168.51.1/24 |
+#              |   +---------+                     +-----------+   |
+#              |                                                   |
+#              +---------------------+-----------------------------+
+#                                    |
+#                                    |
+#                       +------------+----------------+
+#                       |                             |
+#               +-------+        TIER-1               +--------+
+#               |       |                             |        |
+#               |       +-----------------------------+        |
+#               |                                              |
+#  192.168.70.1 |                                              |192.168.71.1
+#         +-----+---------+                             +------+-------+
+#         |   LSwitch_04  |                             | LSwitch_05   |
+#         +------+--------+                             +-------+------+
+#                |                                              |
+#                |                                              |
+#             +--+---+                                      +---+---+
+#             |      |                                      |       |
+#             | VM4  |                                      | VM5   |
+#             +------+                                      +-------+
+#        192.168.70.20                                     192.168.71.20
+#
+#
+#----------------------------------------------------------------------------------
+
+Add_Modify_Delete_StaticRouting_Topology:
+    Category: L3
+    Component: Edge
+    Summary: "This test case performs add,modify and delete Static routing"
+    Tags: nsx,avalanche,bat
+    Version: 2
+    TestName: Add_Modify_Delete_StaticRouting_Topology
+    TestbedSpec: *BAT_TIER0_TIER1_TOPOLOGY
+
+    WORKLOADS:
+        Sequence:
+            - - 'RegisterController'
+            - - 'SetManagerOnHost'
+            - - 'DiscoverHostNodes'
+            - - 'CreateTransportZone'
+            - - 'CreateUplinkProfile'
+            - - 'CreateTransportNodes'
+            - - 'CreateLogicalSwitch01_FOR_UPLINK_SR1'
+            - - 'CreateLogicalSwitch02_FOR_UPLINK_SR2'
+            - - 'CreateLogicalSwitch04_For_Tier1_Downlink'
+            - - 'CreateLogicalSwitch05_For_Tier1_Downlink'
+            - - 'CreateLogicalSwitch06_ForExternalRouter'
+            - - 'Create_LogicalPorts_BAT_StaticRouting_Tier0_Tier1'
+            - - 'VifAttachmentAllVMs_BAT_Tier0_Tier1_Static_Routing'
+            - - 'PowerOnAllVms_BAT_Tier0_Tier1_StaticRouting'
+            - - 'ConfigureIPAllVMVNics_BAT_Tier0_Tier1_StaticRouting'
+            - - 'AddRouteAllVMs_BAT_Tier0_Tier1_BGP'
+
+            # XXXX: Tier0 setup
+            - - 'DeployNSXEdge1'
+            - - 'DeployNSXEdge2'
+            - - 'RegisterEdgeNode1WithNSX'
+            - - 'RegisterEdgeNode2WithNSX'
+            - - 'CreateFabricProfile'
+            - - 'DiscoverEdgeNodeId1'
+            - - 'DiscoverEdgeNodeId2'
+            - - 'CreateEdgeClusterWithTwoEdgeNode'
+            - - 'CreateTIER0LogicalRouter'                    # for Tier0 router
+            - - 'CreateTier0UplinkLogicalRouterPortForSR1'    # for Tier0 router
+            - - 'CreateTier0UplinkLogicalRouterPortForSR2'    # for Tier0 router
+
+            # XXXX: TIER-0 to TIER1 Connection
+            - - 'CreateTIER1LogicalRouter'
+            - - 'CreateDownlinkTier1LogicalRouterPortOnLS04'
+            - - 'CreateDownlinkTier1LogicalRouterPortOnLS05'
+            - - 'CreateRouterLinkPortOnTIER0Router'
+            - - 'CreateRouterLinkPortOnTIER1Router'
+
+            # XXX Advertise Route
+            - - 'SetRouteAdvertisementsOnTier1'
+
+            # XXX : Configure static routes on SR for north bound networks
+            # nexthop: 192.168.50.100, network: 192.168.40.0/24
+            - - 'Add_Static_Routes_For_SR1_SR2_BAT'
+
+            # Verify routes on SR-1 CLI: [show ip route -ipaddress- ]
+            - - 'CLI_Show_IP_Route_StaticRoutes_SR1'
+            - - 'CLI_Show_IP_Route_StaticRoutes_SR2'
+
+            # Related to Traffic Flow
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20'     # External Router to Tier1 through Tier0 traffic
+            - - 'Traffic_VM6_192_168_40_20_To_VM5_192_168_71_20'     # External Router to Tier0 downlink traffic
+            - - 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_20'     # External Router to Tier1 through Tier0 traffic
+            - - 'Traffic_VM6_192_168_40_21_To_VM5_192_168_71_20'     # External Router to Tier1 downlink traffic
+
+            # Modify the static route on SR1
+            - - 'Modify_Static_Routes_For_SR1_SR2_BAT'
+
+            # Check if modified Static routes are pushed on SR1
+            - - 'After_Modification_CLI_Show_IP_Route_StaticRoutes_SR1'
+
+            # Check that Traffic is impacted
+            #  Traffic from VM6 to VM4 should fail
+            #  Traffic from VM6 to VM5 should fail
+            #
+            #  Traffic from VM6_2 to VM4 should pass
+            #  Traffic from VM6_2 to VM5 should pass
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_FAIL'
+            - - 'Traffic_VM6_192_168_40_20_To_VM5_192_168_71_20_FAIL'
+            - - 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_20'
+            - - 'Traffic_VM6_192_168_40_21_To_VM5_192_168_71_20'
+
+            # Change the Static route back to Original
+            - - 'Add_Static_Routes_For_SR1_SR2_BAT'
+            - - 'CLI_Show_IP_Route_StaticRoutes_SR1'
+
+            # Check that Traffic is should flow
+            #  Traffic from VM6 to VM4 should pass
+            #  Traffic from VM6 to VM5 should pass
+            #  Traffic from VM6_2 to VM4 should pass
+            #  Traffic from VM6_2 to VM5 should pass
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20'     # External Router to Tier1 through Tier0 traffic
+            - - 'Traffic_VM6_192_168_40_20_To_VM5_192_168_71_20'     # External Router to Tier0 downlink traffic
+            - - 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_20'     # External Router to Tier1 through Tier0 traffic
+            - - 'Traffic_VM6_192_168_40_21_To_VM5_192_168_71_20'     # External Router to Tier1 downlink traffic
+
+            # Delete Static Route from both SR's
+            - - 'DeleteAllStaticRoutes'
+
+            # Check that routes are deleted from SR1 and SR2
+            - - 'After_Deletion_Show_IP_Route_StaticRoutes_SR1'
+            - - 'After_Deletion_Show_IP_Route_StaticRoutes_SR2'
+
+            # Traffic should now fail
+            - - 'Traffic_VM6_192_168_40_20_To_VM4_192_168_70_20_FAIL'
+            - - 'Traffic_VM6_192_168_40_20_To_VM5_192_168_71_20_FAIL'
+            - - 'Traffic_VM6_192_168_40_21_To_VM4_192_168_70_20_FAIL'
+            - - 'Traffic_VM6_192_168_40_21_To_VM5_192_168_71_20_FAIL'
+
+        ExitSequence:
+            - - 'PowerOFFAllVms_BAT_Tier0_Tier1_StaticRouting'
+            - - 'DeleteTestVnicsAllVMs2Tier_StaticRouting'
+            - - 'CleanupBasicTier0_Tier1'
+            - - 'CleanupEdge'
+            - - 'DeleteSR1'
+            - - 'DeleteSR2'
+            - - 'UnregisterHosts'
+

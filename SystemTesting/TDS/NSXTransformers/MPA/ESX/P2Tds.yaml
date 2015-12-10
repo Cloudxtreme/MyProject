@@ -1,0 +1,1162 @@
+!include MPACommon.yaml
+!include TestbedSpec.yaml
+
+VerticalRegistrationIncorrectAppid:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA,MP
+    QCPath: Verticals
+    TestName: VerticalRegistrationIncorrectAppid
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: MPA/MP Registration is successful as app Id is deprecated
+    Version: 2
+    TestbedSpec: *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+       <<: *MPACommonWorkloads
+       Sequence:
+            #cleanup
+            - ['KillSampleClient']
+            - ['SyslogWriteIndex']
+            - ['ConnectXMLRPCServer']
+            - ['VerticalRegistration']
+            - ['MPSyslogCheckForSuccessFulRegistration']
+
+       SyslogWriteIndex:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            file_append:
+                execution_type: 'cli'
+                append_string: 'VerticalRegisterIncorrectAppId'
+                size: 0
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+
+       VerticalRegistration:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            host_ip: *HOST_IP
+            application_type: 'CustomerVertical'
+            application_id: None
+            client_type: 1
+            vertical_registration:
+                'cookie_id[?]defined': ''
+
+       MPSyslogCheckForSuccessFulRegistration:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            query_file:
+                execution_type: 'cli'
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+                grep_after: 'VerticalRegisterIncorrectAppId'
+                grep_string: 'Vertical ''CustomerVertical'' sent a sync response.'
+                max_wait: 60
+
+Draft_VerticalRegistrationIncorrectClientType:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: VerticalRegistrationIncorrectClientType
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: MPA/MP Registration is rejected
+    Version: 2
+    TestbedSpec: *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+       <<: *MPACommonWorkloads
+       Sequence:
+            #cleanup
+            - ['KillSampleClient']
+            - ['SyslogWriteIndex']
+            - ['ConnectXMLRPCServer']
+            - ['VerticalRegistration']
+            - ['SyslogCheckForSend']
+
+       SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'VerticalRegisterIncorrectClientType'
+
+       VerticalRegistration:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            host_ip: *HOST_IP
+            application_type: 'CustomerVertical'
+            application_id: '345'
+            client_type: 100
+            vertical_registration:
+                'cookie_id[?]defined': ''
+
+
+       SyslogCheckForSend:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'VerticalRegisterIncorrectClientType'
+                grep_string: 'Registration Init, Invalid Arguments'
+                max_wait: 20
+
+VerticalRegistrationIncorrectAppType:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: VerticalRegistrationIncorrectAppType
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: MPA/MP Registration is rejected
+    Version: 2
+    TestbedSpec: *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+       <<: *MPACommonWorkloads
+       Sequence:
+            #cleanup
+            - ['KillSampleClient']
+            - ['SyslogWriteIndex']
+            - ['ConnectXMLRPCServer']
+            - ['VerticalRegistration']
+            - ['MPSyslogCheckForSuccessFulRegistration']
+
+       SyslogWriteIndex:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            file_append:
+                execution_type: 'cli'
+                append_string: 'VerticalRegistrationIncorrectAppType'
+                size: 0
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+
+       VerticalRegistration:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            host_ip: *HOST_IP
+            application_type: None
+            application_id: '345'
+            client_type: 1
+            vertical_registration:
+                'cookie_id[?]defined': ''
+
+       MPSyslogCheckForSuccessFulRegistration:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            query_file:
+                execution_type: 'cli'
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+                grep_after: 'VerticalRegistrationIncorrectAppType'
+                grep_string: 'Vertical ''CustomerVertical'' sent a sync response.'
+                max_wait: 60
+            ExpectedResult: 'FAIL'
+
+MPARestartPingStatus:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: MPARestartPingStatus
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Verify MPA Pings through a REST API after a MPA Restart
+    Version: 2
+    TestbedSpec: *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['RestartMPA']
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['SyslogCheckForPing']
+
+        SyslogWriteIndex:
+           Type: Host
+           TestHost: *TEST_HOST
+           syslog_append:
+              execution_type: 'cmd'
+              syslog_message: 'PingStatusMPARestart'
+
+        GetClients: &GET_CLIENTS
+           Type: 'NSX'
+           TestNSX: 'nsxmanager.[1]'
+           messagingclient:
+              '[1]':
+                  result_object: 'results'
+
+        VerifyClientList: &VERIFY_CLIENT_LIST
+           Type: 'Messaging'
+           TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+           get_clients_list:
+              'result_count[?]equal_to': '2'
+
+        PingClient_1: &PING_CLIENT_1
+           Type: 'Messaging'
+           TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+           noofretries: 3
+           sleepbetweenretry: 60
+           ping_client:
+              'client_status[?]equal_to': 'true'
+
+        SyslogCheckForPing:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'PingStatusMPARestart'
+                grep_string: 'Send ping reply'
+                max_wait: 60
+
+ChangeMpIpConfigFile:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: ChangeMpIpConfigFile
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Change MP IP in Config File to invalid value
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['GetMasterBrokerIp']
+            - ['ReplaceMPInvalidIpAddress']
+            - ['CompareMasterBrokerIp']
+            - ['RestartMPA']
+            #- ['SyslogCheckForMessage1']
+            - ['ReplaceMPOriginalIP']
+            - ['RestartMPA']
+            - ['SyslogCheckForFullyEstablished']
+
+        GetMasterBrokerIp:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            read_master_broker_ip:
+                'master_broker_ip[?]defined': ''
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'InvalidMpIpCheck'
+
+        ReplaceMPInvalidIpAddress:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: 'esx.[1]->read_master_broker_ip->master_broker_ip'
+                replace: '0.0.0.0'
+
+        CompareMasterBrokerIp:
+            Type: Host
+            TestHost: 'esx.[1]'
+            execution_type: 'cmd'
+            read_master_broker_ip:
+                'master_broker_ip[?]not_equal_to' : 'esx.[1]->read_master_broker_ip->master_broker_ip'
+
+        SyslogCheckForMessage1:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'InvalidMpIpCheck'
+                grep_string: 'StartAction failure. Unable to connect to any broker.'
+                max_wait: 60
+
+        ReplaceMPOriginalIP:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: '0.0.0.0'
+                replace: 'esx.[1]->read_master_broker_ip->master_broker_ip'
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'InvalidMpIpCheck'
+                grep_string: 'MPA connection fully established'
+                max_wait: 60
+
+ChangeClientTokenConfigFile:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: ChangeClientTokenConfigFile
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Change client Token to invalid_value in the config file
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['GetClientToken']
+            - ['ChangeClientToken']
+            - ['RestartMPA']
+            - ['SyslogCheckForMessage1']
+            - ['ReplaceOriginalClientToken']
+            - ['RestartMPA']
+            - ['SyslogCheckForFullyEstablished']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'IncorrectAccountNameCheck'
+
+        GetClientToken:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            read_client_token:
+                'client_token[?]defined': ''
+
+        ChangeClientToken:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: esx.[1]->read_client_token->client_token
+                replace: 'invalid_value'
+
+        SyslogCheckForMessage1:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'IncorrectAccountNameCheck'
+                grep_string: 'Unable to log on to broker using supplied credentials'
+                max_wait: 60
+
+        ReplaceOriginalClientToken:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: 'invalid_value'
+                replace: 'esx.[1]->read_client_token->client_token'
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'Unable to log on to broker using supplied credentials'
+                grep_string: 'MPA connection fully established'
+                max_wait: 60
+
+MPAConfigFileMissing:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: MPAConfigFileMissing
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Verify connection Status when MPA config file is missing
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['MoveMPAConfigFile']
+            - ['RestartMPA']
+            - ['SyslogCheckForFileMissingMessage']
+            - ['MoveOriginalFileBack']
+            - ['RestartMPA']
+            - ['SyslogCheckForFullyEstablished']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'MPAConfigFileMissing'
+
+        MoveMPAConfigFile:
+            Type: Host
+            TestHost: *TEST_HOST
+            move_file:
+                execution_type: 'cmd'
+                source_path: '/etc/vmware/nsx-mpa/'
+                destination_path: '/etc/vmware/nsx-mpa/'
+                file_name: 'mpaconfig.json'
+                dest_file_name: 'mpaconfig.json.tmp'
+
+        SyslogCheckForFileMissingMessage:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'MPAConfigFileMissing'
+                grep_string: 'MPA config file not found'
+                max_wait: 60
+
+        MoveOriginalFileBack:
+            Type: Host
+            TestHost: *TEST_HOST
+            move_file:
+                execution_type: 'cmd'
+                source_path: '/etc/vmware/nsx-mpa/'
+                destination_path: '/etc/vmware/nsx-mpa/'
+                file_name: 'mpaconfig.json.tmp'
+                dest_file_name: 'mpaconfig.json'
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'MPA config file not found'
+                grep_string: 'MPA connection fully established'
+                max_wait: 60
+
+CheckMPLogFileForPublishMessage:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA,MP
+    QCPath: Verticals
+    TestName: Check MP Log File for message received
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: CheckMPLogFilePublishSubscribe
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+            # cleanup
+            - ['KillSampleClient']
+            - ['SyslogWriteIndex']
+            - ['ConnectXMLRPCServer']
+            - ['VerticalRegistration']
+            - ['VerticalSendRpcMsg']
+            - ['MPSyslogCheckForMessage']
+
+        SyslogWriteIndex:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            file_append:
+                execution_type: 'cli'
+                append_string: 'CustomerVerticalConnected'
+                size: 0
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+
+        MPSyslogCheckForMessage:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            query_file:
+                execution_type: 'cli'
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+                grep_after: 'CustomerVerticalConnected'
+                grep_string: 'Vertical ''CustomerVertical'' received a client rpc request : content = ''Customer Vertical RPC Request''.'
+                max_wait: 60
+
+ChangeBrokerPortConfigFile:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: ChangeBrokerPortConfigFile
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Change broker port to invalid value
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['GetBrokerPort']
+            - ['ChangeBrokerPort']
+            - ['RestartMPA']
+            - ['SyslogCheckForMessage1']
+            - ['ReplaceOriginalClientToken']
+            - ['RestartMPA']
+            - ['SyslogCheckForFullyEstablished']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'IncorrectBrokerPort'
+
+        GetBrokerPort:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            num: 0
+            read_broker_port:
+                'broker_port[?]defined': ''
+
+        ChangeBrokerPort:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: esx.[1]->read_broker_port->broker_port
+                replace: '150909'
+
+        SyslogCheckForMessage1:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'IncorrectBrokerPort'
+                grep_string: 'Unable to initialize mpa'
+                max_wait: 60
+
+        ReplaceOriginalClientToken:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: '150909'
+                replace: 'esx.[1]->read_broker_port->broker_port'
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'Unable to initialize mpa'
+                grep_string: 'MPA connection fully established'
+                max_wait: 60
+
+ChangeBrokerThumbprintConfigFile:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: ChangeBrokerThumbprintConfigFile
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Change broker Thumbprint to invalid value
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['GetBrokerThumbprint']
+            - ['ReplaceThumbprint']
+            - ['RestartMPA']
+            - ['SyslogCheckForMessage1']
+            - ['ReplaceOriginalBrokerThumbprint']
+            - ['RestartMPA']
+            - ['SyslogCheckForFullyEstablished']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: *TEST_HOST
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'IncorrectBrokerPort'
+
+        GetBrokerThumbprint:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            read_broker_thumbprint:
+                num: 0
+                broker_thumbprint[?]defined: ''
+
+        ReplaceThumbprint:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: 'esx.[1]->read_broker_thumbprint->broker_thumbprint'
+                replace: 'wrongvalueforthumbprint'
+
+        SyslogCheckForMessage1:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'IncorrectBrokerPort'
+                grep_string: 'Bad thumbprint in config file. Unable to convert from string to bytes'
+                max_wait: 60
+
+        ReplaceOriginalBrokerThumbprint:
+            Type: Host
+            TestHost: *TEST_HOST
+            replace_regex_in_file:
+                execution_type: 'cmd'
+                path: *CONFIG_FILE
+                find: 'wrongvalueforthumbprint'
+                replace: 'esx.[1]->read_broker_thumbprint->broker_thumbprint'
+
+        SyslogCheckForFullyEstablished:
+            Type: Host
+            TestHost: *TEST_HOST
+            query_file:
+                execution_type: 'cmd'
+                file_name: *SYSLOG
+                grep_after: 'Bad thumbprint in config file. Unable to convert from string to bytes'
+                grep_string: 'MPA connection fully established'
+                max_wait: 60
+
+VerticalSendRPCZeroSizePayload:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA,MP
+    QCPath: Verticals
+    TestName: VerticalSendZeroSizePayload
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Send Zero Size Payload "amqpPayloadLen"
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+             # test workloads
+            - ['SyslogWriteIndex']
+            - ['KillSampleClient']
+            - ['ConnectXMLRPCServer']
+            - ['VerticalRegistration']
+            - ['VerticalSendRPCZeroSizePayload']
+            - ['MPSyslogCheckForMessage']
+
+        SyslogWriteIndex:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            file_append:
+                execution_type: 'cli'
+                append_string: 'CustomerVerticalConnected'
+                size: 0
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+
+        MPSyslogCheckForMessage:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            query_file:
+                execution_type: 'cli'
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+                grep_after: 'CustomerVerticalConnected'
+                grep_string: 'Vertical ''CustomerVertical'' received a client rpc request : content = '''''
+                max_wait: 60
+
+VerticalSendRPCNegativePayloadLength:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA,MP
+    QCPath: Verticals
+    TestName: VerticalSendRPCNegativePayloadLength
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Send Negative Size Payload "amqpPayloadLen"
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+             # test workloads
+            - ['SyslogWriteIndex']
+            - ['KillSampleClient']
+            - ['ConnectXMLRPCServer']
+            - ['VerticalRegistration']
+            - ['VerticalSendRPCNegativePayloadLen']
+            - ['MPSyslogCheckForMessageNegativePayload']
+
+        SyslogWriteIndex:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            file_append:
+                execution_type: 'cli'
+                append_string: 'CustomerVerticalConnected'
+                size: 0
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+
+        MPSyslogCheckForMessageNegativePayload:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            query_file:
+                execution_type: 'cli'
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+                grep_after: 'CustomerVerticalConnected'
+                grep_string: 'Vertical ''CustomerVertical'' received a client rpc request : content = ''Customer Vertical RPC Request''.'
+                max_wait: 30
+            ExpectedResult: 'FAIL'
+
+VerticalSendRPCIncorrectContentType:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA,MP
+    QCPath: Verticals
+    TestName: VerticalSendRPCIncorrectContentType
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Send invalid amqpContentType
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+             # test workloads
+            - ['SyslogWriteIndex']
+            - ['KillSampleClient']
+            - ['ConnectXMLRPCServer']
+            - ['VerticalRegistration']
+            - ['VerticalSendRPCInvalidContentType']
+            - ['MPSyslogCheckForMessageFail']
+
+        SyslogWriteIndex:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            file_append:
+                execution_type: 'cli'
+                append_string: 'CustomerVerticalConnected'
+                size: 0
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+
+        MPSyslogCheckForMessageFail:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            query_file:
+                execution_type: 'cli'
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+                grep_after: 'CustomerVerticalConnected'
+                grep_string: 'Vertical ''CustomerVertical'' received a client rpc request : content = ''Customer Vertical RPC Request''.'
+                max_wait: 30
+            ExpectedResult: 'FAIL'
+
+VerticalSendRPCIncorrectAmqpHeader:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA,MP
+    QCPath: Verticals
+    TestName: VerticalSendRPCIncorrectAmqpHeader
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Send invalid amqpHeader
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+             # test workloads
+            - ['SyslogWriteIndex']
+            - ['KillSampleClient']
+            - ['ConnectXMLRPCServer']
+            - ['VerticalRegistration']
+            - ['VerticalSendRPCInvalidAmqpHeader']
+            - ['MPSyslogCheckForMessageFail']
+
+        SyslogWriteIndex:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            file_append:
+                execution_type: 'cli'
+                append_string: 'CustomerVerticalConnected'
+                size: 0
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+
+        MPSyslogCheckForMessageFail:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            query_file:
+                execution_type: 'cli'
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+                grep_after: 'CustomerVerticalConnected'
+                grep_string: 'Vertical ''CustomerVertical'' received a client rpc request : content = ''Customer Vertical RPC Request''.'
+                max_wait: 30
+            ExpectedResult: 'FAIL'
+
+VerticalSendRPCIncorrectRoutingKey:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA,MP
+    QCPath: Verticals
+    TestName: VerticalSendRPCIncorrectRoutingKey
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Send invalid routing key
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+             # test workloads
+            - ['SyslogWriteIndex']
+            - ['KillSampleClient']
+            - ['ConnectXMLRPCServer']
+            - ['VerticalRegistration']
+            - ['VerticalSendRPCInvalidRoutingKey']
+            - ['MPSyslogCheckForMessageFail']
+
+        SyslogWriteIndex:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            file_append:
+                execution_type: 'cli'
+                append_string: 'CustomerVerticalConnected'
+                size: 0
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+
+        MPSyslogCheckForMessageFail:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            query_file:
+                execution_type: 'cli'
+                file_name: '/home/secureall/secureall/logs/nsxapi.log'
+                grep_after: 'CustomerVerticalConnected'
+                grep_string: 'Vertical ''CustomerVertical'' received a client rpc request : content = ''Customer Vertical RPC Request''.'
+                max_wait: 30
+            ExpectedResult: 'FAIL'
+
+StopBrokerServiceOnMasterBroker:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: StopBrokerServiceOnMasterBroker
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Stop Broker Service On Master Broker
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        Sequence:
+            - ['SyslogWriteIndex']
+            - ['GetMasterBrokerIp']
+            - ['SetServiceId']
+            - ['StopBrokerServiceOnMasterBroker']
+            - ['SyslogCheckForMessage']
+            - ['CompareMasterBrokerIp']
+            - ['StartBrokerServiceOnMasterBroker']
+            - ['SyslogCheckForMessage_1']
+
+        GetMasterBrokerIp:
+            Type: Host
+            TestHost: 'esx.[1]'
+            execution_type: 'cmd'
+            PersistData: 'yes'
+            read_master_broker_ip:
+                'master_broker_ip[?]defined' : ''
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'StopBrokerServiceOnMasterBroker'
+
+        SetServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+                '[1]':
+                    map_object: true
+                    id_: 'rabbitmq'
+
+        StopBrokerServiceOnMasterBroker:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            managers: 'nsxmanager.[1]'
+            ipaddress: 'esx.[1]->read_master_broker_ip->master_broker_ip'
+            service_name: 'rabbitmq'
+            master_broker_node_service_status: 'stop'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'StopBrokerServiceOnMasterBroker'
+                grep_string: 'RmqListener listen thread exit'
+                max_wait: 60
+
+        CompareMasterBrokerIp:
+            Type: Host
+            TestHost: 'esx.[1]'
+            execution_type: 'cmd'
+            read_master_broker_ip:
+                'master_broker_ip[?]equal_to' : 'esx.[1]->read_master_broker_ip->master_broker_ip'
+
+        StartBrokerServiceOnMasterBroker:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            managers: 'nsxmanager.[1]'
+            ipaddress: 'esx.[1]->read_master_broker_ip->master_broker_ip'
+            service_name: 'rabbitmq'
+            master_broker_node_service_status: 'start'
+
+        SyslogCheckForMessage_1:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'RmqListener listen thread exit'
+                grep_string: 'MPA connection fully established'
+                max_wait: 240
+
+BlockTrafficMPAMPTCPConnections:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: StopBrokerServiceOnMasterBroker
+    Tags: mp,mpa,nsx
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: Stop Broker Service On Master Broker
+    Version: 2
+    TestbedSpec:  *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        Sequence:
+            - ['VerifyMPMPAConnectionUp']
+            - ['BlockRabbitMQProxyESX']
+            - ['BlockvSFW-UWESX']
+            - ['EnableGlobalFirewallRule']
+            - ['RestartMPA']
+            - ['VerifyMPMPAConnectionDown']
+            - ['UnblockRabbitMQProxyESX']
+            - ['UnblockvSFW-UWESX']
+            - ['DisableGlobalFirewallRule']
+            - ['VerifyMPMPAConnectionUp']
+
+        VerifyMPMPAConnectionUp:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cli'
+            port: 5671
+            connection_states:
+                - 'ESTABLISHED'
+            keywords:
+                - 'nsx-mpa'
+                - 'tcp'
+            get_tcp_connection_count[?]equal_to:
+                result_count: 2
+
+        EnableGlobalFirewallRule:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cli'
+            firewall_status: enable
+
+        DisableGlobalFirewallRule:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cli'
+            firewall_status: disable
+
+        VerifyMPMPAConnectionDown:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cli'
+            port: 5671
+            sleepbetweenworkloads: 30
+            connection_states:
+                - 'ESTABLISHED'
+            keywords:
+                - 'nsx-mpa'
+                - 'tcp'
+            get_tcp_connection_count[?]equal_to:
+                result_count: 0
+
+VerticalRegistrationNullFnCallback:
+    Product: NSXTransformers
+    Category: ManagementPlatform
+    Component: MPA
+    QCPath: Verticals
+    TestName: VerticalRegistrationNullFnCallback
+    Tags: mp,mpa,nsx,rpc
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestCaseLevel: Functional
+    TestCaseType: Functional
+    Priority: p2
+    Developer: smyneni
+    Summary: MPA/librmq should not crash with NullFnCallback
+    Version: 2
+    TestbedSpec: *MPA_ESX_TOPOLOGY_01
+
+    WORKLOADS:
+       <<: *MPACommonWorkloads
+       Sequence:
+            #cleanup
+            - ['KillSampleClient']
+            - ['ConnectXMLRPCServer']
+            - ['VerticalRegistration']
+
+       VerticalRegistration:
+            Type: Host
+            TestHost: *TEST_HOST
+            execution_type: 'cmd'
+            PersistData: "Yes"
+            host_ip: *HOST_IP
+            application_type: 'CustomerVertical'
+            application_id: 345
+            client_type: 1
+            registration_options: '{"fnCallback":null}'
+            vertical_registration[?]equal_to:
+                cookie_id: '-2003'
+
+

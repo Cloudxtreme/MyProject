@@ -1,0 +1,303 @@
+CLUSTER_BACKUP_WORKLOADS: &CLUSTER_BACKUP_WORKLOADS
+##########################BACKUP RESTORE CLUSTER WORKLOADS#############################
+        CreateClusterLevelBackup1: &CREATE_CLUSTER_BACKUP1
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            clusterbackuprestore:
+              '[1]':
+                  passphrase: "xxx"
+
+        CreateClusterLevelBackup2: &CREATE_CLUSTER_BACKUP2
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            clusterbackuprestore:
+              '[2]':
+                  passphrase: "xxx"
+
+        CreateClusterLevelBackup3: &CREATE_CLUSTER_BACKUP3
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            clusterbackuprestore:
+              '[3]':
+                  passphrase: "xxx"
+
+        GetClusterLevelBackup1: &GET_CLUSTER_BACKUP1
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[1]"
+            PersistData: 'yes'
+            sleepbetweenworkloads: 10
+            read:
+                'progress[?]equal_to': 100
+                'status[?]equal_to': 'SUCCESS'
+
+        GetClusterLevelBackup2: &GET_CLUSTER_BACKUP2
+            <<: *GET_CLUSTER_BACKUP1
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[2]"
+
+        GetClusterLevelBackup3: &GET_CLUSTER_BACKUP3
+            <<: *GET_CLUSTER_BACKUP1
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[3]"
+
+        DownloadClusterLevelBackup1: &DOWNLOAD_CLUSTER_BACKUP1
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[1]"
+            download:
+                'result[?]equal_to': true
+
+        DownloadClusterLevelBackup2: &DOWNLOAD_CLUSTER_BACKUP2
+            <<: *DOWNLOAD_CLUSTER_BACKUP1
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[2]"
+
+        DownloadClusterLevelBackup3: &DOWNLOAD_CLUSTER_BACKUP3
+            <<: *DOWNLOAD_CLUSTER_BACKUP1
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[3]"
+
+        UploadClusterLevelBackup1: &UPLOAD_CLUSTER_BACKUP1
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          copy_file: &COPY_FILE
+            execution_type: 'cli'
+            dest_file_name: 'nsxmanager.[1].clusterbackuprestore.[1]->read->id_'
+            ifname: "eth0"
+            path: '/tmp/vdnet/backups/cluster'
+            username: 'root'
+            password: 'ca$hc0w'
+
+        UploadClusterLevelBackup2: &UPLOAD_CLUSTER_BACKUP2
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          copy_file:
+            <<: *COPY_FILE
+            dest_file_name: 'nsxmanager.[1].clusterbackuprestore.[2]->read->id_'
+
+        UploadClusterLevelBackup3: &UPLOAD_CLUSTER_BACKUP3
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          copy_file:
+            <<: *COPY_FILE
+            dest_file_name: 'nsxmanager.[1].clusterbackuprestore.[3]->read->id_'
+
+        CopyToRestoreFolderBackup1: &COPY_TO_RESTORE_FOLDER_BACKUP1
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          move_file: &MOVE_FILE
+            execution_type: 'cli'
+            source_path: '/common/nsxcli/filestore'
+            destination_path: '/common/nsxcli/filestore'
+            file_name: 'nsxmanager.[1].clusterbackuprestore.[1]->read->id_'
+            dest_file_name: 'cluster_backup.zip'
+
+        CopyToRestoreFolderBackup2: &COPY_TO_RESTORE_FOLDER_BACKUP2
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          move_file:
+            <<: *MOVE_FILE
+            file_name: 'nsxmanager.[1].clusterbackuprestore.[2]->read->id_'
+
+        CopyToRestoreFolderBackup3: &COPY_TO_RESTORE_FOLDER_BACKUP3
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          move_file:
+            <<: *MOVE_FILE
+            file_name: 'nsxmanager.[1].clusterbackuprestore.[3]->read->id_'
+
+        RestoreClusterLevelBackup: &RESTORE_CLUSTER_BACKUP
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[1]"
+            restore:
+                passphrase: "xxx"
+            runworkload:
+                Type: 'NSX'
+                TestNSX: 'nsxmanager.[1]'
+                cluster:
+                  '[1]':
+                    map_object: true
+                    id_: 1
+                runworkload:
+                    Type: 'Cluster'
+                    TestCluster: 'nsxmanager.[1].cluster.[1]'
+                    wait_for_required_cluster_status:
+                      'required_status': 'STABLE'
+                      'time_to_monitor': '300'
+
+        DeleteAllClusterBackups: &DELETE_ALL_CLUSTER_BACKUPS
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteclusterbackup: "nsxmanager.[1].clusterbackuprestore.[-1]"
+
+        DeleteClusterBackupFile: &DELETE_CLUSTER_BACKUP_FILE
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            delete_backend_file:
+                execution_type: 'cli'
+                path: '/common/nsxcli/filestore'
+                file_name: 'cluster_backup.zip'
+
+        PurgeClusterLevelBackups: &PURGE_CLUSTER_BACKUPS
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].clusterbackuprestore.[1]"
+            purge:
+                'results[?]equal_to': true
+
+##########################BACKUP RESTORE NODE WORKLOADS#############################
+NODE_BACKUP_WORKLOADS: &NODE_BACKUP_WORKLOADS
+        CreateNodeLevelBackup1: &CREATE_NODE_BACKUP1
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nodebackuprestore:
+              '[1]':
+                  passphrase: "xxx"
+
+        GetNodeLevelBackup1: &GET_NODE_BACKUP1
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[1]"
+            PersistData: 'yes'
+            read:
+                'progress[?]equal_to': 100
+                'status[?]equal_to': 'SUCCESS'
+
+        GetNodeLevelBackup2: &GET_NODE_BACKUP2
+            <<: *GET_NODE_BACKUP1
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[2]"
+
+        GetNodeLevelBackup3: &GET_NODE_BACKUP3
+            <<: *GET_NODE_BACKUP1
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[3]"
+
+        RestoreNodeLevelBackup1: &RESTORE_NODE_BACKUP1
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[1]"
+            restore:
+                passphrase: "xxx"
+
+        DeleteAllNodeBackups: &DELETE_ALL_NODE_BACKUPS
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletenodebackup: "nsxmanager.[1].nodebackuprestore.[-1]"
+
+        PurgeNodeLevelBackups: &PURGE_NODE_BACKUPS
+            Type: "Snapshot"
+            TestSnapshot: "nsxmanager.[1].nodebackuprestore.[1]"
+            purge:
+                'results[?]equal_to': true
+
+        CreateNodeLevelBackup2: &CREATE_NODE_BACKUP2
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nodebackuprestore:
+              '[2]':
+                  passphrase: "xxx"
+
+        CreateNodeLevelBackup3: &CREATE_NODE_BACKUP3
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nodebackuprestore:
+              '[3]':
+                  passphrase: "xxx"
+
+##########################OTHER MODULE WORKLOADS#############################
+OTHER_WORKLOADS: &OTHER_WORKLOADS
+        CreateIPPool1: &CREATE_IPPOOL1
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          ippool:
+            '[1]':
+                name: 'AUTO-IPPool-1'
+                summary: "IPPool created through automation"
+                subnets:
+                  - allocation_ranges:
+                      - end: 192.168.1.10
+                        begin: 192.168.1.2
+                      - end: 192.168.1.20
+                        begin: 192.168.1.11
+                    cidr: 192.168.1.0/24
+                    gateway_ip: 192.168.1.255
+                    servers:
+                      - 192.1.1.1
+
+        CreateIPPool2: &CREATE_IPPOOL2
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          ippool:
+            '[2]':
+                name: 'AUTO-IPPool-2'
+                summary: "IPPool created through automation"
+                subnets:
+                  - allocation_ranges:
+                      - end: 192.168.2.10
+                        begin: 192.168.2.2
+                      - end: 192.168.2.20
+                        begin: 192.168.2.11
+                    cidr: 192.168.2.0/24
+                    gateway_ip: 192.168.2.255
+                    servers:
+                      - 192.1.2.1
+
+        CreateIPPool3: &CREATE_IPPOOL3
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          ippool:
+            '[3]':
+                name: 'AUTO-IPPool-3'
+                summary: "IPPool created through automation"
+                subnets:
+                  - allocation_ranges:
+                      - end: 192.168.3.10
+                        begin: 192.168.3.2
+                      - end: 192.168.3.20
+                        begin: 192.168.3.11
+                    cidr: 192.168.3.0/24
+                    gateway_ip: 192.168.3.255
+                    servers:
+                      - 192.1.3.1
+
+        DeleteAllIPPool: &DELETE_IPPOOLS
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deleteippool: "nsxmanager.[1].ippool.[-1]"
+
+        VerifyIPPool1:  &VERIFY_IPPOOL1
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].ippool.[1]"
+            get_pool_list:
+               'result_count[?]equal_to': 1
+               'results[?]contain_once':
+                   - name: 'AUTO-IPPool-1'
+                     subnets:
+                        - cidr: '192.168.1.0/24'
+            sleepbetweenworkloads: 2
+
+        VerifyIPPoolList: &VERIFY_IPPOOL_LIST
+            <<: *VERIFY_IPPOOL1
+            get_pool_list:
+               'result_count[?]equal_to': 3
+               'results[?]contain_once':
+                   - name: 'AUTO-IPPool-1'
+                     subnets:
+                        - cidr: '192.168.1.0/24'
+                   - name: 'AUTO-IPPool-2'
+                     subnets:
+                        - cidr: '192.168.2.0/24'
+                   - name: 'AUTO-IPPool-3'
+                     subnets:
+                        - cidr: '192.168.3.0/24'
+            sleepbetweenworkloads: 2
+
+        GetClient: &GET_CLIENT
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            messagingclient:
+                '[1]':
+                    result_object: 'results'
+
+        GetClientsById: &GET_CLIENT_DETAILS
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+            read:
+                'id_[?]equal_to': 'nsxmanager.[1].messagingclient.[1]->client_id'
+
+        VerifyClient: &VERIFY_CLIENT
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+            get_clients_list:
+                'result_count[?]equal_to': '1'

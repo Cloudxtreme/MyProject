@@ -1,0 +1,430 @@
+!include ../Clustering/MPCommonWorkloads.yaml
+!include ../Clustering/MPVerticalWorkloads.yaml
+!include ../Clustering/L2Workloads.yaml
+!include ../Clustering/TestbedSpec.yaml
+
+UpdateCertificatesOfAllNSXManagerNodes:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "dgargote"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "UpdateCertificatesOfAllNSXManagerNodes"
+    Summary: "Update certificate on all NSXManager node and verify all other
+              functionalities are working"
+    Procedure: '1. GET Httpd service certificates on all NSXManagers
+                2. Create a Self Signed Certificates for three NSXManagers
+                3. Update certificate with Self Signed Certificate on all NSXManager nodes
+                4. Verify certificate is updated on all NSXManager nodes
+                5. Verify all other functionalities are working'
+    ExpectedResult: 'All functionalities should work after updating certificates'
+    TestbedSpec: *3MP_3CCP_4ESX
+    WORKLOADS:
+      <<: *MPClusteringConfigurationWorkloads
+      <<: *MPClusteringL2Workloads
+      <<: *MPClusteringVerificationWorkloads
+      <<: *ApplianceManagementWorkloads
+      <<: *CCPClusteringConfigurationWorkloads
+      <<: *MessagingWorkloads
+
+      Sequence:
+          - - SetProtonServiceIdFor_Node1
+          - - MapNSXManager1ToCluster
+          - - JoinController1ToCCPCluster
+          - - JoinController2ToCCPCluster
+          - - JoinController3ToCCPCluster
+          - - SetHttpd
+          - - GetHttpdCertificate
+          - - CreateThreeCSR
+          - - CreateSelfSignedCertificate_1
+          - - CreateSelfSignedCertificate_2
+          - - CreateSelfSignedCertificate_3
+          - - VerifySelfSignedCertificate_1
+          - - VerifySelfSignedCertificate_2
+          - - VerifySelfSignedCertificate_3
+          # IDAS module verification before updating certificate
+          - - CreateIPPool
+          - - UpdateIPPool
+          - - DeleteAllIPPool
+          - - GetVNIPoolId
+          - - UpdateVNIPool
+          - - ResetVNIPool
+          # Cert Mgmt module verification before updating certificate
+          - - AddCRL
+          - - UpdateCRL
+          - - DeleteCRL
+          # Messaging module verification before updating certificate
+          - - GetClients
+          - - VerifyClientList
+          - - PingClient_1
+          - - PingClient_2
+          - - PingClient_3
+          - - PingClient_4
+          - - PingClient_5
+          - - VerifyHeartbeatStatusOfClient1
+          - - VerifyHeartbeatStatusOfClient2
+          - - VerifyHeartbeatStatusOfClient3
+          - - VerifyHeartbeatStatusOfClient4
+          - - VerifyHeartbeatStatusOfClient5
+          # Inventory module verification before updating certificate(with workaround)
+          # TODO: Remove this workaround once bug#1418437 is fixed
+          - - RestartDAOnESX1
+          - - RestartDAOnESX2
+          - - DiscoverVMs
+          # State synch module verification before updating certificate
+          - - CreateLogicalSwitch01From_Node1
+          - - CreateLogicalPort01FromNode1
+          - - CreateLogicalPort02FromNode2
+          - - CreateLogicalPort03FromNode3
+          - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode1
+          - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode2
+          - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode3
+          - - DeleteLogicalPortFrom_Node1
+          - - DeleteLogicalSwitchFrom_Node1
+          - - UpdateCertificateOnNSXManager1
+          - - UpdateCertificateOnNSXManager2
+          - - UpdateCertificateOnNSXManager3
+          - - VerifyUpdatedCertificateOnNSXManager1
+          - - VerifyUpdatedCertificateOnNSXManager2
+          - - VerifyUpdatedCertificateOnNSXManager3
+          - - Wait_For_Cluster_Status_Stable_On_Node1
+          - - Wait_For_Cluster_Status_Stable_On_Node2
+          - - Wait_For_Cluster_Status_Stable_On_Node3
+          # IDAS module verification after updating certificate
+          - - CreateIPPool
+          - - UpdateIPPool
+          - - DeleteAllIPPool
+          - - GetVNIPoolId
+          - - UpdateVNIPool
+          - - ResetVNIPool
+          # Cert Mgmt module verification after updating certificate
+          - - AddCRL
+          - - UpdateCRL
+          - - DeleteCRL
+          # Messaging module verification after updating certificate
+          - - GetClients
+          - - VerifyClientList
+          - - PingClient_1
+          - - PingClient_2
+          - - PingClient_3
+          - - PingClient_4
+          - - PingClient_5
+          - - VerifyHeartbeatStatusOfClient1
+          - - VerifyHeartbeatStatusOfClient2
+          - - VerifyHeartbeatStatusOfClient3
+          - - VerifyHeartbeatStatusOfClient4
+          - - VerifyHeartbeatStatusOfClient5
+          # Inventory module verification after updating certificate(with workaround)
+          # TODO: Remove this workaround once bug#1418437 is fixed
+          - - RestartDAOnESX1
+          - - RestartDAOnESX2
+          - - DiscoverVMs
+          # State synch module verification after updating certificate
+          - - CreateLogicalSwitch01From_Node1
+          - - CreateLogicalPort01FromNode1
+          - - CreateLogicalPort02FromNode2
+          - - CreateLogicalPort03FromNode3
+          - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode1
+          - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode2
+          - - VerifyLogicalSwitchPort0102And03InfoOnCCPNode3
+          - - DeleteLogicalPortFrom_Node1
+          - - DeleteLogicalSwitchFrom_Node1
+          # Clustering module verification after updating certificate
+          - - StopProtonServiceOn_Node3
+          - - StopProtonServiceOn_Node2
+          - - StopProtonServiceOn_Node1
+          - - StartProtonServiceOn_Node1
+          - - StartProtonServiceOn_Node2
+          - - StartProtonServiceOn_Node3
+          - - Wait_For_Cluster_Status_Stable_On_Node1_After_Proton_Restart
+          - - Wait_For_Cluster_Status_Stable_On_Node2
+          - - Wait_For_Cluster_Status_Stable_On_Node3
+      ExitSequence:
+          - - DeleteAllSelfSignedCertificates
+          - - DeleteAllCSR
+
+      SetHttpd:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          httpd_service_cert:
+            '[1]':
+                map_object: true
+                id_: 'httpdservicecert'
+
+      GetHttpdCertificate:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+          read:
+              'service_name[?]equal_to': 'httpd'
+              'service_properties':
+                  'certificate[?]defined': ''
+
+      CreateThreeCSR:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          csr:
+              '[1-3]':
+                  algorithm: "RSA"
+                  key_size: "2048"
+                  subject:
+                    attributes:
+                      - key: CN
+                        value: NSX
+                      - key: O
+                        value: VMware
+                      - key: OU
+                        value: NSBU
+                      - key: C
+                        value: US
+                      - key: ST
+                        value: CA
+                      - key: L
+                        value: PA
+
+      CreateSelfSignedCertificate_1:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          selfsignedcertificate:
+              '[1]':
+                  csr_id: "nsxmanager.[1].csr.[1]"
+
+      CreateSelfSignedCertificate_2:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          selfsignedcertificate:
+              '[2]':
+                  csr_id: "nsxmanager.[1].csr.[2]"
+
+      CreateSelfSignedCertificate_3:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          selfsignedcertificate:
+              '[3]':
+                  csr_id: "nsxmanager.[1].csr.[3]"
+
+      VerifySelfSignedCertificate_1:
+          Type: "Certificate"
+          Testcertificate: "nsxmanager.[1].selfsignedcertificate.[1]"
+          PersistData: "Yes"
+          read:
+            'pem_encoded[?]defined': ''
+
+      VerifySelfSignedCertificate_2:
+          Type: "Certificate"
+          Testcertificate: "nsxmanager.[1].selfsignedcertificate.[2]"
+          PersistData: "Yes"
+          read:
+            'pem_encoded[?]defined': ''
+
+      VerifySelfSignedCertificate_3:
+          Type: "Certificate"
+          Testcertificate: "nsxmanager.[1].selfsignedcertificate.[3]"
+          PersistData: "Yes"
+          read:
+            'pem_encoded[?]defined': ''
+
+      UpdateCertificateOnNSXManager1:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+          expectedResult: ignore
+          configure_certificate:
+              id_: "nsxmanager.[1].selfsignedcertificate.[1]->id"
+
+      UpdateCertificateOnNSXManager2:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[2].httpd_service_cert.[1]"
+          expectedResult: ignore
+          configure_certificate:
+              id_: "nsxmanager.[1].selfsignedcertificate.[2]->id"
+
+      UpdateCertificateOnNSXManager3:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[3].httpd_service_cert.[1]"
+          expectedResult: ignore
+          configure_certificate:
+              id_: "nsxmanager.[1].selfsignedcertificate.[3]->id"
+
+      VerifyUpdatedCertificateOnNSXManager1:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[1].httpd_service_cert.[1]"
+          sleepbetweenworkloads: 10
+          read:
+              'service_name[?]equal_to': 'httpd'
+              'service_properties':
+                  'certificate':
+                      'pem_encoded[?]equal_to': "nsxmanager.[1].selfsignedcertificate.[1]->read->pem_encoded"
+
+      VerifyUpdatedCertificateOnNSXManager2:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[2].httpd_service_cert.[1]"
+          sleepbetweenworkloads: 10
+          read:
+              'service_name[?]equal_to': 'httpd'
+              'service_properties':
+                  'certificate':
+                      'pem_encoded[?]equal_to': "nsxmanager.[1].selfsignedcertificate.[2]->read->pem_encoded"
+
+      VerifyUpdatedCertificateOnNSXManager3:
+          Type: "Certificate"
+          TestCertificate: "nsxmanager.[3].httpd_service_cert.[1]"
+          sleepbetweenworkloads: 10
+          read:
+              'service_name[?]equal_to': 'httpd'
+              'service_properties':
+                  'certificate':
+                      'pem_encoded[?]equal_to': "nsxmanager.[1].selfsignedcertificate.[3]->read->pem_encoded"
+
+      DeleteAllSelfSignedCertificates:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deleteselfsignedcertificate: "nsxmanager.[1].selfsignedcertificate.[-1]"
+          sleepbetweenworkloads: 50
+
+      DeleteAllCSR:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deletecsr: "nsxmanager.[1].csr.[-1]"
+
+      CreateIPPool:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          ippool:
+              '[1]':
+                  name: 'autogenerate'
+                  summary: "IPPool created through automation"
+                  subnets:
+                    - allocation_ranges:
+                        - end: 192.168.1.10
+                          begin: 192.168.1.2
+                        - end: 192.168.1.20
+                          begin: 192.168.1.11
+                      cidr: 192.168.1.0/24
+                      gateway_ip: 192.168.1.255
+                      servers:
+                        - 192.1.1.1
+
+      UpdateIPPool:
+          Type: "GroupingObject"
+          Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+          reconfigure: true
+          name: "Auto-IPPool-1"
+          summary: "Updated summary"
+
+      DeleteAllIPPool:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deleteippool: "nsxmanager.[1].ippool.[-1]"
+
+      GetVNIPoolId: &GET_VNIPOOL_ID
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          vnipool:
+              '[1]':
+                  discover: 'true'
+                  name: 'DefaultVniPool'
+
+      UpdateVNIPool:
+          Type: "GroupingObject"
+          Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+          reconfigure: true
+          name: 'DefaultVniPool'
+          summary: "Default VNI Pool Updated summary"
+          ranges:
+              - begin: 100000
+                end: 160000
+
+      ResetVNIPool:
+          Type: "GroupingObject"
+          Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+          reconfigure: true
+          summary: "Default VNI Pool"
+          ranges:
+              - begin: 5000
+                end: 65535
+
+      AddCRL:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          crl:
+              '[1]':
+                  result_object: 'results'
+                  pem_encoded: '-----BEGIN X509 CRL-----\nMIIBmjCCAQMwDQYJKoZIhvcNAQEEBQAwgb0xCzAJBgNVBAYTAlVTMRMwEQYDVQQI\nEwpDYWxpZm9ybmlhMRAwDgYDVQQHEwdPYWtsYW5kMRYwFAYDVQQKEw1SZWQgSGF0\nLCBJbmMuMSIwIAYDVQQLFBlHbG9iYWwgU2VydmljZXMgJiBTdXBwb3J0MR0wGwYD\nVQQDExRSZWQgSGF0IFRlc3QgUm9vdCBDQTEsMCoGCSqGSIb3DQEJARYdc3Ryb25n\naG9sZC1zdXBwb3J0QHJlZGhhdC5jb20XDTAwMTExMzIwNTcyNVoXDTAwMTIxMzIw\nNTcyNVowFDASAgEBFw0wMDA4MzEyMTE5MTdaMA0GCSqGSIb3DQEBBAUAA4GBAIge\nX5VaOkNOKn8MrbxFiqpOrH/M9Vocu9oDeQ6EMTeA5xIWBGN53BZ/HUJ1NjS32VDG\nwaM3P6DXud4xKXauVgAXyH6D6xEDBt5GIBTFrWKIDKGOkvRChTUvzObmx9ZVSMMg\n5xvAbsaFgJx3RBbznySlqVU4APYE0W2/xL0/8fzM\n-----END X509 CRL-----\n'
+
+      UpdateCRL:
+          Type: "Certificate"
+          Testcertificate: "nsxmanager.[1].crl.[1]"
+          reconfigure: true
+          name: 'VMware Certificate Authority'
+          pem_encoded: '-----BEGIN X509 CRL-----\nMIIBmjCCAQMwDQYJKoZIhvcNAQEEBQAwgb0xCzAJBgNVBAYTAlVTMRMwEQYDVQQI\nEwpDYWxpZm9ybmlhMRAwDgYDVQQHEwdPYWtsYW5kMRYwFAYDVQQKEw1SZWQgSGF0\nLCBJbmMuMSIwIAYDVQQLFBlHbG9iYWwgU2VydmljZXMgJiBTdXBwb3J0MR0wGwYD\nVQQDExRSZWQgSGF0IFRlc3QgUm9vdCBDQTEsMCoGCSqGSIb3DQEJARYdc3Ryb25n\naG9sZC1zdXBwb3J0QHJlZGhhdC5jb20XDTAwMTExMzIwNTcyNVoXDTAwMTIxMzIw\nNTcyNVowFDASAgEBFw0wMDA4MzEyMTE5MTdaMA0GCSqGSIb3DQEBBAUAA4GBAIge\nX5VaOkNOKn8MrbxFiqpOrH/M9Vocu9oDeQ6EMTeA5xIWBGN53BZ/HUJ1NjS32VDG\nwaM3P6DXud4xKXauVgAXyH6D6xEDBt5GIBTFrWKIDKGOkvRChTUvzObmx9ZVSMMg\n5xvAbsaFgJx3RBbznySlqVU4APYE0W2/xL0/8fzM\n-----END X509 CRL-----\n'
+          resource_type: 'crl'
+
+      DeleteCRL:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          deletecrl: "nsxmanager.[1].crl.[1]"
+
+      CreateLogicalPort01FromNode1:
+          <<: *CREATE_LP01_ON_LS01_FROM_NODE1
+
+      CreateLogicalPort02FromNode2:
+          <<: *CREATE_LP02_ON_LS01_FROM_NODE1
+          TestNSX: nsxmanager.[2]
+
+      CreateLogicalPort03FromNode3:
+          <<: *CREATE_LP03_ON_LS01_FROM_NODE1
+          TestNSX: nsxmanager.[3]
+
+      VerifyLogicalSwitchPort0102And03InfoOnCCPNode1:
+          <<: *VERIFY_LP0102AND03_ON_CCP
+          noofretries: 3
+          sleepbetweenretry: 60
+
+      VerifyLogicalSwitchPort0102And03InfoOnCCPNode2:
+          <<: *VERIFY_LP0102AND03_ON_CCP
+          Testclusternode: "nsxcontroller.[2].clusternode.[2]"
+          noofretries: 3
+          sleepbetweenretry: 60
+
+      VerifyLogicalSwitchPort0102And03InfoOnCCPNode3:
+          <<: *VERIFY_LP0102AND03_ON_CCP
+          Testclusternode: "nsxcontroller.[3].clusternode.[3]"
+          noofretries: 3
+          sleepbetweenretry: 60
+
+      Wait_For_Cluster_Status_Stable_On_Node1_After_Proton_Restart:
+          <<: *WAIT_STABLE_NODE_1
+          sleepbetweenworkloads: 120
+
+      DiscoverVMs:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          sleepbetweenworkloads: 120
+          noofretries: 3
+          sleepbetweenretry: 60
+          fabricvm:
+              '[1-4]':
+                  discover: 'true'
+                  name: 'vm.[x=fabricvm_index]'
+
+      RestartDAOnESX1: &RESTART_DA_ON_ESX1
+          Type: Host
+          TestHost: 'esx.[1]'
+          configure_service_state:
+              state: 'restart'
+              service_name: 'nsx-da'
+              execution_type: 'cli'
+
+      RestartDAOnESX2:
+          <<: *RESTART_DA_ON_ESX1
+          TestHost: 'esx.[2]'

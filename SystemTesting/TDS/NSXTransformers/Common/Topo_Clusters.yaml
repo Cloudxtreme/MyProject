@@ -1,0 +1,787 @@
+Topo_Clusters_Common: &Topo_Clusters_Common
+
+    MPSetup_1MP:
+        - - JoinMPClusterNode-1_NSXM-1_ToNSXM-1
+        - - MapNSXManager-1_CLUSTER-1
+
+    MPSetup_3MP:
+        - - JoinMPClusterNode-1_NSXM-1_ToNSXM-1
+        - - JoinMPClusterNode-2_NSXM-2_ToNSXM-1
+        - - JoinMPClusterNode-3_NSXM-3_ToNSXM-1
+        - - MapNSXManager-1_CLUSTER-1
+        - - MapNSXManager-2_CLUSTER-1
+        - - MapNSXManager-3_CLUSTER-1
+
+    CCPSetup_1CCP:
+        - - SetManagerOnNSXC-1
+        - - SetSecurityOnCCPClusterNode_NSXC-1
+        - - InitializeCCPClusterNode_NSXC-1
+        - - JoinCCPClusterNode-1_NSXC-1_ToNSXC-1
+
+    CCPSetup_3CCP:
+        - - SetManagerOnNSXC-1
+        - - SetManagerOnNSXC-2
+        - - SetManagerOnNSXC-3
+        - - SetSecurityOnCCPClusterNode_NSXC-1
+        - - InitializeCCPClusterNode_NSXC-1
+        - - JoinMootCCPClusterNode-1_NSXC-1_ToNSXC-1
+        - - SetSecurityOnCCPClusterNode_NSXC-2
+        - - JoinMootCCPClusterNode-2_NSXC-2_ToNSXC-1
+        - - SetSecurityOnCCPClusterNode_NSXC-3
+        - - JoinMootCCPClusterNode-3_NSXC-3_ToNSXC-1
+        - - ConfigureClusterServiceStateOnNSXC-2_SERVICE-control-cluster_STATE-activate
+        - - ConfigureClusterServiceStateOnNSXC-3_SERVICE-control-cluster_STATE-activate
+
+    VerifyCCPClusterMembers_1CCP:
+        noofretries: 5
+        Type: ClusterNode
+        TestClusterNode: nsxcontroller.[1].clusternode.[1]
+        execution_type: cli
+        get_cluster_node:
+            in_majority[?]equal_to: 'true'
+            cluster_nodes[?]contain_once:
+                - controller_ip: nsxcontroller.[1]
+                  id_: nsxcontroller.[1].clusternode.[1]
+                  status: active
+
+    VerifyCCPClusterMembers_3CCP:
+        noofretries: 5
+        Type: ClusterNode
+        TestClusterNode: nsxcontroller.[1].clusternode.[1]
+        execution_type: cli
+        get_cluster_node:
+            in_majority[?]equal_to: 'true'
+            cluster_nodes[?]contain_once:
+                - controller_ip: nsxcontroller.[1]
+                  id_: nsxcontroller.[1].clusternode.[1]
+                  status: active
+                - controller_ip: nsxcontroller.[2]
+                  id_: nsxcontroller.[1].clusternode.[2]
+                  status: active
+                - controller_ip: nsxcontroller.[3]
+                  id_: nsxcontroller.[1].clusternode.[3]
+                  status: active
+
+    VerifyMPClusterMembers_1MP_NoCCP:
+      Type: Cluster
+      TestCluster:  nsxmanager.[1].clusternode.[1]
+      get_cluster_members:
+        result_count[?]equal_to: 1
+        results[?]contain_once:
+           - id_: nsxmanager.[1].clusternode.[1]
+             manager_role:
+               node_type: ManagementClusterRoleConfig
+
+    VerifyMPClusterMembers_1MP_1CCP:
+      Type: Cluster
+      TestCluster:  nsxmanager.[1].clusternode.[1]
+      get_cluster_members:
+        result_count[?]equal_to: 2
+        results[?]contain_once:
+           - id_: nsxmanager.[1].clusternode.[1]
+             manager_role:
+               node_type: ManagementClusterRoleConfig
+           - id_: nsxcontroller.[1].clusternode.[1]
+             controller_role:
+               node_type: ControllerClusterRoleConfig
+
+    VerifyMPClusterMembers_1MP_3CCP:
+      Type: Cluster
+      TestCluster:  nsxmanager.[1].clusternode.[1]
+      get_cluster_members:
+        result_count[?]equal_to: 4
+        results[?]contain_once:
+           - id_: nsxmanager.[1].clusternode.[1]
+             manager_role:
+               node_type: ManagementClusterRoleConfig
+           - id_: nsxcontroller.[1].clusternode.[1]
+             controller_role:
+               node_type: ControllerClusterRoleConfig
+           - id_: nsxcontroller.[1].clusternode.[2]
+             controller_role:
+               node_type: ControllerClusterRoleConfig
+           - id_: nsxcontroller.[1].clusternode.[3]
+             controller_role:
+               node_type: ControllerClusterRoleConfig
+
+    VerifyMPClusterMembers_3MP_3CCP:
+      Type: Cluster
+      TestCluster:  nsxmanager.[1-3].clusternode.[1]
+      get_cluster_members:
+        result_count[?]equal_to: 6
+        results[?]contain_once:
+           - id_: nsxmanager.[1].clusternode.[1]
+             manager_role:
+               node_type: ManagementClusterRoleConfig
+           - id_: nsxmanager.[1].clusternode.[2]
+             manager_role:
+               node_type: ManagementClusterRoleConfig
+           - id_: nsxmanager.[1].clusternode.[3]
+             manager_role:
+               node_type: ManagementClusterRoleConfig
+           - id_: nsxcontroller.[1].clusternode.[1]
+             controller_role:
+               node_type: ControllerClusterRoleConfig
+           - id_: nsxcontroller.[1].clusternode.[2]
+             controller_role:
+               node_type: ControllerClusterRoleConfig
+           - id_: nsxcontroller.[1].clusternode.[3]
+             controller_role:
+               node_type: ControllerClusterRoleConfig
+
+    RemoveCCPClusterNode-1_FromMootNSXC-1:
+        - - ConfigureServiceOnNSXC-1_NAME-controller_STATE-stop
+        - - DeleteCCPClusterNode-1_NSXC-1_FromNSXM-1
+        - - StopMootOnCCPClusterNode_NSXC-1
+        - - ClearCCPClusterNode_NSXC-1
+        - - DeleteMootServerOnCCPClusterNode_NSXC-1
+        - - DeleteBootstrapFileOnNSXC-1
+        - - DeleteNodeUUIDFileOnNSXC-1
+        - - StartMootOnCCPClusterNode_NSXC-1
+
+    RemoveCCPClusterNode-2_FromMootNSXC-1:
+        - - ConfigureServiceOnNSXC-2_NAME-controller_STATE-stop
+        - - RemoveMootCCPClusterNode-2_FromNSXC-1
+        - - DeleteCCPClusterNode-2_NSXC-1_FromNSXM-1
+        - - StopMootOnCCPClusterNode_NSXC-2
+        - - ClearCCPClusterNode_NSXC-2
+        - - DeleteMootServerOnCCPClusterNode_NSXC-2
+        - - DeleteBootstrapFileOnNSXC-2
+        - - DeleteNodeUUIDFileOnNSXC-2
+        - - StartMootOnCCPClusterNode_NSXC-2
+
+    RemoveCCPClusterNode-3_FromMootNSXC-1:
+        - - ConfigureServiceOnNSXC-3_NAME-controller_STATE-stop
+        - - RemoveMootCCPClusterNode-3_FromNSXC-1
+        - - DeleteCCPClusterNode-3_NSXC-1_FromNSXM-1
+        - - StopMootOnCCPClusterNode_NSXC-3
+        - - ClearCCPClusterNode_NSXC-3
+        - - DeleteMootServerOnCCPClusterNode_NSXC-3
+        - - DeleteBootstrapFileOnNSXC-3
+        - - DeleteNodeUUIDFileOnNSXC-3
+        - - StartMootOnCCPClusterNode_NSXC-3
+
+    CCPCleanup_1CCP:
+        - - RemoveCCPClusterNode-1_FromMootNSXC-1
+
+    CCPCleanup_3CCP:
+        - - RemoveCCPClusterNode-2_FromMootNSXC-1
+        - - RemoveCCPClusterNode-3_FromMootNSXC-1
+        - - RemoveCCPClusterNode-1_FromMootNSXC-1
+
+    MPCleanup_3MP:
+        - - SetProtonServiceIdForNSXM-2
+        - - ConfigureServiceOnNSXM-2_NAME-proton_STATE-stop
+        - - VerifyServiceOnNSXM-2_NAME-proton_STATE-stopped
+        - - DeleteMPClusterNode-2_FromNSXM-1
+        - - DeleteDataFilesOnNSXM-2
+          - DeleteConfigFilesOnNSXM-2
+        - - ConfigureServiceOnNSXM-2_NAME-proton_STATE-start
+        - - VerifyServiceOnNSXM-2_NAME-proton_STATE-running
+        - - MapNSXManager-2_CLUSTER-1
+        - - WaitForMPClusterStable-1_NSXM-2
+
+        - - SetProtonServiceIdForNSXM-3
+        - - ConfigureServiceOnNSXM-3_NAME-proton_STATE-stop
+        - - VerifyServiceOnNSXM-3_NAME-proton_STATE-stopped
+        - - DeleteMPClusterNode-3_FromNSXM-1
+        - - DeleteDataFilesOnNSXM-3
+          - DeleteConfigFilesOnNSXM-3
+        - - ConfigureServiceOnNSXM-3_NAME-proton_STATE-start
+        - - VerifyServiceOnNSXM-3_NAME-proton_STATE-running
+        - - MapNSXManager-3_CLUSTER-1
+        - - WaitForMPClusterStable-1_NSXM-3
+
+        - - WaitForMPClusterStable-1_NSXM-1
+        - - VerifyMPClusterMembers_1MP_NoCCP
+
+    MPCleanup_1MP:
+        - - WaitForMPClusterStable-1_NSXM-1
+        - - VerifyMPClusterMembers_1MP_NoCCP
+
+    JoinMootCCPClusterNode-1_NSXC-1_ToNSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        clusternode:
+            '[1]':
+                control_cluster_thumbprint: nsxcontroller.[1]
+                controller_ip: nsxcontroller.[1]
+                execution_type: cli
+
+    JoinMootCCPClusterNode-2_NSXC-2_ToNSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        clusternode:
+            '[2]':
+                control_cluster_thumbprint: nsxcontroller.[2]
+                controller_ip: nsxcontroller.[2]
+                execution_type: cli
+
+    JoinMootCCPClusterNode-3_NSXC-3_ToNSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        clusternode:
+            '[3]':
+                control_cluster_thumbprint: nsxcontroller.[3]
+                controller_ip: nsxcontroller.[3]
+                execution_type: cli
+
+    # xxx(sqian): workaround, sleep 30, for PR 1445283
+    ConfigureClusterServiceStateOnNSXC-2_SERVICE-control-cluster_STATE-activate:
+        SleepBetweenWorkloads: 30
+        TestController: nsxcontroller.[2]
+        Type: Controller
+        configure_service_state:
+            service_name: control-cluster
+            state: activate
+        execution_type: cli
+        noofretries: 5
+
+    # xxx(sqian): workaround, sleep 30, for PR 1445283
+    ConfigureClusterServiceStateOnNSXC-3_SERVICE-control-cluster_STATE-activate:
+        SleepBetweenWorkloads: 30
+        TestController: nsxcontroller.[3]
+        Type: Controller
+        configure_service_state:
+            service_name: control-cluster
+            state: activate
+        execution_type: cli
+        noofretries: 5
+
+    ConfigureClusterServiceStateOnNSXC-2_SERVICE-control-cluster_STATE-deactivate:
+        TestController: nsxcontroller.[2]
+        Type: Controller
+        configure_service_state:
+            service_name: control-cluster
+            state: deactivate
+        execution_type: cli
+        noofretries: 5
+
+    ConfigureClusterServiceStateOnNSXC-3_SERVICE-control-cluster_STATE-deactivate:
+        TestController: nsxcontroller.[3]
+        Type: Controller
+        configure_service_state:
+            service_name: control-cluster
+            state: deactivate
+        execution_type: cli
+        noofretries: 5
+
+    InitializeCCPClusterNode_NSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        configure_service_state:
+            service_name: control-cluster
+            state: initialize
+        execution_type: cli
+        noofretries: 5
+
+    SetSecurityOnCCPClusterNode_NSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        execution_type: cli
+        set_security:
+            security_type: password
+            value: 12345
+
+    SetSecurityOnCCPClusterNode_NSXC-2:
+        TestController: nsxcontroller.[2]
+        Type: Controller
+        execution_type: cli
+        set_security:
+            security_type: password
+            value: 12345
+
+    SetSecurityOnCCPClusterNode_NSXC-3:
+        TestController: nsxcontroller.[3]
+        Type: Controller
+        execution_type: cli
+        set_security:
+            security_type: password
+            value: 12345
+
+    ClearCCPClusterNode_NSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        clear_controller:
+            execution_type: cmd
+
+    ClearCCPClusterNode_NSXC-2:
+        TestController: nsxcontroller.[2]
+        Type: Controller
+        clear_controller:
+            execution_type: cmd
+
+    ClearCCPClusterNode_NSXC-3:
+        TestController: nsxcontroller.[3]
+        Type: Controller
+        clear_controller:
+            execution_type: cmd
+
+    StartMootOnCCPClusterNode_NSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        configure_service_state:
+            execution_type: cmd
+            service_name: moot-server
+            state: start
+
+    StartMootOnCCPClusterNode_NSXC-2:
+        TestController: nsxcontroller.[2]
+        Type: Controller
+        configure_service_state:
+            execution_type: cmd
+            service_name: moot-server
+            state: start
+
+    StartMootOnCCPClusterNode_NSXC-3:
+        TestController: nsxcontroller.[3]
+        Type: Controller
+        configure_service_state:
+            execution_type: cmd
+            service_name: moot-server
+            state: start
+
+    StopMootOnCCPClusterNode_NSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        configure_service_state:
+            execution_type: cmd
+            service_name: moot-server
+            state: stop
+
+    StopMootOnCCPClusterNode_NSXC-2:
+        TestController: nsxcontroller.[2]
+        Type: Controller
+        configure_service_state:
+            execution_type: cmd
+            service_name: moot-server
+            state: stop
+
+    StopMootOnCCPClusterNode_NSXC-3:
+        TestController: nsxcontroller.[3]
+        Type: Controller
+        configure_service_state:
+            execution_type: cmd
+            service_name: moot-server
+            state: stop
+
+    DeleteMootServerOnCCPClusterNode_NSXC-1:
+        TestNSX: nsxcontroller.[1]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cmd
+            file_name: '*'
+            path: /var/moot-server
+
+    DeleteMootServerOnCCPClusterNode_NSXC-2:
+        TestNSX: nsxcontroller.[2]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cmd
+            file_name: '*'
+            path: /var/moot-server
+
+    DeleteMootServerOnCCPClusterNode_NSXC-3:
+        TestNSX: nsxcontroller.[3]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cmd
+            file_name: '*'
+            path: /var/moot-server
+
+    RemoveMootCCPClusterNode-2_FromNSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        remove_ccp_cluster_node:
+            controller_ip: nsxcontroller.[2]
+            execution_type: cli
+
+    RemoveMootCCPClusterNode-3_FromNSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        remove_ccp_cluster_node:
+            controller_ip: nsxcontroller.[3]
+            execution_type: cli
+
+    DeleteCCPClusterNode-2_NSXC-1_FromNSXM-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deleteclusternode: nsxcontroller.[1].clusternode.[2]
+
+    DeleteCCPClusterNode-3_NSXC-1_FromNSXM-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deleteclusternode: nsxcontroller.[1].clusternode.[3]
+
+    VerifyMPClusterStatus-1_NSXM-1:
+        TestCluster: nsxmanager.[1].cluster.[1]
+        Type: Cluster
+        cluster_status:
+            control_cluster_status:
+                status[?]equal_to: STABLE
+            mgmt_cluster_status:
+                status[?]equal_to: STABLE
+
+    VerifyMPClusterStatus-1_NSXM-2:
+        TestCluster: nsxmanager.[2].cluster.[1]
+        Type: Cluster
+        cluster_status:
+            control_cluster_status:
+                status[?]equal_to: STABLE
+            mgmt_cluster_status:
+                status[?]equal_to: STABLE
+
+    VerifyMPClusterStatus-1_NSXM-3:
+        TestCluster: nsxmanager.[3].cluster.[1]
+        Type: Cluster
+        cluster_status:
+            control_cluster_status:
+                status[?]equal_to: STABLE
+            mgmt_cluster_status:
+                status[?]equal_to: STABLE
+
+    ConfigureServiceOnNSXC-1_NAME-controller_STATE-stop:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        configure_service_state:
+            service_name: controller
+            state: stop
+
+    ConfigureServiceOnNSXC-2_NAME-controller_STATE-stop:
+        TestController: nsxcontroller.[2]
+        Type: Controller
+        configure_service_state:
+            service_name: controller
+            state: stop
+
+    ConfigureServiceOnNSXC-3_NAME-controller_STATE-stop:
+        TestController: nsxcontroller.[3]
+        Type: Controller
+        configure_service_state:
+            service_name: controller
+            state: stop
+
+    ConfigureServiceOnNSXM-2_NAME-proton_STATE-start:
+        TestService: nsxmanager.[2].nsxservice.[1]
+        Type: Service
+        configure_service_state:
+            service_name: proton
+            state: start
+
+    ConfigureServiceOnNSXM-2_NAME-proton_STATE-stop:
+        TestService: nsxmanager.[2].nsxservice.[1]
+        Type: Service
+        configure_service_state:
+            service_name: proton
+            state: stop
+
+    ConfigureServiceOnNSXM-3_NAME-proton_STATE-start:
+        TestService: nsxmanager.[3].nsxservice.[1]
+        Type: Service
+        configure_service_state:
+            service_name: proton
+            state: start
+
+    ConfigureServiceOnNSXM-3_NAME-proton_STATE-stop:
+        TestService: nsxmanager.[3].nsxservice.[1]
+        Type: Service
+        configure_service_state:
+            service_name: proton
+            state: stop
+
+    DeleteBootstrapFileOnNSXC-1:
+        TestNSX: nsxcontroller.[1]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cmd
+            file_name: bootstrap-config
+            path: /opt/vmware/etc
+
+    DeleteBootstrapFileOnNSXC-2:
+        TestNSX: nsxcontroller.[2]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cmd
+            file_name: bootstrap-config
+            path: /opt/vmware/etc
+
+    DeleteBootstrapFileOnNSXC-3:
+        TestNSX: nsxcontroller.[3]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cmd
+            file_name: bootstrap-config
+            path: /opt/vmware/etc
+
+    DeleteCCPClusterNode-1_NSXC-1_FromNSXM-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deleteclusternode: nsxcontroller.[1].clusternode.[1]
+
+    DeleteConfigFilesOnNSXM-2:
+        TestNSX: nsxmanager.[2]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cli
+            file_name: '*'
+            path: /home/secureall/secureall/nsxapi/config/self
+
+    DeleteConfigFilesOnNSXM-3:
+        TestNSX: nsxmanager.[3]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cli
+            file_name: '*'
+            path: /home/secureall/secureall/nsxapi/config/self
+
+    DeleteDataFilesOnNSXM-2:
+        TestNSX: nsxmanager.[2]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cli
+            file_name: '*'
+            path: /common/nsxapi/data/self
+
+    DeleteDataFilesOnNSXM-3:
+        TestNSX: nsxmanager.[3]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cli
+            file_name: '*'
+            path: /common/nsxapi/data/self
+
+    DeleteMPClusterNode-2_FromNSXM-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deleteclusternode: nsxmanager.[1].clusternode.[2]
+
+    DeleteMPClusterNode-3_FromNSXM-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deleteclusternode: nsxmanager.[1].clusternode.[3]
+
+    DeleteNodeUUIDFileOnNSXC-1:
+        TestNSX: nsxcontroller.[1]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cmd
+            file_name: node-uuid
+            path: /opt/vmware/etc
+
+    DeleteNodeUUIDFileOnNSXC-2:
+        TestNSX: nsxcontroller.[2]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cmd
+            file_name: node-uuid
+            path: /opt/vmware/etc
+
+    DeleteNodeUUIDFileOnNSXC-3:
+        TestNSX: nsxcontroller.[3]
+        Type: NSX
+        delete_backend_file:
+            execution_type: cmd
+            file_name: node-uuid
+            path: /opt/vmware/etc
+
+    JoinCCPClusterNode-1_NSXC-1_ToNSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        clusternode:
+            '[1]':
+                controller_ip: nsxcontroller.[1]
+
+    JoinMPClusterNode-1_NSXM-1_ToNSXM-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        clusternode:
+            '[1]':
+                mgr_role_config:
+                    manager_ip: nsxmanager.[1]
+                    manager_thumbprint: nsxmanager.[1]
+                    node_type: AddManagementNodeSpec
+                    password: default
+                    username: admin
+
+    JoinMPClusterNode-2_NSXM-2_ToNSXM-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        clusternode:
+            '[2]':
+                mgr_role_config:
+                    manager_ip: nsxmanager.[2]
+                    manager_thumbprint: nsxmanager.[2]
+                    node_type: AddManagementNodeSpec
+                    password: default
+                    username: admin
+
+    JoinMPClusterNode-3_NSXM-3_ToNSXM-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        clusternode:
+            '[3]':
+                mgr_role_config:
+                    manager_ip: nsxmanager.[3]
+                    manager_thumbprint: nsxmanager.[3]
+                    node_type: AddManagementNodeSpec
+                    password: default
+                    username: admin
+
+    MapNSXManager-1_CLUSTER-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        cluster:
+            '[1]':
+                id_: 1
+                map_object: true
+
+    MapNSXManager-2_CLUSTER-1:
+        TestNSX: nsxmanager.[2]
+        Type: NSX
+        cluster:
+            '[1]':
+                id_: 1
+                map_object: true
+
+    MapNSXManager-3_CLUSTER-1:
+        TestNSX: nsxmanager.[3]
+        Type: NSX
+        cluster:
+            '[1]':
+                id_: 1
+                map_object: true
+
+    SetManagerOnNSXC-1:
+        TestController: nsxcontroller.[1]
+        Type: Controller
+        set_nsx_manager:
+            execution_type: cli
+            manager_ip: nsxmanager.[1]
+            manager_thumbprint: nsxmanager.[1]
+
+    SetManagerOnNSXC-2:
+        TestController: nsxcontroller.[2]
+        Type: Controller
+        set_nsx_manager:
+            execution_type: cli
+            manager_ip: nsxmanager.[1]
+            manager_thumbprint: nsxmanager.[1]
+
+    SetManagerOnNSXC-3:
+        TestController: nsxcontroller.[3]
+        Type: Controller
+        set_nsx_manager:
+            execution_type: cli
+            manager_ip: nsxmanager.[1]
+            manager_thumbprint: nsxmanager.[1]
+
+    SetProtonServiceIdForNSXM-2:
+        TestNSX: nsxmanager.[2]
+        Type: NSX
+        nsxservice:
+            '[1]':
+                id_: proton
+                map_object: true
+
+    SetProtonServiceIdForNSXM-3:
+        TestNSX: nsxmanager.[3]
+        Type: NSX
+        nsxservice:
+            '[1]':
+                id_: proton
+                map_object: true
+
+    VerifyServiceOnNSXM-2_NAME-proton_STATE-running:
+        TestService: nsxmanager.[2].nsxservice.[1]
+        Type: Service
+        get_service_state:
+            runtime_state[?]equal_to: running
+
+    VerifyServiceOnNSXM-2_NAME-proton_STATE-stopped:
+        TestService: nsxmanager.[2].nsxservice.[1]
+        Type: Service
+        get_service_state:
+            runtime_state[?]equal_to: stopped
+
+    VerifyServiceOnNSXM-3_NAME-proton_STATE-running:
+        TestService: nsxmanager.[3].nsxservice.[1]
+        Type: Service
+        get_service_state:
+            runtime_state[?]equal_to: running
+
+    VerifyServiceOnNSXM-3_NAME-proton_STATE-stopped:
+        TestService: nsxmanager.[3].nsxservice.[1]
+        Type: Service
+        get_service_state:
+            runtime_state[?]equal_to: stopped
+
+    WaitForMPClusterStable-1_NSXM-1:
+        TestCluster: nsxmanager.[1].cluster.[1]
+        Type: Cluster
+        wait_for_required_cluster_status:
+            required_status: STABLE
+            time_to_monitor: 300
+
+    WaitForMPClusterStable-1_NSXM-2:
+        TestCluster: nsxmanager.[2].cluster.[1]
+        Type: Cluster
+        wait_for_required_cluster_status:
+            required_status: STABLE
+            time_to_monitor: 300
+
+    WaitForMPClusterStable-1_NSXM-3:
+        TestCluster: nsxmanager.[3].cluster.[1]
+        Type: Cluster
+        wait_for_required_cluster_status:
+            required_status: STABLE
+            time_to_monitor: 300
+
+Topo_1MP_1CCP: &Topo_1MP_1CCP
+    <<: *Topo_Clusters_Common
+
+    ClusterSetup:
+        - - MPSetup_1MP
+        - - CCPSetup_1CCP
+
+    ClusterVerification:
+        - - VerifyMPClusterStatus-1_NSXM-1
+        - - VerifyMPClusterMembers_1MP_1CCP
+        - - VerifyCCPClusterMembers_1CCP
+
+    ClusterCleanup:
+        - - CCPCleanup_1CCP
+        - - MPCleanup_1MP
+
+Topo_1MP_3CCP: &Topo_1MP_3CCP
+    <<: *Topo_Clusters_Common
+
+    ClusterSetup:
+        - - MPSetup_1MP
+        - - CCPSetup_3CCP
+
+    ClusterVerification:
+        - - VerifyMPClusterStatus-1_NSXM-1
+        - - VerifyMPClusterMembers_1MP_3CCP
+        - - VerifyCCPClusterMembers_3CCP
+
+    ClusterCleanup:
+        - - CCPCleanup_3CCP
+        - - MPCleanup_1MP
+
+Topo_3MP_3CCP: &Topo_3MP_3CCP
+    <<: *Topo_Clusters_Common
+
+    ClusterSetup:
+        - - MPSetup_3MP
+        - - CCPSetup_3CCP
+
+    ClusterVerification:
+        - - VerifyMPClusterStatus-1_NSXM-1
+        - - VerifyMPClusterStatus-1_NSXM-2
+        - - VerifyMPClusterStatus-1_NSXM-3
+        - - VerifyMPClusterMembers_3MP_3CCP
+        - - VerifyCCPClusterMembers_3CCP
+
+    ClusterCleanup:
+        - - CCPCleanup_3CCP
+        - - MPCleanup_3MP

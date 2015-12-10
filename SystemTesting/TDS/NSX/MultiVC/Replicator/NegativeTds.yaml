@@ -1,0 +1,1044 @@
+# -----------------------------------------------------
+# This TDS covers P1 negative tests for Replicator
+# -----------------------------------------------------
+#
+# VERIFICATION INFO - Reserved the error code range
+# (126001 - 127000) for Multi-VC L2 objects.
+#
+
+TDSCommonFieldsP1Case:  &TDS_COMMON_FIELDS_P1_CASE
+   Product: "vShield"
+   Component: "Replicator"
+   Category: "MultiVC"
+   Version: "2"
+   Tags: "multivc"
+   QCPath: ""
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P1"
+   Partnerfacing: "N"
+
+# -----------------------------------------------------
+# CUD Tests
+# -----------------------------------------------------
+
+CUDForUTZOnSecondary:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "CUDForUTZOnSecondary"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'Topology with one primary one secondary.
+            Create Update Delete operation on global transport zone (UTZ)
+            on secondary'
+  Procedure: '1. Login to the NSX managers
+              2. Set node 1 as primary while node 2 as secondary
+              3. Create UTZ from secondary node
+              4. Create UTZ from primary node
+              5. Read the UTZ from secondary node
+              6. Update the UTZ with change in control plane mode, name
+                 and description from secondary node
+              7. Delete the UTZ from secondary node
+              8. Cleanup'
+  ExpectedResult: 'After step 3 - UTZ Creation failure observed.
+                   After step 4 - UTZ Creation passed from primary node
+                   After step 5 - UTZ is read from secondary node
+                   After step 6 - UTZ Updation failure observed
+                   After step 7 - Deletion of UTZ from secondary node fails'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_L2
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - CreateVerifyGlobalTransportZoneOnSlave
+            - - CreateVerifyGlobalTransportZone
+            - - ReadVerifyGlobalTransportZone
+            - - ReadVerifyGlobalTransportZone_VSM2      #TODO: Add appropriate fix for renaming the GTZ
+            - - DeleteVerifyGlobalTransportZoneOnSlave
+      ExitSequence:
+            - - DeleteVerifyGlobalTransportZone
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      CreateVerifyGlobalTransportZoneOnSlave:
+          Type: NSX
+          TestNSX: 'vsm.[2]'
+          globaltransportzone:
+              '[1]':
+                  name: AutoGenerate
+                  clusters: 'vc.[2].datacenter.[1].cluster.[1]'
+          ExpectedResult: 'Fail'
+
+      DeleteVerifyGlobalTransportZoneOnSlave:
+          Type: NSX
+          TestNSX: vsm.[1]
+          deleteglobaltransportzone: vsm.[1].globaltransportzone.[1]
+          ExpectedResult: 'Fail'
+
+CUDForULSOnSecondary:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "CUDForULSOnSecondary"
+  Developer: "yvhora"
+  AutomationLevel: "Semi-Automated"
+  Summary: 'Topology with one primary one secondary.
+            Create Update Delete operation on global logical switch (ULS) on secondary'
+  Procedure: '1. Login to the NSX managers
+              2. Set node 1 as primary while node 2 as secondary
+              3. Create ULS from secondary node
+              4. Create ULS from primary node
+              5. Read the ULS from secondary node
+              6. Update the ULS with change in control plane mode, name and description from secondary node
+              7. Delete the ULS from secondary node
+              8. Cleanup'
+  ExpectedResult: 'After step 3 - ULS Creation failure observed.
+                   After step 4 - ULS Creation passed from primary node
+                   After step 5 - ULS is read from secondary node
+                   After step 6 - ULS Updation failure observed
+                   After step 7 - Deletion of ULS from secondary node fails'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_L2
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - CreateVerifyGlobalVNIPool
+            - - CreateVerifyGlobalMulticastRange
+            - - CreateVerifyGlobalTransportZone
+            - - CreateVerify2GlobalLogicalSwitchesOnSlave
+            - - CreateVerify2GlobalLogicalSwitches
+            - - ReadVerifyGlobalLogicalSwitches           #TODO : Add fix for updating ULS name
+            - - ReadVerifyGlobalLogicalSwitches_VSM2
+            - - CompareGlobalLogicalSwitchSlaveWithMaster
+            - - DeleteAllGlobalLogicalSwitchesOnSlave
+      ExitSequence:
+            - - DeleteAllGlobalLogicalSwitches
+            - - DeleteVerifyGlobalTransportZone
+            - - DeleteVerifyGlobalMulticastRange
+            - - DeleteVerifyGlobalVNIPool
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      CreateVerify2GlobalLogicalSwitchesOnSlave:
+          Type: TransportZone
+          TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+          globallogicalswitch:
+              '[1-2]':
+                  controlplanemode: MULTICAST_MODE
+                  name: AutoGenerate
+                  tenantid: AutoGenerate
+          ExpectedResult: 'Fail'
+
+      DeleteAllGlobalLogicalSwitchesOnSlave:
+          Type: TransportZone
+          TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+          deletegloballogicalswitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[-1]'
+          ExpectedResult: 'Fail'
+
+CUDAllOnSecondary:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "CUDAllOnSecondary"
+  Developer: "yvhora"
+  AutomationLevel: "Automated"
+  Summary: 'Topology with one master one slave
+            CRUD to sync all objects sync specific global
+            entities and then do get config to verify'
+  Procedure: '1. Login to the NSX managers
+              2. Set node 1 as primary while node 2 as secondary
+              3. Create IPSet, MacSet, SecurityGroups on primary node
+              4. Read all the Global Objects from secondary node.
+              5. Update IPset from secondary node
+              6. Update MacSet from secondary node
+              7. Update SecurityGroups from secondary node
+              8. Delete IPSet, MacSet, SecurityGroups on secondary node
+              9. Cleanup'
+  ExpectedResult: 'After step 3 - all the mentioned objects are created on primary node with isUniversal=True attribute.
+                   After step 5 - IPSet updation fails on secondary node,
+                   After step 6 - MacSet updation fails on secondary node,
+                   After step 7 - SecurityGroup updation fails on secondary node
+                   After step 8 - Deletion of Global object fails from secondary node'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsPrimary
+            - - CreateVerifyGlobalIPSetOnSlave
+            - - CreateVerifyGlobalMACSetOnSlave
+            - - CreateVerifyGlobalSecurityGroupOnSlave
+            - - CreateVerifyGlobalIPSet
+            - - CreateVerifyGlobalMACSet
+            - - CreateVerifyGlobalSecurityGroup
+            - - ReadVerifyGlobalIPSet
+            - - ReadVerifyGlobalIPSet_VSM2
+            - - ReadVerifyGlobalMacSet
+            - - ReadVerifyGlobalMacSet_VSM2
+            - - ReadVerifyGlobalSecurityGroup
+            - - ReadVerifyGlobalSecurityGroup_VSM2
+            - - UpdateVerifyGlobalIPSet_VSM2
+            - - UpdateVerifyGlobalMacSet_VSM2
+            - - UpdateVerifyGlobalSecurityGroup_VSM2
+            - - DeleteGlobalSecurityGroup_VSM2
+            - - DeleteGlobalMacSet_VSM2
+            - - DeleteGlobalIPSet_VSM2
+      ExitSequence:
+            - - DeleteGlobalSecurityGroup
+            - - DeleteGlobalMacSet
+            - - DeleteGlobalIPSet
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      CreateVerifyGlobalIPSetOnSlave:
+          Type: 'NSX'
+          TestNSX: 'vsm.[2]'
+          globalipset:
+            '[1]':
+                name: 'UniversalIPSet-1'
+                value: '192.168.1.1'
+                description: 'IPs'
+          ExpectedResult: 'Fail'
+
+      CreateVerifyGlobalMACSetOnSlave:
+          Type: 'NSX'
+          TestNSX: 'vsm.[2]'
+          globalmacset:
+            '[1]':
+                name: 'UniversalMACSet-1'
+                value: '00:01:02:03:04:05'
+                description: 'MACs'
+          ExpectedResult: 'Fail'
+
+      CreateVerifyGlobalSecurityGroupOnSlave:
+          Type: 'NSX'
+          TestNSX: 'vsm.[1]'
+          globalsecuritygroup:
+              '[1]':
+                  name: 'UniversalSecurityGroup-1'
+                  description: 'SecurityGroups'
+                  type:
+                      typename: 'SecurityGroup'
+                  scope:
+                      id: 'universalroot-0'
+                      objecttypename: 'UniversalRoot'
+                      name: 'Universal'
+          ExpectedResult: 'Fail'
+
+      UpdateVerifyGlobalIPSet_VSM2:
+          Type: GroupingObject
+          TestGroupingObject: 'vsm.[2].globalipset.[1]'
+          reconfigure: "true"
+          name: 'UpdateUniversalIPSet-11'
+          value: '192.168.1.2'
+          metadata:
+              expectedresultcode: '403'
+
+      UpdateVerifyGlobalMacSet_VSM2:
+          Type: GroupingObject
+          TestGroupingObject: 'vsm.[2].globalmacset.[1]'
+          reconfigure: "true"
+          name: 'UpdateUniversalMACSet-11'
+          metadata:
+              expectedresultcode: '403'
+
+      UpdateVerifyGlobalSecurityGroup_VSM2:
+          Type: GroupingObject
+          TestGroupingObject: 'vsm.[2].globalsecuritygroup.[1]'
+          reconfigure: "true"
+          name: 'UpdateUniversalSecurityGroup-11'
+          metadata:
+              expectedresultcode: '403'
+
+      DeleteGlobalSecurityGroup_VSM2:
+          Type: 'NSX'
+          TestNSX: 'vsm.[2]'
+          deleteglobalsecuritygroup: "vsm.[2].globalsecuritygroup.[-1]"
+          ExpectedResult: 'Fail'
+
+      DeleteGlobalMacSet_VSM2:
+          Type: 'NSX'
+          TestNSX: 'vsm.[2]'
+          deleteglobalmacset: "vsm.[2].globalmacset.[-1]"
+          ExpectedResult: 'Fail'
+
+      DeleteGlobalIPSet_VSM2:
+          Type: 'NSX'
+          TestNSX: 'vsm.[2]'
+          deleteglobalipset: "vsm.[2].globalipset.[-1]"
+          ExpectedResult: 'Fail'
+
+# ------------------------------------------------------------------------------
+# Register/UnRegister Testcases
+# ------------------------------------------------------------------------------
+
+
+RegisterMasterNSXManagerWithAnotherMaster:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterMasterNSXManagerWithAnotherMaster"
+  Developer: "yvhora"
+  Summary: 'Two Topologies with one master one slave.  Try registering NSX Manager that is running as PRIMARY
+            with another Primary NSX Manager.'
+  Procedure: '1. Login to the NSX managers
+              2. Setup Topology1 with Node1 as Primary and Node 2 as Secondary
+              3. Setup Topology2 with Node3 as Primary and Node 4 as Secondary
+              4. Register Node 3 with Node 1
+              5. Cleanup'
+  ExpectedResult: 'After step 4 - Registeration of one primary node with another primary fails'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - ReadReplicatorRoleAsStandaloneOnVSM4
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - SetMasterNSXReplicatorAsPrimary_VSM3
+            - - ReadReplicatorRoleAsPrimaryOnVSM3
+            - - RegisterSlaveNSX_VSM4_WithMaster_VSM3
+            - - ReadReplicatorRoleAsSecondaryOnVSM4
+            - - RegisterMasterNSXWithMaster_VSM3
+      ExitSequence:
+            - - UnRegisterAllSlaves
+            - - UnRegisterSlavesOfVSM3
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM4
+            - - SetMasterNSXReplicatorAsStandalone
+            - - SetMasterNSXReplicatorAsStandalone_VSM3
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterMasterNSXWithMaster_VSM3:
+          Type: NSX
+          TestNSX: vsm.[1]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[1]':
+                  ipaddress: 'vsm.[3]'
+                  username: 'vsm.[3]'
+                  password: 'vsm.[3]'
+                  cert_thumbprint: 'vsm.[3]'
+          ExpectedResult: 'Fail'                      #TODO : Verification for error string (AbstractInlinePythonClass)
+
+RegisterNSXManagerWithVersionLessThan6_2:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterNSXManagerWithVersionLessThan6_2"
+  Developer: "yvhora"
+  Summary: 'Topology with one node version NSX 6.2 and another node version 6.1.3. Try registering
+            node 2 with lesser version to Primary node'
+  Procedure: '1. Login to the NSX managers
+              2. Set node 1 with NSX version 6.2 as Primary node
+              3. Register node 2 having version NSX 6.1.3 to Primary node
+              4. Cleanup'
+  ExpectedResult: 'After step 3 - Registeration fails for NSX versions less than 6.2'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithMasterWithLowerVersion
+      ExitSequence:
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterSlaveNSXWithMasterWithLowerVersion:
+          Type: NSX
+          TestNSX: vsm.[5]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[1]':
+                  ipaddress: 'vsm.[5]'
+                  username: 'vsm.[5]'
+                  password: 'vsm.[5]'
+                  cert_thumbprint: 'vsm.[5]'
+          ExpectedResult: 'Fail'
+
+RegisterNSXManagerOnStandaloneNSXManager:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterNSXManagerOnStandaloneNSXManager"
+  Developer: "yvhora"
+  Summary: 'Topology with one master one slave.
+            Try registering one NSX Manager on NSX Manager that is in STANDALONE Role'
+  Procedure: '1. Login to the NSX managers
+              2. Get the replication roles from node1, node2 ==> STANDALONE
+              3. Register the node 2 to node 1
+              4. Cleanup'
+  ExpectedResult: 'After step 3 - node 2 registeration fails since node 1 is not set to primary.'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithStandaloneMaster
+      ExitSequence:
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterSlaveNSXWithStandaloneMaster:
+          <<: *REGISTER_NSX_MANAGER_WITH_REPLICATOR
+          ExpectedResult: 'Fail'
+
+RegisterSlaveNSXManagerWithAnotherMaster:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterSlaveNSXManagerWithAnotherMaster"
+  Developer: "yvhora"
+  Summary: 'Two Topologies with one master one slave.  Try registering NSX Manager that is running as PRIMARY
+            with another Primary NSX Manager.'
+  Procedure: '1. Login to the NSX managers
+              2. Setup Topology1 with Node1 as Primary and Node 2 as Secondary
+              3. Setup Topology2 with Node3 as Primary and Node 4 as Secondary
+              4. Register Node 4 with Node 1
+              5. Cleanup'
+  ExpectedResult: 'After step 4 - Registration of one secondary node with another primary fails'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM3
+            - - ReadReplicatorRoleAsStandaloneOnVSM4
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - SetMasterNSXReplicatorAsPrimary_VSM3
+            - - ReadReplicatorRoleAsPrimaryOnVSM3
+            - - RegisterSlaveNSX_VSM4_WithMaster_VSM3
+            - - ReadReplicatorRoleAsSecondaryOnVSM4
+            - - RegisterSlaveNSX_VSM4_WithMaster_VSM1
+      ExitSequence:
+            - - UnRegisterAllSlaves
+            - - UnRegisterSlavesOfVSM3
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - ReadReplicatorRoleAsStandaloneOnVSM4
+            - - SetMasterNSXReplicatorAsStandalone
+            - - SetMasterNSXReplicatorAsStandalone_VSM3
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterSlaveNSX_VSM4_WithMaster_VSM1:
+          Type: NSX
+          TestNSX: vsm.[1]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[1]':
+                  ipaddress: 'vsm.[4]'
+                  username: 'vsm.[4]'
+                  password: 'vsm.[4]'
+                  cert_thumbprint: 'vsm.[4]'
+          ExpectedResult: 'Fail'
+
+RegisterMasterToSelf:
+    # Register Master Node to self
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterMasterToSelf"
+  Developer: "yvhora"
+  Summary: 'First node as master. Register master node to self'
+  Procedure: '1. Login to the NSX managers
+              2. Get the replication roles from node1, node2 ==> STANDALONE
+              3. Set node 1 as primary node
+              4. Register node 1 to itself as secondary
+              5. Cleanup'
+  ExpectedResult: 'After step 4 - node 1 registeration fails since node 1 is already set to primary.'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterMasterNSXWithSelf
+      ExitSequence:
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterMasterNSXWithSelf:
+          Type: NSX
+          TestNSX: vsm.[1]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[1]':
+                  ipaddress: 'vsm.[1]'
+                  username: 'vsm.[1]'
+                  password: 'vsm.[1]'
+                  cert_thumbprint: 'vsm.[1]'
+          ExpectedResult: 'Fail'
+
+RegisterSlaveToSelf:
+    # Register Master Node to self
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterSlaveToSelf"
+  Developer: "yvhora"
+  Summary: 'First node as primary, Second node as slave. Register slave node to self'
+  Procedure: '1. Login to the NSX managers
+              2. Get the replication roles from node1, node2, node 3 ==> STANDALONE
+              3. Set node 1 as primary node
+              4. Register node 2 to node1 as secondary
+              5. Register node 2 again to itself as secondary
+              6. Cleanup'
+  ExpectedResult: 'After step 5 - node 2 registeration fails since node 2 is already set as secondary to primary node1.'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - RegisterSlaveNSXWithSelf
+      ExitSequence:
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterSlaveNSXWithSelf:
+          Type: NSX
+          TestNSX: vsm.[2]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[1]':
+                  ipaddress: 'vsm.[2]'
+                  username: 'vsm.[2]'
+                  password: 'vsm.[2]'
+                  cert_thumbprint: 'vsm.[2]'
+          ExpectedResult: 'Fail'
+
+RegisterNSXManagersWithIncorrectCredentials:
+  # Register NSX Manager with incorrect credentials
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterNSXManagersWithIncorrectCredentials"
+  Developer: "yvhora"
+  Summary: 'Register NSX Manager with incorrect credentials. Incorrect username/password/thumbprint
+            It should error out'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary
+              3. Register node 2 with incorrect credentials
+              4. Cleanup'
+  ExpectedResult: 'After step 2 - node 1 is successfully assigned new primary
+                   After step 3 - node 2 fails to register and error is thrown'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithMasterUsingIncorrectCredentials
+      ExitSequence:
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterSlaveNSXWithMasterUsingIncorrectCredentials:
+          Type: NSX
+          TestNSX: vsm.[1]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[1]':
+                  ipaddress: 'vsm.[2]'
+                  username: 'root'
+                  password: 'vmware'
+                  cert_thumbprint: 'vsm.[2]'
+          ExpectedResult: 'Fail'
+
+
+RegisterNSXManagersWithEnterpriseAdministratorRole:
+    # Register NSX Manager with vshield administrator role
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterNSXManagersWithEnterpriseAdministratorRole"
+  Developer: "yvhora"
+  Summary: 'Register NSX Manager with Enterprise administrator roles.
+            It should error out'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary using super user
+              3. Register node 2 with Enterprise administrator role
+              4. Cleanup'
+  ExpectedResult: 'After step 2 - node 1 is successfully assigned new primary
+                     After step 3 - node 2 fails to register and error is thrown'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithMasterAsEnterpriseAdministrator
+      ExitSequence:
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterSlaveNSXWithMasterAsEnterpriseAdministrator:
+          Type: NSX
+          TestNSX: vsm.[1]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[1]':
+                  ipaddress: 'vsm.[2]'
+                  username: 'administrator@vsphere.local'
+                  password: 'Admin!23'
+                  cert_thumbprint: 'vsm.[2]'
+          ExpectedResult: 'Fail'
+
+RegisterNSXManagersWithvShieldAdministratorRole:
+  # Register NSX Manager with vshield administrator role
+  # TODO : Make sure you manually configure vshield administrator before running testcase
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterNSXManagersWithvShieldAdministratorRole"
+  Developer: "yvhora"
+  Summary: 'Register NSX Manager with vshield administrator roles.
+            It should error out'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary using super user
+              3. Register node 2 with vshield administrator role
+              4. Cleanup'
+  ExpectedResult: 'After step 2 - node 1 is successfully assigned new primary
+                     After step 3 - node 2 fails to register and error is thrown'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithMasterAsvShieldAdministrator
+      ExitSequence:
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterSlaveNSXWithMasterAsvShieldAdministrator:
+          Type: NSX
+          TestNSX: vsm.[1]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[1]':
+                  ipaddress: 'vsm.[2]'
+                  username: 'vshieldAdmin@vsphere.local'
+                  password: 'Admin!23'
+                  cert_thumbprint: 'vsm.[2]'
+          ExpectedResult: 'Fail'
+
+RegisterNSXManagersWithSecurityAdministratorRole:
+  # Register NSX Manager with security administrator role
+  # TODO : Make sure you manually configure Security administrator before running testcase
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterNSXManagersWithSecurityAdministratorRole"
+  Developer: "yvhora"
+  Summary: 'Register NSX Manager with Security Administator roles.
+            It should error out'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary using super user
+              3. Register node 2 with Security Administator role
+              4. Cleanup'
+  ExpectedResult: 'After step 2 - node 1 is successfully assigned new primary
+                     After step 3 - node 2 fails to register and error is thrown'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithMasterAsSecurityAdministrator
+      ExitSequence:
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterSlaveNSXWithMasterAsSecurityAdministrator:
+          Type: NSX
+          TestNSX: vsm.[1]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[1]':
+                  ipaddress: 'vsm.[2]'
+                  username: 'securityAdmin@vsphere.local'
+                  password: 'Admin!23'
+                  cert_thumbprint: 'vsm.[2]'
+          ExpectedResult: 'Fail'
+
+RegisterNSXManagersWithAuditorRole:
+  # Register NSX Manager with auditor role
+  # TODO : Make sure you manually configure Auditor before running testcase
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "RegisterNSXManagersWithAuditorRole"
+  Developer: "yvhora"
+  Summary: 'Register NSX Manager with Auditor roles.
+            It should error out'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary using super user
+              3. Register node 2 with Auditor role
+              4. Cleanup'
+  ExpectedResult: 'After step 2 - node 1 is successfully assigned new primary
+                   After step 3 - node 2 fails to register and error is thrown'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithMasterAsAuditor
+      ExitSequence:
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      RegisterSlaveNSXWithMasterAsAuditor:
+          Type: NSX
+          TestNSX: vsm.[1]
+          ##################
+          # PR 1396374. Remove the hack when its fixed
+          sleepbetweenworkloads: 30
+          ##################
+          nsxslave:
+              '[1]':
+                  ipaddress: 'vsm.[2]'
+                  username: 'auditor@vsphere.local'
+                  password: 'Admin!23'
+                  cert_thumbprint: 'vsm.[2]'
+          ExpectedResult: 'Fail'
+
+ConvertSlaveToMaster:
+    # Try to make master-master topology
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "ConvertSlaveToMaster"
+  Developer: "yvhora"
+  Summary: 'First master. Register slave node to master, Try to change slave to master'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary
+              3. Set slave node 2 as secondary
+              4. Use Rest call with action set_as_primary on node 2
+              5. Cleanup'
+  ExpectedResult: 'After step 2 - node 1 is successfully assigned new primary
+                   After step 4 - node 2 fails to set as primary and error is thrown'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+            - - SetSlaveAsPrimary
+      ExitSequence:
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      SetSlaveAsPrimary:
+          Type: NSX
+          TestNSX: vsm.[2]
+          replicator_role: primary
+          ExpectedResult: 'Fail'
+
+# ------------------------------------------------------------------------------
+# Changing Role Tests
+# ------------------------------------------------------------------------------
+
+ChangeRoleOfMasterDuringFullSyncWithDeleteObjects:
+    # Change master node in a toplogy
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    TestName:  "ChangeRoleOfMasterDuringFullSyncWithDeleteObjects"
+    Developer: "yvhora"
+    Summary: 'Full sync going on. Make master as standalone deleting the objects'
+    Procedure: '1. Login to the NSX managers
+                2. Set master node 1 as primary
+                3. Set slave node 2 as secondary
+                4. Create 1000 IPSets on master node 1
+                5. Delete the IPSets and Force full sync on primary node 1
+                6. Use Rest call with action set_as_standalone on node 1 with deleting the objects
+                7. Read the created ULS created on slave node 2
+                8. Cleanup'
+    ExpectedResult: 'After step 4 - 1000 IPsets are successfully created.
+                     After step 6 - Error thrown while setting master to standalone'
+    TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+    WORKLOADS:
+        Sequence:
+              - - SetMasterNSXReplicatorAsPrimary
+              - - ReadNSXReplicatorServiceStatusRunning
+              - - CreateVerify100GlobalIPSet
+              - - ReadVerify100GlobalIPSet
+              - - DeleteGlobalIPSet
+              - - RegisterSlaveNSXWithMaster
+              - - ReadReplicatorRoleAsSecondaryOnVSM2
+              - - SetMasterNSXReplicatorAsStandalone
+              - - ReadReplicatorRoleAsStandaloneOnVSM2
+        ExitSequence:
+              - - DeleteGlobalIPSet
+              - - UnRegisterAllSlaves
+              - - ReadNSXReplicatorServiceStatusStopped
+
+ChangeRoleOfMasterDuringFullSyncWithoutDeleteObjects:
+    # Change master node in a toplogy
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    TestName:  "ChangeRoleOfMasterDuringFullSyncWithoutDeleteObjects"
+    Developer: "yvhora"
+    Summary: 'Full sync going on. Make master as standalone without deleting the objects'
+    Procedure: '1. Login to the NSX managers
+                2. Set master node 1 as primary
+                3. Set slave node 2 as secondary
+                4. Create 1000 IPSets on master node 1
+                5. Force full sync on primary node 1
+                6. Use Rest call with action set_as_standalone on node 1 without deleting the objects
+                7. Read the created ULS created on slave node 2
+                8. Cleanup'
+    ExpectedResult: 'After step 4 - 1000 IPsets are successfully created.
+                     After step 6 - Error thrown while setting master to standalone'
+    TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+    WORKLOADS:
+        Sequence:
+              - - SetMasterNSXReplicatorAsPrimary
+              - - ReadNSXReplicatorServiceStatusRunning
+              - - CreateVerify1000GlobalIPSet
+              - - ReadVerify1000GlobalIPSet
+              - - RegisterSlaveNSXWithMaster
+              - - ReadReplicatorRoleAsSecondaryOnVSM2
+              - - ReplicationStatusOfVSM2InProgress
+              - - SetMasterNSXReplicatorAsStandalone
+              - - ReadReplicatorRoleAsPrimary
+        ExitSequence:
+              - - DeleteGlobalIPSet
+              - - UnRegisterAllSlaves
+              - - SetMasterNSXReplicatorAsStandalone
+              - - ReadNSXReplicatorServiceStatusStopped
+
+        CreateVerify1000GlobalIPSet:
+            Type: 'NSX'
+            TestNSX: 'vsm.[1]'
+            globalipset:
+                '[1-1000]':
+                    name: AutoGenerate
+                    value: '192.168.1.1'
+                    description: 'IPs'
+            metadata:
+                expectedresultcode: '201'
+
+        ReadVerify1000GlobalIPSet:
+            <<: *READ_GLOBAL_IPSET
+            TestGroupingObject: "vsm.[1].globalipset.[1-1000]"
+
+
+ChangeRoleOfSlaveDuringFullSync:
+    # Change slave node in a toplogy
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    TestName:  "ChangeRoleOfSlaveDuringFullSync"
+    Developer: "yvhora"
+    Summary: 'Full sync going on. Make slave as standalone'
+    Procedure: '1. Login to the NSX managers
+                2. Set master node 1 as primary
+                3. Set slave node 2 as secondary
+                4. Create 1000 IPSets on master node 1
+                5. Force full sync on primary node 1
+                6. Use Rest call with action set_as_standalone on node 2 without deleting the objects
+                7. Cleanup'
+    ExpectedResult: 'After step 4 - 1000 IPsets are successfully created.
+                     After step 6 - node 2 is set to standalone
+                     After step 7 - Error is thrown while reading the objects'
+    TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+    WORKLOADS:
+        Sequence:
+              - - SetMasterNSXReplicatorAsPrimary
+              - - ReadNSXReplicatorServiceStatusRunning
+              - - CreateVerify1000GlobalIPSet
+              - - ReadVerify1000GlobalIPSet
+              - - RegisterSlaveNSXWithMaster
+              - - ReadReplicatorRoleAsSecondaryOnVSM2
+              - - ReplicationStatusOfVSM2InProgress
+              - - SetSlaveNSXReplicatorAsStandalone
+              - - ReadReplicatorRoleAsStandaloneOnVSM2      #TODO: TRANSIT FROM RTQA5
+              - - ReplicationStatusOfVSM2Failed
+        ExitSequence:
+              - - DeleteGlobalIPSet
+              - - UnRegisterAllSlaves
+              - - SetMasterNSXReplicatorAsStandalone
+              - - ReadNSXReplicatorServiceStatusStopped
+
+        CreateVerify1000GlobalIPSet:
+            Type: 'NSX'
+            TestNSX: 'vsm.[1]'
+            globalipset:
+                '[1-1000]':
+                    name: AutoGenerate
+                    value: '192.168.1.1'
+                    description: 'IPs'
+            metadata:
+                expectedresultcode: '201'
+
+        ReadVerify1000GlobalIPSet:
+            <<: *READ_GLOBAL_IPSET
+            TestGroupingObject: "vsm.[1].globalipset.[1-1000]"
+
+        ReplicationStatusOfVSM2Failed:
+            Type: 'NSX'
+            TestNSX: 'vsm.[1]'
+            read_replication_status:
+                'syncState[?]equal_to': 'FAILED'
+                'nsxManagersStatusList[?]contain_once':
+                  - vsmId: 'vsm.[2]->id'
+                    syncState: 'FAILED'
+
+IPPartitioningOfSlave:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  AutomationLevel: "Semi-Automated"
+  TestName:  "IPPartitioningOfSlave"
+  Developer: "yvhora"
+  Summary: 'IP Partition the slave'
+  Procedure: '1. Login to the NSX managers
+              2. Set master node 1 as primary while slave node 2
+              3. IP Partition slave node 2 from master node 1
+              4. Create 1000 Universal SGs on master node 1
+              5. Get Sync status on master node 1
+              6. Remove IP Partition on slave node 2
+              7. Read the 1000 Universal SGs from slave node 2'
+  ExpectedResult: 'After step 5 - Sync status shows failure
+                   After step 7 - 1000 Universal SGs are synched'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_BASIC
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - SetMasterNSXReplicatorAsPrimary
+            - - ReadNSXReplicatorServiceStatusRunning
+            - - ReadReplicatorRoleAsPrimary
+            - - ReadReplicatorRoleAsStandaloneOnVSM2
+            - - RegisterSlaveNSXWithMaster
+            - - ReadReplicatorRoleAsSecondaryOnVSM2
+#            - - BlockIPPartition_VSM2                        #TODO : Not Tested,Write API for partitioning
+            - - CreateVerify10GlobalSecurityGroup
+            - - ReadVerify10GlobalSecurityGroup
+#            - - UnBlockIPPartition_VSM2
+            - - ReadVerify10GlobalSecurityGroup
+            - - ReadVerify10GlobalSecurityGroup_VSM2
+            - - ReplicationStatusOfVSM2
+      ExitSequence:
+            - - DeleteGlobalIPSet
+            - - UnRegisterAllSlaves
+            - - SetMasterNSXReplicatorAsStandalone
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      BlockIPPartition_VSM2:
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        network_partitioning:
+          operation: 'set'
+          ip_address: 'vsm.[2]->ip'
+          protocol: tcp
+          port: '443'
+
+      UnBlockIPPartition_VSM2:
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        network_partitioning:
+          operation: 'unset'
+          ip_address: 'vsm.[2]->ip'
+          protocol: tcp
+          port: '443'
+
+# ------------------------------------------------------------------------------
+#  Miscellaneous Scenarios
+# ------------------------------------------------------------------------------
+
+ConfigureGlobalObjectOnStandaloneNSXManager:
+  <<: *TDS_COMMON_FIELDS_P1_CASE
+  TestName:  "ConfigureGlobalObjectOnStandaloneNSXManager"
+  Developer: "yvhora"
+  Summary: 'Dont register this NSX manager with any master. Keep Replicator in STANDALONE mode then
+            Try configuring global objects on this NSX Manager
+            Global objects - UTZ, ULS. It should fail and error out'
+  Procedure: '1. Login to the NSX managers
+              2. Get the replication roles from NSX Manager ==> STANDALONE
+              3. Configure UTZ and ULS on Standalone NSX
+              4. Cleanup'
+  ExpectedResult: 'After step 3 - Creation of global object fails since node 1 is not set to primary.'
+  TestbedSpec: *REPLICATOR_TOPOLOGY_L2
+  WORKLOADS:
+      Sequence:
+            - - ReadReplicatorRoleAsStandaloneOnVSM1
+            - - CreateVerifyGlobalVNIPoolOnStandaloneVSM
+            - - CreateVerifyGlobalMulticastRangeOnStandaloneVSM
+            - - CreateVerifyGlobalTransportZoneOnStandaloneVSM
+            - - CreateVerifyGlobalLogicalSwitchOnStandaloneVSM
+      ExitSequence:
+            - - ReadNSXReplicatorServiceStatusStopped
+
+      CreateVerifyGlobalVNIPoolOnStandaloneVSM:
+        Type: NSX
+        TestNSX: vsm.[1]
+        globalvnipool:
+          '[1]':
+              name: AutoGenerate
+              begin: 10000
+              end: 19000
+        ExpectedResult: 'Fail'
+
+      CreateVerifyGlobalMulticastRangeOnStandaloneVSM:
+        Type: NSX
+        TestNSX: vsm.[1]
+        globalmulticastiprange:
+          '[1]':
+              name: AutoGenerate
+              begin: 239.0.0.101
+              end: 239.254.254.254
+        ExpectedResult: 'Fail'
+
+      CreateVerifyGlobalTransportZoneOnStandaloneVSM:
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        globaltransportzone:
+            '[1]':
+                name: AutoGenerate
+                clusters: 'vc.[1].datacenter.[1].cluster.[1]'
+        ExpectedResult: 'Fail'
+
+      CreateVerifyGlobalLogicalSwitchOnStandaloneVSM:
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        globallogicalswitch:
+            '[1]':
+                controlplanemode: MULTICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+        ExpectedResult: 'Fail'

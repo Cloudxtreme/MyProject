@@ -1,0 +1,424 @@
+!include TestbedSpec.yaml
+!include CommonWorkloads.yaml
+!include TeamingWorkloads.yaml
+
+StaticTeamingActiveStandBy:
+    Product: "NSXTransformers"
+    Component: "KVM"
+    Category: "Teaming"
+    TestName: "StaticTeamingActiveStandBy"
+    Tags: "KVM"
+    QCPath: KVM
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile FO teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P0
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to active-standby, verifying traffic
+              (vlan and overlay) works"
+    TestbedSpec: *TEAMING_KVM_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeKVMSetup']
+             - ['UplinkProfileWithTeamingFailOverOrder']
+             - ['CreateTransportNodesKVM']
+             - ['ConfigureVtepsFailOverOrderKVM']
+             - ['ControllerAndLogicalSwitchSetupKVM']
+             - ['RunTrafficAndVerifyKVM']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetupKVM']
+
+StaticTeamingBalanceSLB:
+    Product: "NSXTransformers"
+    Component: "KVM"
+    Category: "Teaming"
+    TestName: "StaticTeamingBalanceSLB"
+    Tags: "KVM"
+    QCPath: KVM
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile port ID teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P0
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to balance-slb, verifying traffic
+              (vlan and overlay both) works"
+    TestbedSpec: *TEAMING_KVM_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeKVMSetup']
+             - ['UplinkProfileWithTeamingSRCPortID']
+             - ['CreateTransportNodesKVMFAIL']
+        ExitSequence:
+             - [DeleteUplinkProfiles]
+             - [DeleteTransportZones]
+             - [Cleanup3NodesCCPCluster]
+
+LACPActiveTeamingBalanceTCP:
+    Product: "NSXTransformers"
+    Component: "KVM"
+    Category: "Teaming"
+    TestName: "LACPActiveTeamingBalanceTCP"
+    Tags: "KVM"
+    QCPath: KVM
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile lacp teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to lacp active and balance-tcp,
+              verifying vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_KVM_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeKVMSetup']
+             - ['CreateTransportNodesKVM']
+             - ['ConfigureVtepsFailOverOrderKVM']
+             - ['ControllerAndLogicalSwitchSetupKVM']
+             - ['RunTrafficAndVerifyKVM']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetupKVM']
+
+
+
+LACPPassiveTeamingBalanceTCP:
+    Product: "NSXTransformers"
+    Component: "KVM"
+    Category: "Teaming"
+    TestName: "LACPPassiveTeamingBalanceTCP"
+    Tags: "KVM"
+    QCPath: KVM
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile lacp teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "teaming policy set to lacp in passive mode and balance-tcp as load
+              balancing, verify that vlan and overlay traffic works"
+    TestbedSpec: *TEAMING_KVM_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeKVMSetup']
+             - ['CreateTransportNodesKVM']
+             - ['ConfigureVtepsFailOverOrderKVM']
+             - ['ControllerAndLogicalSwitchSetupKVM']
+             - ['RunTrafficAndVerifyKVM']
+             # xxx(hchilkot):
+             # add vlan tests
+             # after deleting/adding nodes
+        ExitSequence:
+             - ['ClearSetupKVM']
+
+ChangeTeamingAndVTEPConfiguration:
+    Product: "NSXTransformers"
+    Component: "KVM"
+    Category: "Teaming"
+    TestName: "ChangeTeamingAndVTEPConfiguration"
+    Tags: "KVM"
+    QCPath: KVM
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile FO teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Semi-Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "Teaming policy set to port based and multiple pnics conected to VDS,
+              in this case after NSX deployment is done change the teaming configuration
+              and make sure that after changing the teaming configuration vlan and
+              overlay traffic works"
+    TestbedSpec: *TEAMING_KVM_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeKVMSetup']
+             - ['UplinkProfileWithTeamingFailOverOrder']
+             - ['CreateTransportNodesKVM']
+             - ['ConfigureVtepsFailOverOrderKVM']
+             - ['ControllerAndLogicalSwitchSetupKVM']
+             - ['RunTrafficAndVerifyKVM']
+             - ['ChangeUplinkProfileToPortID']
+        ExitSequence:
+             - ['ClearSetupKVM']
+
+TeamingLinkFlap:
+    Product: "NSXTransformers"
+    Component: "KVM"
+    Category: "Teaming"
+    TestName: "TeamingLinkFlap"
+    Tags: "KVM"
+    QCPath: KVM
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile FO teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P1
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Semi-Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "When an uplink goes down the VTEP should start using another uplink
+              to send traffic to and this should be reported to management plane,
+              This should happen with all teaming policies"
+    TestbedSpec: *TEAMING_KVM_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeKVMSetup']
+             - ['UplinkProfileWithTeamingFailOverOrder']
+             - ['CreateTransportNodesKVM']
+             - ['ConfigureVtepsFailOverOrderKVM']
+             - ['ControllerAndLogicalSwitchSetupKVM']
+             - ['RunTrafficAndVerifyKVM']
+             - ['RunTrafficAndLinkFlapKVM']
+        ExitSequence:
+             - ['ClearSetupKVM']
+
+TeamingLACPNegotiationFlap:
+    Product: "NSXTransformers"
+    Component: "KVM"
+    Category: "Teaming"
+    TestName: "TeamingLACPNegotiationFlap"
+    Tags: "KVM"
+    QCPath: KVM
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile lacp teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P2
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Semi-Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "Test to check if there is some delay (artificially introduced or due to
+              some real reason) while negotiation there should be no disruption and
+              this should be reported to management plane"
+    TestbedSpec: ""
+    WORKLOADS:
+
+TeamingLinkStateChangeTime:
+    Product: "NSXTransformers"
+    Component: "KVM"
+    Category: "Teaming"
+    TestName: "TeamingLinkStateChangeTime"
+    Tags: "KVM"
+    QCPath: KVM
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile FO teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P2
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Semi-Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "When an uplink in a team goes down there should be failover to another
+              uplink in a team, the time taken to failover to another uplink shouldn't
+              have major impact in the traffic (basically it should be such that TCP connections
+              break)"
+    TestbedSpec: *TEAMING_KVM_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeKVMSetup']
+             - ['UplinkProfileWithTeamingFailOverOrder']
+             - ['CreateTransportNodesKVM']
+             - ['ConfigureVtepsFailOverOrderKVM']
+             - ['ControllerAndLogicalSwitchSetupKVM']
+             - ['RunTrafficAndLinkFlapKVM']
+        ExitSequence:
+             - ['ClearSetupKVM']
+
+TeamingUplinkSaturation:
+    Product: "NSXTransformers"
+    Component: "KVM"
+    Category: "Teaming"
+    TestName: "TeamingUplinkSaturation"
+    Tags: "KVM"
+    QCPath: KVM
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Procedure:
+        - Deploy and prep MP, CCP, TN.
+        - Deploy VM guest.
+        - Register CCP with MP.
+        - Register TN with MP.
+        - Set CCP on TN.
+        - Create Transport Zone.
+        - Create Uplink Profile FO teaming.
+        - Create Transport Node.
+        - Create LSwitch in TZ.
+        - Create LPort in LS.
+        - Verify Teaming and traffic.
+    Priority: P2
+    version: "2"
+    ExpectedResult: PASS
+    Duration: 0
+    AutomationLevel: Semi-Automated
+    FullyAutomatable: Y
+    Status: Execution Ready
+    PartnerFacing: N
+    Developer: hchilkot
+    Summary: "When an uplink gets saturated (75% +) use then a syslog should be
+              generated and sent to the management plane so that admin can take
+              appropriate action"
+    TestbedSpec: *TEAMING_KVM_TOPOLOGY_01
+    WORKLOADS:
+        <<: *CommonWorkloads
+        <<: *TeamingWorkloads
+        Sequence:
+             - ['TransportZoneAndHostNodeKVMSetup']
+             - ['UplinkProfileWithTeamingFailOverOrder']
+             - ['CreateTransportNodesKVM']
+             - ['ConfigureVtepsFailOverOrderKVM']
+             - ['ControllerAndLogicalSwitchSetupKVM']
+             - ['RunTrafficAndVerifyKVM']
+        ExitSequence:
+             - ['ClearSetupKVM']
+

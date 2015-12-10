@@ -1,0 +1,816 @@
+CommonWorkloads: &CommonWorkloads
+
+    # ESX
+    TransportZoneAndHostNodeSetup:
+        - [Register3ControllersAndFormCluster]
+        - [Verify3NodeCCPCluster]
+        - [DiscoverHostNodes]
+        - [CreateTransportZones]
+    # KVM
+    TransportZoneAndHostNodeKVMSetup:
+        - [Register3ControllersAndFormCluster]
+        - [Verify3NodeCCPCluster]
+        - [DiscoverHostNodesKVM]
+        - [CreateTransportZones]
+
+    AddControllersToCluster:
+        - ['SetSecurityOnController1']
+        - ['InitializeController1']
+        - ['JoinController1ToCluster']
+        - ['SetSecurityOnController2']
+        - ['JoinController2ToCluster']
+        - ['SetSecurityOnController3']
+        - ['JoinController3ToCluster']
+        - ['ActivateController2']
+        - ['ActivateController3']
+
+    Register3ControllersAndFormCluster:
+        - ['RegisterControllersToMP']
+        - ['AddControllersToCluster']
+
+    Cleanup3NodesCCPCluster: &CLEANUP_3_NODES_CCP_CLUSTER
+        - ['RemoveNSXController3FromCluster']
+        - ['RemoveNSXController2FromCluster']
+        - ['StopController1']
+        - ['DeleteClusterNode1FromMP']
+        - ['StopMootOnController1']
+        - ['ClearController1']
+        - ['DeleteMootServerOnController1']
+        - ['DeleteBootStrapOnController1']
+        - ['DeleteControllerNodeUUIDFileOnController1']
+        - ['StartMootOnController1']
+
+    RemoveNSXController3FromCluster: &REMOVE_NSXCONTROLLER3_FROM_CLUSTER
+        - ['StopController3']
+        - ['RemoveCCPNode3FromCluster']
+        - ['DeleteClusterNode3FromMP']
+        - ['StopMootOnController3']
+        - ['ClearController3']
+        - ['DeleteMootServerOnController3']
+        - ['DeleteBootStrapOnController3']
+        - ['DeleteControllerNodeUUIDFileOnController3']
+        - ['StartMootOnController3']
+
+    RemoveNSXController2FromCluster: &REMOVE_NSXCONTROLLER2_FROM_CLUSTER
+        - ['StopController2']
+        - ['RemoveCCPNode2FromCluster']
+        - ['DeleteClusterNode2FromMP']
+        - ['StopMootOnController2']
+        - ['ClearController2']
+        - ['DeleteMootServerOnController2']
+        - ['DeleteBootStrapOnController2']
+        - ['DeleteControllerNodeUUIDFileOnController2']
+        - ['StartMootOnController2']
+
+    # ESX
+    ControllerAndLogicalSwitchSetup:
+        - [CreateLogicalSwitchMTEPAllOnTransportZoneAll]
+        - [AttachVIF1OnVMAllToLogicalSwitch1ESX]
+
+    # KVM
+    ControllerAndLogicalSwitchSetupKVM:
+        - [CreateLogicalSwitchMTEPAllOnTransportZoneAll]
+        - [CreateVIFs]
+        - [AttachVIFsToLogicalSwitch]
+        - [RestartAgentsOnHostsKVM]
+        - ['VerifyLSwitchConnectionTableOnController']
+        - ['ConfigureVIFIPs']
+
+
+    #ESX
+    DataplaneVerification:
+        - [TrafficPingVM1ToVM2ESX]
+        - [TrafficPingVM3ToVM4ESX]
+        - [TrafficPingVM1ToVM3ESX]
+        - [TrafficPingVM2ToVM4ESX]
+
+    ClearSetup:
+        - [DetachVIFAllOnVMAllESX]
+        - [DeleteVIFAllOnVMAllESX]
+        - [DeleteLogicalSwitches]
+        - [DeleteTransportNodes]
+        - [DeleteUplinkProfiles]
+        - [DeleteTransportZones]
+        - [Cleanup3NodesCCPCluster]
+    # clear setup for KVM
+    ClearSetupKVM:
+        - [DeleteLogicalPort]
+        - [DeleteLogicalSwitches]
+        - [DeleteTransportNodes]
+        - [DeleteUplinkProfiles]
+        - [DeleteTransportZones]
+        - [DeleteVIFs]
+        - [Cleanup3NodesCCPCluster]
+
+##### Grouped Workloads, Intermediate, L2
+
+    SetManagerOnHostNodesAllESX:
+        - [SetManagerOnHostNodes1ESX]
+        - [SetManagerOnHostNodes2ESX]
+
+    CreateTransportZones:
+        - [CreateTransportZone1Overlay]
+        - [CreateTransportZone2VLAN]
+
+    DeleteVtepAllOnHostAllESX:
+        - [DeleteVtep1OnHost1ESX]
+        - [DeleteVtep1OnHost2ESX]
+
+    DiscoverLogicalPortAllOnVMAllOnManager:
+        - [DiscoverLogicalPort1OnVM1Vif1OnManagerESX]
+        - [DiscoverLogicalPort2OnVM2Vif1OnManagerESX]
+        - [DiscoverLogicalPort3OnVM3Vif1OnManagerESX]
+        - [DiscoverLogicalPort4OnVM4Vif1OnManagerESX]
+
+    SetControllerOnTransportNodes:
+        - [SetControllerOnTransportNode1]
+        - [SetControllerOnTransportNode2]
+
+    CreateLogicalSwitchMTEPAllOnTransportZoneAll:
+        - [CreateLogicalSwitchMTEP1OnTransportZone1]
+
+    AttachVIF1OnVMAllToLogicalSwitch1ESX:
+        - [AttachVIF1OnVM1ToLogicalSwitch1ESX]
+        - [AttachVIF1OnVM2ToLogicalSwitch1ESX]
+        - [AttachVIF1OnVM3ToLogicalSwitch1ESX]
+        - [AttachVIF1OnVM4ToLogicalSwitch1ESX]
+
+    DetachVIFAllOnVMAllESX:
+        - [DetachVIFAllOnVM1ESX]
+        - [DetachVIFAllOnVM2ESX]
+        - [DetachVIFAllOnVM3ESX]
+        - [DetachVIFAllOnVM4ESX]
+
+    DeleteVIFAllOnVMAllESX:
+        - [DeleteVIFAllOnVM1ESX]
+        - [DeleteVIFAllOnVM2ESX]
+        - [DeleteVIFAllOnVM3ESX]
+        - [DeleteVIFAllOnVM4ESX]
+
+    ConfigureIPOnVIFAllOnVMAllESX:
+        - [ConfigureIPOnVIF1OnVM1ESX]
+        - [ConfigureIPOnVIF1OnVM2ESX]
+        - [ConfigureIPOnVIF1OnVM3ESX]
+        - [ConfigureIPOnVIF1OnVM4ESX]
+
+##### Independent Workloads, L2
+
+    DeleteHostNodes:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        deletehostnodes: 'nsxmanager.[-1].hostnode.[-1]'
+
+    DiscoverHostNodes:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        hostnode:
+            '[1-2]':
+                discover: 'true'
+                ip_addresses: 'esx.[x=hostnode_index]'
+    RestartAgentsOnHostsKVM:
+        Type: Host
+        TestHost: 'kvm.[1-2]'
+        restart_service:
+            service_name: nsx-agent
+            execution_type: cmd
+    RestartAgentsOnHosts:
+        Type: Host
+        TestHost: 'esx.[1-2]'
+        restart_service:
+            service_name: nsx-agent
+            execution_type: cmd
+    CreateTransportZone1Overlay:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[1]':
+                name: autogenerate
+                transport_zone_type: 'OVERLAY'
+                switch_name: 'nsxvswitch'
+
+    SetControllerOnTransportNode1:
+        Type: Host
+        TestHost: 'esx.[1]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[1]'
+            execution_type: 'cli'
+
+    SetControllerOnTransportNode2:
+        Type: Host
+        TestHost: 'esx.[2]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[2]'
+            execution_type: 'cli'
+    CreateTransportZone2VLAN:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[2]':
+                name: autogenerate
+                transport_zone_type: 'VLAN'
+                switch_name: 'nsxvswitch'
+
+    DeleteTransportZones:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletetransportzone: 'nsxmanager.[-1].transportzone.[-1]'
+
+    DeleteUplinkProfiles:
+       Type: NSX
+       TestNSX: nsxmanager.[1]
+       deleteuplinkprofile: nsxmanager.[-1].uplinkprofile.[-1]
+
+    DeleteTransportNodes:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletetransportnode: nsxmanager.[-1].transportnode.[-1]
+
+    DeleteVtep1OnHost1ESX:
+        Type: Host
+        TestHost: 'esx.[1]'
+        deletevtep: 'esx.[1].vtep.[1]'
+
+    DeleteVtep1OnHost2ESX:
+        Type: Host
+        TestHost: 'esx.[2]'
+        deletevtep: 'esx.[2].vtep.[1]'
+
+    CreateLogicalSwitchMTEP1OnTransportZone1:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalswitch:
+            '[1]':
+                name: 'l2-teaming-test'
+                summary: 'logical Switch for teaming'
+                transport_zone_id: nsxmanager.[1].transportzone.[1]
+                admin_state: UP
+                replication_mode: MTEP
+
+    DeleteLogicalSwitches:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        deletelogicalswitch: 'nsxmanager.[-1].logicalswitch.[-1]'
+
+    AttachVIF1OnVM1ToLogicalSwitch1ESX:
+        Type: VM
+        TestVM: 'vm.[1]'
+        vnic:
+           '[1]':
+               driver: "e1000"
+               portgroup: "nsxmanager.[1].logicalswitch.[1]"
+               connected: 1
+               startconnected: 1
+
+    AttachVIF1OnVM2ToLogicalSwitch1ESX:
+        Type: VM
+        TestVM: 'vm.[2]'
+        vnic:
+           '[1]':
+               driver: "e1000"
+               portgroup: "nsxmanager.[1].logicalswitch.[1]"
+               connected: 1
+               startconnected: 1
+
+    AttachVIF1OnVM3ToLogicalSwitch1ESX:
+        Type: VM
+        TestVM: 'vm.[3]'
+        vnic:
+           '[1]':
+               driver: "e1000"
+               portgroup: "nsxmanager.[1].logicalswitch.[1]"
+               connected: 1
+               startconnected: 1
+
+    AttachVIF1OnVM4ToLogicalSwitch1ESX:
+        Type: VM
+        TestVM: 'vm.[4]'
+        vnic:
+           '[1]':
+               driver: "e1000"
+               portgroup: "nsxmanager.[1].logicalswitch.[1]"
+               connected: 1
+               startconnected: 1
+
+    DiscoverLogicalPort1OnVM1Vif1OnManagerESX:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[1]':
+                discover: 'true'
+                attachment:
+                    attachment_type: VIF
+                    id_: 'vm.[1].vnic.[1]->uuid'
+
+    DiscoverLogicalPort2OnVM2Vif1OnManagerESX:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[2]':
+                discover: 'true'
+                attachment:
+                    attachment_type: VIF
+                    id_: 'vm.[2].vnic.[1]->uuid'
+
+    DiscoverLogicalPort3OnVM3Vif1OnManagerESX:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[3]':
+                discover: 'true'
+                attachment:
+                    attachment_type: VIF
+                    id_: 'vm.[3].vnic.[1]->uuid'
+
+    DiscoverLogicalPort4OnVM4Vif1OnManagerESX:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[4]':
+                discover: 'true'
+                attachment:
+                    attachment_type: VIF
+                    id_: 'vm.[4].vnic.[1]->uuid'
+
+    DetachVIFAllOnVM1ESX:
+        Type: NetAdapter
+        TestAdapter: vm.[1].vnic.[-1]
+        reconfigure: true
+        connected: 0
+        startconnected: 0
+
+    DetachVIFAllOnVM2ESX:
+        Type: NetAdapter
+        TestAdapter: vm.[2].vnic.[-1]
+        reconfigure: true
+        connected: 0
+        startconnected: 0
+
+    DetachVIFAllOnVM3ESX:
+        Type: NetAdapter
+        TestAdapter: vm.[3].vnic.[-1]
+        reconfigure: true
+        connected: 0
+        startconnected: 0
+
+    DetachVIFAllOnVM4ESX:
+        Type: NetAdapter
+        TestAdapter: vm.[4].vnic.[-1]
+        reconfigure: true
+        connected: 0
+        startconnected: 0
+
+    DeleteVIFAllOnVM1ESX:
+        Type: VM
+        TestVM: 'vm.[1]'
+        deletevnic: 'vm.[1].vnic.[-1]'
+
+    DeleteVIFAllOnVM2ESX:
+        Type: VM
+        TestVM: 'vm.[2]'
+        deletevnic: 'vm.[2].vnic.[-1]'
+
+    DeleteVIFAllOnVM3ESX:
+        Type: VM
+        TestVM: 'vm.[3]'
+        deletevnic: 'vm.[3].vnic.[-1]'
+
+    DeleteVIFAllOnVM4ESX:
+        Type: VM
+        TestVM: 'vm.[4]'
+        deletevnic: 'vm.[4].vnic.[-1]'
+
+    ConfigureIPOnVIF1OnVM1ESX:
+        Type: NetAdapter
+        TestAdapter: vm.[1].vnic.[1]
+        IPv4: auto
+
+    ConfigureIPOnVIF1OnVM2ESX:
+        Type: NetAdapter
+        TestAdapter: vm.[2].vnic.[1]
+        IPv4: auto
+
+    TrafficPingVM1ToVM2ESX:
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[1].vnic.[1]"
+        SupportAdapter: "vm.[2].vnic.[1]"
+        TestDuration  : "10"
+        connectivitytest: '0'
+
+    TrafficPingVM3ToVM4ESX:
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[3].vnic.[1]"
+        SupportAdapter: "vm.[4].vnic.[1]"
+        TestDuration  : "10"
+        connectivitytest: '0'
+
+    TrafficPingVM1ToVM3ESX:
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[1].vnic.[1]"
+        SupportAdapter: "vm.[3].vnic.[1]"
+        TestDuration  : "10"
+        connectivitytest: '0'
+
+    TrafficPingVM2ToVM4ESX:
+        Type          : "Traffic"
+        ToolName      : "ping"
+        TestAdapter   : "vm.[2].vnic.[1]"
+        SupportAdapter: "vm.[4].vnic.[1]"
+        TestDuration  : "10"
+        connectivitytest: '0'
+
+    # KVM worklods
+    DiscoverHostNodesKVM:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        hostnode:
+            '[1-2]':
+                discover: 'true'
+                ip_addresses: 'kvm.[x=hostnode_index]'
+
+    CreateVIFs:
+        Type: VM
+        TestVM: 'vm.[1-4]'
+        vif:
+            '[1]':
+                backing: 'kvm.[x=(int(vm_index/2 + 1/2))].bridge.[1]'
+    AttachVIFsToLogicalSwitch:
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        logicalport:
+            '[1]':
+                switch_id: nsxmanager.[1].logicalswitch.[1]
+                attachment:
+                    attachment_type: 'VIF'
+                    id_: vm.[1].vif.[1]->uuid
+                admin_state: UP
+            '[2]':
+                switch_id: nsxmanager.[1].logicalswitch.[1]
+                attachment:
+                    attachment_type: 'VIF'
+                    id_: vm.[2].vif.[1]->uuid
+                admin_state: UP
+            '[3]':
+                switch_id: nsxmanager.[1].logicalswitch.[1]
+                attachment:
+                    attachment_type: 'VIF'
+                    id_: vm.[3].vif.[1]->uuid
+                admin_state: UP
+            '[4]':
+                switch_id: nsxmanager.[1].logicalswitch.[1]
+                attachment:
+                    attachment_type: 'VIF'
+                    id_: vm.[4].vif.[1]->uuid
+                admin_state: UP
+
+    SetControllerOnKVM1:
+        Type: Host
+        TestHost: 'kvm.[1]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[1]'
+            execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+
+    SetControllerOnKVM2:
+        Type: Host
+        TestHost: 'kvm.[2]'
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[2]'
+            execution_type: 'cmd'
+        sleepbetweenworkloads: 10
+
+    VerifyLSwitchConnectionTableOnController:
+        Type: Switch
+        TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+        endpoints: 'nsxcontroller.[-1]'
+        # Let the handshake between hosts and CCP complete.
+        sleepbetweenworkloads: 15
+        switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+        execution_type: 'cli'
+        get_connection_table[?]contain_once:
+            table:
+                - adapter_ip: "kvm.[1]->mgmt_ip"
+                - adapter_ip: "kvm.[2]->mgmt_ip"
+
+    VerifyLSInfoOnHosts:
+        Type: "Host"
+        TestHost: "kvm.[1-2]"
+        execution_type: 'cli'
+        'get_logical_switch[?]contain_once':
+            table:
+                - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                  replication_mode: 'mtep'
+                  controller_status: 'Up'
+
+    ConfigureVIFIPs:
+        Type: NetAdapter
+        TestAdapter: 'vm.[1-4].vif.[1]'
+        IPv4: auto
+
+    DeleteLogicalPort:
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+        query_params:
+            detach: 'true'
+
+    DeleteVIFs:
+        Type: VM
+        TestVM: 'vm.[1-4]'
+        deletevif: 'vm.[x=vm_index].vif.[1]'
+
+
+    RegisterHosts:
+        Type: Host
+        TestHost: 'kvm.[1-2]'
+        set_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    UnregisterHosts:
+        Type: Host
+        TestHost: 'kvm.[1-2]'
+        remove_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+
+    ControllerSecurityPassword: &CONTROLLER_SECURITY_PASSWORD
+        "12345"
+
+    ControllerSecurityType: &CONTROLLER_SECURITY_TYPE
+        "password"
+
+    NumControllerCheckRetries: &NUM_CONTROLLER_CHECK_RETRIES
+        '10'
+
+    JoinController1ToCluster: &JOIN_CONTROLLER_1_TO_CLUSTER
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clusternode:
+            '[1]':
+                controller_ip: 'nsxcontroller.[1]'
+                control_cluster_thumbprint: 'nsxcontroller.[1]'
+                execution_type: 'cli'
+
+    JoinController2ToCluster: &JOIN_CONTROLLER_2_TO_CLUSTER
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clusternode:
+            '[2]':
+                controller_ip: 'nsxcontroller.[2]'
+                control_cluster_thumbprint: 'nsxcontroller.[2]'
+                execution_type: 'cli'
+
+    JoinController3ToCluster: &JOIN_CONTROLLER_3_TO_CLUSTER
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clusternode:
+            '[3]':
+                controller_ip: 'nsxcontroller.[3]'
+                control_cluster_thumbprint: 'nsxcontroller.[3]'
+                execution_type: 'cli'
+
+    ActivateController2: &ACTIVATE_CONTROLLER_2
+        Type: Controller
+        TestController: 'nsxcontroller.[2]'
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        configure_service_state:
+            state: 'activate'
+            service_name: 'control-cluster'
+        execution_type: 'cli'
+
+    WAIT_FOR_MOOT: &WAIT_FOR_MOOT_STATUS
+        '30'
+
+    ActivateController3: &ACTIVATE_CONTROLLER_3
+        Type: Controller
+        TestController: 'nsxcontroller.[3]'
+        sleepbetweenworkloads: *WAIT_FOR_MOOT_STATUS
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        configure_service_state:
+            state: 'activate'
+            service_name: 'control-cluster'
+        execution_type: 'cli'
+
+    DeactivateController2: &DEACTIVATE_CONTROLLER_2
+        Type: Controller
+        TestController: 'nsxcontroller.[2]'
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        configure_service_state:
+            state: 'deactivate'
+            service_name: 'control-cluster'
+        execution_type: 'cli'
+
+    DeactivateController3: &DEACTIVATE_CONTROLLER_3
+        Type: Controller
+        TestController: 'nsxcontroller.[3]'
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        configure_service_state:
+            state: 'deactivate'
+            service_name: 'control-cluster'
+        execution_type: 'cli'
+
+    InitializeController1: &INITIALIZE_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        configure_service_state:
+            state: 'initialize'
+            service_name: 'control-cluster'
+        execution_type: 'cli'
+
+    SetSecurityOnController1: &SET_SECURITY_ON_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        set_security:
+            security_type: *CONTROLLER_SECURITY_TYPE
+            value: *CONTROLLER_SECURITY_PASSWORD
+        execution_type: 'cli'
+
+    SetSecurityOnController2: &SET_SECURITY_ON_CONTROLLER_2
+        <<: *SET_SECURITY_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    SetSecurityOnController3: &SET_SECURITY_ON_CONTROLLER_3
+        <<: *SET_SECURITY_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    DeleteMootServerOnController1: &DELETE_MOOT_SERVER_ON_CONTROLLER_1
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[1]'
+        delete_backend_file:
+            file_name: '*'
+            execution_type: 'cmd'
+            path: '/var/moot-server'
+
+    DeleteMootServerOnController2: &DELETE_MOOT_SERVER_ON_CONTROLLER_2
+        <<: *DELETE_MOOT_SERVER_ON_CONTROLLER_1
+        TestNSX: 'nsxcontroller.[2]'
+
+    DeleteMootServerOnController3: &DELETE_MOOT_SERVER_ON_CONTROLLER_3
+        <<: *DELETE_MOOT_SERVER_ON_CONTROLLER_1
+        TestNSX: 'nsxcontroller.[3]'
+
+    ClearController1: &CLEAR_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clear_controller:
+            execution_type: 'cmd'
+
+    ClearController2: &CLEAR_CONTROLLER_2
+        <<: *CLEAR_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    ClearController3: &CLEAR_CONTROLLER_3
+        <<: *CLEAR_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    StartMootOnController1: &START_MOOT_ON_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        configure_service_state:
+            state: 'start'
+            service_name: 'moot-server'
+            execution_type: 'cmd'
+
+    StartMootOnController2: &START_MOOT_ON_CONTROLLER_2
+        <<: *START_MOOT_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    StartMootOnController3: &START_MOOT_ON_CONTROLLER_3
+        <<: *START_MOOT_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    StopMootOnController1: &STOP_MOOT_ON_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        configure_service_state:
+            state: 'stop'
+            service_name: 'moot-server'
+            execution_type: 'cmd'
+
+    StopMootOnController2: &STOP_MOOT_ON_CONTROLLER_2
+        <<: *STOP_MOOT_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    StopMootOnController3: &STOP_MOOT_ON_CONTROLLER_3
+        <<: *STOP_MOOT_ON_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    DeleteBootStrapOnController3: &DELETE_BOOT_STRAP_ON_CONTROLLER3
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[3]'
+        delete_backend_file:
+            file_name: 'bootstrap-config'
+            execution_type: 'cmd'
+            path: '/opt/vmware/etc'
+
+    DeleteControllerNodeUUIDFileOnController3: &DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER3
+        Type: 'NSX'
+        TestNSX: 'nsxcontroller.[3]'
+        delete_backend_file:
+            file_name: 'node-uuid'
+            execution_type: 'cmd'
+            path: '/opt/vmware/etc'
+
+    DeleteBootStrapOnController2: &DELETE_BOOT_STRAP_ON_CONTROLLER2
+        <<: *DELETE_BOOT_STRAP_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[2]'
+
+    DeleteControllerNodeUUIDFileOnController2: &DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER2
+        <<: *DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[2]'
+
+    DeleteBootStrapOnController1: &DELETE_BOOT_STRAP_ON_CONTROLLER1
+        <<: *DELETE_BOOT_STRAP_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[1]'
+
+    DeleteControllerNodeUUIDFileOnController1: &DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER1
+        <<: *DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER3
+        TestNSX: 'nsxcontroller.[1]'
+
+    RegisterControllersToMP:
+        Type: Controller
+        TestController: 'nsxcontroller.[1-3]'
+        set_nsx_registration:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    Verify3NodeCCPCluster: &VERIFY_3_NODE_CCP_CLUSTER_STATUS
+           Type: "ClusterNode"
+           Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+           noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+           execution_type: 'cli'
+           'get_cluster_node':
+               'in_majority[?]equal_to': "true"
+               'cluster_nodes[?]contain_once':
+                   - controller_ip: "nsxcontroller.[1]"
+                     id_: "nsxcontroller.[1].clusternode.[1]"
+                     status: "active"
+                   - controller_ip: "nsxcontroller.[2]"
+                     id_: "nsxcontroller.[1].clusternode.[2]"
+                     status: "active"
+                   - controller_ip: "nsxcontroller.[3]"
+                     id_: "nsxcontroller.[1].clusternode.[3]"
+
+    StopController1: &STOP_CONTROLLER_1
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        configure_service_state:
+            state: 'stop'
+            service_name: 'controller'
+
+    StopController2: &STOP_CONTROLLER_2
+        <<: *STOP_CONTROLLER_1
+        TestController: 'nsxcontroller.[2]'
+
+    StopController3: &STOP_CONTROLLER_3
+        <<: *STOP_CONTROLLER_1
+        TestController: 'nsxcontroller.[3]'
+
+    RemoveCCPNode3FromCluster:
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        remove_ccp_cluster_node:
+            controller_ip: 'nsxcontroller.[3]'
+            force: 'yes'
+            execution_type: 'cli'
+
+    RemoveCCPNode2FromCluster:
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        noofretries: *NUM_CONTROLLER_CHECK_RETRIES
+        remove_ccp_cluster_node:
+            controller_ip: 'nsxcontroller.[2]'
+            force: 'yes'
+            execution_type: 'cli'
+
+    DeleteClusterNode1FromMP:
+          Type: NSX
+          TestNSX: 'nsxmanager.[1]'
+          deleteclusternode: 'nsxcontroller.[1].clusternode.[1]'
+
+    DeleteClusterNode2FromMP:
+          Type: NSX
+          TestNSX: 'nsxmanager.[1]'
+          deleteclusternode: 'nsxcontroller.[1].clusternode.[2]'
+
+    DeleteClusterNode3FromMP:
+          Type: NSX
+          TestNSX: 'nsxmanager.[1]'
+          deleteclusternode: 'nsxcontroller.[1].clusternode.[3]'
+
+
+
+

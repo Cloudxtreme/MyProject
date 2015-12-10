@@ -1,0 +1,263 @@
+AAA_WORKLOADS: &AAA_WORKLOADS
+    SetAAAId: &SET_AAA_ID
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        aaa_provider:
+            '[1]':
+                map_object: true
+                id_: 1
+
+    StopAuthServer: &STOP_AUTH_SERVER
+        Type: AuthServer
+        TestAuthServer: "authserver.[1]"
+        state: 'stop'
+        configure_service_state:
+            'content[?]match': 'Stopping TACACS+'
+
+    StartAuthServer: &START_AUTH_SERVER
+        Type: AuthServer
+        TestAuthServer: "authserver.[1]"
+        sleepbetweenworkloads:  "10"
+        state: 'start'
+        configure_service_state:
+            'content[?]match': 'Starting TACACS+'
+
+    AddUser: &ADD_USER
+        Type: AuthServer
+        TestAuthServer: "authserver.[1]"
+        sleepbetweenworkloads:  "10"
+        add_user:
+            username: 'nsxadmin'
+            password: 'admin123'
+            service: 'vmware_nsx'
+
+    BackupDefaultConfig: &BACKUP_DEFAULT_CONFIG
+        Type: AuthServer
+        TestAuthServer: "authserver.[1]"
+        sleepbetweenworkloads:  "30"
+        backup_config_file:
+            file_name: 'tbackup.conf'
+
+    RestoreDefaultConfig: &RESTORE_DEFAULT_CONFIG
+        Type: AuthServer
+        TestAuthServer: "authserver.[1]"
+        sleepbetweenworkloads:  "30"
+        restore_config_file:
+            file_name: 'tbackup.conf'
+
+    VerifyProviderList: &VERIFY_PROVIDER_LIST
+        Type: "AAA"
+        Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+        get_provider_list:
+            'provider_list[?]contains':
+              - 'resource_type[?]equal_to': "TacacsPlusAAAProviderGroupProperties"
+                'auth_type[?]equal_to': "CHAP"
+
+    UpdateProviderList: &UPDATE_PROVIDER_LIST
+        Type: "AAA"
+        Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+        reconfigure: true
+        provider_list:
+          - resource_type: "TacacsPlusAAAProviderGroupProperties"
+            auth_type: "CHAP"
+            servers:
+              - address: 'authserver.[1]->ip'
+                secret_key: "testing123"
+
+    UpdateProviderListWithMultipleServers: &UPDATE_PROVIDER_LIST_MULTIPLE_TACACS
+        Type: "AAA"
+        Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+        reconfigure: true
+        provider_list:
+          - resource_type: "TacacsPlusAAAProviderGroupProperties"
+            auth_type: "CHAP"
+            servers:
+              - address: 'authserver.[1]->ip'
+                secret_key: "testing123"
+              - address: '10.112.11.175'
+                secret_key: "testing123"
+              - address: '10.112.11.176'
+                secret_key: "testing123"
+
+    VerifyProviderListForMultipleServers: &VERIFY_PROVIDER_LIST_FOR_MULTIPLE_TACACS
+        Type: "AAA"
+        Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+        get_provider_list:
+            'provider_list[?]contains':
+              - 'resource_type': "TacacsPlusAAAProviderGroupProperties"
+                'auth_type': "CHAP"
+                'servers':
+                  - 'address': '10.112.11.175'
+                  - 'address': '10.112.11.176'
+                  - 'address': 'authserver.[1]->ip'
+
+    UpdateProviderListWithTwoServers: &UPDATE_PROVIDER_LIST_TWO_SERVERS
+        Type: "AAA"
+        Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+        reconfigure: true
+        provider_list:
+          - resource_type: "TacacsPlusAAAProviderGroupProperties"
+            auth_type: "CHAP"
+            servers:
+              - address: 'authserver.[1]->ip'
+                secret_key: "testing123"
+              - address: 'authserver.[2]->ip'
+                secret_key: "testing123"
+
+    VerifyProviderListForTwoServers: &VERIFY_PROVIDER_LIST_FOR_TWO_SERVERS
+        Type: "AAA"
+        Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+        get_provider_list:
+            'provider_list[?]contains':
+              - 'resource_type': "TacacsPlusAAAProviderGroupProperties"
+                'auth_type': "CHAP"
+                'servers':
+                  - 'address': 'authserver.[1]->ip'
+                  - 'address': 'authserver.[2]->ip'
+
+    UpdateProviderListFirstServerUnreachable: &UPDATE_PROVIDER_LIST_FIRST_SERVER_UNREACHABLE
+        Type: "AAA"
+        Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+        reconfigure: true
+        provider_list:
+          - resource_type: "TacacsPlusAAAProviderGroupProperties"
+            auth_type: "CHAP"
+            servers:
+              - address: '257.10.112.101'   # not reachable ip
+                secret_key: "testing123"
+              - address: 'authserver.[2]->ip'
+                secret_key: "testing123"
+
+    UpdateProviderListWithSevenServers: &UPDATE_PROVIDER_LIST_SEVEN_TACACS
+        Type: "AAA"
+        Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+        reconfigure: true
+        provider_list:
+          - resource_type: "TacacsPlusAAAProviderGroupProperties"
+            auth_type: "CHAP"
+            servers:
+              - address: '10.112.11.171'
+                secret_key: "testing123"
+              - address: '10.112.11.172'
+                secret_key: "testing123"
+              - address: '10.112.11.173'
+                secret_key: "testing123"
+              - address: '10.112.11.174'
+                secret_key: "testing123"
+              - address: '10.112.11.175'
+                secret_key: "testing123"
+              - address: '10.112.11.176'
+                secret_key: "testing123"
+              - address: '10.112.11.177'
+                secret_key: "testing123"
+
+    VerifyProviderListForSevenServers: &VERIFY_PROVIDER_LIST_FOR_SEVEN_TACACS
+        Type: "AAA"
+        Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+        get_provider_list:
+            'provider_list[?]contains':
+              - 'resource_type': "TacacsPlusAAAProviderGroupProperties"
+                'auth_type': "CHAP"
+                'servers':
+                  - 'address': '10.112.11.171'
+                  - 'address': '10.112.11.172'
+                  - 'address': '10.112.11.173'
+                  - 'address': '10.112.11.174'
+                  - 'address': '10.112.11.175'
+                  - 'address': '10.112.11.176'
+                  - 'address': '10.112.11.177'
+
+    UpdateProviderListWithEightServers: &UPDATE_PROVIDER_LIST_EIGHT_TACACS
+        Type: "AAA"
+        Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+        reconfigure: true
+        ExpectedResult:
+            status_code: BAD_REQUEST
+        provider_list:
+          - resource_type: "TacacsPlusAAAProviderGroupProperties"
+            auth_type: "CHAP"
+            servers:
+              - address: '10.112.11.171'
+                secret_key: "testing123"
+              - address: '10.112.11.172'
+                secret_key: "testing123"
+              - address: '10.112.11.173'
+                secret_key: "testing123"
+              - address: '10.112.11.174'
+                secret_key: "testing123"
+              - address: '10.112.11.175'
+                secret_key: "testing123"
+              - address: '10.112.11.176'
+                secret_key: "testing123"
+              - address: '10.112.11.177'
+                secret_key: "testing123"
+              - address: '10.112.11.178'
+                secret_key: "testing123"
+
+IDAS_WORKLOADS: &IDAS_WORKLOADS
+    CreateIPPool: &CREATE_IPPOOL
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        sleepbetweenworkloads:  "30"
+        runtime_params:
+                username: "nsxadmin"
+                password: "admin123"
+        ippool:
+            '[1]':
+                name: 'autogenerate'
+                summary: "IPPool created through automation"
+                subnets:
+                  - allocation_ranges:
+                      - end: 192.168.1.10
+                        begin: 192.168.1.2
+                      - end: 192.168.1.20
+                        begin: 192.168.1.11
+                    cidr: 192.168.1.0/24
+                    gateway_ip: 192.168.1.255
+                    servers:
+                      - 192.1.1.1
+    ReadIPPool: &READ_IPPOOL
+        Type: "GroupingObject"
+        Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+        runtime_params:
+            username: "admin"
+            password: "default"
+        read:
+          'name[?]defined': ''
+          'summary[?]equal_to': "IPPool created through automation"
+
+    UpdateIPPool: &UPDATE_IPPOOL
+        Type: "GroupingObject"
+        Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+        runtime_params:
+            username: "admin"
+            password: "default"
+        reconfigure:
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+
+    DeleteIPPool: &DELETE_IPPOOL
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        runtime_params:
+            username: "admin"
+            password: "default"
+        deleteippool: "nsxmanager.[1].ippool.[-1]"
+
+CLI_WORKLOADS: &CLI_WORKLOADS
+    SetServiceId: &SET_SERVICE_ID
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        nsxservice:
+            '[1]':
+                map_object: true
+                id_: 'ntp'
+
+    VerifyServices: &VERIFY_SERVICES
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        execution_type: 'cli'
+        get_service_state:
+            'table[?]contain_once':
+                - service_name: 'appmgmt'
+                  service_state: 'running'

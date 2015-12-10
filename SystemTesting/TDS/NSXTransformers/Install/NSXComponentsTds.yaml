@@ -1,0 +1,159 @@
+TestNSXManagerDeploy:
+    Product: "NSX"
+    Category: "Management"
+    Component: "Install"
+    Developer: "nmahajan"
+    Summary: "This test case deploys NSX Manager."
+    Tags: "nsxmanager"
+    Version: 2
+    TestName: "NSX Manager Install"
+    TestbedSpec:
+        esx:
+           '[1]':
+               ip: none
+    WORKLOADS:
+        Sequence:
+
+            - ["DeployNSXManager"]
+
+        DeployNSXManager:
+            Type: 'Root'
+            TestNode: 'root.[1]'
+            nsxmanager:
+                '[1]':
+                    'username' : 'admin'
+                    'password' : 'default'
+                    # build for deploying nsx manager
+                    'build': 'nsx-manager-va:master:beta:official'
+                    # esx host ip
+                    'esx': 'esx.[1]'
+                    'network': 'VM Network'
+                    'installtype': 'nested'
+                    'memory': '12288'
+                    'cpu': '4'
+
+TestNSXEdgeDeploy:
+    Product: "NSX"
+    Category: "Edge"
+    Component: "Install"
+    Developer: "nmahajan"
+    Summary: "This test case deploys NSX Edge."
+    Tags: "nsxedge"
+    Version: 2
+    TestName: "NSX Edge Install"
+    TestbedSpec:
+        esx:
+           '[1]':
+               ip: none
+    WORKLOADS:
+        Sequence:
+
+            - ["DeployNSXEdge"]
+
+        DeployNSXEdge:
+            Type: 'Root'
+            TestNode: 'root.[1]'
+            nsxedge:
+                '[1]':
+                    'username' : 'admin'
+                    'password' : 'default'
+                    # build for deploying nsx edge
+                    'build': 'nsx-edge-va:avalanche:release:official'
+                    'edgetype': 'compact'
+                    # esx host ip
+                    'esx': 'esx.[1]'
+                    'management_network': 'VM Network'
+                    'uplink_network': 'VM Network'
+                    'internal_network': 'VM Network'
+                    'installtype': 'nested'
+                    'memory': '4096'
+                    'cpu': '2'
+
+TestNSXControllerDeploy:
+    Product: "NSX"
+    Category: "Controller"
+    Component: "Install"
+    Developer: "nmahajan"
+    Summary: "This test case deploys NSX Controller."
+    Tags: "nsxcontroller"
+    Version: 2
+    TestName: "NSX Controller Install"
+    TestbedSpec:
+        esx:
+           '[2]':
+               ip: none
+    WORKLOADS:
+        Sequence:
+
+            - ["DeployNSXController"]
+
+        DeployNSXController:
+            Type: 'Root'
+            TestNode: 'root.[1]'
+            nsxcontroller:
+                '[1]':
+                    'username' : 'admin'
+                    'password' : 'default'
+                    # build for deploying nsx manager
+                    #'build': 'nsx-controller:master:beta:official'
+                    'build': 'ob-2270291'
+                    # esx host ip
+                    'esx': 'esx.[2]'
+                    'network': 'VM Network'
+                    'installtype': 'nested'
+                    'memory': '2048'
+                    'cpu': '2'
+
+GetNSXServices:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "ApplianceManagement"
+    Developer: "nmahajan"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'cat,nsxmanager,ApplianceManagement'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestbedSpec:
+    TestName: "Get all services on NSXManager"
+    Summary: "Verify all services on NSXManager"
+    Procedure: '1. Get all services'
+    ExpectedResult: 'Verify all expected services'
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetServiceId"]
+            - ["VerifyAllServices"]
+
+        SetServiceId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            nsxservice:
+              '[1]':
+                  map_object: true
+                  id_: 'all'
+        VerifyAllServices:
+            Type: "Service"
+            TestService: "nsxmanager.[1].nsxservice.[1]"
+            get_services:
+                'result_count[?]equal_to': 8
+                'results[?]equal_to':
+                    - service_name: 'snmp'
+                    - service_name: 'proton'
+                    - service_name: 'syslog'
+                    - service_name: 'ntp'
+                    - service_name: 'httpd'
+                    - service_name: 'rabbitmq'
+                    - service_name: 'ssh'
+                    - service_name: 'appmgmt'
+

@@ -1,0 +1,636 @@
+!include ../../esx/CommonWorkloads.yaml
+!include ../../esx/TestbedSpec.yaml
+
+COMMON_STRESS_TAGS:
+    P0_STRESS_TAGS: &P0_STRESS_TAGS
+        <<: *P0_TAGS
+        QCPath: *QCPATH--ESX
+        Tags: "L2, Stress"
+        Developer: salmanm
+        # XXX(salmanm): Define a testbedspec with 20 HVs.
+        TestbedSpec: *FUNCTIONAL_TOPOLOGY_3--ESX
+
+RegisterUnregisterFabricNode:
+    <<: *P0_STRESS_TAGS
+    Testname: RegisterUnregisterFabricNode
+    Component: *MPA--ESX
+    Summary: "Register/Unregister a fabric node 100 times."
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_2VMs_1TZ_1LS_Workloads--ESX
+        <<: *STRESS_WORKLOADS
+        Sequence:
+            - - SetupMPAndCCPCluster
+            - - VerifyMPAndCCPCluster
+            - - RegisterUnregisterHost1_100--ESX
+            - - Register2Hosts
+            - - Discover2HostNodes
+            - - CreateIPDiscoveryProfileOverlay
+            - - CreateUplinkProfile
+            - - CreateTransportZone
+            - - CreateTransportNodes
+            - - CreateLogicalSwitch
+            - - CreateTestVifs
+            - - LogicalSwitch1PingTraffic
+        ExitSequence:
+            - - L2Cleanup
+
+        LogicalSwitch1PingTraffic:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            testduration: '5'
+
+CreateDeleteTransportZone:
+    <<: *P0_STRESS_TAGS
+    Testname: CreateDeleteTransportZone
+    Component: *MPA--ESX
+    Summary: "Create/Delete a transport zone 100 times."
+    WORKLOADS:
+        <<: *STRESS_WORKLOADS
+        <<: *3NodeCCP_3NodeMP_2Hosts_2VMs_1TZ_1LS_Workloads--ESX
+        Sequence:
+            - - SetupMPAndCCPCluster
+            - - VerifyMPAndCCPCluster
+            - - Register2Hosts
+            - - Discover2HostNodes
+            - - CreateIPDiscoveryProfileOverlay
+            - - CreateUplinkProfile
+            - - CreateDeleteTransportZoneAndNode_100Times--ESX
+            - - CreateTransportZone
+            - - CreateTransportNodes
+            - - CreateLogicalSwitch
+            - - CreateTestVifs
+            - - LogicalSwitch1PingTraffic
+        ExitSequence:
+            - - L2Cleanup
+
+        LogicalSwitch1PingTraffic:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            testduration: '5'
+
+CreateDeleteLogicalSwitch:
+    <<: *P0_STRESS_TAGS
+    Testname: CreateDeleteLogicalSwitch
+    Component: *MPA--ESX
+    Summary: "Create/Delete a logical switch 100 times."
+    WORKLOADS:
+        <<: *STRESS_WORKLOADS
+        <<: *3NodeCCP_3NodeMP_2Hosts_2VMs_1TZ_1LS_Workloads--ESX
+        Sequence:
+            - - SetupMPAndCCPCluster
+            - - VerifyMPAndCCPCluster
+            - - CreateIPDiscoveryProfileOverlay
+            - - CreateUplinkProfile
+            - - CreateTransportZone
+            - - CreateDeleteLogicalSwitch_100Times
+            - - CreateLogicalSwitch
+            - - Register2Hosts
+            - - Discover2HostNodes
+            - - CreateTransportNodes
+            - - CreateTestVifs
+            - - LogicalSwitch1PingTraffic
+        ExitSequence:
+            - - L2Cleanup
+
+        LogicalSwitch1PingTraffic:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            testduration: '5'
+
+CreateDeleteLogicalPort:
+    <<: *P0_STRESS_TAGS
+    Testname: CreateDeleteLogicalPort
+    Component: *MPA--ESX
+    Summary: "Create/Delete a logical port 100 times."
+    WORKLOADS:
+        <<: *STRESS_WORKLOADS
+        <<: *3NodeCCP_3NodeMP_2Hosts_2VMs_1TZ_1LS_Workloads--ESX
+        Sequence:
+            - - SetupMPAndCCPCluster
+            - - VerifyMPAndCCPCluster
+            - - CreateIPDiscoveryProfileOverlay
+            - - CreateUplinkProfile
+            - - CreateTransportZone
+            - - Register2Hosts
+            - - Discover2HostNodes
+            - - CreateTransportNodes
+            - - CreateLogicalSwitch
+            - - CreateDeleteLogicalPort_100Times--ESX
+            - - CreateTestVifs
+            - - LogicalSwitch1PingTraffic
+        ExitSequence:
+            - - L2Cleanup
+
+        LogicalSwitch1PingTraffic:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            testduration: '5'
+
+CreateParallelTransportZones:
+    <<: *P0_STRESS_TAGS
+    Testname: CreateParallelTransportZones
+    Component: *MPA--ESX
+    Summary: "Create 500 transport zones in parallel and get all transport
+              nodes (sorted/unsorted)"
+
+CreateParallelTransportNodes:
+    <<: *P0_STRESS_TAGS
+    Testname: CreateParallelTransportNodes
+    Component: *MPA--ESX
+    Summary: "Create 20 transport nodes in parallel and get all transport
+              nodes (sorted/unsorted)"
+
+CreateParallelLogicalSwitches:
+    <<: *P0_STRESS_TAGS
+    Testname: CreateParallelLogicalSwitches
+    Component: *MPA--ESX
+    Summary: "Create 500 logical switches in parallel and get all logical
+              switches (sorted/unsorted)"
+
+CreateParallelLogicalPorts:
+    <<: *P0_STRESS_TAGS
+    Testname: CreateParallelLogicalPorts
+    Component: *MPA--ESX
+    Summary: "Create 500 logical ports in parallel and get all logical ports
+              (sorted/unsorted). Plug in VIFs to the lports and do up/down
+              on the vifs."
+
+UknownIPScanStress:
+    <<: *P0_STRESS_TAGS
+    Testname: UknownIPScanStress
+    Component: *DATAPATH--ESX
+    Summary: "Scan unknown IPs in the logical network from multiple sources."
+
+MultipleVMMulticastTraffic:
+    <<: *P0_STRESS_TAGS
+    Testname: MultipleVMMulticastTraffic
+    Component: *DATAPATH--ESX
+    Summary: "Generate multicast traffic in overlay network from multiple
+              sources."
+
+MultipleTransactionsPerSecond:
+    <<: *P0_STRESS_TAGS
+    Testname: MultipleTransactionsPerSecond
+    Component: *DATAPATH--ESX
+    Summary: "Initiate transactions in the overlay network from multiple
+              sources."
+
+JumboPacketsWithSmallerMTU:
+    <<: *P0_STRESS_TAGS
+    Testname: JumboPacketsWithSmallerMTU
+    Component: *DATAPATH--ESX
+    Summary: "Send jumbo packets between VMs where the MTU in datapath is
+              smaller than the packet size."
+
+JumboPacketsWithTSO:
+    <<: *P0_STRESS_TAGS
+    Testname: JumboPacketsWithTSO
+    Component: *DATAPATH--ESX
+    Summary: "Send jumbo packets between VMs with TSO enabled on the underlying
+              HV."
+
+ArpUpdateStress:
+    <<: *P0_STRESS_TAGS
+    Testname: ArpUpdateStress
+    Component: *DATAPATH--ESX
+    Summary: "Make the CCP learn the ARP entries of the VMs and then change the
+              VM IPs and see that the new binding is learned as well."
+
+NsxaKillTest:
+    <<: *P0_STRESS_TAGS
+    Testname: NsxaKillTest
+    Component: *MPA--ESX
+    Summary: "Kill nsxa and verify that watchdog process brings it back up."
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_2VMs_1TZ_1LS_Workloads--ESX
+        Sequence:
+            - - L2Setup
+            - - LogicalSwitch1PingTraffic
+              - SaveNSXAPid
+            # Kill nsxa and verify that a new process is restored.
+            - - LogicalSwitch1NetperfTraffic
+              - KillNSXA
+            - - VerifyNSXARunning
+            - - VerifyNSXAHasDifferentPID
+            # Verify that the traffic via an existig switch can pass.
+            - - LogicalSwitch1PingTraffic
+            # Remove existing switch.
+            - - DeleteTestVifs
+            - - DeleteAllLogicalSwitches
+            # Create a new logical switch and verify that the traffic can pass
+            # via that logical switch.
+            - - CreateLogicalSwitch
+            - - CreateTestVifs
+            - - LogicalSwitch1PingTraffic
+
+        ExitSequence:
+            - - RestartNSXA
+            - - L2Cleanup
+
+        LogicalSwitch1NetperfTraffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            sendmessagesize : "1000"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            ParallelSession: "yes"
+            NoofOutbound  : "1"
+            NoofInbound   : "1"
+            TestDuration  : "20"
+
+        LogicalSwitch1PingTraffic:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            testduration: '5'
+
+        SaveNSXAPid:
+            Type: Host
+            TestHost: esx.[1]
+            PersistData: 'yes'
+            read_pids:
+                'nsxa[?]defined': ''
+
+        KillNSXA:
+            Type: Host
+            TestHost: esx.[1]
+            sleepbetweenworkloads: 10
+            kill_processes_by_name:
+                execution_type: 'cmd'
+                options: '-9'
+                process_name: 'nsxa'
+
+        VerifyNSXARunning:
+            Type: Host
+            TestHost: esx.[1]
+            process_name: nsxa
+            execution_type: cmd
+            get_process_status[?]contains:
+                status: Running
+
+        VerifyNSXAHasDifferentPID:
+            Type: Host
+            TestHost: esx.[1]
+            process_name: nsxa
+            execution_type: cmd
+            get_pid[?]not_equal_to:
+                pid: esx.[1]->read_pids->nsxa
+
+        RestartNSXA:
+            Type: Host
+            TestHost: esx.[1]
+            restart_service:
+                service_name: nsxa
+                execution_type: *SERVICE_EXECUTION_TYPE--ESX
+
+NsxaRestartTest:
+    <<: *P0_STRESS_TAGS
+    Testname: NsxaRestartTest
+    Component: *MPA--ESX
+    Summary: "Restart nsxa for 100 times and then push a new logical
+              switch/port to verify that it realizes state on the host."
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_2VMs_1TZ_1LS_Workloads--ESX
+        Sequence:
+            - - L2Setup
+            - - LogicalSwitch1PingTraffic
+            - - RestartNSXA100Times
+              - LogicalSwitch1NetperfTraffic
+            # Verify that the traffic via an existig switch can pass.
+            - - LogicalSwitch1PingTraffic
+            # Remove existing switch.
+            - - DeleteTestVifs
+            - - DeleteAllLogicalSwitches
+            # Create a new logical switch and verify that the traffic can pass
+            # via that logical switch.
+            - - CreateLogicalSwitch
+            - - CreateTestVifs
+            - - LogicalSwitch1PingTraffic
+
+        ExitSequence:
+            - - L2Cleanup
+
+        LogicalSwitch1PingTraffic:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            testduration: '5'
+
+        RestartNSXA100Times:
+            Iterations: 100
+            Type: Host
+            TestHost: esx.[1]
+            restart_service:
+                service_name: nsxa
+                execution_type: *SERVICE_EXECUTION_TYPE--ESX
+
+        LogicalSwitch1NetperfTraffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            sendmessagesize : "1000"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            ParallelSession: "yes"
+            NoofOutbound  : "1"
+            NoofInbound   : "1"
+            TestDuration  : "180"
+
+NetcpaKillTest:
+    <<: *P0_STRESS_TAGS
+    Testname: NetcpaKillTest
+    Component: *LCP--ESX
+    Summary: "Kill netcpa and verify that watchdog process brings it back up."
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_2VMs_1TZ_1LS_Workloads--ESX
+        Sequence:
+            - - L2Setup
+            - - LogicalSwitch1PingTraffic
+            # Kill netcpa and verify that a new process is restored.
+            - - SaveNetcpaPid
+            - - LogicalSwitch1NetperfTraffic
+              - KillNetcpa
+            - - VerifyNetcpaRunning
+            - - VerifyNetcpaHasDifferentPID
+            # Verify that the traffic via an existig switch can pass.
+            - - LogicalSwitch1PingTraffic
+            # Remove existing switch.
+            - - DeleteTestVifs
+            - - DeleteAllLogicalSwitches
+            # Create a new logical switch and verify that the traffic can pass
+            # via that logical switch.
+            - - CreateLogicalSwitch
+            - - CreateTestVifs
+            - - LogicalSwitch1PingTraffic
+
+        ExitSequence:
+            - - RestartNetcpa
+            - - L2Cleanup
+
+        LogicalSwitch1NetperfTraffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            sendmessagesize : "1000"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            ParallelSession: "yes"
+            NoofOutbound  : "1"
+            NoofInbound   : "1"
+            TestDuration  : "20"
+
+        LogicalSwitch1PingTraffic:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            testduration: '5'
+
+        SaveNetcpaPid:
+            Type: Host
+            TestHost: esx.[1]
+            PersistData: 'yes'
+            read_pids:
+                'netcpa[?]defined': ''
+
+        KillNetcpa:
+            Type: Host
+            TestHost: esx.[1]
+            sleepbetweenworkloads: 10
+            kill_processes_by_name:
+                execution_type: 'cmd'
+                options: '-9'
+                process_name: 'netcpa'
+
+        VerifyNetcpaRunning:
+            Type: Host
+            TestHost: esx.[1]
+            process_name: netcpa
+            execution_type: cmd
+            get_process_status[?]contains:
+                status: Running
+
+        VerifyNetcpaHasDifferentPID:
+            Type: Host
+            TestHost: esx.[1]
+            process_name: netcpa
+            execution_type: cmd
+            get_pid[?]not_equal_to:
+                pid: esx.[1]->read_pids->netcpa
+
+        RestartNetcpa:
+            Type: Host
+            TestHost: esx.[1]
+            restart_service:
+                service_name: netcpad
+                execution_type: *SERVICE_EXECUTION_TYPE--ESX
+
+NetcpaRestartTest:
+    <<: *P0_STRESS_TAGS
+    Testname: NetcpaRestartTest
+    Component: *LCP--ESX
+    Summary: "Restart netcpa for 100 times and then do a vif/up down and verify
+              that the tunnel is cleaned and then recreated on the host."
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_2VMs_1TZ_1LS_Workloads--ESX
+        Sequence:
+            - - L2Setup
+            - - LogicalSwitch1PingTraffic
+            - - RestartNetcpa100Times
+              - LogicalSwitch1NetperfTraffic
+            # Verify that the traffic via an existig switch can pass.
+            - - LogicalSwitch1PingTraffic
+            # Remove existing switch.
+            - - DeleteTestVifs
+            - - DeleteAllLogicalSwitches
+            # Create a new logical switch and verify that the traffic can pass
+            # via that logical switch.
+            - - CreateLogicalSwitch
+            - - CreateTestVifs
+            - - LogicalSwitch1PingTraffic
+
+        ExitSequence:
+            - - L2Cleanup
+
+        LogicalSwitch1NetperfTraffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            sendmessagesize : "1000"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            ParallelSession: "yes"
+            NoofOutbound  : "1"
+            NoofInbound   : "1"
+            TestDuration  : "180"
+
+        LogicalSwitch1PingTraffic:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            testduration: '5'
+
+        RestartNetcpa100Times:
+            Iterations: 100
+            Type: Host
+            TestHost: esx.[1]
+            restart_service:
+                service_name: netcpad
+                execution_type: *SERVICE_EXECUTION_TYPE--ESX
+
+MpaKillTest:
+    <<: *P0_STRESS_TAGS
+    Testname: MpaKillTest
+    Component: *MPA--ESX
+    Summary: "Kill MPA and verify that the watchdog process brings it back up."
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_2VMs_1TZ_1LS_Workloads--ESX
+        Sequence:
+            - - L2Setup
+            - - LogicalSwitch1PingTraffic
+              - SaveMPAPid
+            # Kill MPA and verify it is restored.
+            - - LogicalSwitch1NetperfTraffic
+              - KillMPA
+            - - VerifyMPARunning
+            - - VerifyMPAHasDifferentPID
+            # Verify that the traffic passes on existing LS.
+            - - LogicalSwitch1PingTraffic
+            # Delete/Add a logical switch and verify the behavior.
+            - - DeleteTestVifs
+            - - DeleteAllLogicalSwitches
+            - - CreateLogicalSwitch
+            - - CreateTestVifs
+            - - LogicalSwitch1PingTraffic
+        ExitSequence:
+            - - RestartMPA
+            - - L2Cleanup
+
+        LogicalSwitch1NetperfTraffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            sendmessagesize : "1000"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            ParallelSession: "yes"
+            NoofOutbound  : "1"
+            NoofInbound   : "1"
+            TestDuration  : "20"
+
+        LogicalSwitch1PingTraffic:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            testduration: '5'
+
+        SaveMPAPid:
+            Type: Host
+            TestHost: esx.[1]
+            PersistData: 'yes'
+            read_pids:
+                'mpa[?]defined': ''
+        KillMPA:
+            Type: Host
+            TestHost: esx.[1]
+            sleepbetweenworkloads: 10
+            kill_processes_by_name:
+                execution_type: 'cmd'
+                options: '-9'
+                process_name: 'mpa'
+
+        VerifyMPARunning:
+            Type: Host
+            TestHost: esx.[1]
+            process_name: mpa
+            execution_type: cmd
+            get_process_status[?]contains:
+                status: Running
+
+        VerifyMPAHasDifferentPID:
+            Type: Host
+            TestHost: esx.[1]
+            process_name: mpa
+            execution_type: cmd
+            get_pid[?]not_equal_to:
+                pid: esx.[1]->read_pids->mpa
+
+        RestartMPA:
+            Type: Host
+            TestHost: esx.[1]
+            restart_service:
+                service_name: nsx-mpa
+                execution_type: *SERVICE_EXECUTION_TYPE--ESX
+
+MpaRestartTest:
+    <<: *P0_STRESS_TAGS
+    Testname: MpaRestartTest
+    Component: *MPA--ESX
+    Summary: "Restart MPA for 100 times and then create a logical switch and
+              check that it gets realized on the host."
+    WORKLOADS:
+        <<: *3NodeCCP_3NodeMP_2Hosts_2VMs_1TZ_1LS_Workloads--ESX
+        Sequence:
+            - - L2Setup
+            - - LogicalSwitch1PingTraffic
+            - - RestartMPA100Times
+              - LogicalSwitch1NetperfTraffic
+            # Verify that the traffic via an existig switch can pass.
+            - - LogicalSwitch1PingTraffic
+            # Remove existing switch.
+            - - DeleteTestVifs
+            - - DeleteAllLogicalSwitches
+            # Create a new logical switch and verify that the traffic can pass
+            # via that logical switch.
+            - - CreateLogicalSwitch
+            - - CreateTestVifs
+            - - LogicalSwitch1PingTraffic
+
+        ExitSequence:
+            - - L2Cleanup
+
+        LogicalSwitch1NetperfTraffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp"
+            sendmessagesize : "1000"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            ParallelSession: "yes"
+            NoofOutbound  : "1"
+            NoofInbound   : "1"
+            TestDuration  : "180"
+
+        LogicalSwitch1PingTraffic:
+            Type: 'Traffic'
+            toolname: 'ping'
+            TestAdapter:  "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[3].vnic.[1]"
+            testduration: '5'
+
+        RestartMPA100Times:
+            Iterations: 100
+            Type: Host
+            TestHost: esx.[1]
+            restart_service:
+                service_name: mpa
+                execution_type: *SERVICE_EXECUTION_TYPE--ESX

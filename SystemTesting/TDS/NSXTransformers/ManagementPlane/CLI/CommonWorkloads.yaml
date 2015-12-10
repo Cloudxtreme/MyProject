@@ -1,0 +1,61 @@
+WORKLOADS:
+    SetServiceId: &SET_SERVICE_ID
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        nsxservice:
+            '[1]':
+                map_object: true
+                id_: 'ntp'
+
+    VerifyServices: &VERIFY_SERVICES
+        Type: "Service"
+        TestService: "nsxmanager.[1].nsxservice.[1]"
+        execution_type: 'cli'
+        get_service_state:
+            'table[?]contain_once':
+                - service_name: 'appmgmt'
+                  service_state: 'running'
+                - service_name: 'httpd'
+                  service_state: 'running'
+                - service_name: 'ntp'
+                  service_state: 'running'
+                - service_name: 'proton'
+                  service_state: 'running'
+                - service_name: 'rabbitmq'
+                  service_state: 'running'
+                - service_name: 'snmp'
+                  service_state: 'running'
+                - service_name: 'sshd'
+                  service_state: 'running'
+                - service_name: 'syslog'
+                  service_state: 'running'
+
+    Reboot: &REBOOT
+        Type: NSX
+        TestNSX: "nsxmanager.[1]"
+        configure_power_state:
+            state: 'reboot'
+            execution_type: 'cli'
+
+    SetClock: &SET_CLOCK
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        set_clock_nsxmgr:
+            execution_type: 'cli'
+            hr_min_sec: '10:10:10'
+            date: 10
+            month: 'OCT'
+            year: 2010
+            timezone: 'UTC'
+
+    VerifySetClock: &VERIFY_SET_CLOCK
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        execution_type: 'cli'
+        hr_min_sec: '10:10:10'
+        date: 10
+        month: 'OCT'
+        year: 2010
+        timezone: 'UTC'
+        verify_clock_set:
+            'clock_difference[?]<': 60

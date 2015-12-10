@@ -1,0 +1,1657 @@
+#####################################################################
+# Title : Avalanche AAA TDS                                        |
+#####################################################################
+
+
+#####################################################################
+#                 P0 Test Cases                                     |
+#####################################################################
+
+AuthenticationServerCommandExecution:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AuthenticationServer"
+    TestName: "Stop/Start service on Authentication Server"
+    Version: "2"
+    Summary: "Sample workload to test command execution on auth server"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Execute service stop/start command on auth server'
+    ExpectedResult: 'command should be executed successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa'
+    Partnerfacing: "N"
+    TestbedSpec:
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["StopAuthServer"]
+            - ["AddUser"]
+            - ["StartAuthServer"]
+
+        StopAuthServer:
+            Type: AuthServer
+            TestAuthServer: "authserver.[1]"
+            state: 'stop'
+            configure_service_state:
+                'content[?]match': 'Stopping TACACS+'
+
+        AddUser:
+            Type: AuthServer
+            TestAuthServer: "authserver.[1]"
+            sleepbetweenworkloads:  "60"
+            add_user:
+                username: 'nsxadmin'
+                password: 'admin123'
+
+        StartAuthServer:
+            Type: AuthServer
+            TestAuthServer: "authserver.[1]"
+            sleepbetweenworkloads:  "60"
+            state: 'start'
+            configure_service_state:
+                'content[?]match': 'Starting TACACS+'
+
+OneTacacsServerUserPresentOnServer:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "OneTacacsServerUserPresentOnServer"
+    Version: "2"
+    Summary: "Verify API call is suceessful with user present on TACACS"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Configure TACACS server in NSX manager
+                2. Stop TACACS service
+                3. Add user to TACACS configuration file
+                4. Start TACACS service
+                5. Execute IPPool POST API with user added to config file
+                Note-To restore the auth server back to default configuration
+                making copy of config file and at the end of TDS restoring
+                it back'
+    ExpectedResult: 'IPPool POST API should be executed successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderList"]
+            - ["VerifyProviderList"]
+            - ["StopAuthServer"]
+            - ["BackupDefaultConfig"]
+            - ["AddUser"]
+            - ["StartAuthServer"]
+            - ["CreateIPPool"]
+            - ["DeleteIPPool"]
+        ExitSequence:
+            - ["StopAuthServer"]
+            - ["RestoreDefaultConfig"]
+            - ["StartAuthServer"]
+
+OneTacacsServerIncorrectPassword:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "OneTacacsServerIncorrectPassword"
+    Version: "2"
+    Summary: "Verify API call is forbidden when incorrect
+              password is provided"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Configure TACACS server in NSX manager
+                2. Stop TACACS service
+                3. Add user to TACACS configuration file
+                4. Start TACACS service
+                5. Execute IPPool POST API with user added to config file
+                   and provide incorrect password'
+    ExpectedResult: 'IPPool POST API should not be successful and response
+                     should be 403-Forbidden'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderList"]
+            - ["VerifyProviderList"]
+            - ["StopAuthServer"]
+            - ["BackupDefaultConfig"]
+            - ["AddUser"]
+            - ["StartAuthServer"]
+            - ["CreateIPPoolWithIncorrectPassword"]
+        ExitSequence:
+            - ["StopAuthServer"]
+            - ["RestoreDefaultConfig"]
+            - ["StartAuthServer"]
+
+        CreateIPPoolWithIncorrectPassword:
+            <<: *CREATE_IPPOOL
+            ExpectedResult:
+                status_code: FORBIDDEN
+            runtime_params:
+                username: "nsxadmin"
+                password: "incorrectpasswd"
+
+OneTacacsServerUserNotPresent:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "OneTacacsServerUserNotPresent"
+    Version: "2"
+    Summary: "Verify API call is forbidden when user is not
+              present on auth server"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Configure TACACS server in NSX manager
+                2. Execute IPPool POST API with user details not present
+                   on auth server'
+    ExpectedResult: 'IPPool POST API should not be successful and response
+                     should be 403-Forbidden'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderList"]
+            - ["VerifyProviderList"]
+            - ["CreateIPPoolWithUserNotPresent"]
+
+        CreateIPPoolWithUserNotPresent:
+            <<: *CREATE_IPPOOL
+            ExpectedResult:
+                status_code: FORBIDDEN
+            sleepbetweenworkloads:  "5"
+            runtime_params:
+                username: "incorrectuser"
+                password: "incorrectpasswd"
+
+GetNodeAAAProviders:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "GetNodeAAAProviders"
+    Version: "2"
+    Summary: "Verify GET api is working for providers"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Configure TACACS server in NSX manager
+                2. Execute GET API on /node/aaa/providers'
+    ExpectedResult: 'GET should be successful and response data
+                     should contain provider list'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderList"]
+            - ["VerifyProviderList"]
+
+PutNodeAAAProvidersWithOneTacacsServer:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "PutNodeAAAProvidersWithOneTacacsServer"
+    Version: "2"
+    Summary: "Verify PUT api is working for providers"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Execute PUT API on /node/aaa/providers to
+                configure TACACS server
+                2. Get provider list to check TACACS server entry'
+    ExpectedResult: 'PUT should be successful and TACACS server
+                     should be added to provider list'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderList"]
+            - ["VerifyProviderList"]
+
+PutNodeAAAProvidersWithMultipleTacacsServer:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "PutNodeAAAProvidersWithMultipleTacacsServer"
+    Version: "2"
+    Summary: "Verify PUT api is working for providers"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Execute PUT API on /node/aaa/providers to
+                configure multiple TACACS server
+                2. Get provider list to check TACACS server entry'
+    ExpectedResult: 'PUT should be successful and multiple TACACS server
+                     should be added to provider list'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderListWithMultipleServers"]
+            - ["VerifyProviderListForMultipleServers"]
+
+NodeLocalUserREST:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "NodeLocalUserREST"
+    Version: "2"
+    Summary: "To verify node local user is avilable and REST api can be
+              executed using local user credentials"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool with credentials of node local user
+                2. Read IPPool with credentials of node local user
+                3. Update IPPool with credentials of node local user
+                4. Delete IPPool with credentials of node local user'
+    ExpectedResult: 'CRUD operations should be successfull with node local user'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+
+        CreateIPPool:
+            <<: *CREATE_IPPOOL
+            sleepbetweenworkloads:  "5"
+            runtime_params:
+                username: "admin"
+                password: "default"
+
+NodeLocalUserCLI:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "NodeLocalUserCLI"
+    Version: "2"
+    Summary: "To verify node local user is avilable and cli commands can be
+              executed using local user credentials"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Execute CLI command after logging in with
+                credentials of node local user'
+    ExpectedResult: 'CLI command execution should be successfull
+                     with node local user'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        <<: *CLI_WORKLOADS
+        Sequence:
+            - ['SetServiceId']
+            - ['VerifyServices']
+
+NSXAccessPermissionToTacacsUser:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "NSXAccessPermissionToTacacsUser"
+    Version: "2"
+    Summary: "Verify TACACS user is having NSX access permission"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Execute IPPool POST API with user which is not added
+                   to TACACS config file
+                2. Stop TACACS service
+                3. Add user to TACACS configuration file
+                4. Start TACACS service
+                5. Execute IPPool POST API with user added to config file'
+    ExpectedResult: 'Pre permission user should not be allowed to access NSX,
+                     after permission user can access NSX and execute POST api'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderList"]
+            - ["VerifyProviderList"]
+            - ["CreateIPPoolBeforePermission"]
+            - ["StopAuthServer"]
+            - ["BackupDefaultConfig"]
+            - ["AddUser"]
+            - ["StartAuthServer"]
+            - ["CreateIPPoolAfterPermission"]
+            - ["DeleteIPPool"]
+        ExitSequence:
+            - ["StopAuthServer"]
+            - ["RestoreDefaultConfig"]
+            - ["StartAuthServer"]
+
+        AddUser:
+            <<: *ADD_USER
+            add_user:
+                username: 'sysadmin'
+                password: 'admin123'
+
+        CreateIPPoolBeforePermission:
+            <<: *CREATE_IPPOOL
+            ExpectedResult:
+                status_code: FORBIDDEN
+            sleepbetweenworkloads:  "5"
+            runtime_params:
+                username: "sysadmin"
+                password: "admin123"
+
+        CreateIPPoolAfterPermission:
+            <<: *CREATE_IPPOOL
+            runtime_params:
+                username: "sysadmin"
+                password: "admin123"
+
+TwoTacacsServerUserPresentOnServer1:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "TwoTacacsServerUserPresentOnServer1"
+    Version: "2"
+    Summary: "Verify API call is successful with user present on TACACS server 1"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Configure Two TACACS server in NSX manager
+                2. Stop TACACS service of server 1
+                3. Add user to TACACS configuration file of server 1
+                4. Start TACACS service of server 1
+                5. Execute IPPool POST API with user added to config file
+                   of server 1'
+    ExpectedResult: 'IPPool POST API should be executed successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+            '[2]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderListWithTwoServers"]
+            - ["VerifyProviderListForTwoServers"]
+            - ["StopAuthServer"]
+            - ["BackupDefaultConfig"]
+            - ["AddUser"]
+            - ["StartAuthServer"]
+            - ["CreateIPPool"]
+            - ["DeleteIPPool"]
+        ExitSequence:
+            - ["StopAuthServer"]
+            - ["RestoreDefaultConfig"]
+            - ["StartAuthServer"]
+
+TwoTacacsServerUserPresentOnServer2:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "TwoTacacsServerUserPresentOnServer2"
+    Version: "2"
+    Summary: "Verify API call is successful with user present on TACACS server 2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Configure Two TACACS server in NSX manager
+                2. Stop TACACS service of server 2
+                3. Add user to TACACS configuration file of server 2
+                4. Start TACACS service of server 2
+                5. Execute IPPool POST API with user added to config file
+                   of server 2'
+    ExpectedResult: 'IPPool POST API should be executed successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+            '[2]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderListWithTwoServers"]
+            - ["VerifyProviderListForTwoServers"]
+            - ["StopAuthServer2"]
+            - ["BackupDefaultConfigOnServer2"]
+            - ["AddUserOnServer2"]
+            - ["StartAuthServer2"]
+            - ["CreateIPPool"]
+            - ["DeleteIPPool"]
+        ExitSequence:
+            - ["StopAuthServer2"]
+            - ["RestoreDefaultConfigOnServer2"]
+            - ["StartAuthServer2"]
+
+        StopAuthServer2:
+            <<: *STOP_AUTH_SERVER
+            TestAuthServer: "authserver.[2]"
+
+        BackupDefaultConfigOnServer2:
+            <<: *BACKUP_DEFAULT_CONFIG
+            TestAuthServer: "authserver.[2]"
+
+        AddUserOnServer2:
+            <<: *ADD_USER
+            TestAuthServer: "authserver.[2]"
+
+        StartAuthServer2:
+            <<: *START_AUTH_SERVER
+            TestAuthServer: "authserver.[2]"
+
+        RestoreDefaultConfigOnServer2:
+            <<: *RESTORE_DEFAULT_CONFIG
+            TestAuthServer: "authserver.[2]"
+
+TwoTacacsServerUserPresentOnBothServers:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "TwoTacacsServerUserPresentOnBothServers"
+    Version: "2"
+    Summary: "Verify API call is successful with user present on both TACACS servers"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Configure Two TACACS server in NSX manager
+                2. Stop TACACS service of server 1
+                3. Stop TACACS service of server 2
+                4. Add user to TACACS configuration file of server 1
+                5. Add same user to configuration file of server 2
+                6. Start TACACS service of server 1
+                7. Start TACACS service of server 2
+                5. Execute IPPool POST API with user added to config file
+                   of server 1'
+    ExpectedResult: 'IPPool POST API should be executed successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+            '[2]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderListWithTwoServers"]
+            - ["VerifyProviderListForTwoServers"]
+            - ["StopAuthServer1"]
+            - ["StopAuthServer2"]
+            - ["BackupDefaultConfigOnServer1"]
+            - ["BackupDefaultConfigOnServer2"]
+            - ["AddUserOnServer1"]
+            - ["AddUserOnServer2"]
+            - ["StartAuthServer1"]
+            - ["StartAuthServer2"]
+            - ["CreateIPPool"]
+            - ["DeleteIPPool"]
+        ExitSequence:
+            - ["StopAuthServer1"]
+            - ["StopAuthServer2"]
+            - ["RestoreDefaultConfigOnServer1"]
+            - ["RestoreDefaultConfigOnServer2"]
+            - ["StartAuthServer1"]
+            - ["StartAuthServer2"]
+
+        StopAuthServer1: *STOP_AUTH_SERVER
+
+        StopAuthServer2:
+            <<: *STOP_AUTH_SERVER
+            TestAuthServer: "authserver.[2]"
+
+        BackupDefaultConfigOnServer1: *BACKUP_DEFAULT_CONFIG
+
+        BackupDefaultConfigOnServer2:
+            <<: *BACKUP_DEFAULT_CONFIG
+            TestAuthServer: "authserver.[2]"
+
+        AddUserOnServer1: *ADD_USER
+
+        AddUserOnServer2:
+            <<: *ADD_USER
+            TestAuthServer: "authserver.[2]"
+
+        StartAuthServer1: *START_AUTH_SERVER
+
+        StartAuthServer2:
+            <<: *START_AUTH_SERVER
+            TestAuthServer: "authserver.[2]"
+
+        RestoreDefaultConfigOnServer1: *RESTORE_DEFAULT_CONFIG
+
+        RestoreDefaultConfigOnServer2:
+            <<: *RESTORE_DEFAULT_CONFIG
+            TestAuthServer: "authserver.[2]"
+
+ConfigureTacacsServerThroughCLI:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "ConfigureTacacsServerThroughCLI"
+    Version: "2"
+    Summary: "To verify TACACS server can be configured through CLI"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Login to NSX manager through CLI and execute command to
+                   configure Tacacs server on NSX manager
+                2. Stop TACACS service
+                3. Add user to TACACS configuration file
+                4. Start TACACS service
+                5. Execute IPPool POST API with user added to config file'
+    ExpectedResult: 'IPPool POST API should be executed successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - - SetAAAId
+            - - UpdateProviderListToIncorrectServer
+            - - UpdateProviderListThroughCLI
+            - - VerifyProviderListForTacacsServer
+            - - StopAuthServer
+            - - BackupDefaultConfig
+            - - AddUser
+            - - StartAuthServer
+            - - CreateIPPool
+            - - DeleteIPPool
+        ExitSequence:
+            - - StopAuthServer
+            - - RestoreDefaultConfig
+            - - StartAuthServer
+
+        # Here setting aaa provider to incorrect server
+        # If there are any previous providers set on nsx manager this
+        # will override and set it to incorrect server.
+        # This step is required because aaa provider configured through
+        # CLI adds one more entry to provider list and doesn't clear previous one
+
+        UpdateProviderListToIncorrectServer:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            reconfigure: true
+            provider_list:
+              - resource_type: "TacacsPlusAAAProviderGroupProperties"
+                auth_type: "CHAP"
+                servers:
+                  - address: 'incorrect'
+                    secret_key: 'testing123'
+
+        UpdateProviderListThroughCLI:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            configure_tacacs_server:
+                execution_type: 'cli'
+                address: 'authserver.[1]->ip'
+                secret_key: 'testing123'
+
+        VerifyProviderListForTacacsServer:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            get_provider_list:
+                'provider_list[?]contains':
+                  - 'resource_type': "TacacsPlusAAAProviderGroupProperties"
+                    'auth_type': "CHAP"
+                    'servers':
+                      - 'address': 'authserver.[1]->ip'
+
+ConfigureAuthTypeThroughCLI:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "ConfigureAuthTypeThroughCLI"
+    Version: "2"
+    Summary: "To verify authentication type can be configured through CLI"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Login to NSX manager through CLI and execute command to
+                   configure Tacacs server on NSX manager
+                2. change authentication type using cli command and set it
+                   to PAP
+                3. Stop TACACS service
+                4. Add user to TACACS configuration file
+                5. Start TACACS service
+                6. Execute IPPool POST API with user added to config file'
+    ExpectedResult: 'IPPool POST API should be executed successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - - SetAAAId
+            - - UpdateProviderListToIncorrectServer
+            - - UpdateProviderListThroughCLI
+            - - UpdateAuthTypeThroughCLI
+            - - VerifyProviderListForTacacsServer
+            - - StopAuthServer
+            - - BackupDefaultConfig
+            - - AddUser
+            - - StartAuthServer
+            - - CreateIPPool
+            - - DeleteIPPool
+        ExitSequence:
+            - - StopAuthServer
+            - - RestoreDefaultConfig
+            - - StartAuthServer
+
+        UpdateProviderListToIncorrectServer:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            reconfigure: true
+            provider_list:
+              - resource_type: "TacacsPlusAAAProviderGroupProperties"
+                auth_type: "CHAP"
+                servers:
+                  - address: 'incorrect'
+                    secret_key: 'testing123'
+
+        UpdateProviderListThroughCLI:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            configure_tacacs_server:
+                execution_type: 'cli'
+                address: 'authserver.[1]->ip'
+                secret_key: 'testing123'
+
+        VerifyProviderListForTacacsServer:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            get_provider_list:
+                'provider_list[?]contains':
+                  - 'resource_type': "TacacsPlusAAAProviderGroupProperties"
+                    'auth_type': "PAP"
+                    'servers':
+                      - 'address': 'authserver.[1]->ip'
+
+        UpdateAuthTypeThroughCLI:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            configure_auth_type:
+                execution_type: 'cli'
+                auth_type: 'pap'
+
+#####################################################################
+#                 P1 Test Cases                                     |
+#####################################################################
+
+MultipleTacacsServerOneServerUnreachable:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "TwoTacacsServerUserPresentOnServer2"
+    Version: "2"
+    Summary: "Verify API call is successful with user present on TACACS server 2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Configure Two TACACS server in NSX manager
+                2. First TACACS server should be unreachable
+                3. Stop TACACS service of server 2
+                3. Add user to TACACS configuration file of server 2
+                4. Start TACACS service of server 2
+                5. Execute IPPool POST API with user added to config file
+                   of server 2'
+    ExpectedResult: 'IPPool POST API should be executed successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+            '[2]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderListFirstServerUnreachable"]
+            - ["StopAuthServer2"]
+            - ["BackupDefaultConfigOnServer2"]
+            - ["AddUserOnServer2"]
+            - ["StartAuthServer2"]
+            - ["CreateIPPool"]
+            - ["DeleteIPPool"]
+        ExitSequence:
+            - ["StopAuthServer2"]
+            - ["RestoreDefaultConfigOnServer2"]
+            - ["StartAuthServer2"]
+
+        StopAuthServer2:
+            <<: *STOP_AUTH_SERVER
+            TestAuthServer: "authserver.[2]"
+
+        BackupDefaultConfigOnServer2:
+            <<: *BACKUP_DEFAULT_CONFIG
+            TestAuthServer: "authserver.[2]"
+
+        AddUserOnServer2:
+            <<: *ADD_USER
+            TestAuthServer: "authserver.[2]"
+
+        StartAuthServer2:
+            <<: *START_AUTH_SERVER
+            TestAuthServer: "authserver.[2]"
+
+        RestoreDefaultConfigOnServer2:
+            <<: *RESTORE_DEFAULT_CONFIG
+            TestAuthServer: "authserver.[2]"
+
+TwoTacacsServerUserNotPresentOnBothServer:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "TwoTacacsServerUserNotPresentOnBothServer"
+    Version: "2"
+    Summary: "Verify API call fails with user not present on both TACACS servers"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Configure Two TACACS server in NSX manager
+                2. Execute IPPool POST API with user which is not added
+                to config file of both the servers'
+    ExpectedResult: 'IPPool POST API should not be executed and
+                     response should be 403'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+            '[2]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderListWithTwoServers"]
+            - ["VerifyProviderListForTwoServers"]
+            - ["CreateIPPoolWithUserNotPresent"]
+
+        CreateIPPoolWithUserNotPresent:
+            <<: *CREATE_IPPOOL
+            ExpectedResult:
+                status_code: FORBIDDEN
+            sleepbetweenworkloads:  "5"
+            runtime_params:
+                username: "usernotpresent"
+                password: "incorrectpasswd"
+
+UpdateProviderListWithSevenTacacsServers:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "UpdateProviderListWithSevenTacacsServers"
+    Version: "2"
+    Summary: "Verify PUT api is working for providers with
+              7 TACACS server details"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Execute PUT API on /node/aaa/providers to
+                configure 7 TACACS server
+                2. Get provider list to check TACACS server entry'
+    ExpectedResult: 'PUT should be successful and 7 TACACS server
+                     should be added to provider list'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderListWithSevenServers"]
+            - ["VerifyProviderListForSevenServers"]
+
+UserHavingNoAccessLoginToNSXManager:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "UserHavingNoAccessLoginToNSXManager"
+    Version: "2"
+    Summary: "To verify users who don't have NSXManager access permissions
+              unable to login to NSX Manager"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Configure TACACS server in NSX manager
+                2. Stop TACACS service
+                3. Add user to TACACS configuration file with
+                   service other than vmware_nsx
+                4. Start TACACS service
+                5. Execute IPPool POST API with user added to config file'
+    ExpectedResult: 'IPPool POST API should fail and response should be 403'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["SetAAAId"]
+            - ["UpdateProviderList"]
+            - ["VerifyProviderList"]
+            - ["StopAuthServer"]
+            - ["BackupDefaultConfig"]
+            - ["AddUser"]
+            - ["StartAuthServer"]
+            - ["CreateIPPoolWithUserHavingNoAccess"]
+        ExitSequence:
+            - ["StopAuthServer"]
+            - ["RestoreDefaultConfig"]
+            - ["StartAuthServer"]
+
+        AddUser:
+            <<: *ADD_USER
+            add_user:
+                username: 'extuser'
+                password: 'admin123'
+                service: 'external'
+
+        CreateIPPoolWithUserHavingNoAccess:
+            <<: *CREATE_IPPOOL
+            ExpectedResult:
+                status_code: FORBIDDEN
+            sleepbetweenworkloads:  "5"
+            runtime_params:
+                username: "extuser"
+                password: "admin123"
+
+UpdateTacacsServerDetail:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "UpdateTacacsServerDetail"
+    Version: "2"
+    Summary: "Verify for differnt types of protocol
+              API call is suceessfull with user present on TACACS"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Stop TACACS service
+                2. Add user to TACACS configuration file
+                3. Start TACACS service
+                4. Configure TACACS server in NSX manager with PAP protocol
+                5. Execute IPPool POST API with user added to config file
+                6. Configure TACACS server in NSX manager with LOGIN protocol
+                7. Execute IPPool POST API with user added to config file'
+    ExpectedResult: 'IPPool POST API should be executed successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - ["StopAuthServer"]
+            - ["BackupDefaultConfig"]
+            - ["AddUser"]
+            - ["StartAuthServer"]
+            - ["SetAAAId"]
+            - ["UpdateProviderListWithPAP"]
+            - ["VerifyProviderListForPAP"]
+            - ["CreateIPPoolWithPAP"]
+            - ["DeleteIPPoolWithPAP"]
+            - ["UpdateProviderListWithLOGIN"]
+            - ["VerifyProviderListForLOGIN"]
+            - ["CreateIPPoolWithLOGIN"]
+            - ["DeleteIPPoolWithLOGIN"]
+        ExitSequence:
+            - ["StopAuthServer"]
+            - ["RestoreDefaultConfig"]
+            - ["StartAuthServer"]
+
+        UpdateProviderListWithPAP:
+            <<: *UPDATE_PROVIDER_LIST
+            provider_list:
+              - resource_type: "TacacsPlusAAAProviderGroupProperties"
+                auth_type: "PAP"
+                servers:
+                  - address: 'authserver.[1]->ip'
+                    secret_key: "testing123"
+
+        VerifyProviderListForPAP:
+            <<: *VERIFY_PROVIDER_LIST
+            get_provider_list:
+                'provider_list[?]contains':
+                  - 'resource_type[?]equal_to': "TacacsPlusAAAProviderGroupProperties"
+                    'auth_type[?]equal_to': "PAP"
+
+        CreateIPPoolWithPAP:
+            <<: *CREATE_IPPOOL
+            sleepbetweenworkloads:  "5"
+
+        DeleteIPPoolWithPAP: *DELETE_IPPOOL
+
+        UpdateProviderListWithLOGIN:
+            <<: *UPDATE_PROVIDER_LIST
+            provider_list:
+              - resource_type: "TacacsPlusAAAProviderGroupProperties"
+                auth_type: "LOGIN"
+                servers:
+                  - address: 'authserver.[1]->ip'
+                    secret_key: "testing123"
+
+        VerifyProviderListForLOGIN:
+            <<: *VERIFY_PROVIDER_LIST
+            get_provider_list:
+                'provider_list[?]contains':
+                  - 'resource_type[?]equal_to': "TacacsPlusAAAProviderGroupProperties"
+                    'auth_type[?]equal_to': "LOGIN"
+
+        CreateIPPoolWithLOGIN:
+            <<: *CREATE_IPPOOL
+            sleepbetweenworkloads:  "5"
+
+        DeleteIPPoolWithLOGIN: *DELETE_IPPOOL
+
+#####################################################################
+#                 P2 Test Cases                                     |
+#####################################################################
+
+UpdateProviderListWithIncorrectAuthType:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "UpdateProviderListWithIncorrectAuthType"
+    Version: "2"
+    Summary: "To verify provider list should not get updated with
+              incorrect auth type"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Update provider list details with incorrect
+                   auth_type field'
+    ExpectedResult: 'It should return 400 Bad Request and auth_type
+                     field should not get updated'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        Sequence:
+            - - SetAAAId
+            - - UpdateProviderList
+            - - VerifyProviderList
+            - - UpdateProviderListwithIncorrectAuthType
+            - - VerifyProviderListAfterUpdate
+
+        UpdateProviderListwithIncorrectAuthType:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            provider_list:
+              - resource_type: "TacacsPlusAAAProviderGroupProperties"
+                auth_type: "incorrect"
+                servers:
+                  - address: 'authserver.[1]->ip'
+                    secret_key: "testing123"
+
+        VerifyProviderListAfterUpdate:
+            <<: *VERIFY_PROVIDER_LIST
+            get_provider_list:
+                'provider_list[?]contains':
+                  - 'resource_type[?]equal_to': "TacacsPlusAAAProviderGroupProperties"
+                    'auth_type[?]equal_to': "CHAP"
+
+UpdateProviderListWithoutAuthType:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "UpdateProviderListWithoutAuthType"
+    Version: "2"
+    Summary: "To verify provider list should get updated with
+              default auth type"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Update provider list details with auth_type field
+                   not present in payload'
+    ExpectedResult: 'Provider list should be updated and auth_type
+                     field should be set to default value CHAP'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        Sequence:
+            - - SetAAAId
+            - - UpdateProviderListWithoutAuthType
+            - - VerifyProviderListForDefaultAuth
+
+        UpdateProviderListWithoutAuthType:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            reconfigure: true
+            provider_list:
+              - resource_type: "TacacsPlusAAAProviderGroupProperties"
+                servers:
+                  - address: 'authserver.[1]->ip'
+                    secret_key: "testing123"
+
+        VerifyProviderListForDefaultAuth:
+            <<: *VERIFY_PROVIDER_LIST
+            get_provider_list:
+                'provider_list[?]contains':
+                  - 'resource_type[?]equal_to': "TacacsPlusAAAProviderGroupProperties"
+                    'auth_type[?]equal_to': "CHAP"
+
+UpdateProviderListWithoutServerField:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "UpdateProviderListWithoutServerField"
+    Version: "2"
+    Summary: "To verify provider list should not get updated when
+              servers field not present"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Update provider list details with servers field not
+                   present in payload'
+    ExpectedResult: 'It should return 400 Bad Request and provider
+                     list should not get updated'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        Sequence:
+            - - SetAAAId
+            - - UpdateProviderListWithoutServer
+
+        UpdateProviderListWithoutServer:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            provider_list:
+              - resource_type: "TacacsPlusAAAProviderGroupProperties"
+                auth_type: "CHAP"
+
+UpdateProviderListWithoutSecretKey:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "UpdateProviderListWithoutSecretKey"
+    Version: "2"
+    Summary: "To verify provider list should not get updated when
+              secret key field not present"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Update provider list details with secret key field not
+                   present in payload'
+    ExpectedResult: 'It should return 400 Bad Request and secret
+                     key should not get updated'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        Sequence:
+            - - SetAAAId
+            - - UpdateProviderListWithDummyServer
+            - - UpdateProviderListWithoutSecretKey
+
+        # This step is to make sure that provider is not
+        # already set to authserver.[1]
+        UpdateProviderListWithDummyServer:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            reconfigure: true
+            provider_list:
+              - auth_type: "CHAP"
+                resource_type: "TacacsPlusAAAProviderGroupProperties"
+                servers:
+                  - address: 'dummyserver'
+                    secret_key: "testing123"
+
+        UpdateProviderListWithoutSecretKey:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            provider_list:
+              - auth_type: "CHAP"
+                resource_type: "TacacsPlusAAAProviderGroupProperties"
+                servers:
+                  - address: 'authserver.[1]->ip'
+
+UpdateProviderListWithIncorrectResourceType:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "UpdateProviderListWithIncorrectResourceType"
+    Version: "2"
+    Summary: "To verify provider list should not get updated with
+              incorrect resource type"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Update provider list details with incorrect
+                   resource type field'
+    ExpectedResult: 'It should return 400 Bad Request and resource type
+                     field should not get updated'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        Sequence:
+            - - SetAAAId
+            - - UpdateProviderList
+            - - VerifyProviderList
+            - - UpdateProviderListwithIncorrectResource
+            - - VerifyProviderListNotSetWithIncorrectResource
+
+        UpdateProviderListwithIncorrectResource:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            provider_list:
+              - resource_type: "incorrectAAAProvider"
+                auth_type: "CHAP"
+                servers:
+                  - address: 'authserver.[1]->ip'
+                    secret_key: "testing123"
+
+        VerifyProviderListNotSetWithIncorrectResource:
+            <<: *VERIFY_PROVIDER_LIST
+            get_provider_list:
+                'provider_list[?]contains':
+                  - 'resource_type[?]equal_to': "TacacsPlusAAAProviderGroupProperties"
+                    'auth_type[?]equal_to': "CHAP"
+
+UpdateProviderListWithMoreThanSevenTacacsServers:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "UpdateProviderListWithMoreThanSevenTacacsServers"
+    Version: "2"
+    Summary: "Verify PUT api is failing for providers with
+              more than 7 TACACS server details"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Execute PUT API on /node/aaa/providers to
+                configure more than 7 TACACS server'
+    ExpectedResult: 'PUT should be unsuccessful and response should be 400
+                     Bad Request'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        Sequence:
+            - - SetAAAId
+            - - UpdateProviderListWithEightServers
+
+TacacsServerNotReachable:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "TacacsServerNotReachable"
+    Version: "2"
+    Summary: "Verify AAA handles situation correctly when TACACS provider
+              is not reachable"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. TACACS server should be unreachable from NSX manager
+                2. Execute IPPool POST API with user present on TACACS server'
+    ExpectedResult: 'POST API should fail and response should be 403'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - - SetAAAId
+            - - UpdateProviderListWithUnreachableServer
+            - - CreateIPPool
+
+        UpdateProviderListWithUnreachableServer:
+            Type: "AAA"
+            Testaaa: "nsxmanager.[1].aaa_provider.[1]"
+            reconfigure: true
+            provider_list:
+              - resource_type: "TacacsPlusAAAProviderGroupProperties"
+                auth_type: "CHAP"
+                servers:
+                  - address: '10.112.11.274'
+                    secret_key: "testing123"
+
+        CreateIPPool:
+            <<: *CREATE_IPPOOL
+            ExpectedResult:
+                status_code: FORBIDDEN
+            sleepbetweenworkloads:  "5"
+
+APIcallAfterUserDeletionOnTacacsServer:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "AAA"
+    TestName: "APIcallAfterUserDeletionOnTacacsServer"
+    Version: "2"
+    Summary: "Verify correct error message returned when user is
+              deleted from TACACS"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "Authentication"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Configure TACACS server in NSX manager
+                2. Stop TACACS service
+                3. Add user to TACACS configuration file
+                4. Start TACACS service
+                5. Execute IPPool POST API with user added to config file
+                6. Delete IPPool
+                7. Restore TACACS configuration file to default so that
+                   user will not be present
+                8. Execute IPPool POST API with same user'
+    ExpectedResult: 'IPPool POST API should fail and response should be 403'
+    Duration: '5'
+    Tags: 'nsxmanager,management,aaa,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+        authserver:
+            '[1]':
+                'ip': None
+    WORKLOADS:
+        <<: *AAA_WORKLOADS
+        <<: *IDAS_WORKLOADS
+        Sequence:
+            - - SetAAAId
+            - - UpdateProviderList
+            - - VerifyProviderList
+            - - StopAuthServer
+            - - BackupDefaultConfig
+            - - AddUser
+            - - StartAuthServer
+            - - CreateIPPool
+            - - DeleteIPPool
+            - - StopAuthServer
+            - - RestoreDefaultConfig
+            - - StartAuthServer
+            - - CreateIPPoolAfterUserDeletion
+
+        CreateIPPoolAfterUserDeletion:
+            <<: *CREATE_IPPOOL
+            ExpectedResult:
+                status_code: FORBIDDEN

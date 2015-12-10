@@ -1,0 +1,37 @@
+#!/bin/bash
+ROOT=$(dirname $(readlink -f $(which "$0")))/..
+
+# Setup environment
+. $ROOT/main/environment
+
+# If run as root
+if [ "$(id -u)" == "0" ]; then
+   echo "VDNet must NOT be run as root" 1>&2
+   exit 1
+fi
+
+# For nimbus
+. $ROOT/scripts/nimbus/setup
+
+# Determine DEBUG MODE and combine options
+DEBUG=0
+OPTIONS=""
+for arg in "$@"
+do
+  if [ "$arg" = "-d" ] || [ "$arg" = "-debug" ] || [ "$arg" = "--debug" ]
+  then
+    DEBUG=1
+  else
+    OPTIONS=$OPTIONS" "$arg
+  fi
+done
+
+# Run vdNet.pl
+if [ $DEBUG -eq 1 ]
+then
+  echo "Running vdNet.pl in DEBUG MODE"
+  export VDNET_DEBUG=1
+  $PERL -d $ROOT/main/vdNet.pl $OPTIONS
+else
+  $PERL $ROOT/main/vdNet.pl $OPTIONS
+fi

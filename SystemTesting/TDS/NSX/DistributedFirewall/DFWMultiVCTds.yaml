@@ -1,0 +1,339 @@
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+
+CreateGlobalSectionsRules:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'DFW'
+    Summary: Verify creation/deletion/replication of Global
+             DFW L2/L3 Section and Rules between 2 NSX/VC sites
+    Tags: 'TBD'
+    Version: 2
+    TestName: DFWGlobalSectionRulesSanity
+    TestbedSpec: *DFW_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['ReadNSXReplicatorServiceStatusRunning']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPowerOn']
+            - ['SetVXLANIPVM2', 'SetVXLANIPVM3', 'SetVXLANIPVM4', 'SetVXLANIPVM5']
+            - ['AllVMsPingEachOther']
+            - ['CreateVerifyGlobalMACSets','CreateVerifyGlobalIPSets']
+            - ['CreateVerifyGlobalSecurityGroup']
+             ## Test-1 Create Universal rules with source/dest any & applied to DFW
+            - ['CreateGlobalL3Section']
+            - ['CreateGlobalL2Section']
+            - ['CreateGlobalL3Rule']
+            - ['CreateGlobalL2Rule']
+            - ['ReadVerifyL3GlobalSectionOnVSM_2']
+            - ['ReadVerifyL2GlobalSectionOnVSM_2']
+            - ['ReadVerifyL3GlobalRule1OnVSM_2']
+            - ['ReadVerifyL2GlobalRule1OnVSM_2']
+            - ['ClearDFWPktLogHost_4','ClearDFWPktLogHost_5']
+            - ['IperfTestVM2VM4_Fail','IperfTestVM3VM5_Fail']
+            - ['CheckDFWPktLogL3UDPDropFromHost_4','CheckDFWPktLogL2IPv6DropFromHost_5']
+            - ['DeleteGlobalRules']
+            ## Delete Global Rules and traffic should pass
+            - ['IperfTestVM2VM4_Pass']
+
+             ## Test-2 Create Universal rules with source/dest having universal IPSet
+             ## MACSet & SG containers with applied to universal LogicalSwitch
+            - ['CreateGlobalL2L3RulesWithContainers']
+            - ['ClearDFWPktLogHost_4']
+            - ['IperfTestVM2VM4_Fail',]
+            - ['CheckDFWPktLogL3UDPDropFromHost_4']
+
+             ## Test-3 Update the IPSet and MACSet universal containers used in
+             ## universal rules to use vnic-2(dvpg backed) and verify the
+             ## universal rules enforcement is not effective for vnic-2
+            - ['AddSecondVnicToAllVMsDvpgBacked']
+            - ['UpdateVerifyGlobalIPSet_1']
+            - ['UpdateVerifyGlobalIPSet_2']
+            - ['UpdateVerifyGlobalMACSet_1']
+            - ['UpdateVerifyGlobalMACSet_2']
+            - ['IperfVnic_2_TestVM2VM4_Pass']  # Verify L3 Rule
+            - ['IperfVnic_2_TestVM3VM5_Pass']  # Verify L2 Rule
+
+            ## Test-4 Create Local L3,L2 section&rules on Primary on top of
+            ## universal sections and using universal ipset/macset as source/dest
+            ## containers
+            - ['CreateLocalL3SectionOnPrimary','CreateLocalL2SectionOnPrimary']
+            - ['DeleteLocalRulesOnPrimary']
+            - ['CreateLocalRulesOnPrimary']
+            - ['ClearDFWPktLogHost_2']
+            - ['IperfVnic_2_TestVM2VM4_Fail']
+            - ['CheckDFWPktLogL3TCPDropIntoHost_2']
+            - ['ClearDFWPktLogHost_3']
+            - ['IperfVnic_2_TestVM3VM5_Fail']
+            - ['CheckDFWPktLogL2IPv4DropIntoHost_3']
+            - ['DeleteLocalRulesOnPrimary']
+            - ['DeleteLocalSectionsOnPrimary']
+
+            ## Test-5 Create Local L3,L2 section&rules on Secondary below
+            ## universal sections and using universal ipset/macset as source/dest
+            ## containers
+            ## Commented due PR 1471429
+#            - ['CreateLocalL3SectionOnSlave','CreateLocalL2SectionOnSlave']
+#            - ['CreateLocalRulesOnSlave']
+#            - ['ClearDFWPktLogHost_4']
+#            - ['IperfVnic_2_TestVM2VM4_Fail']
+#            - ['CheckDFWPktLogL3TCPDropFromHost_4']
+#            - ['DeleteLocalRulesOnSlave']
+#            - ['DeleteLocalSectionsOnSlave']
+
+        ExitSequence:
+            - ['DeleteGlobalRules']
+            - ['DeleteGlobalSections']
+            - ['DeleteGlobalMACSets']
+            - ['DeleteGlobalIPSets']
+            - ['DeleteGlobalSecurityGroups']
+            - ['RevertToDefaultRules']
+            - ['AllVMsPowerOff']
+            ## This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['DELETE_ALL_CONTROLLERS']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+
+XVcVmotion:
+    Product: 'vshield'
+    Category: 'multiVC'
+    Component: 'DFW'
+    Summary: Verify if L2 & L3 global rules are effective during
+             xVC vmotion of VM2 from VC1-Host2(Primary) to VC2-Host4(Sec)
+             and xVC vmotion of VM5 from VC2-Host5(Sec) to VC1-Host3(Primary)
+    Tags: 'TBD'
+    Version: 2
+    TestName: xVCVMotion_1
+    TestbedSpec: *DFW_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['ReadNSXReplicatorServiceStatusRunning']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPowerOn']
+            - ['SetVXLANIPVM2', 'SetVXLANIPVM3', 'SetVXLANIPVM4', 'SetVXLANIPVM5']
+            - ['AllVMsPingEachOther']
+            ## Test-1 Create L2 & L3 Universal section
+            ## Add L3 rules to block all UDP and allow UDP port 5678 with
+            ## source(VM4) & dest(VM2)
+            ## Add L2 rules to block all IPv6 and allow IPv6 from source(VM5)
+            ## & dest(VM3)
+            ## Verify both L2 & L3 traffic during xVC VMotion of VM2 & VM3
+            - ['AddVmkOnHost2_5_ForVmotion']
+            - ['CreateVerifyGlobalMACSets','CreateVerifyGlobalIPSets']
+            - ['CreateVerifyGlobalSecurityGroup']
+            - ['CreateGlobalL3Section','CreateGlobalL2Section']
+            - ['ReadVerifyL3GlobalSectionOnVSM_2','ReadVerifyL2GlobalSectionOnVSM_2']
+            - ['AddGlobalL2RuleToBlockIPV6','AddGlobalL3RuleToBlockUDP']
+            - ['ReadVerifyL3GlobalRule1OnVSM_2','ReadVerifyL2GlobalRule1OnVSM_2']
+            - ['ClearDFWPktLogHost_4','ClearDFWPktLogHost_5']
+            - ['IperfTestVM3VM5_Fail','IperfTestVM2VM4_Fail']
+            - ['CheckDFWPktLogL3UDPDropFromHost_4','CheckDFWPktLogL2IPv6DropFromHost_5']
+            - ['AddGlobalL2RuleToAllowIPV6','AddGlobalL3RuleToAllowUDP']
+            - ['ClearDFWPktLogHost_2','ClearDFWPktLogHost_3']
+            - ['IperfTestVM2VM4_Pass','IperfTestVM3VM5_Pass']
+            - ['CheckDFWPktLogL3UDPAcceptIntoHost_2','CheckDFWPktLogL2IPv6AcceptIntoHost_3']
+            ## xVC vmotion vm-2 from primary to secondary and verify L3 universalrule
+            - ['ClearDFWPktLogHost_4']
+            - ['xVCVmotion_VM2toVC2Host4','IperfTestVM2VM4_Pass']
+            - ['CheckDFWPktLogL3UDPAcceptIntoHost_4']
+            - ['ClearDFWPktLogHost_2']
+            ## vmotion vm-2 back to primary
+            - ['xVCVmotion_VM2toVC1Host2','IperfTestVM2VM4_Pass']
+            - ['CheckDFWPktLogL3UDPAcceptIntoHost_2']
+            ## xVC vmotion vm-5 from secondary to primary and verify L2 universalrule
+            - ['ClearDFWPktLogHost_3']
+            - ['xVCVmotion_VM5toVC1Host3','IperfTestVM3VM5_Pass']
+            - ['CheckDFWPktLogL2IPv6AcceptIntoHost_3']
+            ## vmotion vm-5 back to secondary
+            - ['ClearDFWPktLogHost_5']
+            - ['xVCVmotion_VM5toVC2Host5','IperfTestVM3VM5_Pass']
+            - ['CheckDFWPktLogL2IPv6AcceptIntoHost_5']
+
+        ExitSequence:
+            - ['RemoveVmkOnHost2_5']
+            - ['DeleteGlobalRules']
+            - ['DeleteGlobalMACSets']
+            - ['DeleteGlobalIPSets']
+            - ['DeleteGlobalSecurityGroups']
+            - ['DeleteGlobalSections']
+            - ['RevertToDefaultRules']
+            - ['AllVMsPowerOff']
+            ## This frees up logical switches
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalMulticastRange']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['DELETE_ALL_CONTROLLERS']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+            - ['DeployControllerMasterSite']
+
+        xVCVmotion_VM2toVC2Host4:
+            Type:       'VM'
+            TestVM:     'vm.[2]'
+            priority:   'high'
+            vmotion:    'xvmotion'
+            portgroup:  'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            dsthost:    'esx.[4]'
+            vc:         'vc.[1]'
+            staytime:   '30'
+
+        xVCVmotion_VM2toVC1Host2:
+            Type:       'VM'
+            TestVM:     'vm.[2]'
+            priority:   'high'
+            vmotion:    'xvmotion'
+            portgroup:  'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            dsthost:    'esx.[2]'
+            vc:         'vc.[2]'
+            staytime:   '30'
+
+        xVCVmotion_VM5toVC1Host3:
+            Type:       'VM'
+            TestVM:     'vm.[5]'
+            priority:   'high'
+            vmotion:    'xvmotion'
+            portgroup:  'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            dsthost:    'esx.[3]'
+            vc:         'vc.[2]'
+            staytime:   '30'
+
+        xVCVmotion_VM5toVC2Host5:
+            Type:       'VM'
+            TestVM:     'vm.[5]'
+            priority:   'high'
+            vmotion:    'xvmotion'
+            portgroup:  'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            dsthost:    'esx.[5]'
+            vc:         'vc.[1]'
+            staytime:   '30'
+
+        AddVmkOnHost2_5_ForVmotion:
+            Type: Host
+            testhost: 'esx.[2-5]'
+            vmknic:
+                '[1]':
+                    portgroup: vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]
+                    configurevmotion: enable
+
+        RemoveVmkOnHost2_5:
+            Type: Host
+            TestHost: esx.[2-5]
+            deletevmknic: esx.[x].vmknic.[1]
+
+        AddGlobalL3RuleToBlockUDP:
+            Type: NSX
+            ExpectedResult: "PASS"
+            TestNSX: "vsm.[1]"
+            globalfirewallrule:
+                '[1]':
+                    name: 'Block_UDP'
+                    action: 'Deny'
+                    logging_enabled: 'true'
+                    section: 'vsm.[1].globaldfwsection.[1]'
+                    affected_service:
+                        -
+                           protocolname: 'UDP'
+                    appliedto:
+                        -
+                           type: 'VirtualWire'
+                           value: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+
+        AddGlobalL3RuleToAllowUDP:
+            Type: NSX
+            ExpectedResult: "PASS"
+            TestNSX: "vsm.[1]"
+            globalfirewallrule:
+                '[3]':
+                    name: 'Allow_UDP_VM4_VM2'
+                    action: 'allow'
+                    logging_enabled: 'true'
+                    section: 'vsm.[1].globaldfwsection.[1]'
+                    destinations:
+                        -
+                           type: 'IPSet'
+                           value: 'vsm.[1].globalipset.[1]'
+                    sources:
+                        -
+                           type: 'SecurityGroup'
+                           value: 'vsm.[1].globalsecuritygroup.[1]'
+                    affected_service:
+                        -
+                           protocolname: 'UDP'
+                    appliedto:
+                        -
+                           type: 'VirtualWire'
+                           value: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+
+        AddGlobalL2RuleToBlockIPV6:
+            Type: NSX
+            ExpectedResult: "PASS"
+            TestNSX: "vsm.[1]"
+            globalfirewallrule:
+                '[2]':
+                    name: 'Block_IPV6'
+                    action: 'Deny'
+                    logging_enabled: 'true'
+                    section: 'vsm.[1].globaldfwsection.[2]'
+                    affected_service:
+                        -
+                            protocolname: 'IPV6'
+                            protocol: '34525'
+                    appliedto:
+                        -
+                           type: 'VirtualWire'
+                           value: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+
+        AddGlobalL2RuleToAllowIPV6:
+            Type: NSX
+            ExpectedResult: "PASS"
+            TestNSX: "vsm.[1]"
+            globalfirewallrule:
+                '[4]':
+                    name: 'Allow_IPV6_VM5_VM3'
+                    action: 'allow'
+                    logging_enabled: 'true'
+                    section: 'vsm.[1].globaldfwsection.[2]'
+                    destinations:
+                        -
+                           type: 'MACSet'
+                           value: 'vsm.[1].globalmacset.[1]'
+                        -
+                           type: 'SecurityGroup'
+                           value: 'vsm.[1].globalsecuritygroup.[1]'
+                    sources:
+                        -
+                           type: 'MACSet'
+                           value: 'vsm.[1].globalmacset.[1]'
+                        -
+                           type: 'SecurityGroup'
+                           value: 'vsm.[1].globalsecuritygroup.[1]'
+                    affected_service:
+                        -
+                            protocolname: 'IPV6'
+                            protocol: '34525'
+                    appliedto:
+                        -
+                           type: 'VirtualWire'
+                           value: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'

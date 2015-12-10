@@ -1,0 +1,675 @@
+
+########################################################################################################################
+#   PlrTlr Topology with 2 HVs and 1 Edge                                                                              #
+#                                                                                                                      #
+#                                                    +---------------------+                                           #
+#                                                    |   EDGE CLUSTER      |                                           #
+#      +-VM1-+-LP1--LS1--LP11----LRP1-+              |                     |                                           #
+#      |                              |              |                     |                                           #
+#      |                              +-TLR2--LLRP2--|-LLRP1-+       NSXE1-|----------------------------+              #
+#      |                              |              |       |         |   |                            |              #
+#  HV2-+-VM3---LP2--LS3--LP12----LRP2-+              |       |       GWMC0 |                            |-HV1          #
+#                                                    |       |         |   |                            |              #
+#                                                    |       +-PLR1--ULRP1-|--LP15-LS10-LP10-+-VM10-----+              #
+#                                                    |       |             |                                           #
+#      +-VM2---LP3--LS2--LP13----LRP3-+              |       |             |                                           #
+#      |                              |              |       |             |                                           #
+#      |                              +-TLR3--LLRP4--|-LLRP3-+             |                                           #
+#      |                              |              |                     |                                           #
+#  HV3-+-VM4-+-LP4--LS4--LP14----LRP4-+              |                     |                                           #
+#                                                    |                     |                                           #
+#                                                    +---------------------+                                           #
+#                                                                                                                      #
+########################################################################################################################
+
+TopoL3_2Host_1Edge: &TopoL3_2Host_1Edge
+    CreateEdgeCluster:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        edgecluster:
+            '[1]':
+                name: 'edge_cluster_1'
+                members:
+                    - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+                fabric_profile_bindings:
+                    - resource_type: "FabricProfileClusterKeepAlive"
+                      fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+
+    DiscoverTransitLS:
+        - - DiscoverTransitLS-500_LR-1
+    UndiscoverTransitLS:
+        - - UndiscoverTransitLS-500
+
+    CreateLogicalSwitchPortsForTLRs:
+        - - CreateLSP-11_LS-1
+          - CreateLSP-12_LS-2
+          - CreateLSP-13_LS-3
+          - CreateLSP-14_LS-4
+
+    CreateLogicalSwitchPortForPLR:
+        - - CreateLSP-15_LS-10
+
+    CreateLogicalSwitch5:
+        - - CreateLS-5
+
+    CreateLogicalSwitchPort16:
+        - - CreateLSP-16_LS-5
+
+    CreateProviderLogicalRouter:
+        - - CreatePLR-1_EDGECLUSTER-1
+
+    CreateUplinkPortsOnPLR:
+        - - CreateULRP-1_LSP-15_GWMC-0_IP-192.168.50.1
+
+    CreateRouterLinkPortsOnPLR:
+        - - CreatePlrLLRP-1_PLR-1
+        - - CreatePlrLLRP-3_PLR-1
+
+    CreateRouterLinkPortsOnTLR:
+        - - CreateRouterLinkPortOnTLR1
+        - - CreateRouterLinkPortOnTLR2
+
+    CreateRouterLinkPortOnTLR1:
+        - - CreateTlrLLRP-2_TLR-2_PLRP-1
+
+    CreateRouterLinkPortOnTLR2:
+        - - CreateTlrLLRP-4_TLR-3_PLRP-3
+
+    CreateDownLinkPortsOnTLR1:
+        - - CreateLRP-1_LR-2_IP-10.1.1.1_LSP-1
+        - - CreateLRP-2_LR-2_IP-10.1.2.1_LSP-2
+
+    CreateDownLinkPortsOnTLR2:
+        - - CreateLRP-3_LR-3_IP-20.1.1.1_LSP-3
+        - - CreateLRP-4_LR-3_IP-20.1.2.1_LSP-4
+
+    AddRouterLinkPortOnPLRtoTLR3:
+        - - CreatePlrLLRP-5_PLR-1
+
+    CreateRouterLinkPortOnTLR3:
+        - - CreateTlrLLRP-6_TLR-4_PLRP-5
+
+    CreateDownLinkPortOnTLR3:
+        - - CreateLRP-5_LR-4_IP-30.1.1.1_LSP-5
+
+    CreateDownLinkPortOnTLR1ForLS5:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        logicalrouterport:
+            '[5]':
+                logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+                name: "tlr1-to-ls5"
+                resource_type: 'LogicalRouterDownLinkPort'
+                linked_switch_port_id: nsxmanager.[1].logicalport.[15]->id
+                subnets:
+                    - prefixlen: 24
+                      ip_addresses:
+                          - '30.1.1.1'
+
+
+    SetTLR1RouteAdvertisement:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[2]"
+        routeadvertisements:
+            '[1]':
+                enableadvertisement: 'true'
+                advertise_routes:
+                    - name: 'Advertisement for 10.1.1.0/24, 10.1.2.0/24'
+                      summary: 'Advertisement for 10.1.1.0/24, 10.1.2.0/24'
+                      network:
+                          - '10.1.1.0/24'
+                          - '10.1.2.0/24'
+
+    SetTLR2RouteAdvertisement:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[3]"
+        routeadvertisements:
+            '[2]':
+                enableadvertisement: 'true'
+                advertise_routes:
+                    - name: 'Advertisement for 20.1.1.0/24, 20.1.2.0/24'
+                      summary: 'Advertisement for 20.1.1.0/24, 20.1.2.0/24'
+                      network:
+                          - '20.1.1.0/24'
+                          - '20.1.2.0/24'
+
+    SetTLR3RouteAdvertisement:
+        Type: "Router"
+        TestRouter: "nsxmanager.[1].logicalrouter.[4]"
+        routeadvertisements:
+            '[3]':
+                enableadvertisement: 'true'
+                advertise_routes:
+                    - name: 'Advertisement for 30.1.1.0/24'
+                      summary: 'Advertisement for 30.1.1.0/24'
+                      network:
+                          - '30.1.1.0/24'
+
+
+    DeleteLogicalSwitch5Ports:
+        - - DeleteLSP-16
+
+    DeleteLogicalSwitch5:
+        - - DeleteLS-5
+
+    DeleteTenantLogicalRouter3:
+        - - DeleteLR-4
+
+    DeleteTLR3Ports:
+        - - DeleteLRP-5
+
+    DeleteDownLinkPortOnTLR1ForLS5:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deletelogicalrouterport: nsxmanager.[1].logicalrouterport.[5]
+
+    DeleteDownLinkPortOnTLR3:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deletelogicalrouterport: nsxmanager.[1].logicalrouterport.[5]
+
+    DeleteRouterLinkPortOnTLR3:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deletelogicalrouterlinkport: nsxmanager.[1].logicalrouterlinkport.[6]
+
+    DeleteRouterLinkPortOnPLRtoTLR3:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deletelogicalrouterport: nsxmanager.[1].logicalrouterlinkport.[5]
+
+    CleanupNSX:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalrouterport : "nsxmanager.[1].logicalrouterport.[-1]"
+        deletelogicalrouteruplinkport : "nsxmanager.[1].logicalrouteruplinkport.[-1]"
+        deletelogicalrouterlinkport : "nsxmanager.[1].logicalrouterlinkport.[-1]"
+        deletelogicalrouter : "nsxmanager.[1].logicalrouter.[-1]"
+        deletelogicalport : "nsxmanager.[1].logicalport.[-1]"
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[-1]"
+        deletetransportnode: "nsxmanager.[1].transportnode.[-1]"
+        deleteuplinkprofile: "nsxmanager.[1].uplinkprofile.[-1]"
+        deletetransportzone: "nsxmanager.[1].transportzone.[-1]"
+
+    DeleteLRDownlinkPort:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalrouterport : "nsxmanager.[1].logicalrouterport.[-1]"
+
+    DeleteLRUplinkPort:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalrouteruplinkport : "nsxmanager.[1].logicalrouteruplinkport.[-1]"
+
+    DeleteLRLinkPort:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalrouterlinkport : "nsxmanager.[1].logicalrouterlinkport.[-1]"
+
+    DeleteLR:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalrouter : "nsxmanager.[1].logicalrouter.[-1]"
+
+    DeleteLSPort-11-14:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalport : "nsxmanager.[1].logicalport.[11-14]"
+
+    DeleteLS1:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[1]"
+
+    DeleteLS2:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[2]"
+
+    DeleteLS3:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[3]"
+
+    DeleteLS4:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[4]"
+
+    DeleteLS10:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletelogicalswitch : "nsxmanager.[1].logicalswitch.[10]"
+
+    DeleteTN:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletetransportnode: "nsxmanager.[1].transportnode.[-1]"
+
+    DeleteUplinkProfile:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deleteuplinkprofile: "nsxmanager.[1].uplinkprofile.[-1]"
+
+    DeleteTZ:
+        Type : "NSX"
+        TestNSX : "nsxmanager.[1]"
+        deletetransportzone: "nsxmanager.[1].transportzone.[-1]"
+
+    DeleteEdgeCluster-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deleteedgecluster: nsxmanager.[1].edgecluster.[1]
+
+    DeleteEdgeNode-1:
+        TestNSX: nsxmanager.[1]
+        Type: NSX
+        deleteedgenode: nsxmanager.[1].edgenode.[1]
+
+    RemoveManagerOnESX-1:
+        TestHost: esx.[1]
+        Type: Host
+        remove_nsx_manager:
+            manager_ip: nsxmanager.[1]
+            manager_thumbprint: nsxmanager.[1]
+
+    RemoveManagerOnESX-2:
+        TestHost: esx.[2]
+        Type: Host
+        remove_nsx_manager:
+            manager_ip: nsxmanager.[1]
+            manager_thumbprint: nsxmanager.[1]
+
+    RemoveManagerOnESX-3:
+        TestHost: esx.[3]
+        Type: Host
+        remove_nsx_manager:
+            manager_ip: nsxmanager.[1]
+            manager_thumbprint: nsxmanager.[1]
+
+    RemoveManagerOnHosts--ESX:
+        - - RemoveManagerOnESX-1
+          - RemoveManagerOnESX-2
+          - RemoveManagerOnESX-3
+
+    UndiscoverHostNodes:
+        - - UndiscoverHostNode-1
+          - UndiscoverHostNode-2
+          - UndiscoverHostNode-3
+
+    AddRouteVM1--ESX: &AddRouteVM1--ESX
+        Type: 'NetAdapter'
+        Testadapter: 'vm.[1].vnic.[1]'
+        netmask:     '255.255.255.0'
+        route:       'add'
+        network:     '10.1.2.0,20.1.1.0,20.1.2.0,100.64.1.0,192.168.50.0'
+        gateway:     '10.1.1.1'
+    AddRouteVM1--KVM:
+        <<: *AddRouteVM1--ESX
+        Testadapter: 'vm.[1].vif.[1]'
+
+    AddDefaultRouteVM1--ESX: &AddDefaultRouteVM1--ESX
+        Type: 'NetAdapter'
+        Testadapter: 'vm.[1].vnic.[1]'
+        netmask:     '255.255.255.0'
+        route:       'add'
+        network:     'default'
+        gateway:     '10.1.1.1'
+    AddDefaultRouteVM1--KVM:
+        <<: *AddDefaultRouteVM1--ESX
+        Testadapter: 'vm.[1].vif.[1]'
+
+    AddRouteVM2--ESX: &AddRouteVM2--ESX
+        Type: 'NetAdapter'
+        Testadapter: 'vm.[2].vnic.[1]'
+        netmask:     '255.255.255.0'
+        route:       'add'
+        network:     '10.1.1.0,20.1.1.0,20.1.2.0,100.64.1.0,192.168.50.0'
+        gateway:     '10.1.2.1'
+    AddRouteVM2--KVM:
+        <<: *AddRouteVM2--ESX
+        Testadapter: 'vm.[2].vif.[1]'
+
+    AddRouteVM3--ESX: &AddRouteVM3--ESX
+        Type: 'NetAdapter'
+        Testadapter: 'vm.[3].vnic.[1]'
+        netmask:     '255.255.255.0'
+        route:       'add'
+        network:     '10.1.1.0,10.1.2.0,20.1.2.0,100.64.1.0,192.168.50.0'
+        gateway:     '20.1.1.1'
+    AddRouteVM3--KVM:
+        <<: *AddRouteVM3--ESX
+        Testadapter: 'vm.[3].vif.[1]'
+
+    AddRouteVM4--ESX: &AddRouteVM4--ESX
+        Type: 'NetAdapter'
+        Testadapter: 'vm.[4].vnic.[1]'
+        netmask:     '255.255.255.0'
+        route:       'add'
+        network:     '10.1.1.0,10.1.2.0,20.1.1.0,100.64.1.0,192.168.50.0'
+        gateway:     '20.1.2.1'
+    AddRouteVM4--KVM:
+        <<: *AddRouteVM4--ESX
+        Testadapter: 'vm.[4].vif.[1]'
+
+    AddRouteVM5--ESX: &AddRouteVM5--ESX
+        Type: 'NetAdapter'
+        Testadapter: 'vm.[5].vnic.[1]'
+        netmask:     '255.255.255.0'
+        route:       'add'
+        network:     '10.1.1.0,10.1.2.0,20.1.1.0,20.1.2.0,100.64.1.0,192.168.50.0'
+        gateway:     '30.1.1.1'
+    AddRouteVM5--KVM:
+        <<: *AddRouteVM5--ESX
+        Testadapter: 'vm.[5].vif.[1]'
+
+    AddRouteVM10--ESX: &AddRouteVM10--ESX
+        Type: 'NetAdapter'
+        Testadapter: 'vm.[10].vnic.[1]'
+        netmask:     '255.255.255.0'
+        route:       'add'
+        network:     '10.1.1.0,10.1.2.0,20.1.1.0,20.1.2.0,100.64.1.0'
+        gateway:     '192.168.50.1'
+    AddRouteVM10--KVM:
+        <<: *AddRouteVM10--ESX
+        Testadapter: 'vm.[10].vif.[1]'
+
+    UpdateRouteVM1--ESX: &UpdateRouteVM1--ESX
+        Type: 'NetAdapter'
+        Testadapter: 'vm.[1].vnic.[1]'
+        netmask:     '255.255.255.0'
+        route:       'add'
+        network:     '30.1.1.0'
+        gateway:     '10.1.1.1'
+    UpdateRouteVM1--KVM:
+        <<: *UpdateRouteVM1--ESX
+        Testadapter: 'vm.[1].vif.[1]'
+
+    UnregisterHosts:
+        - - DeleteHostNode-1
+          - DeleteHostNode-2
+          - DeleteHostNode-3
+
+    DiscoverHostNodes--ESX:
+        - - DiscoverHostNode1FromESX1
+          - DiscoverHostNode2FromESX2
+          - DiscoverHostNode3FromESX3
+    DiscoverHostNodes--KVM:
+        - - DiscoverHostNode1FromKVM1
+          - DiscoverHostNode2FromKVM2
+          - DiscoverHostNode3FromESX3
+
+    CreateTransportNodes--ESX:
+        - - CreateTN-1_HOSTNODE-1_TZ-1_VMNIC-1
+          - CreateTN-2_HOSTNODE-2_TZ-1_VMNIC-1
+          - CreateTN-3_HOSTNODE-3_TZ-1_VMNIC-1
+    CreateTransportNodes--KVM:
+        - - CreateTN-1_HOSTNODE-1_TZ-1_ETH-1
+          - CreateTN-2_HOSTNODE-2_TZ-1_ETH-1
+          - CreateTN-3_HOSTNODE-3_TZ-1_VMNIC-1
+
+    RegisterControllers:
+        - - SetManagerOnNSXC-1
+
+    RegisterHosts--ESX:
+        - - SetManagerOnESX-1
+          - SetManagerOnESX-2
+          - SetManagerOnESX-3
+    RegisterHosts--KVM:
+        - - SetManagerOnKVM-1
+          - SetManagerOnKVM-2
+          - SetManagerOnESX-3
+
+    CreateTransportZones:
+        - - CreateTZ-1
+
+    CreateUplinkProfiles:
+        - - CreateUPROF-1_MTU-1600
+
+    DiscoverEdgeNodes:
+        - - DiscoverEdgeNode-1_EDGE-1
+
+    DiscoverVnicsOnEdges:
+        - - DiscoverVnicsOnEdge-1_VNIC-1-3
+
+    AttachEdgeVnicsToUplinkLS:
+        - - ReconfigureEdge1Vnic2ToLS10
+
+    AttachEdgeVnicsToTransitLS:
+        - - ReconfigureEdge1Vnic3ToLS500
+
+    ReconnectEdge1Vnic2ToVMNetwork:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[2]'
+        reconfigure: 'true'
+        network: 'VM Network'
+
+    ReconnectEdge1Vnic3ToVMNetwork:
+        Type: NetAdapter
+        TestAdapter: 'nsxedge.[1].vnic.[3]'
+        reconfigure: 'true'
+        network: 'VM Network'
+
+    CreateFabricProfiles:
+        - - CreateFPROF-1
+
+    CreateDownlinkLogicalSwitches:
+        - - CreateLS-1
+          - CreateLS-2
+          - CreateLS-3
+          - CreateLS-4
+
+    CreateUplinkLogicalSwitches:
+        - - CreateLS-10
+
+    RegisterEdges:
+        - - RegisterEdge
+
+    ConfigureVifAttachmentsWithLSPorts--ESX:
+        - - AddVM1Vnic1ToLS1
+          - AddVM2Vnic1ToLS2
+          - AddVM3Vnic1ToLS3
+          - AddVM4Vnic1ToLS4
+          - AddVM10Vnic1ToLS10
+        # Lport 1-10: used by Vnics. Lport >=11: used by TLR/PLR
+        - - DiscoverLport1FromVM1Vnic1
+        - - DiscoverLport2FromVM2Vnic1
+        - - DiscoverLport3FromVM3Vnic1
+        - - DiscoverLport4FromVM4Vnic1
+          - DiscoverLport10FromVM10Vnic1
+    ConfigureVifAttachmentsWithLSPorts--KVM:
+        - - AddVM1Vif1ToKVM1Bridge1
+        - - AddVM2Vif1ToKVM2Bridge1
+        - - AddVM3Vif1ToKVM1Bridge1
+        - - AddVM4Vif1ToKVM2Bridge1
+          - AddVM10Vnic1ToLS10
+        # FIXME(Sheela) Do we shift Lports by offset of 10/100 to avoid mixing
+        # with Lports used by TLRs/PLR. Below using offset 10 temporarily.
+        - - CreateLP11OnLS1ForVM1Vif1
+          - CreateLP12OnLS2ForVM2Vif1
+          - CreateLP13OnLS3ForVM3Vif1
+          - CreateLP14OnLS4ForVM4Vif1
+          - DiscoverLport20FromVM10Vnic1
+
+    VifAttachmentVM5--ESX:
+        - - AddVM5Vnic1ToLS5
+        - - DiscoverLport5FromVM5Vnic1
+    VifAttachmentVM5--KVM:
+        - - AddVM5Vif1ToKVM1Bridge1
+        - - CreateLP15OnLS5ForVM5Vif1
+
+    PowerOnAllVMs:
+        - - PowerOnVM-1
+          - PowerOnVM-2
+          - PowerOnVM-3
+          - PowerOnVM-4
+          - PowerOnVM-10
+
+    PowerOffAllVMs:
+        - - PowerOffVM-1
+          - PowerOffVM-2
+          - PowerOffVM-3
+          - PowerOffVM-4
+          - PowerOffVM-10
+
+    DeleteAllTestIfacesOnVMs--ESX:
+        - - DeleteVnic-1_VM-1
+          - DeleteVnic-1_VM-2
+          - DeleteVnic-1_VM-3
+          - DeleteVnic-1_VM-4
+          - DeleteVnic-1_VM-10
+        # FIXME(Sheela) Do we shift Lports by offset of 10/100 to avoid mixing
+        # with Lports used by TLRs/PLR. Below using offset 10 temporarily.
+        - - UndiscoverLSP-11-14
+          - UndiscoverLSP-20
+    DeleteAllTestIfacesOnVMs--KVM:
+        - - DeleteVif-1_VM-1
+          - DeleteVif-1_VM-2
+          - DeleteVif-1_VM-3
+          - DeleteVif-1_VM-4
+          - DeleteVnic-1_VM-10
+        # FIXME(Sheela) Do we shift Lports by offset of 10/100 to avoid mixing
+        # with Lports used by TLRs/PLR. Below using offset 10 temporarily.
+        - - DeleteLSP-11-15
+          - UndiscoverLSP-20
+
+    ConfigureIPOnAllVMInterfaces--ESX:
+        - - ConfigureVM1Vnic1IP-10.1.1.10
+          - ConfigureVM2Vnic1IP-10.1.2.10
+          - ConfigureVM3Vnic1IP-20.1.1.10
+          - ConfigureVM4Vnic1IP-20.1.2.10
+          - ConfigureVM10Vnic1IP-192.168.50.2
+    ConfigureIPOnAllVMInterfaces--KVM:
+        - - ConfigureVM1Vif1IP-10.1.1.10
+          - ConfigureVM2Vif1IP-10.1.2.10
+          - ConfigureVM3Vif1IP-20.1.1.10
+          - ConfigureVM4Vif1IP-20.1.2.10
+          - ConfigureVM10Vnic1IP-192.168.50.2
+
+    AddStaticRoutesOnVMs--ESX:
+        - - AddRouteVM1--ESX
+          - AddRouteVM2--ESX
+          - AddRouteVM3--ESX
+          - AddRouteVM4--ESX
+          - AddRouteVM10--ESX
+    AddStaticRoutesOnVMs--KVM:
+        - - AddRouteVM1--KVM
+          - AddRouteVM2--KVM
+          - AddRouteVM3--KVM
+          - AddRouteVM4--KVM
+          - AddRouteVM10--ESX
+
+    CreateTenantLogicalRouters:
+        - - CreateTLR1
+          - CreateTLR2
+          - CreateTLR3
+
+    CreateTLR1:
+        - - CreateLR-2_TIER-1
+
+    CreateTLR2:
+        - - CreateLR-3_TIER-1
+
+    CreateTLR3:
+        - - CreateLR-4_TIER-1
+
+#####   Grouped Workloads: Setup
+    PlrTlrSetup--ESX:
+        - - RegisterHosts--ESX
+        - - DiscoverHostNodes--ESX
+        - - CreateUplinkProfiles
+        - - CreateTransportZones
+        - - CreateTransportNodes--ESX
+        - - CreateDownlinkLogicalSwitches
+        - - CreateUplinkLogicalSwitches
+        - - CreateLogicalSwitchPortForPLR
+        - - CreateLogicalSwitchPortsForTLRs
+        - - RegisterEdges
+        - - DiscoverEdgeNodes
+        - - CreateFabricProfiles
+        - - CreateEdgeCluster
+        - - CreateProviderLogicalRouter
+        - - CreateTenantLogicalRouters
+        - - CreateDownLinkPortsOnTLR1
+        - - CreateDownLinkPortsOnTLR2
+        - - CreateRouterLinkPortsOnPLR
+        - - CreateRouterLinkPortsOnTLR
+        - - SetTLR1RouteAdvertisement
+        - - SetTLR2RouteAdvertisement
+        - - CreateUplinkPortsOnPLR
+        - - ConfigureVifAttachmentsWithLSPorts--ESX
+        - - ConfigureIPOnAllVMInterfaces--ESX
+        - - AddStaticRoutesOnVMs--ESX
+    PlrTlrSetup--KVM:
+        - - RegisterControllers
+        - - RegisterHosts--KVM
+        - - CreateTransportZones
+        - - CreateUplinkProfiles
+        - - DiscoverHostNodes--KVM
+        - - CreateTransportNodes--KVM
+        - - CreateDownlinkLogicalSwitches
+        - - CreateUplinkLogicalSwitches
+        - - ConfigureVifAttachmentsWithLSPorts--KVM
+        - - ConfigureIPOnAllVMInterfaces--KVM
+
+        - - RegisterEdges
+        - - DiscoverEdgeNodes
+        - - CreateFabricProfiles
+        - - CreateEdgeCluster
+
+        - - CreateProviderLogicalRouter
+        - - CreateTenantLogicalRouters
+        - - CreateRouterLinkPortsOnPLR
+        - - CreateRouterLinkPortsOnTLR
+        - - CreateLogicalSwitchPortForPLR
+        - - CreateUplinkPortsOnPLR
+        - - CreateLogicalSwitchPortsForTLRs
+        - - CreateDownLinkPortsOnTLR1
+        - - CreateDownLinkPortsOnTLR2
+        - - SetTLR1RouteAdvertisement
+        - - SetTLR2RouteAdvertisement
+        
+        - - DiscoverVnicsOnEdges
+        - - DiscoverTransitLS
+        - - AttachEdgeVnicsToUplinkLS
+        - - AttachEdgeVnicsToTransitLS
+        - - AddStaticRoutesOnVMs--KVM
+
+
+#####   Grouped Workloads: Cleanup
+    PlrTlrCleanup--ESX:
+        - - DeleteLRDownlinkPort
+        - - DeleteLRUplinkPort
+        - - DeleteLRLinkPort
+        - - DeleteLR
+        - - DeleteVnic-1_VM-1
+        - - DeleteVnic-1_VM-2
+        - - DeleteVnic-1_VM-3
+        - - DeleteVnic-1_VM-4
+        - - DeleteVnic-1_VM-10
+        - - UndiscoverLSP-1-4
+        - - UndiscoverLSP-10
+        - - DeleteLSP-11-15
+        - - DeleteLS1
+        - - DeleteLS2
+        - - DeleteLS3
+        - - DeleteLS4
+        - - DeleteLS10
+        - - DeleteTN
+        - - DeleteEdgeCluster-1
+        - - DeleteEdgeNode-1
+        - - DeleteUplinkProfile
+        - - DeleteTZ
+        - - RemoveManagerOnESX-1
+        - - RemoveManagerOnESX-2
+        - - RemoveManagerOnESX-3
+        - - UndiscoverHostNode-1
+        - - UndiscoverHostNode-2
+        - - UndiscoverHostNode-3
+    PlrTlrCleanup--KVM:
+        - - UndiscoverTransitLS
+        - - CleanupNSX
+        - - DeleteAllTestIfacesOnVMs--KVM
+
+#####- [UnregisterHosts]

@@ -1,0 +1,400 @@
+TORTestbedspec1: &TOR_TESTBEDSPEC
+    esx:
+        '[1-3]':
+            vmnic:
+                '[1]':
+                    driver: 'any'
+    vc:
+        '[1]':
+    vsm:
+        '[1]':
+
+    torgateway:
+        '[1]':
+            pif:
+                '[1]':
+                    interface: 'eth1'
+                    network: 'isolated-06'
+                '[2]':
+                    interface: 'eth2'
+                    network: 'isolated-07'
+                '[3]':
+                    interface: 'eth3'
+                    network: 'agrawalm-vxlan_test_network-1'
+                '[4]':
+                    interface: 'eth4'
+                    network: 'agrawalm-vxlan_test_network-2'
+
+TORTestbedspec1: &TOR_TESTBEDSPEC1
+    esx:
+        '[1-3]':
+            vmnic:
+                '[1]':
+                    driver: 'any'
+    vc:
+        '[1]':
+    vsm:
+        '[1]':
+    torgateway:
+        '[1]':
+            pif:
+                '[1]':
+                    interface: 'eth1'
+                    network: 'isolated-06'
+                '[2]':
+                    interface: 'eth2'
+                    network: 'isolated-07'
+                '[3]':
+                    interface: 'eth3'
+                    network: 'agrawalm-vxlan_test_network-1'
+                '[4]':
+                    interface: 'eth4'
+                    network: 'agrawalm-vxlan_test_network-2'
+
+TORTestbedspec: &FUNCTIONAL_TOPOLOGY_1
+# this topo is the simple version of topo2, which only involve 1 ccp controller,
+# 1 TOR Gateway device, and only 2 hosts for data plane
+    vsm:
+      '[1]':
+         reconfigure: "true"
+         vc: "vc.[1]"
+         assignrole: "enterprise_admin"
+         ippool:
+            '[1]':
+               name:  "AutoGenerate"
+               gateway:    "XX.XX.XX.XX"
+               prefixlength:  "XX"
+               ipranges:   ['XX.XX.XX.XX-XX.XX.XX.XX']
+         vxlancontroller:
+            '[1]':
+               name:         "AutoGenerate"
+               ippool:       "vsm.[1].ippool.[1]"
+               resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+               host:         "esx.[1]"
+         segmentidrange:
+            '[1]':
+               name:  "AutoGenerate"
+               begin: "5001-10001"
+               end:   "99000"
+         multicastiprange:
+            '[1]':
+               name:  "AutoGenerate"
+               begin: "239.0.0.101"
+               end:   "239.254.254.254"
+         vdncluster:
+            '[1]':
+               cluster: "vc.[1].datacenter.[1].cluster.[2]"
+               vibs:    "install"
+               switch:  "vc.[1].vds.[1]"
+               vlan:    *VDL2_VLAN_C
+               mtu:     "1600"
+               teaming: "FAILOVER_ORDER"
+            '[2]':
+               cluster: "vc.[1].datacenter.[1].cluster.[3]"
+               vibs:    "install"
+               switch:  "vc.[1].vds.[2]"
+               vlan:    *VDL2_VLAN_D
+               mtu:     "1600"
+               teaming: "FAILOVER_ORDER"
+         networkscope:
+            '[1]':
+               name:    "AutoGenerate"
+               clusters: "vc.[1].datacenter.[1].cluster.[2-3]"
+
+    esx:
+      # esx.[1] used for controller plane
+      # esx.[2-3] are unused to make data plance hosts consistant with topo2, makes
+      #          data plane hosts index start from 4
+      # esx.[4-5] used for data plance which deploy vms
+      '[1]':
+         vmnic:
+            '[1]':
+               driver:  "any"
+      '[4-5]':
+         vmnic:
+            '[1]':
+               driver:  "any"
+
+    torgateway:
+      '[1]':
+          pif:
+                '[1]':
+                    interface: 'eth1'
+                    network: 'isolated-06'
+                '[2]':
+                    interface: 'eth2'
+                    network: 'isolated-07'
+                '[3]':
+                    interface: 'eth3'
+                    network: 'agrawalm-vxlan_test_network-1'
+                '[4]':
+                    interface: 'eth4'
+                    network: 'agrawalm-vxlan_test_network-2'
+
+    vc:
+      '[1]':
+         datacenter:
+            '[1]':
+               Cluster:
+                  '[1]':
+                     host: "esx.[1]"
+                     clustername: "ControllerCluster-$$"
+                  '[2]':
+                     host: "esx.[4]"
+                     clustername: "ComputeCluster1-$$"
+                  '[3]':
+                     host: "esx.[5]"
+                     clustername: "ComputeCluster2-$$"
+
+         vds:
+           '[1]':
+              datacenter:     "vc.[1].datacenter.[1]"
+              configurehosts: "add"
+              host:           "esx.[4]"
+              vmnicadapter:   "esx.[4].vmnic.[1]"
+           '[2]':
+              datacenter:     "vc.[1].datacenter.[1]"
+              configurehosts: "add"
+              host:           "esx.[5]"
+              vmnicadapter:   "esx.[5].vmnic.[1]"
+
+    vm:
+        '[1-2]':
+           host:      "esx.[4]"
+           vmstate:   "poweroff"
+        '[3-4]':
+           host:      "esx.[5]"
+           vmstate:   "poweroff"
+
+TORTestbedspec: &FUNCTIONAL_TOPOLOGY_2
+# topo2 is typical TOR testing topo, involves 3 ccp controllers which established
+# full mesh connection with 2 TOR Gateways, each TOR Gateway device can have one
+# TOR switch
+    vsm:
+      '[1]':
+         reconfigure: "true"
+         vc: "vc.[1]"
+         assignrole: "enterprise_admin"
+         ippool:
+            '[1]':
+               name:  "AutoGenerate"
+               gateway:    "XX.XX.XX.XX"
+               prefixlength:  "XX"
+               ipranges:   ['XX.XX.XX.XX-XX.XX.XX.XX']
+         vxlancontroller:
+            '[1-3]':
+               name:         "AutoGenerate"
+               ippool:       "vsm.[1].ippool.[1]"
+               resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+               host:         "esx.[1]"
+         segmentidrange:
+            '[1]':
+               name:  "AutoGenerate"
+               begin: "5001-10001"
+               end:   "99000"
+         multicastiprange:
+            '[1]':
+               name:  "AutoGenerate"
+               begin: "239.0.0.101"
+               end:   "239.254.254.254"
+         vdncluster:
+            '[1]':
+               cluster: "vc.[1].datacenter.[1].cluster.[2]"
+               vibs:    "install"
+               switch:  "vc.[1].vds.[1]"
+               vlan:    *VDL2_VLAN_C
+               mtu:     "1600"
+               teaming: "FAILOVER_ORDER"
+            '[2]':
+               cluster: "vc.[1].datacenter.[1].cluster.[3]"
+               vibs:    "install"
+               switch:  "vc.[1].vds.[2]"
+               vlan:    *VDL2_VLAN_D
+               mtu:     "1600"
+               teaming: "FAILOVER_ORDER"
+         networkscope:
+            '[1]':
+               name:    "AutoGenerate"
+               clusters: "vc.[1].datacenter.[1].cluster.[2-3]"
+
+    esx:
+      # esx.[1] used for controller plane
+      # esx.[2-3] are reserved for futher expend
+      # esx.[4-7] used for data plance which deploy vms,
+      #           while esx.[4-6] used to deploy ptep cluster
+      '[1]':
+         vmnic:
+            '[1]':
+               driver:  "any"
+      '[4-7]':
+         vmnic:
+            '[1]':
+               driver:  "any"
+
+    torgateway:
+      '[1-2]':
+          pif:
+                '[1]':
+                    interface: 'eth1'
+                    network: 'isolated-06'
+                '[2]':
+                    interface: 'eth2'
+                    network: 'isolated-07'
+                '[3]':
+                    interface: 'eth3'
+                    network: 'agrawalm-vxlan_test_network-1'
+                '[4]':
+                    interface: 'eth4'
+                    network: 'agrawalm-vxlan_test_network-2'
+
+    vc:
+      '[1]':
+         datacenter:
+            '[1]':
+               Cluster:
+                  '[1]':
+                     host: "esx.[1]"
+                     clustername: "ControllerCluster-$$"
+                  '[2]':
+                     host: "esx.[4-5]"
+                     clustername: "ComputeCluster1-$$"
+                  '[3]':
+                     host: "esx.[6-7]"
+                     clustername: "ComputeCluster2-$$"
+
+         vds:
+           '[1]':
+              datacenter:     "vc.[1].datacenter.[1]"
+              configurehosts: "add"
+              host:           "esx.[4-5]"
+              vmnicadapter:   "esx.[4-5].vmnic.[1]"
+           '[2]':
+              datacenter:     "vc.[1].datacenter.[1]"
+              configurehosts: "add"
+              host:           "esx.[6-7]"
+              vmnicadapter:   "esx.[6-7].vmnic.[1]"
+
+    vm:
+        '[1-3]':
+           host:      "esx.[4]"
+           vmstate:   "poweroff"
+        '[4-6]':
+           host:      "esx.[5]"
+           vmstate:   "poweroff"
+        '[7-9]':
+           host:      "esx.[6]"
+           vmstate:   "poweroff"
+        '[10-12]':
+           host:      "esx.[7]"
+           vmstate:   "poweroff"
+
+TORTestbedspec: &FUNCTIONAL_TOPOLOGY_3
+# topo3 is almost the same as topo2, but not provide vxlan controller and
+# TZ in advance.
+    vsm:
+      '[1]':
+         reconfigure: "true"
+         vc: "vc.[1]"
+         assignrole: "enterprise_admin"
+         ippool:
+            '[1]':
+               name:  "AutoGenerate"
+               gateway:    "XX.XX.XX.XX"
+               prefixlength:  "XX"
+               ipranges:   ['XX.XX.XX.XX-XX.XX.XX.XX']
+         segmentidrange:
+            '[1]':
+               name:  "AutoGenerate"
+               begin: "5001-10001"
+               end:   "99000"
+         multicastiprange:
+            '[1]':
+               name:  "AutoGenerate"
+               begin: "239.0.0.101"
+               end:   "239.254.254.254"
+         vdncluster:
+            '[1]':
+               cluster: "vc.[1].datacenter.[1].cluster.[2]"
+               vibs:    "install"
+               switch:  "vc.[1].vds.[1]"
+               vlan:    *VDL2_VLAN_C
+               mtu:     "1600"
+               teaming: "FAILOVER_ORDER"
+            '[2]':
+               cluster: "vc.[1].datacenter.[1].cluster.[3]"
+               vibs:    "install"
+               switch:  "vc.[1].vds.[2]"
+               vlan:    *VDL2_VLAN_D
+               mtu:     "1600"
+               teaming: "FAILOVER_ORDER"
+
+    esx:
+      # esx.[1] used for controller plane
+      # esx.[2-3] are reserved for futher expend
+      # esx.[4-7] used for data plance which deploy vms,
+      #           while esx.[4-6] used to deploy ptep cluster
+      '[1]':
+         vmnic:
+            '[1]':
+               driver:  "any"
+      '[4-7]':
+         vmnic:
+            '[1]':
+               driver:  "any"
+
+    torgateway:
+      '[1-2]':
+          pif:
+                '[1]':
+                    interface: 'eth1'
+                    network: 'isolated-06'
+                '[2]':
+                    interface: 'eth2'
+                    network: 'isolated-07'
+                '[3]':
+                    interface: 'eth3'
+                    network: 'agrawalm-vxlan_test_network-1'
+                '[4]':
+                    interface: 'eth4'
+                    network: 'agrawalm-vxlan_test_network-2'
+
+    vc:
+      '[1]':
+         datacenter:
+            '[1]':
+               Cluster:
+                  '[1]':
+                     host: "esx.[1]"
+                     clustername: "ControllerCluster-$$"
+                  '[2]':
+                     host: "esx.[4-5]"
+                     clustername: "ComputeCluster1-$$"
+                  '[3]':
+                     host: "esx.[6-7]"
+                     clustername: "ComputeCluster2-$$"
+
+         vds:
+           '[1]':
+              datacenter:     "vc.[1].datacenter.[1]"
+              configurehosts: "add"
+              host:           "esx.[4-5]"
+              vmnicadapter:   "esx.[4-5].vmnic.[1]"
+           '[2]':
+              datacenter:     "vc.[1].datacenter.[1]"
+              configurehosts: "add"
+              host:           "esx.[6-7]"
+              vmnicadapter:   "esx.[6-7].vmnic.[1]"
+
+    vm:
+        '[1-3]':
+           host:      "esx.[4]"
+           vmstate:   "poweroff"
+        '[4-6]':
+           host:      "esx.[5]"
+           vmstate:   "poweroff"
+        '[7-9]':
+           host:      "esx.[6]"
+           vmstate:   "poweroff"
+        '[10-12]':
+           host:      "esx.[7]"
+           vmstate:   "poweroff"

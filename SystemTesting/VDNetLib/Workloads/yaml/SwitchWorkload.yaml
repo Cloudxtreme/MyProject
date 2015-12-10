@@ -1,0 +1,1740 @@
+---
+switchccpmapping:
+  derived_components:
+    - switch
+  description: Get master/slave ccp ip
+  format: nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->master_ccp_ip
+  sample_value: nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->master_ccp_ip
+  type: parameter
+activetimeout:
+  derived_components:
+    - vds
+  description: Timeout value in seconds when the ipfix flow is active
+  format: integer > 60
+  sample_value: 120
+  type: parameter
+addflow:
+  derived_components:
+    - ovs
+  description: Key needed to add flows to the openvswitch
+  format:
+    - destination: vdnet index
+      gateway: vdnet index
+      protocol:
+        - string
+  method: AddFlows
+  params:
+    - addflow
+  preprocess: PreProcessAddFlow
+  sample_value:
+    - destination: 'vm.[2].vnic.[1]'
+      gateway: 'host.[1].ovs.[1].port.[1]'
+      protocol:
+        - ip
+        - arp
+        - tcp
+        - udp
+  type: action
+autoscale:
+  allowed_values:
+    - true
+    - false
+  derived_components:
+    - vss
+  description: Method to check autoscale on a vswitch
+  format: boolean
+  method: CheckAutoscaleVSwitch
+  params:
+    - autoscale
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: true
+  type: action
+backuprestore:
+  allowed_values:
+    - importvds
+    - exportvds
+    - exportvdsdvpg
+    - restoredvpg
+    - importvdsdvpg
+    - restorevdsdvpg
+    - exportdvpg
+    - importdvpg
+  derived_components:
+    - vds
+  description: Export or Import VDS/DVPort-group configuration
+  format: string
+  method: ExportImportVDSDVPG
+  params:
+    - backuprestore
+    - portgroup
+  postprocess: ~
+  preprocess: PreProcessBackupRestore
+  sample_value: exportvds
+  type: action
+checkmteponhost:
+  derived_components:
+    - virtualwire
+  description: Method to check MTEP list on host
+  format: vdnet index
+  method: CheckMTEPOnHost
+  params:
+    - checkmteponhost
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'host.[1-2]'
+  type: action
+clearvwireentryonhost:
+  allowed_values:
+    - mac
+    - arp
+    - vtep
+  derived_components:
+    - virtualwire
+  description: 'Clear the mac/arp/vtep entry for a virtualwire on host,this API only used for virtual wire'
+  format: string
+  method: ClearVWireEntryOnHost
+  params:
+    - clearvwireentryonhost
+    - hosts
+  preprocess: PreProcessHashTypeAPI
+  sample_value: mac
+  type: action
+collector:
+  derived_components:
+    - vds
+  description: Tuple of IPfix collector
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'vm.[1].vnic.[1]'
+  type: parameter
+configurecontroller:
+  allowed_values:
+    - set
+    - clear
+  derived_components:
+    - ovs
+  description: Configure controller on the open vswitch
+  format: string
+  method: ConfigureController
+  params:
+    - configurecontroller
+    - controller
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 'nvpcontroller.[1]'
+  type: action
+configurehosts:
+  allowed_values:
+    - add
+    - remove
+  dependency:
+    - numuplinkports
+  derived_components:
+    - vds
+  description: Add host to VDS
+  format: string
+  method: ConfigureHosts
+  params:
+    - configurehosts
+    - host
+    - vmnicadapter
+  preprocess: PreProcessConfigureHost
+  sample_value: add
+  type: action
+configureuplinks:
+  allowed_values:
+    - add
+    - remove
+    - edit
+  dependency:
+    - configurehosts
+  derived_components:
+    - vds
+    - vss
+    - ovs
+    - bridge
+  description: Add uplink to VDS
+  format: string
+  method: ConfigureUplinks
+  params:
+    - configureuplinks
+    - vmnicadapter
+    - uplink
+    - executiontype
+    - ipv4address
+    - adapter
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: add
+  type: action
+controller:
+  derived_components:
+    - ovs
+  description: Get an object of controller
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'nvpcontroller.[1]'
+  type: parameter
+controllerstatusonhosts:
+  allowed_values:
+    - up
+    - down
+  derived_components:
+    - virtualwire
+  description: Method to check controller info for a vWire on host
+  format: string
+  method: CheckControllerStatusOnHost
+  params:
+    - controllerstatusonhosts
+    - hosts
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: up
+  type: action
+controlplanemode:
+  allowed_values:
+    - MULTICAST_MODE
+    - HYBRID_MODE
+    - UNICAST_MODE
+  derived_components:
+    - virtualwire
+  description: Specifies the control plane mode for virtual wire
+  format: string
+  sample_value: UNICAST_MODE
+  type: parameter
+deleteflows:
+  derived_components:
+    - ovs
+  description: Key needed to remove flows from open vswitch
+  method: DeleteFlows
+  params:
+    - DeletePorts
+  preprocess: PreProcessShiftTypeAPI
+  type: component
+  sample_value: not available
+  format: not available
+deletelag:
+  derived_components:
+    - vds
+  description: Key needed to create a lag
+  format: vdnet index
+  method: DeleteLinkAggregationGroup
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vc.[1].vds.[1].lag.[1]'
+  type: component
+deletelogicalswitchport:
+  derived_components:
+    - logicalswitch
+  description: Deletes logical switch port on NSX
+  format: vdnet index
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'neutron.[1].logicalswitch.[1].logicalswitchport.[1]'
+  type: component
+deleteport:
+  derived_components:
+    - ovs
+  description: Key needed to remove ports from switch
+  format: vdnet index
+  method: DeletePorts
+  params:
+    - deleteport
+  preprocess: PreProcessDeleteComponent
+  sample_value: 'host.[2].ovs.[1].port.[1]'
+  type: component
+destinationhost:
+  derived_components:
+    - virtualwire
+  description: Get the corresponding host Obj
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'host.[1]'
+  type: parameter
+destinationswitch:
+  derived_components:
+    - virtualwire
+  description: Get the corresponding vds Obj
+  format: string
+  method: GetOneObjectFromOneTuple
+  sample_value: 'vc.[1].vds.[2]'
+  type: parameter
+destinationvlanid:
+  allowed_values:
+    - 1
+    - 4096
+  derived_components:
+    - virtualwire
+  description: vlan
+  format: integer
+  sample_value: 17
+  type: parameter
+failmode:
+  allowed_values:
+    - secure
+    - standalone
+  derived_components:
+    - ovs
+  description: Configure fail mode on open vswitch
+  format: string
+  method: SetFailMode
+  params:
+    - failmode
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: secure
+  type: action
+guestvlanallowed:
+  allowed_values:
+    - true
+    - false
+  derived_components:
+    - virtualwire
+  description: Allow guest vlan for virtual wire
+  format: string
+  sample_value: true
+  type: parameter
+host:
+  derived_components:
+    - all
+  description: Add host to VDS
+  format: vdnet index
+  method: GetMultipleComponentObjects
+  sample_value: 'host.[1]'
+  type: parameter
+idletimeout:
+  allowed_values: '<number>'
+  derived_components:
+    - vds
+  description: Timeout value in seconds when the ipfix flow is idle
+  format: integer
+  sample_value: 30
+  type: parameter
+ipfix:
+  allowed_values:
+    - add
+    - remove
+  dependency: ~
+  derived_components:
+    - vds
+  description: Configure ipfix on the DVS
+  method: ConfigureIpfix
+  params:
+    - ipfix
+    - collector
+    - addressfamily
+    - activetimeout
+    - idletimeout
+    - samplerate
+  preprocess: PreProcessHashTypeAPI
+  type: action
+ipv4:
+  allowed_values:
+    - static
+    - dhcp
+  derived_components:
+    - virtualwire
+  description: 'change vxlan vtep ip address to static ip address or change to dhcp modeNote: this api only applicable for the scenario that single vtep vmknic for each vtep host '
+  format: ip address/dhcp
+  method: SetVtepIpAddress
+  params:
+    - ipv4
+    - host
+    - cluster
+    - ipv4address
+    - netmask
+  preprocess: PreProcessHashTypeAPI
+  sample_value: dhcp
+  type: action
+ipv4address:
+  derived_components:
+    - virtualwire
+  description: IPv4 address
+  format: ip4 address
+  sample_value: 192.168.1.1
+  type: parameter
+lacp:
+  allowed_values:
+    - enable
+    - disable
+  derived_components:
+    - vds
+  description: Enable lacp on switch
+  format: string
+  method: SetLACP
+  params:
+    - lacp
+    - lacpmode
+    - host
+  preprocess: PreProcessLacp
+  sample_value: enable
+  type: action
+lacpmode:
+  allowed_values:
+    - active
+    - passive
+  derived_components:
+    - vds
+  description: Mode of lacp
+  format: string
+  sample_value: active
+  type: parameter
+lag:
+  derived_components:
+    - vds
+  description: Convert lag key from testbedspecto a key/value pair format
+  dependency:
+    - configurehosts
+  linkedworkload: LACPWorkload
+  method: AddLinkAggregationGroup
+  params:
+    - lag
+  postprocess: StoreSubComponentObjects
+  preprocess: TransformSubComponentSpec
+  type: component
+lldpipv6addr:
+  derived_components:
+    - vds
+  description: Configure the ipv6 addr info advertised from LLDP
+  format: ipv6 address
+  method: ConfigureLLDPIPv6Addr
+  params:
+    - lldpipv6addr
+    - sourcehost
+  preprocess: PreProcessHashTypeAPI
+  sample_value: 200::1
+  type: action
+logicalport:
+  derived_components:
+    - logicalswitch
+  description: add ports to the logical switch
+  linkedworkload: PortWorkload
+  method: CreateComponent
+  params:
+    - logicalport
+  postprocess: APIPostProcess
+  preprocess: PreProcessSubComponentsInPython
+  type: component
+  objtype:
+    nsxmanager: 'VDNetLib::NSXManager::LogicalPort'
+logicalswitchport:
+  derived_components:
+    - logicalswitch
+  description: Creates a logical switch port
+  linkedworkload: PortWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - logicalswitchport
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+migrateuplinks:
+  allowed_values:
+    - migrate
+    - rollback
+  derived_components:
+    - ovs
+  description: Move uplinks from and to open vswitch
+  format: string
+  method: MigrateUplinks
+  params:
+    - migrateuplinks
+    - vmnicadapter
+    - services
+    - vmknics
+  preprocess: PreProcessHashTypeAPI
+  sample_value: migrate
+  type: action
+mtu:
+  derived_components:
+    - vds
+    - vss
+  description: Configure switch mtu size; also change vxlan vtep vmknic's mtu size
+  format: integer
+  method: SetMTU
+  params:
+    - mtu
+    - host
+    - cluster
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 1600
+  type: action
+multicastfilteringmode:
+  allowed_values:
+    - legacyFiltering
+    - snooping
+  derived_components:
+    - vds
+  description: Configure multicast filterring mode on DVS
+  format: string
+  method: ConfigureMulticastFilteringMode
+  params:
+    - multicastfilteringmode
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: legacyFiltering
+  type: action
+netmask:
+  derived_components:
+    - vds
+  description: Subnet mask to be used
+  format: network mask
+  sample_value: 255.255.0.0
+  type: parameter
+nioc:
+  allowed_values:
+    - enable
+    - disable
+  derived_components:
+    - vds
+  description: Enable NIOC on the given VDS
+  format: string
+  method: ConfigureNIOC
+  params:
+    - nioc
+    - niocversion
+  postprocess: ~
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: enable
+  type: action
+niocinfrastructuretraffic:
+  dependency:
+    - uplink
+  derived_components:
+    - vds
+  description: Indicates NIOC Infrastructure specification
+  format:
+    ft: '<reservation>:<shares>:<limits>'
+    hbr: '<reservation>:<shares>:<limits>'
+    iscsi: '<reservation>:<shares>:<limits>'
+    nfs: '<reservation>:<shares>:<limits>'
+    virtualMachine: '<reservation>:<shares>:<limits>'
+    vsan: '<reservation>:<shares>:<limits>'
+  method: ConfigureNIOCTraffic
+  params:
+    - niocinfrastructuretraffic
+    - niocversion
+  preprocess: PreProcessNIOCTrafficSpec
+  sample_value:
+    faultTolerance: 100:100:500
+    hbr: 100:100:500
+    iSCSI: 100:100:500
+    management: 100:100:500
+    nfs: 100:100:500
+    virtualMachine: 50:100:500
+    vmotion: 100:100:500
+    vsan: 100:100:500
+  type: action
+niocversion:
+  allowed_values:
+    - version2
+    - version3
+  derived_components:
+    - vds
+  description: Indicates NIOC version
+  format: string
+  sample_value: version2
+  type: parameter
+numuplinkports:
+  derived_components:
+    - vds
+  description: Configure VDS uplink port number
+  format: integer
+  method: ConfigureVDSUplinkPorts
+  params:
+    - numuplinkports
+  preprocess: PreProcessHashTypeAPI
+  sample_value: 1
+  type: action
+packetsize:
+  allowed_values:
+    - 1600
+    - 65500
+  derived_components:
+    - virtualwire
+  description: packet size
+  format: integer
+  sample_value: 1600
+  type: parameter
+policytype:
+  allowed_values: 'allowPromiscuous, macChanges, forgedTransmits'
+  derived_components:
+    - vds
+  description: security policy related with switch
+  format: string
+  sample_value: allowPromiscuous
+  type: parameter
+port:
+  derived_components:
+    - ovs
+  description: add ports to the switch
+  linkedworkload: NVPPortWorkload
+  method: AddPorts
+  params:
+    - port
+  postprocess: StoreSubComponentObjects
+  preprocess: TransformSubComponentSpec
+  type: component
+proxyports:
+  dependency: ~
+  derived_components:
+    - vds
+  description: Method to Update VDS max proxy ports
+  format: integer
+  method: UpdateDVSMaxPorts
+  params:
+    - host
+    - proxyports
+  preprocess: PreProcessProxyPort
+  sample_value: 8
+  type: action
+torport:
+  derived_components:
+    - torswitch
+  description: add ports to the TOR switch
+  linkedworkload: PortWorkload
+  method: CreateComponent
+  params:
+    - execution_type
+    - torport
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessSubComponentsInPython
+  sample_value: torgateway.[1].torswitch.[2].torport.[2]
+  format:
+    - torport:
+        '[2]':
+            execution_type: 'cmd'
+            phy_port_name: 'switch1port1'
+  type: component
+  objtype:
+    torswitch: 'VDNetLib::Switch::TORSwitch::TORPort'
+deletetorport:
+  derived_components:
+    - torgateway
+  linkedworkload: PortWorkload
+  description: delete a TOR switch ports
+  format: vdnet index
+  method: DeleteComponent
+  params:
+    - deletetorport
+    - execution_type
+  format: vdnet index
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'torgateway.[1].torswitch.[1].torport.[1]'
+  type: component
+  objtype:
+    torswitch: 'VDNetLib::Switch::TORSwitch::TORPort'
+qosguard:
+  allowed_values:
+    - enable
+    - disable
+  derived_components:
+    - vds
+  description: Configure QoS Guard on dvportgroup
+  format: string
+  method: ConfigureQoSGuard
+  params:
+    - qosguard
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: enable
+  type: action
+reconfigure:
+  derived_components:
+    - vds
+    - logicalswitch
+  description: 'Reconfigures logical switch. E.g. control plan mode,name.'
+  format: string
+  method: UpdateComponent
+  params:
+    - controlplanemode
+    - name
+    - transport_zone_binding
+    - metadata
+    - switching_profile_ids
+    - summary
+    - transport_zone_id
+    - replication_mode
+    - admin_state
+    - execution_type
+    - merge
+    - reconfigure
+    - summary
+    - tags
+  preprocess: PreProcessHashRefTypeAPI
+  sample_value: true
+  type: action
+removeportchannel:
+  derived_components:
+    - pswitch
+  description: Key needed to remove portchannel from pswitch
+  format: integer
+  method: RemovePortChannel
+  params:
+    - removeportchannel
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 32
+  type: action
+
+replicationmode:
+  derived_components:
+    - logicalswitch
+  description: Represents replication mode for broadcast/multicast
+  format: string
+  sample_value: mtep
+  type: parameter
+
+samplerate:
+  derived_components:
+    - vds
+  description: 'Sampling rate for ipfix flow,0 means sampling all the packets,100 means sampling one packet per 100 packets'
+  format: integer
+  sample_value: 0
+  type: parameter
+securitypolicy:
+  allowed_values:
+    - enable
+    - disable
+  derived_components:
+    - virtualwire
+  description: 'Enable/Disable security policy changes in switches,this API only used for virtual wire'
+  format: string
+  method: SetSecurityPolicy
+  params:
+    - securitypolicy
+    - virtualwire
+    - policytype
+  preprocess: PreProcessHashTypeAPI
+  sample_value: enable
+  type: action
+services:
+  allowed_values:
+    - mgmt
+    - vmotion
+    - all
+  derived_components:
+    - logicalswitch
+  description: Represents vmware services
+  format: string
+  sample_value: vmotion
+  type: parameter
+sourcehost:
+  derived_components:
+    - virtualwire
+    - vds
+  description: Get the corresponding host Obj
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'host.[1]'
+  type: parameter
+sourceswitch:
+  derived_components:
+    - virtualwire
+  description: Get the corresponding vds Obj
+  format: string
+  method: GetOneObjectFromOneTuple
+  sample_value: 'vc.[1].vds.[1]'
+  type: parameter
+sourcevlanid:
+  allowed_values:
+    - 1
+    - 4096
+  derived_components:
+    - virtualwire
+  description: Any vlan from 1 to 4096
+  format: integer
+  sample_value: 17
+  type: parameter
+spec:
+  allowed_values: x.x.x.x
+  description: Gateway address
+  type: parameter
+switch:
+  derived_components:
+    - all
+  description: Unique name of the switch
+  format: string
+  sample_value: myswitch-1
+  type: parameter
+tenantid:
+  derived_components:
+    - virtualwire
+  description: Tenant Id of virtual Wire
+  format: integer
+  method: AutogenerateId
+  sample_value: 2
+  type: parameter
+testgroupconnectivity:
+  allowed_values:
+    - p2p
+    - multicast
+  derived_components:
+    - virtualwire
+  description: 'method to test group connectivity,two test methods,p2p and multicast'
+  method: TestGroupConnectivity
+  params:
+    - testgroupconnectivity
+    - sourcehost
+    - destinationhost
+    - sourcevlanid
+    - destinationvlanid
+    - sourceswitch
+    - destinationswitch
+    - packetsize
+  preprocess: PreProcessHashTypeAPI
+  sample_value: p2p
+  type: action
+transport_zone_binding:
+  derived_components:
+    - logicalswitch
+  description: link to transport zone to be used for binding to a logical switch
+  format:
+    transport_zone_id: vdnet index
+  method: ProcessParameters
+  sample_value:
+    transport_zone_id: 'neutron.[1].transportzone.[1]'
+  type: parameter
+transporttypes:
+  allowed_values:
+    - stt
+    - gre
+  derived_components:
+    - logicalswitch
+  description: Transport type of logical switch
+  format: string
+  sample_value: stt
+  type: parameter
+
+transportzone:
+  derived_components:
+    - logicalswitch
+  description: Get a transport zone Object
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'nvpcontroller.[1].transportzones.[1]'
+  type: parameter
+transportzones:
+  derived_components:
+    - logicalswitch
+  description: Get an array of transport zone Objs
+  format: vdnet index
+  method: ProcessParameters
+  sample_value: 'nvpcontroller.[1].transportzones.[1]'
+  type: parameter
+updatelogicalswitch:
+  derived_components:
+    - virtualwire
+  description: Reconfigures logical switch
+  method: UpdateComponent
+  params:
+    - name
+    - gateway
+    - ipranges
+    - prefixlength
+    - begin
+    - end
+    - spec
+  preprocess: PreProcessHashRefTypeAPI
+  sample_value: true
+  type: action
+updatenextserver:
+  derived_components:
+    - pswitch
+  description: Method to update next server ip
+  format: hostname
+  method: UpdateNextServer
+  params:
+    - updatenextserver
+    - vc
+  preprocess: PreProcessHashTypeAPI
+  sample_value: VDNetLib::TestData::TestConstants::DEFAULT_SERVER_ONE
+  type: action
+verification_component:
+  derived_components:
+    - all
+  description: indicate the verification type for verification module on .
+               controllers, esxi, kvm
+  format: string
+  sample_value: 'controller/esx/kvm'
+  type: parameter
+verifyarpentryoncontroller:
+  derived_components:
+    - virtualwire
+  description: Verify vm arp entry can be learned
+  format:
+    - ip: vdnet index
+      mac: vdnet index
+  method: GetArpEntriesFromController
+  params:
+    - verifyarpentryoncontroller
+    - controllers
+  preprocess: PreProcessVerifyArpEntry
+  sample_value:
+    - ip: 'vm.[1].vnic.[1]'
+      mac: 'vm.[1].vnic.[1]'
+  type: verification
+verifyarpentryonhost:
+  derived_components:
+    - virtualwire
+  description: Verify vm mac entry can be learned
+  format:
+    table:
+        - ip: vdnet index
+          mac: vdnet index
+  method: GetArpEntryHashOnHost
+  params:
+    - verifyarpentryonhost
+    - host
+  preprocess: PreProcessVerifyArpEntry
+  sample_value:
+    table:
+        - ip: 'vm.[1].vnic.[1]'
+          mac: 'vm.[1].vnic.[1]'
+  type: verification
+get_arp_table:
+  derived_components:
+    - logicalswitch
+  description: Verify vm arp entry can be learned
+  format:
+    - ip: vdnet index
+      mac: vdnet index
+  method: get_arp_table
+  params:
+    - execution_type
+    - get_arp_table
+    - switch_vni
+    - endpoints
+  preprocess: PreProcessVerification
+  sample_value:
+    - ip: 'vm.[1].vnic.[1]'
+      mac: 'vm.[1].vnic.[1]'
+  type: verification
+get_stats_table:
+  derived_components:
+    - logicalswitch
+  description: Verify stats number changes
+  format:
+    - update_arp: number
+      query_arp: number
+  method: get_stats_table
+  params:
+    - execution_type
+    - get_stats_table
+    - switch_vni
+    - endpoints
+  preprocess: PreProcessVerification
+  sample_value:
+    - 'update_arp[?]>': '3'
+      'query_arp[?]>': '4'
+  type: verification
+verifyconnectiontableoncontroller:
+  derived_components:
+    - virtualwire
+  description: Verify connecton entry on controller
+  format:
+    - hostip: vdnet index
+  method: GetConnectionEntriesFromController
+  params:
+    - verifyconnectiontableoncontroller
+    - controllers
+  preprocess: PreProcessVerifyConnectionTable
+  sample_value:
+    - hostip: 'host.[1]'
+  type: verification
+query_connection_entry:
+  derived_components:
+    - logicalswitch
+  description: Verify connecton entry on controller
+  format:
+    - hostip: vdnet index
+  method: GetConnectionEntriesFromController
+  params:
+    - query_connection_entry
+    - controllers
+  preprocess: PreProcessVerifyConnectionTable
+  sample_value:
+    - hostip: 'host.[1]'
+  type: verification
+verifymacentryoncontroller:
+  derived_components:
+    - virtualwire
+  description: Verify vm mac entry can be learned
+  format:
+    - mac: vdnet index
+  method: GetMacEntriesFromController
+  params:
+    - verifymacentryoncontroller
+    - controllers
+  preprocess: PreProcessVerifyMacEntry
+  sample_value:
+    - mac: 'vm.[1].vnic.[1]'
+  type: verification
+verifymacentryonhost:
+  derived_components:
+    - virtualwire
+  description: Verify vm mac entry can be learned
+  format:
+    - mac: vdnet index
+  method: GetMacEntryHashOnHost
+  params:
+    - verifymacentryonhost
+    - host
+  preprocess: PreProcessVerifyMacEntry
+  sample_value:
+    - mac: 'vm.[1].vnic.[1]'
+  type: verification
+get_mac_table:
+  derived_components:
+    - logicalswitch
+  description: Verify vm mac entry can be learned
+  format:
+    table:
+        - mac: vdnet index
+          ip: vdnet index
+  method: get_mac_table
+  params:
+    - execution_type
+    - get_mac_table
+    - switch_vni
+    - endpoints
+  preprocess: PreProcessVerification
+  sample_value:
+    table:
+        - mac: 'vm.[1].vnic.[1]'
+        - ip: 'esx.[1].vtep.[1]'
+  type: verification
+verifyvirtualwireoncontroller:
+  derived_components:
+    - virtualwire
+  description: Verify specified virtual wire on controller
+  format:
+    - vni: string
+  method: GetVirtualWireInfoFromController
+  params:
+    - verifyvirtualwireoncontroller
+    - controllers
+  preprocess: PreProcessVerification
+  sample_value:
+    - vni: NOT_EXIST
+  type: verification
+verifyvirtualwireonhost:
+  derived_components:
+    - virtualwire
+  description: Verify specified virtual wire on host
+  format:
+    - vni: string
+  method: GetVirtualWireInfoFromHost
+  params:
+    - verifyvirtualwireonhost
+    - host
+  preprocess: PreProcessVerification
+  sample_value:
+    - vni: NOT_EXIST
+  type: verification
+query_logical_switch:
+  derived_components:
+    - logicalswitch
+  description: Verify specified logical switch
+  format:
+    - vni: string
+  method: GetVirtualWireInfo
+  params:
+    - query_logical_switch
+    - endpoints
+  preprocess: PreProcessVerification
+  sample_value:
+    - vni: NOT_EXIST
+  type: verification
+verifyvteptableoncontroller:
+  derived_components:
+    - virtualwire
+  description: Verify vtep entry on controller
+  format:
+    - cluster: vdnet index
+      vtepip: vdnet index
+  method: GetVtepEntriesFromController
+  params:
+    - verifyvteptableoncontroller
+    - controllers
+  preprocess: PreProcessVerifyVtepTable
+  sample_value:
+    - cluster: 'vc.[1].datacenter.[1].cluster.[2]'
+      vtepip: 'host.[2]'
+  type: verification
+verifyvteptableonhost:
+  derived_components:
+    - virtualwire
+  description: Verify vtep entry can be learned
+  format:
+     - vtepip: vdnet index
+  method: GetVtepEntryHashOnHost
+  params:
+    - verifyvteptableonhost
+    - host
+  preprocess: PreProcessVerifyVtepTable
+  sample_value:
+    - cluster: 'vc.[1].datacenter.[1].cluster.[2]'
+      vtepip: 'esx.[1] or without cluster only torgateway.[1].vnic.[1]'
+  type: verification
+query_vtep_entry:
+  derived_components:
+    - logicalswitch
+  description: Verify vtep entry on controller
+  format:
+    - cluster: vdnet index
+      vtepip: vdnet index
+  method: GetVtepEntriesFromController
+  params:
+    - query_vtep_entry
+    - controllers
+  preprocess: PreProcessVerifyVtepTable
+  sample_value:
+    - vtepip: 'host.[2]'
+  type: verification
+version:
+  allowed_values:
+    - 4.1.0
+    - 5.5.0
+    - 5.1.0
+  derived_components:
+    - vds
+  description: version for vds
+  format: N.N.N
+  sample_value: 5.5.0
+  type: parameter
+virtualwire:
+  derived_components:
+    - all
+  description: Get the corresponding virtualwire Obj
+  format: vdnet index
+  method: GetOneObjectFromOneTuple
+  sample_value: 'vsm.[1].networkscope.[1].virtualwire.[1]'
+  type: parameter
+vxlan:
+  allowed_values:
+    - enable
+    - disable
+  dependency:
+    - Configurehosts
+  derived_components:
+    - vds
+  description: Enable VXLAN on the given VDS
+  format: string
+  method: EnableDisableVXLAN
+  params:
+    - vxlan
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: enable
+  type: action
+vmknictuple:
+  derived_components:
+    - vds
+  description: Paramater to return vmknic obj from vmknic tuple
+  format: vdnet index
+  method: PreProcessVmknicId
+  sample_value: 'host.[1].vmknic.[1]'
+  type: parameter
+vss:
+  derived_components:
+    - vss
+  description: Paramater to return vss obj from vss tuple
+  format: vdnet index
+  method: PreProcessVssName
+  sample_value: 'host.[1].vss.[1]'
+  type: parameter
+deletefilter:
+  dependency: ~
+  derived_components:
+    - port
+    - portgroup
+  description: delete filter based on input tuple
+  format: vdnet index
+  method: DeleteFilter
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vc.[1].dvportgroup.[1].filter.[1]'
+  type: component
+lldp:
+  derived_components:
+    - vds
+  description: Set lldp on pswitch
+  format: vdnet index
+  method: EnableLLDP
+  params:
+    - lldp
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 'host.[1]'
+  type: action
+migratemgmtnettovss:
+  derived_components:
+    - vds
+  description: Migrates required vmknic from VDS to VSS
+  format: vdnet index
+  method: MigrateManagementNetToVSS
+  params:
+    - migratemgmtnettovss
+    - vmknictuple
+    - vss
+  postprocess: PostProcessMigrateManagementNetKey
+  preprocess: PreProcessMigrateManagementNetKey
+  sample_value: 'host.[1]'
+  type: action
+querymacs:
+  derived_components:
+    - virtualwire
+  description: Verify vm mac entry can be learned
+  format:
+    count: integer
+  method: GetMacCount
+  params:
+    - querymacs
+    - host
+  preprocess: PreProcessVerification
+  type: verification
+  sample_value:
+    count: 1000
+
+read:
+  type: verification
+  derived_components:
+    - nsxvswitch
+  method: ReadComponent
+  preprocess: PreProcessVerification
+  description: 'Used for reading switch attributes'
+  format:
+     'name' : null
+  samplevalue:
+     'name' : ''
+  params:
+    - read
+
+replication_mode:
+  derived_components:
+    - logicalswitch
+  description: Logical switch replication mode
+  format: string
+  sample_value: 'mtep'
+  type: parameter
+  allowed_values:
+    - mtep
+    - source
+
+get_vtep_table:
+  derived_components:
+    - logicalswitch
+  description: Verify vtep table entries on TN or Controller
+  format:
+    table:
+        - adapter_ip: vdnet index
+  method: get_vtep_table
+  params:
+    - execution_type
+    - get_vtep_table
+    - switch_vni
+    - endpoints
+    - host_switch_name
+  preprocess: PreProcessVerification
+  sample_value:
+    table:
+        - adapter_ip: 'esx.[1].vtep.[1]'
+  type: verification
+
+check_adapter_status:
+  derived_components:
+    - switch
+  description: Check if the adapter status is as expect
+  format:
+    adapters: 'ref: adapter'
+    check_adapter_status: 'ref: check_adapter_status'
+  method: CheckAdaptersStatus
+  sample_value:
+    adapters: 'host.[1].vmnic.[2]'
+    check_adapter_status: 'active'
+  params:
+    - adapters
+    - check_adapter_status
+  preprocess: PreProcessShiftTypeAPI
+  type: action
+
+vlan:
+  derived_components:
+    - logicalswitch
+  description: vlan Id
+  format: integer
+  sample_value: 4
+  type: parameter
+
+blockport:
+  derived_components:
+    - vds
+  description: Block port by setting port state to down in logical switch
+  format: vdnet index
+  method: BlockPort
+  params:
+    - blockport
+    - portgroup
+  preprocess: PreProcessBlockUnBlockPort
+  sample_value: 'vm.[1].vnic.[1]'
+  type: action
+
+unblockport:
+  derived_components:
+    - vds
+  description: Unblock port by setting port state to up in logical switch
+  format: vdnet index
+  method: UnBlockPort
+  params:
+    - unblockport
+    - portgroup
+  preprocess: PreProcessBlockUnBlockPort
+  sample_value: 'vm.[1].vnic.[1]'
+  type: action
+
+set_port_mtu:
+  derived_components:
+    - kvm
+  description: Configure port mtu on host switches
+  type: action
+  format:
+    - value: integer
+    - adapter_name: Port name
+    - ip_address: Remote IP to identify the tunnel port uniquely.
+    - execution_type: cli
+  method: set_port_mtu
+  params:
+    - set_port_mtu
+  preprocess: PreProcessNestedParametersForAction
+  sample_value:
+    - value: 1600
+    - adapter_name: kvm.[1].vm.vif.[1]->ovs_port
+    - ip_address: kvm.[2].vtep.[1]->ip_address
+    - execution_type: cli
+
+read_switch_ccp_mapping:
+  type: verification
+  derived_components:
+    - logicalswitch
+  method: ReadSwitchCCPMapping
+  preprocess: PreProcessVerification
+  description: 'Used for reading logical switch mapping with CCP node,
+                each logical switch has only one master CCP node,but maybe
+                has one or multiple slave CCP node if user deploy 2 or 3 CCP
+                node.save master/slave ccp node info,can be used for power
+                on/off ccp node in another workload'
+  format:
+     'controllers': vdnet index
+     'execution_type': cli
+     'switch_vni': vdnet index
+  samplevalue:
+     'controllers': nsxcontroller.[-1]
+     'execution_type': cli
+     'switch_vni': nsxmanager.[1].logicalswitch.[1]
+     'read_switch_ccp_mapping':
+        'master_ccp_ip[?]defined': ''
+        'slave_ccp_1_ip[?]defined': ''
+        'slave_ccp_2_ip[?]defined': ''
+  params:
+    - read_switch_ccp_mapping
+    - controllers
+    - execution_type
+    - switch_vni
+
+controllervmstate:
+  type: action
+  derived_components:
+    - logicalswitch
+  method: ChangeControllerVMState
+  preprocess: PreProcessShiftTypeAPI
+  description: 'Power on/off, suspend/resume specified VM'
+  format:
+     'controllers': vdnet index
+     'switchccpmapping': ip address
+     'controllervmstate': string
+  samplevalue:
+     'controllers': nsxcontroller.[-1]
+     'switchccpmapping': nsxmanager.[1].logicalswitch.[1]->read_switch_ccp_mapping->master_ccp_ip
+     'controllervmstate': poweron
+  params:
+    - controllers
+    - switchccpmapping
+    - controllervmstate
+
+uuid:
+    type: parameter
+    description: UUID of the switch
+    derived_components:
+     - all
+    method: GetComponentAttribute
+    format: vdnet index
+    sample_value: 'nsxmanager.logicalswitch.[1]'
+
+get_connection_table:
+  derived_components:
+    - logicalswitch
+  description: Verify Connection table entries for a logical switch.
+  format:
+    table:
+        - adapter_ip: Host IP address
+          port: integer
+          id: integer
+  method: get_connection_table
+  params:
+    - execution_type
+    - switch_vni
+    - get_connection_table
+    - endpoints
+  preprocess: PreProcessVerification
+  sample_value:
+    table:
+        - adapter_ip: kvm.[1]->mgmt_ip
+          port: 5412
+          id: 1231
+  type: verification
+
+port_attach:
+  description: port attachment to switch
+  linkedworkload: PortWorkload
+  method: PortAttach
+  params:
+    - port_attach
+  preprocess: PreProcessNSXSubComponent
+  type: action
+
+port_detach:
+  description: removing port attachment from switch
+  linkedworkload: PortWorkload
+  method: PortDetach
+  params:
+    - port_detach
+  preprocess: PreProcessNSXSubComponent
+  type: action
+
+disableoutshaping:
+  derived_components:
+    - vds
+  description: Disable traffic shaping
+  format: array
+  sample_value: vc.[1].dvportgroup.[2]
+  type: parameter
+
+tor_switch_name:
+  description: Name of tor switch
+  format: string
+  method: ProcessParameters
+  type: parameter
+  sample: 1-switch-123
+
+setfailoverorder:
+  derived_components:
+    - vss
+  description: Set failover order for the given vSwitch
+  format: vdnet index
+  method: SetFailoverOrder
+  params:
+    - setfailoverorder
+  preprocess: PreProcessAdapters
+  sample_value: 'host.[1].vmnic.[1];;host.[1].vmnic.[2]'
+  type: action
+
+upgradevds:
+  derived_components:
+    - switch
+  description: upgrade vds to specified version
+  format: string
+  method: UpgradeVDSVersion
+  params:
+    - upgradevds
+  preprocess: PreProcessShiftTypeAPI
+  sample_value: 5.0.0
+  type: action
+
+mirrorsession:
+  derived_components:
+    - switch
+  type: action
+  description: add/remove/edit mirror session on switch
+  preprocess: PreProcessNestedParametersForAction
+  method: MirrorSession
+  params:
+    - operation
+    - name
+    - version
+    - sessiontype
+    - srcrxport
+    - srctxport
+    - srcvlan
+    - dstport
+    - dstuplink
+    - encapvlan
+    - erspanip
+    - enabled
+    - stripvlan
+    - normaltraffic
+    - samplingrate
+    - mirrorlength
+  sample_value:
+    operation: 'add'
+    name: 'test_mirror'
+    version: 'v2'
+    sessiontype: 'dvPortMirror'
+    srcrxport: 'vm.[1].vnic.[1];host.[1].vmknic.[1]'
+    srctxport: 'vm.[1].vnic.[1];host.[1].vmknic.[1]'
+    srcvlan: VDNetLib::Common::GlobalConfig::VDNET_RSPAN_VLAN_A
+    dstport: 'vm.[1].vnic.[1];'
+    dstuplink: 'host.[1].vmnic.[1]'
+    encapvlan: VDNetLib::Common::GlobalConfig::VDNET_RSPAN_VLAN_C
+    erspanip: 'vm.[3].vnic.[1];vm.[4].vnic.[1]'
+    enabled: 'true'
+    stripvlan: 'false'
+    normaltraffic: 'true'
+    samplingrate: 8
+    mirrorlength: 60
+  format:
+    operation: 'ref: operation'
+    name: 'ref: name'
+    version: 'ref: version'
+    sessiontype: 'ref: sessiontype'
+    srcrxport: 'ref: srcrxport'
+    srctxport: 'ref: srctxport'
+    srcvlan: 'ref: srcvlan'
+    dstport: 'ref: dstport'
+    dstuplink: 'ref: dstuplink'
+    encapvlan: 'ref: encapvlan'
+    erspanip: 'ref: erspanip'
+    enabled: 'ref: enabled'
+    stripvlan: 'ref: stripvlan'
+    normaltraffic: 'ref: normaltraffic'
+    samplingrate: 'ref: samplingrate'
+    mirrorlength: 'ref: mirrorlength'
+version:
+  type: parameter
+  description: version of the mirror session
+  format: string
+  sample_value: 'v2'
+  allowed_values:
+    - v1
+    - v2
+sessiontype:
+  type: parameter
+  description: type of the mirror session
+  format: string
+  sample_value: 'dvPortMirror'
+  allowed_values:
+    - dvPortMirror
+    - encapsulatedRemoteMirrorSource
+    - mixedDestMirror
+    - remoteMirrorSource
+    - remoteMirrorDest
+dvport: &dvport
+  type: parameter
+  method: GetMultipleComponentAttributeFromArray
+  description: 'dvport in output of esxcfg-vswitch -l, e.x. 9'
+  format: vdnet index
+  sample_value: vm.[1].vnic.[1]
+srcrxport: *dvport
+srctxport: *dvport
+dstport: *dvport
+srcvlan: &vlan
+  type: parameter
+  description: source VLAN of the mirror session
+  format: integer
+  sample_value: VDNetLib::Common::GlobalConfig::VDNET_RSPAN_VLAN_A
+dstuplink:
+  type: parameter
+  description: destination uplink of the mirror session
+  format: vdnet index
+  sample_value: 'host.[1].vmnic.[1]'
+  method: GetMultipleComponentAttributeFromArray
+encapvlan:
+  <<: *vlan
+  description: The vlan number in which to encapsulate the mirrored frame
+erspanip:
+  type: parameter
+  description: IP address of mirror session, only available in ERSPAN mode
+  format: vdnet index
+  sample_value: 'vm.[1].vnic.[1]'
+  method: GetMultipleComponentAttributeFromArray
+enabled:
+  type: parameter
+  description: whether to enable the specified mirror session
+  format: boolean
+  sample_value: 'true'
+stripvlan:
+  type: parameter
+  description: whether to strip vlan information from the frame
+  format: boolean
+  sample_value: 'true'
+normaltraffic:
+  type: parameter
+  description: whether to allow normal I/O on destination port
+  format: boolean
+  sample_value: 'true'
+samplingrate:
+  type: parameter
+  description: the rate at which packets are sampled
+  format: integer
+  sample_value: 8
+mirrorlength:
+  type: parameter
+  description: limit on the size of mirrored frames
+  format: integer
+  sample_value: 80
+
+dvportgroup:
+  derived_components:
+    - vc
+  description: dv port group
+  format: vdnet index
+  method: ProcessParameters
+  sample_value: vc.[1].dvportgroup.[1]
+  type: parameter
+
+avg_bandwidth:
+  derived_components:
+    - vds
+    - vss
+  description: value of average bandwidth
+  format: string
+  sample_value: 500000
+  type: parameter
+
+peak_bandwidth:
+  derived_components:
+    - vds
+    - vss
+  description: value of peak bandwidth
+  format: string
+  sample_value: 1000000
+  type: parameter
+
+burst_size:
+  derived_components:
+    - vds
+    - vss
+  description: value of burst size
+  format: string
+  sample_value: 50000,2000
+  type: parameter
+
+shaping_direction:
+  derived_components:
+    - vds
+  description: direction of shaping.
+  type: parameter
+  format: string
+  allowed_values:
+    - in
+    - out
+
+set_trafficshaping_policy:
+  derived_components:
+    - vds
+    - vss
+  description: Configure traffic shaping policy for vds/vss.
+  format:
+    operation: 'ref: operation'
+    avg_bandwidth: 'ref: avg_bandwidth'
+    peak_bandwidth: 'ref: peak_bandwidth'
+    burst_size: 'ref: burst_size'
+    dvportgroup: 'ref: dvportgroup'
+    shaping_direction: 'ref: shaping_direction'
+  method: SetTrafficShapingPolicy
+  params:
+    - operation
+    - avg_bandwidth
+    - peak_bandwidth
+    - burst_size
+    - dvportgroup
+    - shaping_direction
+  preprocess: PreProcessNestedParametersForAction
+  sample_value:
+    operation: 'Enable'
+    avg_bandwidth: '10000'
+    peak_bandwidth: '10000'
+    burst_size: '5000'
+    dvportgroup: 'vc.[1].dvportgroup.[2]'
+    shaping_direction: 'in'
+  type: action
+
+set_monitoring:
+  type: action
+  description: enable/disable the dvportgroup monitoring for the dvportgroup
+  derived_components:
+    - dvs
+  format:
+    status: 'ref: status'
+    dvportgroup: 'ref: dvportgroup'
+  sample_value:
+    status: 'true'
+    dvportgroup: 'vc.[1].dvportgroup.[1]'
+  params:
+    - status
+    - dvportgroup
+  method: SetMonitoring
+  preprocess: PreProcessNestedParametersForAction
+
+configure_healthcheck:
+  derived_components:
+    - switch
+  description: 'configure healthcheck parameters'
+  params:
+    - healthcheck_type
+    - operation
+    - interval
+  sample_value:
+    healthcheck_type: 'vlanmtu'
+    operation: 'enable'
+    interval: 8
+  format:
+    healthcheck_type: 'ref: healthcheck_type'
+    operation: 'ref: operation'
+    interval: 'ref: interval'
+  type: action
+  method: ConfigureHealthcheck
+  preprocess: PreProcessNestedParametersForAction
+healthcheck_type:
+  description: vlanmtu check or teaming check
+  type: parameter
+  format: string
+  allowed_values:
+    - vlanmtu
+    - teaming
+configure_cdp_mode:
+  derived_components:
+     - pswitch
+     - vss
+     - vds
+  description: 'configure the cdp mode on the specified switch.
+                For vswitch and vds, one needs to specify either
+                listen, advertise, none, down or both.
+                For physical switch, the cdp global state is enabled.'
+  preprocess: PreProcessShiftTypeAPI
+  type: action
+  method: EnableCDP
+  params:
+     - configure_cdp_mode
+  format: string
+  allowed_values:
+     - listen
+     - advertise
+     - none
+     - down
+     - both
+  sample_value: 'listen'
+
+deleteportgroup:
+  derived_components:
+    - switch
+  description: Key needed to delete dvportgroup
+  format: vdnet index
+  method: DeleteDVPortgroup
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vc.[1].dvportgroup.[1]'
+  type: component
+
+update:
+  derived_components:
+    - logicalswitch
+  description: update the component
+  method: UpdateComponent
+  params:
+    - update
+  preprocess: PreProcessNestedParametersForAction
+  type: action
+

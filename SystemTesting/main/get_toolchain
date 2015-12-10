@@ -1,0 +1,104 @@
+#!/bin/bash
+
+#
+# This script syncs the toolchain files needed for
+# vdnet on local disk to improve the performance.
+# Instead of syncing all the files we sync only those
+# which are needed. user can specify the dir name where
+# they want to sync, by default it is synced to the
+# location /tmp/vdnet/toolchain.
+# Please note that any changes to TOOLCHAIN PATHS
+# would require changes in p4 client netfvt-toolchain
+#
+LOCAL=$(dirname $(dirname $(readlink -f $BASH_SOURCE)))
+ROOT=${ROOT:-$LOCAL}
+P4PORT=build-p4proxy.eng.vmware.com:1668
+P4USER=netfvt-automation
+P4PASSWORD="vdnet_rocks"
+P4CLIENT=netfvt-toolchain
+CLIENT_FILE=$ROOT/main/toolchain-spec
+P4=/build/apps/bin/p4
+TOOLCHAIN=${TOOLCHAIN:-/tmp/vdnet/toolchain}
+
+function p4_login {
+   password="echo $P4PASSWORD"
+   command="$P4 -p $P4PORT -u $P4USER login -a"
+   $password|$command &> /dev/null
+   if [[ $? -ne 0 ]]; then
+      echo "failed to login to p4 with $command"
+      return 1
+   fi
+   return 0
+}
+
+function p4_sync {
+
+   if [[ ! -d $TOOLCHAIN ]]; then
+      command="mkdir -p $TOOLCHAIN"
+      `$command &> /dev/null`
+      if [[ $? -ne 0 ]]; then
+         echo "creating toolchain dir failed"
+         return 1
+      fi
+   fi
+
+   # toolchain variable changes root!
+   TMPFILE=$(mktemp)
+   sed "s#%%%_TOOLCHAIN_%%%#$TOOLCHAIN#"  $CLIENT_FILE > $TMPFILE
+
+   echo "changed client-spec root into file $TMPFILE"
+   cat $TMPFILE|grep Root
+   #
+   # modify  p4 client spec,
+   # this is needed since if someone adds
+   # new lib from toolchain, he should modify the
+   # client spec, here we need to make sure that
+   # we always use the latest client spec.
+   #
+   command="$P4 -p $P4PORT -u $P4USER client -i"
+   $command <$TMPFILE
+   if [[ $? -ne 0 ]]; then
+      echo "Failed while modifying $CLIENT_FILE with $command"
+      return 1
+   fi
+   unlink $TMPFILE
+
+   #
+   # if toolchain dir is empty, use force sync.
+   # not using force sync by default since force
+   # copies all the files even if they already exists
+   #
+   if [ "$(ls -A $TOOLCHAIN)" ]; then
+      command="$P4 -p $P4PORT -u $P4USER -c $P4CLIENT sync -q"
+   else
+      command="$P4 -p $P4PORT -u $P4USER -c $P4CLIENT sync -fq"
+   fi
+
+   echo "Starting toolchain sync"
+   `$command`
+   if [[ $? -ne 0 ]]; then
+      echo "failed while running $command"
+      return 1
+   fi
+   if [ "$(ls -A $TOOLCHAIN)" ]; then
+      return 0
+   else
+      echo "toolchain sync failed"
+      return 1
+   fi
+}
+
+function_array=( p4_login p4_sync )
+
+for function in "${function_array[@]}"
+do
+  $function
+  return=$?
+if [ $return != 0 ]; then
+    echo "$function failed with $return"
+    exit $return
+fi
+
+echo "Ensure TOOLCHAIN matches whats expected in /etc/exportfs and testcase-spec"
+
+done

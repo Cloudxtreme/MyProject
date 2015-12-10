@@ -1,0 +1,72 @@
+VerifyLRCreationWithInvalidClusterIdAndInvlaidRouterType:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "Edge"
+    TestName: "Test Case to Verify Creation of LR with invalid Cluster Id
+               and invalid router type"
+    Summary: "Test Case to Verify Creation of LR with invalid Cluster Id
+             and invalid router type"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: TBD
+    Priority: "P0"
+    Developer: "prodge"
+    QCPath: "/NSXTransformers/L3/PlrTlr"
+    Procedure: '
+                1. Create the Fabric Profile ID
+                2. Discover the Edge-node id
+                3. Create a Edge Cluster with EdgeNode added to it
+                4. Create Tier0 logical router with Invalid cluster id
+                5. Create Tier0 LR with invalid LR type'
+
+    Duration: '5'
+    Tags: 'cat'
+    Partnerfacing: "N"
+    TestbedSpec: *PLR_TLR_TESTBED
+
+    WORKLOADS:
+        Sequence:
+             - ["CreateFabricProfile"]
+             - ["DiscoverEdgeNodeId"]
+             - ["CreateEdgeClusterWithEdgeNode"]
+             - ["CreateTIER0LRWithInvalidClusterId"]
+             - ["CreateTIER0LRWithInvalidRouterType"]
+
+        ExitSequence:
+             - ["DeleteEdgeClusterWithEdgeNode"]
+             - ["DeleteFabricProfile"]
+
+        CreateFabricProfile: *CREATE_FABRIC_PROFILE
+        DiscoverEdgeNodeId: *DISCOVER_EDGE_NODE_ID
+        CreateEdgeClusterWithEdgeNode: *CREATE_EDGE_CLUSTER
+        DeleteEdgeClusterWithEdgeNode: *DELETE_EDGE_CLUSTER
+        DeleteFabricProfile: *DELETE_FABRIC_PROFILE
+
+        CreateTIER0LRWithInvalidClusterId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: NOT_FOUND
+            logicalrouter:
+                '[1]':
+                    name: 'lrouter-tier-0'
+                    summary: "LRouter TIER-0 router"
+                    router_type: "TIER0"
+                    cluster_id: 'adf-123456-adfa'
+
+        CreateTIER0LRWithInvalidRouterType:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            logicalrouter:
+                '[1]':
+                    name: 'lrouter-tier-0'
+                    summary: "LRouter TIER-0 router"
+                    router_type: "TIER5"
+                    cluster_id: 'nsxmanager.[1].edgecluster.[1]'

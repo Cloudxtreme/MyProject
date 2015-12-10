@@ -1,0 +1,1465 @@
+WORKLOADS:
+    ###########################################################################
+    # Role
+    ###########################################################################
+
+    SetMasterNSXReplicatorAsPrimary: &SET_MASTER_NSX_REPLICATOR_AS_PRIMARY
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_role: primary
+        metadata:
+            expectedresultcode: '200'
+
+    # WORKAROUND(gaggarwal): PR 1396374
+    ReadNSXReplicatorServiceStatusRunning: &READ_NSX_REPLICATOR_STATUS_MASTER_RUNNING
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_status:
+            status[?]equal_to: 'RUNNING'
+        sleepbetweenworkloads: 30
+
+    # WORKAROUND(gaggarwal): PR 1396374
+    ReadNSXReplicatorServiceStatusStopped: &READ_NSX_REPLICATOR_STATUS_MASTER_STOPPED
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_status:
+            status[?]equal_to: 'STOPPED'
+
+    InvokeFullSyncOnNSXReplicatorMaster: &INVOKE_FULL_SYNC_MASTER
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_sync: invoke
+        metadata:
+            expectedresultcode: '200'
+
+    SetMasterNSXReplicatorAsStandalone: &SET_MASTER_NSX_REPLICATOR_AS_STANDALONE
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_role: standalone
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Registration
+    ###########################################################################
+
+    RegisterAllSlaveNSXManagerWithMasterNSXReplicator: &REGISTER_NSX_MANAGER_WITH_REPLICATOR
+        Type: NSX
+        TestNSX: vsm.[1]
+        ##################
+        # PR 1396374. Remove the hack when its fixed
+        sleepbetweenworkloads: 30
+        ##################
+        nsxslave:
+            '[1]':
+                ipaddress: 'vsm.[2]'
+                username: 'vsm.[2]'
+                password: 'vsm.[2]'
+                cert_thumbprint: 'vsm.[2]'
+                isPrimary: 'False'
+        metadata:
+            expectedresultcode: '201'
+
+    #####################
+    # Needs to be fixed
+    ######################
+    ReadVerifySlaves: &READ_SLAVES
+        Type: Registration
+        Testregistration: "vsm.[1].nsxslave.[1]"
+        verifyendpointattributes:
+            "isPrimary[?]equal_to": 'false'
+            "certificateThumbprint[?]equal_to": 'vsm.[2]->cert_thumbprint'
+        metadata:
+            expectedresultcode: '200'
+
+    UnRegisterAllSlaves: &UNREGISTER_ALL_SLAVES
+        Type: NSX
+        TestNSX: vsm.[1]
+        deletensxslave: vsm.[1].nsxslave.[-1]
+        metadata:
+            expectedresultcode: '204'
+
+    ###########################################################################
+    # NSX Controller
+    ###########################################################################
+
+    CreateIPpoolMasterSite: &CREATE_IPPOOL_FOR_NSX_CONTROLLER
+        Type: NSX
+        TestNSX: vsm.[1]
+        ippool:
+            '[1]':
+                name: AutoGenerate
+                gateway: 10.24.227.253
+                ipranges:
+                   - 10.24.224.141-10.24.224.141
+                prefixlength: 22
+
+    DeployControllerMasterSite: &DEPLOY_1_NSX_CONTROLLER
+        Type: NSX
+        TestNSX: vsm.[1]
+        vxlancontroller:
+            '[1]':
+                name: AutoGenerate
+                host: 'esx.[1]'
+                ippool: 'vsm.[1].ippool.[1]'
+                resourcepool: 'vc.[1].datacenter.[1].cluster.[1]'
+
+    CheckController1SyncAllHost: &CHECK_CONTROLLER_1_SYNC_ALL_HOST
+        Type: Host
+        testhost: 'esx.[2-5]'
+        # PR xxxxx. Remove the hack when its fixed
+        sleepbetweenworkloads: 60
+        'verifycontrollerinfoonhost[?]contain_once':
+          - port: 1234
+            server: 'vsm.[1].vxlancontroller.[1]'
+            sslenabled: 'true'
+
+    ###########################################################################
+    # Host Prep & VXLAN Configuration
+    ###########################################################################
+
+    VIBInstallVxlanConfigMasterSite: &INSTALLVIBS_CONFIGUREVXLAN_MASTER_SITE
+        Type: NSX
+        TestNSX: vsm.[1]
+        VDNCluster:
+            '[1]':
+                cluster: 'vc.[x=vsm_index].datacenter.[1].cluster.[2]'
+                mtu: 1600
+                switch: 'vc.[x=vsm_index].vds.[1]'
+                teaming: FAILOVER_ORDER
+                vibs: install
+                vlan: 20
+                vmkniccount: 1
+        metadata:
+            expectedresultcode: '200'
+
+    VIBInstallVxlanConfigAllSlavesSite: &INSTALLVIBS_CONFIGUREVXLAN_ALL_SLAVE_SITES
+        Type: NSX
+        TestNSX: vsm.[2]
+        VDNCluster:
+            '[1]':
+                cluster: 'vc.[x=vsm_index].datacenter.[1].cluster.[1]'
+                mtu: 1600
+                switch: 'vc.[x=vsm_index].vds.[1]'
+                teaming: FAILOVER_ORDER
+                vibs: install
+                vlan: 18
+                vmkniccount: 1
+            '[2]':
+                cluster: 'vc.[x=vsm_index].datacenter.[2].cluster.[1]'
+                mtu: 1600
+                switch: 'vc.[x=vsm_index].vds.[2]'
+                teaming: FAILOVER_ORDER
+                vibs: install
+                vlan: 19
+                vmkniccount: 1
+        metadata:
+            expectedresultcode: '200'
+
+    UnconfigureVxlanConfigMasterSite: &UNCONFIGUREVXLAN_MASTER_SITE
+        Type: Cluster
+        Testcluster: vsm.[1].vdncluster.[-1]
+        vxlan: unconfigure
+
+    UnconfigureVxlanConfigSlaveSite: &UNCONFIGUREVXLAN_SLAVE_SITE
+        Type: Cluster
+        Testcluster: vsm.[2].vdncluster.[-1]
+        vxlan: unconfigure
+
+    ###########################################################################
+    # VNI Pool
+    ###########################################################################
+
+    CreateVerifyGlobalVNIPool: &CREATE_GLOBAL_VNI_POOL
+        Type: NSX
+        TestNSX: vsm.[1]
+        globalvnipool:
+            '[1]':
+                name: AutoGenerate
+                begin: 10000
+                end: 19000
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalVNIPool: &READ_GLOBAL_VNI_POOL
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalvnipool.[1]"
+        verifyendpointattributes:
+            "begin[?]equal_to": '10000'
+            "end[?]equal_to": '19000'
+            "isUniversal[?]equal_to": 'true'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalVNIPool: &UPDATE_GLOBAL_VNI_POOL
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalvnipool.[1]"
+        reconfigure: "true"
+        name: my_global_vni_pool
+        begin: 20000
+        end: 29000
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteVerifyGlobalVNIPool: &DELETE_GLOBAL_VNI_POOL
+        Type: NSX
+        TestNSX: vsm.[1]
+        deleteglobalvnipool: vsm.[1].globalvnipool.[1]
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Multicast Range
+    ###########################################################################
+
+    CreateVerifyGlobalMulticastRange: &CREATE_GLOBAL_MULTICAST_RANGE
+        Type: NSX
+        TestNSX: vsm.[1]
+        globalmulticastiprange:
+            '[1]':
+                name: AutoGenerate
+                begin: 239.0.0.101
+                end: 239.254.254.254
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalMulticastRange: &READ_GLOBAL_MULTICAST_RANGE
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalmulticastiprange.[1]"
+        verifyendpointattributes:
+            "begin[?]equal_to": '239.0.0.101'
+            "end[?]equal_to": '239.254.254.254'
+            "isUniversal[?]equal_to": 'true'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalMulticastRange: &UPDATE_GLOBAL_MULTICAST_RANGE
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalmulticastiprange.[1]"
+        reconfigure: "true"
+        name: my_global_multicast_range
+        begin: 238.0.0.101
+        end: 238.254.254.254
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteVerifyGlobalMulticastRange: &DELETE_GLOBAL_MULTICAST_RANGE
+        Type: NSX
+        TestNSX: vsm.[1]
+        deleteglobalmulticastiprange: vsm.[1].globalmulticastiprange.[1]
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # TransportZone
+    ###########################################################################
+
+    CreateVerifyGlobalTransportZone: &CREATE_GLOBAL_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        globaltransportzone:
+            '[1]':
+                name: AutoGenerate
+                clusters: 'vc.[1].datacenter.[1].cluster.[2]'
+                controlplanemode: 'UNICAST_MODE'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalTransportZone: &READ_GLOBAL_TRANSPORT_ZONE
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        verifyendpointattributes:
+            "isUniversal[?]equal_to": 'true'
+            "id[?]equal_to": 'universalvdnscope'
+        metadata:
+            expectedresultcode: '200'
+
+    DELETE_ALL_CONTROLLERS:
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        deletevxlancontroller: "vsm.[1].vxlancontroller.[-1]"
+
+    UpdateVerifyGlobalTransportZone: &UPDATE_GLOBAL_TRANSPORT_ZONE
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        reconfigure: "true"
+        name: my_global_tz
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteVerifyGlobalTransportZone: &DELETE_GLOBAL_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: vsm.[1]
+        deleteglobaltransportzone: vsm.[1].globaltransportzone.[1]
+        metadata:
+            expectedresultcode: '200'
+
+    AddClustersToGTZSlaveSites: &ADD_CLUSTERS_GTZ_SLAVE_SITES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+        transportzoneaction: expand
+        clusters: 'vc.[x=vsm_index].datacenter.[1-2].cluster.[1]'
+        #clusters: 'vc.[x=vsm_index].datacenter.[1].cluster.[1]'
+        metadata:
+            expectedresultcode: '201'
+
+    CompareGlobalTransportZoneSlaveWithMaster: &COMPARE_GLOBAL_TRANSPORT_ZONE
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+        verifyendpointattributes:
+            "name[?]equal_to": 'vsm.[1].globaltransportzone.[1]->name'
+            "globalConfigRevision[?]equal_to": 'vsm.[1].globaltransportzone.[1]->globalConfigRevision'
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Logical Switches
+    ###########################################################################
+
+    CreateVerify2MulticastGlobalLogicalSwitches: &CREATE_2_MULTICAST_GLOBAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        globallogicalswitch:
+            '[1-2]':
+                controlplanemode: MULTICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+        metadata:
+            expectedresultcode: '201'
+
+    CreateVerify2UnicastGlobalLogicalSwitches: &CREATE_2_UNICAST_GLOBAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        globallogicalswitch:
+            '[1-2]':
+                controlplanemode: UNICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+        metadata:
+            expectedresultcode: '201'
+
+    CreateVerify2HybridtGlobalLogicalSwitches: &CREATE_2_HYBRID_GLOBAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        globallogicalswitch:
+            '[1-2]':
+                controlplanemode: HYBRID_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalLogicalSwitches: &READ_GLOBAL_LOGICAL_SWITCHES
+        Type: Switch
+        TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+        verifyendpointattributes:
+            "isUniversal[?]equal_to": 'true'
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteAllGlobalLogicalSwitches: &DELETE_ALL_GLOBAL_LOGICAL_SWITCH
+        Type: TransportZone
+        TestTransportZone: vsm.[1].globaltransportzone.[1]
+        deletegloballogicalswitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-2]'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalLogicalSwitchesToMulticastMode: &CHANGE_GLS_TO_MULTICAST
+        Type: Switch
+        TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-2]'
+        reconfigure: "true"
+        controlplanemode: MULTICAST_MODE
+        name: my_change_to_mc
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalLogicalSwitchesToUnicastMode: &CHANGE_GLS_TO_UNICAST
+        Type: Switch
+        TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-2]'
+        controlplanemode: UNICAST_MODE
+        name: my_change_to_unicast
+        metadata:
+            expectedresultcode: '200'
+
+    # Ask prashant what else to compare, uuid? any other attribute
+    CompareGlobalLogicalSwitchSlaveWithMaster: &COMPARE_GLOBAL_LOGICAL_SWITCH
+        Type: Switch
+        TestSwitch: 'vsm.[2].globaltransportzone.[1].globallogicalswitch.[1]'
+        verifyendpointattributes:
+            "name[?]equal_to": 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]->name'
+            "globalConfigRevision[?]equal_to": 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]->globalConfigRevision'
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Test VMs
+    ###########################################################################
+
+    AllVMsAddvNICOnSameGlobalLogicalSwitch: &ALL_VMS_ADD_VNIC_ON_SAME_GLS_1_BACKING
+        Type: VM
+        TestVM: 'vm.[-1]'
+        vnic:
+            '[1]':
+                allowguestcontrol: 1
+                connected: 1
+                driver: vmxnet3
+                portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                startconnected: 1
+
+    AllVMsPowerOn: &ALL_VMS_POWER_ON
+        Type: VM
+        # TODO: Use threads here to do in parallel
+        TestVM: 'vm.[-1]'
+        vmstate: poweron
+
+    AllVMsPowerOff: &ALL_VMS_POWER_OFF
+        Type: VM
+        # TODO: Use threads here to do in parallel
+        TestVM: 'vm.[-1]'
+        vmstate: poweroff
+
+    DeleteAllVnicsAllVMs: &ALL_VMS_DELETE_ALL_VNICS
+        Type: VM
+        TestVM: 'vm.[-1]'
+        deletevnic: 'vm.[x=vm_index].vnic.[-1]'
+
+    SetVXLANIPVM2:
+        Type: "NetAdapter"
+        Testadapter: "vm.[2].vnic.[1]"
+        ipv4: '172.1.1.2'
+        netmask: "255.255.0.0"
+
+    SetVXLANIPVM3:
+        Type: "NetAdapter"
+        Testadapter: "vm.[3].vnic.[1]"
+        ipv4: '172.1.1.3'
+        netmask: "255.255.0.0"
+
+    SetVXLANIPVM4:
+        Type: "NetAdapter"
+        Testadapter: "vm.[4].vnic.[1]"
+        ipv4: '172.1.1.4'
+        netmask: "255.255.0.0"
+
+    SetVXLANIPVM5:
+        Type: "NetAdapter"
+        Testadapter: "vm.[5].vnic.[1]"
+        ipv4: '172.1.1.5'
+        netmask: "255.255.0.0"
+
+    CreateVMs: &CREATE_VM
+        Type: Root
+        TestNode: root.[1]
+        vm:
+            '[2]':
+                host: "esx.[2]"
+                vmstate: "poweron"
+                template: "rhel53-srv-32"
+            '[3]':
+                host: "esx.[3]"
+                vmstate: "poweron"
+                template: "rhel53-srv-32"
+            '[4]':
+                host: "esx.[4]"
+                vmstate: "poweron"
+                template: "rhel53-srv-32"
+            '[5]':
+                host: "esx.[5]"
+                vmstate: "poweron"
+                template: "rhel53-srv-32"
+
+    AddvNICOnVM2: &ADD_VNIC_ON_VM2_DVPG_BACKING
+        Type: VM
+        testVM: 'vm.[2]'
+        vnic:
+            '[2]':
+                allowguestcontrol: 1
+                connected: 1
+                driver: vmxnet3
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                startconnected: 1
+
+    AddvNICOnVM3: &ADD_VNIC_ON_VM3_DVPG_BACKING
+        Type: VM
+        testVM: 'vm.[3]'
+        vnic:
+            '[2]':
+                allowguestcontrol: 1
+                connected: 1
+                driver: vmxnet3
+                portgroup: 'vc.[1].dvportgroup.[1]'
+                startconnected: 1
+
+    AddvNICOnVM4: &ADD_VNIC_ON_VM4_DVPG_BACKING
+        Type: VM
+        testVM: 'vm.[4]'
+        vnic:
+            '[2]':
+                allowguestcontrol: 1
+                connected: 1
+                driver: vmxnet3
+                portgroup: 'vc.[2].dvportgroup.[1]'
+                startconnected: 1
+
+    AddvNICOnVM5: &ADD_VNIC_ON_VM5_DVPG_BACKING
+        Type: VM
+        testVM: 'vm.[5]'
+        vnic:
+            '[2]':
+                allowguestcontrol: 1
+                connected: 1
+                driver: vmxnet3
+                portgroup: 'vc.[2].dvportgroup.[2]'
+                startconnected: 1
+
+    AddSecondVnicToAllVMsDvpgBacked: &ADD_SECOND_VNICS_TO_ALL_VMS_DVPG_BACKED
+       - ['AddvNICOnVM2','AddvNICOnVM3','AddvNICOnVM4','AddvNICOnVM5']
+
+    DeleteSecondVnicAllVMs: &ALL_VMS_DELETE_SECOND_VNIC
+        Type: VM
+        TestVM: 'vm.[-1]'
+        deletevnic: 'vm.[x=vm_index].vnic.[2]'
+
+    ###########################################################################
+    # Test VM adapters
+    ###########################################################################
+
+    EvenVMsOnEvenGlobalLogicalSwitch2: &EVEN_VMS_EVEN_GLS_BACKING_2
+        Type: NetAdapter
+        testadapter: 'vm.[x:vdnetmod:2].vnic.[1]'
+        portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+        reconfigure: true
+
+    RealizeLogicalports: &REALIZE_LOGICALPORTS
+         Type: NSX
+         TestNSX: vsm.[1]
+         logicalport:
+             '[1]':
+                 discover: true
+                 vif: 'vm.[1].vnic.[1]'
+
+    VerifyIpLearningVMNotOnHost: &VERIFY_IP_LEARNING_VM_NOT_ON_HOST
+         Type: NetAdapter
+         testadapter : "vm.[-1].vnic.[1]"
+         'VerifyIpLearningOnHost[?]not_contains':
+           - ip: 'vm.[x=vm_index].vnic.[1]'
+             mac: 'vm.[x=vm_index].vnic.[1]'
+
+    VerifyIpLearningVMOnHost: &VERIFY_IP_LEARNING_VM_ON_HOST
+         Type: NetAdapter
+         testadapter : "vm.[-1].vnic.[1]"
+         # PR xxxxx. Remove the hack when its fixed
+         sleepbetweenworkloads: 60
+         'VerifyIpLearningOnHost[?]contains':
+           - ip: 'vm.[x=vm_index].vnic.[1]'
+             mac: 'vm.[x=vm_index].vnic.[1]'
+
+    ###########################################################################
+    # Traffic
+    ###########################################################################
+
+    # TODO: Add verification
+    AllVMsPingEachOther: &ALL_VMS_PING_EACH_OTHER
+        Type: Traffic
+        ToolName: Ping
+        TestAdapter: 'vm.[2].vnic.[1]'
+        SupportAdapter: 'vm.[3-5].vnic.[1]'
+        NoofInbound: 1
+        NoofOutbound: 1
+        TestDuration: 60
+        maxtimeout: 128000
+
+    # TODO: Router port is not supported in vdnet yet. Check with subbu
+    AllVMsPingRouterPort: &ALL_VMS_PING_ROUTER_PORT
+        Type: Traffic
+        ToolName: Ping
+        TestAdapter: 'vm.[-1].vnic.[1]'
+        SupportAdapter: 'vsm.[1].globaldistributedlogicalrouter.[1].routerport.[1]'
+        NoofOutbound: 1
+
+    AllVMsBUMEachOther: &ALL_VMS_BUM_EACH_OTHER
+        Type: Traffic
+        RoutingScheme: "Broadcast,Unicast,Multicast"
+        TestAdapter: 'vm.[-1].vnic.[1]'
+        SupportAdapter: 'vm.[-1].vnic.[1]'
+        NoofInbound: 1
+        NoofOutbound: 1
+        TestDuration: 30
+        maxtimeout: 128000
+
+    AllVMsMulticastTraffic: &ALL_VMS_MULTICAST_TRAFFIC
+        Type: Traffic
+        RoutingScheme: "Multicast"
+        TestAdapter: 'vm.[2].vnic.[1]'
+        SupportAdapter: 'vm.[3-5].vnic.[1]'
+        NoofInbound: 1
+        NoofOutbound: 1
+        TestDuration: 30
+        maxtimeout: 128000
+
+    NetperfTestAllVMs:
+        L4Protocol: 'tcp,udp'
+        L3Protocol: 'ipv4'
+        SupportAdapter: 'vm.[2].vnic.[1]'
+        TestAdapter: 'vm.[3-5].vnic.[1]'
+        TestDuration: 60
+        Type: Traffic
+        toolName: netperf
+
+    IperfTestVM2VM4_Fail:
+        L4Protocol: 'udp'
+        L3Protocol: 'ipv4'
+        SupportAdapter: 'vm.[2].vnic.[1]'
+        TestAdapter: 'vm.[4].vnic.[1]'
+        TestDuration: 30
+        PortNumber: 5678
+        Type: Traffic
+        toolName: iperf
+        Expectedresult: "FAIL"
+        #Verification: 'Verification_Fail_VM2'
+
+    IperfTestVM3VM5_Fail:
+        L4Protocol: 'tcp'
+        L3Protocol: 'ipv6'
+        SupportAdapter: 'vm.[3].vnic.[1]'
+        TestAdapter: 'vm.[5].vnic.[1]'
+        TestDuration: 30
+        Type: Traffic
+        toolName: iperf
+        Expectedresult: "FAIL"
+        #Verification: 'Verification_Fail_VM3'
+
+    IperfTestVM2VM4_Pass:
+        L4Protocol: 'udp'
+        L3Protocol: 'ipv4'
+        SupportAdapter: 'vm.[2].vnic.[1]'
+        TestAdapter: 'vm.[4].vnic.[1]'
+        TestDuration: 60
+        PortNumber: 5678
+        Type: Traffic
+        toolName: iperf
+        Expectedresult: "PASS"
+        postmortem: "0"
+
+    IperfTestVM3VM5_Pass:
+        L4Protocol: 'tcp'
+        L3Protocol: 'ipv6'
+        SupportAdapter: 'vm.[3].vnic.[1]'
+        TestAdapter: 'vm.[5].vnic.[1]'
+        TestDuration: 60
+        Type: Traffic
+        toolName: iperf
+        Expectedresult: "PASS"
+        postmortem: "0"
+
+    IperfVnic_2_TestVM2VM4_Pass:
+        L4Protocol: 'tcp'
+        L3Protocol: 'ipv4'
+        SupportAdapter: 'vm.[2].vnic.[2]'
+        TestAdapter: 'vm.[4].vnic.[2]'
+        TestDuration: 60
+        PortNumber: 5678
+        Type: Traffic
+        toolName: iperf
+        Expectedresult: "PASS"
+        postmortem: "0"
+
+    IperfVnic_2_TestVM3VM5_Pass:
+        L4Protocol: 'udp'
+        L3Protocol: 'ipv4'
+        SupportAdapter: 'vm.[3].vnic.[2]'
+        TestAdapter: 'vm.[5].vnic.[2]'
+        TestDuration: 60
+        PortNumber: 12000
+        Type: Traffic
+        toolName: iperf
+        Expectedresult: "PASS"
+        postmortem: "0"
+
+    IperfVnic_2_TestVM2VM4_Fail:
+        L4Protocol: 'tcp'
+        L3Protocol: 'ipv4'
+        SupportAdapter: 'vm.[2].vnic.[2]'
+        TestAdapter: 'vm.[4].vnic.[2]'
+        TestDuration: 30
+        PortNumber: 5678
+        Type: Traffic
+        toolName: iperf
+        Expectedresult: "FAIL"
+        postmortem: "0"
+
+    IperfVnic_2_TestVM3VM5_Fail:
+        L4Protocol: 'udp'
+        L3Protocol: 'ipv4'
+        SupportAdapter: 'vm.[3].vnic.[2]'
+        TestAdapter: 'vm.[5].vnic.[2]'
+        TestDuration: 30
+        PortNumber: 12000
+        Type: Traffic
+        toolName: iperf
+        Expectedresult: "FAIL"
+        postmortem: "0"
+
+    Verification_Fail_VM2:
+       'PktCapVerification':
+          verificationtype: "pktcap"
+          target          : "vm.[2].vnic.[1]"
+          pktcapfilter    : "count 100"
+          pktcount        : "0-10"
+          badpkt          : "0"
+
+    Verification_Fail_VM3:
+       'PktCapVerification':
+          verificationtype: "pktcap"
+          target          : "vm.[3].vnic.[1]"
+          pktcapfilter    : "count 100"
+          pktcount        : "0-10"
+          badpkt          : "0"
+
+
+    ###########################################################################
+    # Local VNI Pool
+    ###########################################################################
+
+    CreateVerifyLocalVNIPool: &CREATE_LOCAL_VNI_POOL
+        Type: NSX
+        TestNSX: vsm.[1]
+        segmentidrange:
+            '[1]':
+                name: AutoGenerate
+                begin: 10000
+                end: 19000
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyLocalVNIPool: &READ_LOCAL_VNI_POOL
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].segmentidrange.[1]"
+        verifyendpointattributes:
+            "begin[?]equal_to": '10000'
+            "end[?]equal_to": '19000'
+            "isUniversal[?]equal_to": 'false'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyLocalVNIPool: &UPDATE_LOCAL_VNI_POOL
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].segmentidrange.[1]"
+        reconfigure: "true"
+        name: my_global_vni_pool
+        begin: 20000
+        end: 29000
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteVerifyLocalVNIPool: &DELETE_LOCAL_VNI_POOL
+        Type: NSX
+        TestNSX: vsm.[1]
+        deletesegmentidrange: vsm.[1].segmentidrange.[1]
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Local Multicast Range
+    ###########################################################################
+
+    CreateVerifyLocalMulticastRange: &CREATE_LOCAL_MULTICAST_RANGE
+        Type: NSX
+        TestNSX: vsm.[1]
+        multicastiprange:
+            '[1]':
+                name: AutoGenerate
+                begin: 239.0.0.101
+                end: 239.254.254.254
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyLocalMulticastRange: &READ_LOCAL_MULTICAST_RANGE
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].multicastiprange.[1]"
+        verifyendpointattributes:
+            "begin[?]equal_to": '239.0.0.101'
+            "end[?]equal_to": '239.254.254.254'
+            "isUniversal[?]equal_to": 'false'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyLocalMulticastRange: &UPDATE_LOCAL_MULTICAST_RANGE
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].multicastiprange.[1]"
+        reconfigure: "true"
+        name: my_global_multicast_range
+        begin: 238.0.0.101
+        end: 238.254.254.254
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteVerifyLocalMulticastRange: &DELETE_LOCAL_MULTICAST_RANGE
+        Type: NSX
+        TestNSX: vsm.[1]
+        deletemulticastiprange: vsm.[1].multicastiprange.[1]
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Local TransportZone
+    ###########################################################################
+
+    CreateVerifyLocalTransportZone: &CREATE_LOCAL_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        networkscope:
+            '[1]':
+                name: AutoGenerate
+                clusters: 'vc.[1].datacenter.[1].cluster.[2]'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyLocalTransportZone: &READ_LOCAL_TRANSPORT_ZONE
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].networkscope.[1]'
+        verifyendpointattributes:
+            "isUniversal[?]equal_to": 'false'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyLocalTransportZone: &UPDATE_LOCAL_TRANSPORT_ZONE
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].networkscope.[1]'
+        reconfigure: "true"
+        name: my_global_tz
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteVerifyLocalTransportZone: &DELETE_LOCAL_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: vsm.[1]
+        deletenetworkscope: vsm.[1].networkscope.[1]
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Local Logical Switches
+    ###########################################################################
+
+    CreateVerify2LocalLogicalSwitches: &CREATE_2_MULTICAST_LOCAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].networkscope.[1]'
+        virtualwire:
+            '[1-2]':
+                controlplanemode: MULTICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyLocalLogicalSwitches: &READ_LOCAL_LOGICAL_SWITCHES
+        Type: Switch
+        TestSwitch: 'vsm.[1].networkscope.[1].virtualwire.[1]'
+        verifyendpointattributes:
+            "isUniversal[?]equal_to": 'false'
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteAllLocalLogicalSwitches: &DELETE_ALL_LOCAL_LOGICAL_SWITCH
+        Type: TransportZone
+        TestTransportZone: vsm.[1].networkscope.[1]
+        deletevirtualwire: 'vsm.[1].networkscope.[1].virtualwire.[1-2]'
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Distributed Firewall
+    ###########################################################################
+
+    CreateGlobalL3Section:
+        Type: NSX
+        ExpectedResult: "PASS"
+        TestNSX: "vsm.[1]"
+        globaldfwsection:
+            '[1]':
+                layer: 'layer3'
+                sectionname: 'global-L3-section-1'
+
+    CreateGlobalL2L3RulesWithContainers:
+        Type: NSX
+        ExpectedResult: "PASS"
+        TestNSX: "vsm.[1]"
+        globalfirewallrule:
+            '[1]':
+                name: 'Global-L3-Block-VM4_2'
+                action: 'Deny'
+                logging_enabled: 'true'
+                section: 'vsm.[1].globaldfwsection.[1]'
+                sources:
+                    -
+                       type: 'IPSet'
+                       value: 'vsm.[1].globalipset.[1]'
+                    -
+                       type: 'SecurityGroup'
+                       value: 'vsm.[1].globalsecuritygroup.[1]'
+                destinations:
+                    -
+                       type: 'IPSet'
+                       value: 'vsm.[1].globalipset.[1]'
+                    -
+                       type: 'SecurityGroup'
+                       value: 'vsm.[1].globalsecuritygroup.[1]'
+                affected_service:
+                    -
+                       protocolname: 'TCP'
+                    -
+                       protocolname: 'UDP'
+                appliedto:
+                    -
+                       type: 'VirtualWire'
+                       value: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            '[2]':
+                name: 'Global-L3-Rule-2'
+                action: 'Deny'
+                logging_enabled: 'false'
+                section: 'vsm.[1].globaldfwsection.[1]'
+                affected_service:
+                    -
+                       protocolname: 'TCP'
+                       destinationport: '22'
+                appliedto:
+                    -
+                       type: 'VirtualWire'
+                       value: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            '[3]':
+                name: 'Global-L2-Block-VM5_3'
+                action: 'Deny'
+                logging_enabled: 'true'
+                section: 'vsm.[1].globaldfwsection.[2]'
+                sources:
+                    -
+                       type: 'MACSet'
+                       value: 'vsm.[1].globalmacset.[1]'
+                    -
+                       type: 'SecurityGroup'
+                       value: 'vsm.[1].globalsecuritygroup.[1]'
+                destinations:
+                    -
+                       type: 'MACSet'
+                       value: 'vsm.[1].globalmacset.[1]'
+                    -
+                       type: 'SecurityGroup'
+                       value: 'vsm.[1].globalsecuritygroup.[1]'
+                affected_service:
+                    -
+                       protocolname: 'IPV6'
+                       protocol: '34525'
+                appliedto:
+                    -
+                       type: 'VirtualWire'
+                       value: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+
+    CreateGlobalL3Rule:
+        Type: NSX
+        ExpectedResult: "PASS"
+        TestNSX: "vsm.[1]"
+        globalfirewallrule:
+            '[1]':
+                name: 'Block_UDP'
+                action: 'Deny'
+                logging_enabled: 'true'
+                section: 'vsm.[1].globaldfwsection.[1]'
+                affected_service:
+                    -
+                       protocolname: 'UDP'
+                       destinationport: '5678'
+
+    CreateGlobalL2Section:
+        Type: NSX
+        ExpectedResult: "PASS"
+        TestNSX: "vsm.[1]"
+        globaldfwsection:
+            '[2]':
+                layer: 'layer2'
+                sectionname: 'global-L2-section-1'
+
+    CreateGlobalL2Rule:
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        globalfirewallrule:
+            '[2]':
+                name: 'Block_IPV6'
+                action: 'Deny'
+                logging_enabled: 'true'
+                section: 'vsm.[1].globaldfwsection.[2]'
+                affected_service:
+                    -
+                       protocolname: 'IPV6'
+                       protocol: '34525'
+
+    CreateLocalL3SectionOnPrimary:
+        Type: NSX
+        ExpectedResult: "PASS"
+        TestNSX: "vsm.[1]"
+        dfwsection:
+            '[1]':
+                layer: 'layer3'
+                sectionname: 'local-L3-section-1'
+
+    CreateLocalL2SectionOnPrimary:
+        Type: NSX
+        ExpectedResult: "PASS"
+        TestNSX: "vsm.[1]"
+        dfwsection:
+            '[2]':
+                layer: 'layer2'
+                sectionname: 'local-L2-section-1'
+
+    CreateLocalL3SectionOnSlave:
+        Type: NSX
+        ExpectedResult: "PASS"
+        TestNSX: "vsm.[2]"
+        dfwsection:
+            '[1]':
+                layer: 'layer3'
+                sectionname: 'local-L3-section-1'
+
+    CreateLocalL2SectionOnSlave:
+        Type: NSX
+        ExpectedResult: "PASS"
+        TestNSX: "vsm.[2]"
+        dfwsection:
+            '[2]':
+                layer: 'layer2'
+                sectionname: 'local-L2-section-1'
+
+    CreateLocalRulesOnPrimary:
+        Type: NSX
+        ExpectedResult: "PASS"
+        TestNSX: "vsm.[1]"
+        firewallrule:
+            '[1]':
+                name: 'local-L3rule-1'
+                action: 'allow'
+                layer: 'layer3'
+                section: 'vsm.[1].dfwsection.[1]'
+                affected_service:
+                    -
+                       protocolname: 'TCP'
+                       destinationport: '22,2049,6500'
+            '[2]':
+                name: 'local-L3rule-2'
+                action: 'deny'
+                layer: 'layer3'
+                logging_enabled: 'true'
+                section: 'vsm.[1].dfwsection.[1]'
+                destinations:
+                    -
+                       type: 'IPSet'
+                       value: 'vsm.[1].globalipset.[1]'
+                sources:
+                    -
+                       type: 'SecurityGroup'
+                       value: 'vsm.[1].globalsecuritygroup.[1]'
+            '[3]':
+                name: 'local-L3rule-3'
+                action: 'allow'
+                layer: 'layer3'
+                section: 'default'
+                affected_service:
+                    -
+                       protocolname: 'UDP'
+                       destinationport: '21'
+            '[4]':
+                name: 'Local-L2rule-1'
+                action: 'deny'
+                layer: 'layer2'
+                section: 'vsm.[1].dfwsection.[2]'
+                logging_enabled: 'true'
+                destinations:
+                    -
+                       type: 'MACSet'
+                       value: 'vsm.[1].globalmacset.[1]'
+                    -
+                       type: 'SecurityGroup'
+                       value: 'vsm.[1].globalsecuritygroup.[1]'
+                sources:
+                    -
+                       type: 'SecurityGroup'
+                       value: 'vsm.[1].globalsecuritygroup.[1]'
+                    -
+                       type: 'MACSet'
+                       value: 'vsm.[1].globalmacset.[1]'
+                affected_service:
+                    -
+                       protocolname: 'IPV4'
+                       protocol: '2048'
+            '[5]':
+                name: 'Local-L2rule-2'
+                action: 'allow'
+                layer: 'layer2'
+                section: 'default'
+
+    CreateLocalRulesOnSlave:
+        Type: NSX
+        ExpectedResult: "PASS"
+        TestNSX: "vsm.[2]"
+        firewallrule:
+            '[1]':
+                name: 'local-L3rule-1'
+                action: 'allow'
+                layer: 'layer3'
+                section: 'vsm.[2].dfwsection.[1]'
+                affected_service:
+                    -
+                       protocolname: 'TCP'
+                       destinationport: '22,2049,6500'
+            '[2]':
+                name: 'local-L3rule-2'
+                action: 'deny'
+                layer: 'layer3'
+                logging_enabled: 'true'
+                section: 'vsm.[2].dfwsection.[1]'
+                destinations:
+                    -
+                       type: 'IPSet'
+                       value: 'vsm.[2].globalipset.[1]'
+                sources:
+                    -
+                       type: 'SecurityGroup'
+                       value: 'vsm.[2].globalsecuritygroup.[1]'
+            '[3]':
+                name: 'local-L3rule-3'
+                action: 'allow'
+                layer: 'layer3'
+                section: 'default'
+                affected_service:
+                    -
+                       protocolname: 'UDP'
+                       destinationport: '21'
+            '[4]':
+                name: 'Local-L2rule-1'
+                action: 'deny'
+                layer: 'layer2'
+                section: 'vsm.[2].dfwsection.[2]'
+                logging_enabled: 'true'
+                destinations:
+                    -
+                       type: 'MACSet'
+                       value: 'vsm.[2].globalmacset.[1]'
+                sources:
+                    -
+                       type: 'SecurityGroup'
+                       value: 'vsm.[2].globalsecuritygroup.[1]'
+                affected_service:
+                    -
+                       protocolname: 'IPV6'
+                       protocol: '34525'
+            '[5]':
+                name: 'Local-L2rule-2'
+                action: 'allow'
+                layer: 'layer2'
+                section: 'default'
+
+    DeleteGlobalRules:
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        deleteglobalfirewallrule: "vsm.[1].globalfirewallrule.[-1]"
+
+    DeleteGlobalSections:
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        deleteglobaldfwsection: "vsm.[1].globaldfwsection.[-1]"
+
+    DeleteLocalSectionsOnPrimary:
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        deletedfwsection: "vsm.[1].dfwsection.[1-2]"
+
+    DeleteLocalRulesOnPrimary:
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        deletefirewallrule: "vsm.[1].firewallrule.[-1]"
+
+    DeleteLocalSectionsOnSlave:
+        Type: NSX
+        TestNSX: "vsm.[2]"
+        deletedfwsection: "vsm.[2].dfwsection.[1-2]"
+
+    DeleteLocalRulesOnSlave:
+        Type: NSX
+        TestNSX: "vsm.[2]"
+        deletefirewallrule: "vsm.[2].firewallrule.[-1]"
+
+    RevertToDefaultRules:
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        firewallrule:
+            '[-1]':
+
+    ReadVerifyL3GlobalSectionOnVSM_2:
+        Type: NSX
+        TestNSX: 'vsm.[2].globaldfwsection.[1]'
+        verifyendpointattributes:
+            "_tag_id[?]equal_to": 'vsm.[1].globaldfwsection.[1]->tag_id'
+            "_tag_managedBy[?]equal_to": 'universalroot-0'
+            "_tag_generationNumber[?]equal_to": 'vsm.[1].globaldfwsection.[1]->tag_generationNumber'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadVerifyL3GlobalRule1OnVSM_2:
+        Type: NSX
+        TestNSX: 'vsm.[2].globalfirewallrule.[1]'
+        verifyendpointattributes:
+            "_tag_id[?]equal_to": 'vsm.[1].globalfirewallrule.[1]->tag_id'
+            "_tag_managedBy[?]equal_to": 'universalroot-0'
+            "_tag_logged[?]equal_to": 'true'
+            "_tag_disabled[?]equal_to": 'false'
+            "action[?]equal_to": 'deny'
+            "name[?]equal_to": 'Block_UDP'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadVerifyL2GlobalRule1OnVSM_2:
+        Type: NSX
+        TestNSX: 'vsm.[2].globalfirewallrule.[2]'
+        verifyendpointattributes:
+            "_tag_id[?]equal_to": 'vsm.[1].globalfirewallrule.[2]->tag_id'
+            "_tag_managedBy[?]equal_to": 'universalroot-0'
+            "_tag_logged[?]equal_to": 'true'
+            "_tag_disabled[?]equal_to": 'false'
+            "action[?]equal_to": 'deny'
+            "name[?]equal_to": 'Block_IPV6'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadVerifyL2GlobalSectionOnVSM_2:
+        Type: NSX
+        TestNSX: 'vsm.[2].globaldfwsection.[2]'
+        verifyendpointattributes:
+            "_tag_id[?]equal_to": 'vsm.[1].globaldfwsection.[2]->tag_id'
+            "_tag_managedBy[?]equal_to": 'universalroot-0'
+            "_tag_generationNumber[?]equal_to": 'vsm.[1].globaldfwsection.[2]->tag_generationNumber'
+        metadata:
+            expectedresultcode: '200'
+
+    ClearDFWPktLogHost_2:
+        Type: Command
+        TestHost: 'esx.[2]'
+        Command: ">/var/log/dfwpktlogs.log"
+
+    ClearDFWPktLogHost_3:
+        Type: Command
+        TestHost: 'esx.[3]'
+        Command: ">/var/log/dfwpktlogs.log"
+
+    ClearDFWPktLogHost_4:
+        Type: Command
+        TestHost: 'esx.[4]'
+        Command: ">/var/log/dfwpktlogs.log"
+
+    ClearDFWPktLogHost_5:
+        Type: Command
+        TestHost: 'esx.[5]'
+        Command: ">/var/log/dfwpktlogs.log"
+
+    CheckDFWPktLogL3UDPDropFromHost_4:
+        Type: Command
+        TestHost: 'esx.[4]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        #expectedString: ".+INET match DROP .+ OUT .+ UDP 172.1.1.4.+.->172.1.1.2.+"
+        expectedString: ".+INET match DROP .+ OUT .+ UDP .+"
+
+    CheckDFWPktLogL3TCPDropFromHost_4:
+        Type: Command
+        TestHost: 'esx.[4]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        expectedString: ".+INET match DROP .+ OUT .+ TCP .+"
+
+    CheckDFWPktLogL2IPv6DropFromHost_5:
+        Type: Command
+        TestHost: 'esx.[5]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        expectedString: "L2 match DROP .+ OUT .+ ETHTYPE 86dd"
+
+    CheckDFWPktLogL3UDPDropIntoHost_2:
+        Type: Command
+        TestHost: 'esx.[2]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        expectedString: ".+INET match DROP .+ IN .+ UDP .+"
+
+    CheckDFWPktLogL3TCPDropIntoHost_2:
+        Type: Command
+        TestHost: 'esx.[2]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        expectedString: ".+INET match DROP .+ IN .+ TCP .+"
+
+    CheckDFWPktLogL2IPv6DropIntoHost_3:
+        Type: Command
+        TestHost: 'esx.[3]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        expectedString: "L2 match DROP .+ IN .+ ETHTYPE 86dd"
+
+    CheckDFWPktLogL2IPv4DropIntoHost_3:
+        Type: Command
+        TestHost: 'esx.[3]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        expectedString: "L2 match DROP .+ IN .+ ETHTYPE 0800"
+
+    CheckDFWPktLogL3UDPAcceptIntoHost_2:
+        Type: Command
+        TestHost: 'esx.[2]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        expectedString: ".+INET match PASS .+ IN .+ UDP .+"
+
+    CheckDFWPktLogL2IPv6AcceptIntoHost_3:
+        Type: Command
+        TestHost: 'esx.[3]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        expectedString: "L2 match PASS .+ IN .+ ETHTYPE 86dd"
+
+    CheckDFWPktLogL3UDPAcceptIntoHost_4:
+        Type: Command
+        TestHost: 'esx.[4]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        expectedString: ".+INET match PASS .+ IN .+ UDP .+"
+
+    CheckDFWPktLogL2IPv6AcceptIntoHost_5:
+        Type: Command
+        TestHost: 'esx.[5]'
+        Command: "tail -50 /var/log/dfwpktlogs.log"
+        expectedString: "L2 match PASS .+ IN .+ ETHTYPE 86dd"
+
+    ###########################################################################
+    # IPSet
+    ###########################################################################
+
+    CreateVerifyGlobalIPSets: &CREATE_UNIVERSAL_IPSETS
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalipset:
+            '[1]':
+                name: 'UniversalIPSet-VM-2'
+                value: 'vm.[2].vnic.[1]'
+                description: 'IPs'
+            '[2]':
+                name: 'UniversalIPSet-VM-4'
+                value: 'vm.[4].vnic.[1]'
+                description: 'IPs'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalIPSet: &READ_GLOBAL_IPSET
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalipset.[1]"
+        verifyendpointattributes:
+            "value[?]equal_to": 'vm.[2].vnic.[1]'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalIPSet_1:
+        Type: GroupingObject
+        TestGroupingObject: 'vsm.[1].globalipset.[1]'
+        reconfigure: "true"
+        description: 'IPSet for VM-2'
+        value: 'vm.[2].vnic.[2]'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalIPSet_2:
+        Type: GroupingObject
+        TestGroupingObject: 'vsm.[1].globalipset.[2]'
+        reconfigure: "true"
+        description: 'IPSet for VM-4'
+        value: 'vm.[4].vnic.[2]'
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteGlobalIPSets: &DELETE_GLOBAL_IPSETS
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        deleteglobalipset: "vsm.[1].globalipset.[-1]"
+
+    ###########################################################################
+    # MACSet
+    ###########################################################################
+
+    CreateVerifyGlobalMACSets: &CREATE_UNIVERSAL_MACSETS
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalmacset:
+            '[1]':
+                name: 'UniversalMACSet-VM-3'
+                value: 'vm.[3].vnic.[1]'
+                description: 'MACs'
+            '[2]':
+                name: 'UniversalMACSet-VM-5'
+                value: 'vm.[5].vnic.[1]'
+                description: 'MACs'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalMACSet: &READ_GLOBAL_MACSET
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalmacset.[1]"
+        verifyendpointattributes:
+            "value[?]equal_to": 'vm.[3].vnic.[1]'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalMACSet_1:
+        Type: GroupingObject
+        TestGroupingObject: 'vsm.[1].globalmacset.[1]'
+        reconfigure: "true"
+        description: 'Macset for VM-3'
+        value: "vm.[3].vnic.[2]"
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalMACSet_2:
+        Type: GroupingObject
+        TestGroupingObject: 'vsm.[1].globalmacset.[2]'
+        reconfigure: "true"
+        description: 'Macset for VM-5'
+        value: "vm.[5].vnic.[2]"
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteGlobalMACSets: &DELETE_GLOBAL_MACSETS
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        deleteglobalmacset: "vsm.[1].globalmacset.[-1]"
+
+    ###########################################################################
+    # SecurityGroup
+    ###########################################################################
+
+    CreateVerifyGlobalSecurityGroup: &CREATE_UNIVERSAL_SECURITY_GROUP
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalsecuritygroup:
+            '[1]':
+                name: 'UniversalSecurityGroup-1'
+                description: 'SecurityGroups'
+                type:
+                    typename: 'SecurityGroup'
+                scope:
+                    id: 'universalroot-0'
+                    objecttypename: 'UniversalRoot'
+                    name: 'Universal'
+                member:
+                    - grouping_object_id: 'vsm.[1].globalipset.[2]'
+                      isuniversal: 'true'
+                    - grouping_object_id: 'vsm.[1].globalmacset.[2]'
+                      isuniversal: 'true'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalSecurityGroup: &READ_GLOBAL_SECURITY_GROUP
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalsecuritygroup.[1]"
+        verifyendpointattributes:
+            "name[?]equal_to": 'UniversalSecurityGroup-1'
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteGlobalSecurityGroups: &DELETE_GLOBAL_SECURITY_GROUPS
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        deleteglobalsecuritygroup: "vsm.[1].globalsecuritygroup.[-1]"

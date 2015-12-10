@@ -1,0 +1,118 @@
+LRTestCases:
+    Category: L3
+    Component: Edge
+    Summary: This test case creates Tier0, Tier1 router and connects it.
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: Verification of LR Modification
+    Procedure: '
+                Pre-Requiste: Create TransportZone, TransportNode,
+                Uplink Profile, 2 Logical Switches, 2 Logical Ports.
+                (refer to L2 sample TDS for the pre-requiste part)
+                Edge has been pre-deployed
+                1. Register the Edge Node with NSX
+                2. Create the Fabric Profile ID
+                3. Discover the Edge-node id
+                4. Create a Edge Cluster with EdgeNode added to it
+                5. Create Tier0 Logical Router
+                6. Modify Internal Transit Network
+                7. Verify correct ip assignment on Edge1
+                8. Verify correct ip assignment on Edge2
+                9. Verify the route table on DR'
+    TestbedSpec: *EDGE_TOPOLOGY_01
+    ExpectedResult: ''
+    WORKLOADS:
+        Sequence:
+             # We are registering Edge at the time of deployment.
+             - ["ModifyInternalTransitNetwork"]
+             - ["ReadModifiedInternalTransitNetwork"]
+             - ["VerifyIpAddressChangeOnEdge1"]
+             - ["VerifyIpAddressChangeOnEdge2"]
+             - ["VerifyRoutesOnEsx1DR"] # TODO : Depends on product bug: 1373370
+             - ["VerifyRoutesOnEsx2DR"] # TODO : Depends on product bug: 1373370
+             - ["ModifyExternalTransitNetwork"]
+             - ["ReadModifiedExternalTransitNetwork"]
+             - ["ModifyBothInternalAndExternalTransitNetwork"]
+             - ["ReadModifiedBothInternalAndExternalTransitNetwork"]
+
+        ModifyInternalTransitNetwork:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            reconfigure: true
+            router_type: "TIER0"
+            cluster_id: 'nsxmanager.[1].edgecluster.[1]->cluster_id'
+            configuration:
+                internal_transit_network: '18.2.2.0/28'
+                external_transit_networks:
+                    - '100.64.1.0/24'
+
+        ReadModifiedInternalTransitNetwork:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            read:
+                configuration:
+                    internal_transit_network: '18.2.2.0/28'
+                    external_transit_networks:
+                        - '100.64.1.0/24'
+
+        VerifyIpAddressChangeOnEdge1:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1]'
+            execution_type: 'cli'
+            adapter_name: 'vNic_2'
+            network_name: '18.2.2'
+            sleepbetweenworkloads: "15"
+            ip_version: 'ip4'
+            get_assigned_interface_ip:
+                'result[?]equal_to': 'True'
+
+        VerifyIpAddressChangeOnEdge2:
+            Type: Gateway
+            TestGateway: 'nsxedge.[2]'
+            execution_type: 'cli'
+            adapter_name: 'vNic_2'
+            network_name: '18.2.2'
+            sleepbetweenworkloads: "15"
+            ip_version: 'ip4'
+            get_assigned_interface_ip:
+                'result[?]equal_to': 'True'
+
+        ModifyExternalTransitNetwork:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            reconfigure: true
+            router_type: "TIER0"
+            cluster_id: 'nsxmanager.[1].edgecluster.[1]->cluster_id'
+            configuration:
+                internal_transit_network: '18.2.2.0/28'
+                external_transit_networks:
+                    - '103.64.1.0/24'
+
+        ReadModifiedExternalTransitNetwork:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            read:
+                configuration:
+                    internal_transit_network: '18.2.2.0/28'
+                    external_transit_networks:
+                        - '103.64.1.0/24'
+
+        ModifyBothInternalAndExternalTransitNetwork:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            reconfigure: true
+            router_type: "TIER0"
+            cluster_id: 'nsxmanager.[1].edgecluster.[1]->cluster_id'
+            configuration:
+                internal_transit_network: '19.2.2.0/28'
+                external_transit_networks:
+                    - '106.64.1.0/24'
+
+        ReadModifiedBothInternalAndExternalTransitNetwork:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            read:
+                configuration:
+                    internal_transit_network: '19.2.2.0/28'
+                    external_transit_networks:
+                        - '106.64.1.0/24'

@@ -1,0 +1,329 @@
+!include ../Clustering/MPCommonWorkloads.yaml
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+
+ShutdownNSXManager:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "N"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "ShutdownNSXManager"
+    Summary: "Shutdown NSX manager appliance"
+    Procedure: '1. Shutdown NSX Manager appliance
+                2. Sleep for 90 seconds
+                3. Power on NSX manager appliance VM
+                Note- This test requires nested nsx manager setup yaml file
+                reference file "rtqa_nested_nsx_manager_Banglore_setup.yaml" at
+                ../vdnet/automation/yaml/nsxtransformers/management-plane/
+                '
+    ExpectedResult: 'CLI should Shudown the NSX Manager'
+    TestbedSpec: *1ESX_4NSXMANAGER
+    WORKLOADS:
+        Sequence:
+          - ["SetServiceId"]
+          - ["Shutdown"]
+          - ["PowerOn"]
+          - ["VerifyServicesAfterPowerOn"]
+
+        SetServiceId: *SET_SERVICE_ID
+
+        Shutdown:
+            Type: NSX
+            TestNSX: "nsxmanager.[1]"
+            configure_power_state:
+                state: 'shutdown'
+                execution_type: 'cli'
+
+        PowerOn:
+            Type: "VM"
+            TestVM: "nsxmanager.[1]"
+            execution_type: 'cli'
+            sleepbetweenworkloads: 90
+            vmstate: poweron
+
+        VerifyServicesAfterPowerOn:
+            <<: *VERIFY_SERVICES
+            sleepbetweenworkloads: 90
+
+VerifyClusterStatusAfterClockAndNTPServerChange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "Y"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "VerifyClusterStatusAfterClockAndNTPServerChange"
+    Summary: 'Verify Cluster state after NTP server and NSXManager Clock modified'
+    Procedure: '1. Configure 3 node cluster
+                2. Verify that cluster status is stable
+                3. Persist original clock
+                4. Set time.vmware.com as NTP server
+                5. Verify the new NTP server entry
+                6. Modify NSXManager clock
+                7. Verify modified clock
+                8. Sleep for 60 seconds
+                9. Verify that cluster status is still stable
+                10. Reset NTP server
+                11. Reboot NSXManager for reset the NSXManager clock to its original time
+                12. Verify that the clock is reverted to original time'
+    ExpectedResult: 'Cluster remains stable after NTP server and NSXManager Clock gets change'
+    TestbedSpec: *1ESX_4NSXMANAGER
+    WORKLOADS:
+      Sequence:
+        - ["SetServiceId"]
+        - ["AddMPNode2ToCluster"]
+        - ["AddMPNode3ToCluster"]
+        - ["VerifyClusterStatus"]
+        - ["SetNTPServer"]
+        - ["GetNTPAssociations"]
+        - ["GetCurrentClock"]
+        - ["SetNewClock"]
+        - ["VerifyNewSetClock"]
+        - ["VerifyClusterStatusAfterSleep"]
+        - ["ResetNTPServer"]
+        - ["Reboot"]
+        - ["VerifyServicesAfterReboot"]
+        - ["VerifyCurrentClock"]
+
+      SetServiceId: *SET_SERVICE_ID
+
+      AddMPNode2ToCluster: *ADD_MP_NODE_2_TO_CLUSTER
+
+      AddMPNode3ToCluster: *ADD_MP_NODE_3_TO_CLUSTER
+
+      VerifyClusterStatus:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        get_cluster_details:
+          'management_cluster_status[?]equal_to': 'stable'
+
+      SetNTPServer:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        set_ntp_server:
+          execution_type: 'cli'
+          hostname: 'time.vmware.com'
+
+      GetNTPAssociations:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        get_ntp_associations:
+          'table[?]contains':
+            - local: 'nsxmanager.[1]->manager_ip'
+
+      GetCurrentClock:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          execution_type: 'cli'
+          PersistData: 'yes'
+          read_clock_output:
+              clock_difference[?]<: 60
+              hr_min_sec[?]defined: ''
+              date[?]defined: ''
+              month[?]defined: ''
+              year[?]defined: ''
+              timezone[?]defined: ''
+
+      SetNewClock: *SET_CLOCK
+
+      VerifyNewSetClock: *VERIFY_SET_CLOCK
+
+      VerifyClusterStatusAfterSleep:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        execution_type: 'cli'
+        sleepbetweenworkloads: 60
+        get_cluster_details:
+          'management_cluster_status[?]equal_to': 'stable'
+
+      ResetNTPServer:
+        Type: 'NSX'
+        TestNSX: 'nsxmanager.[1]'
+        set_ntp_server:
+          execution_type: 'cli'
+          hostname: 'time.vmware.com'
+          reset: "yes"
+
+      Reboot: *REBOOT
+
+      VerifyServicesAfterReboot:
+          <<: *VERIFY_SERVICES
+          sleepbetweenworkloads: 120
+
+      VerifyCurrentClock:
+          Type: "NSX"
+          TestNSX: "nsxmanager.[1]"
+          execution_type: 'cli'
+          hr_min_sec: 'nsxmanager.[1]->read_clock_output->hr_min_sec'
+          date: 'nsxmanager.[1]->read_clock_output->date'
+          month: 'nsxmanager.[1]->read_clock_output->month'
+          year: 'nsxmanager.[1]->read_clock_output->year'
+          timezone: 'nsxmanager.[1]->read_clock_output->timezone'
+          sleepbetweenworkloads: 120
+          verify_clock_set:
+              'clock_difference[?]<': 500
+
+VerifyClusterStatusAfterOtherNodesShutdown:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,CLI,cat'
+    Partnerfacing: "N"
+    Priority: "P1"
+    QCPath: ""
+    TestName: "VerifyClusterStatusAfterOtherNodesShutdown"
+    Summary: "Verify cluster status after other nodes gets poweroff"
+    Procedure: '1. Configure 3 node cluster
+                2. Verify that the cluster is stable before shutdown
+                3. Shutdown Node2 and Node3
+                4. Wait for 120 seconds and verify that cluster status is not stable
+                5. Poweron both nodes and sleep for 90 seconds
+                6. Verify the NSXManager services after nodes gets poweron'
+    ExpectedResult: 'Cluster should become unstable after remaining nodes shutdown'
+    TestbedSpec: *1ESX_4NSXMANAGER
+    WORKLOADS:
+        Sequence:
+          - ["SetServiceId"]
+          - ["AddMPNode2ToCluster"]
+          - ["AddMPNode3ToCluster"]
+          - ["VerifyClusterStatus"]
+          - ["ShutdownNode2"]
+          - ["ShutdownNode3"]
+          - ["VerifyClusterStatusAfterSleep"]
+          - ["PowerOnNode2"]
+          - ["PowerOnNode3"]
+          - ["VerifyServicesAfterPowerOn"]
+          - ["VerifyClusterStatus"]
+
+        SetServiceId: *SET_SERVICE_ID
+
+        AddMPNode2ToCluster: *ADD_MP_NODE_2_TO_CLUSTER
+
+        AddMPNode3ToCluster: *ADD_MP_NODE_3_TO_CLUSTER
+
+        VerifyClusterStatus:
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          execution_type: 'cli'
+          get_cluster_details:
+            'management_cluster_status[?]equal_to': 'stable'
+
+        ShutdownNode2:
+            Type: NSX
+            TestNSX: "nsxmanager.[2]"
+            configure_power_state:
+                state: 'shutdown'
+                execution_type: 'cli'
+
+        ShutdownNode3:
+            Type: NSX
+            TestNSX: "nsxmanager.[3]"
+            configure_power_state:
+                state: 'shutdown'
+                execution_type: 'cli'
+
+        VerifyClusterStatusAfterSleep:
+          Type: 'NSX'
+          TestNSX: 'nsxmanager.[1]'
+          execution_type: 'cli'
+          sleepbetweenworkloads: 120
+          get_cluster_details:
+            'management_cluster_status[?]equal_to': 'unstable'
+
+        PowerOnNode2:
+            Type: "VM"
+            TestVM: "nsxmanager.[2]"
+            execution_type: 'cli'
+            vmstate: poweron
+
+        PowerOnNode3:
+            Type: "VM"
+            TestVM: "nsxmanager.[3]"
+            execution_type: 'cli'
+            vmstate: poweron
+
+        VerifyServicesAfterPowerOn:
+            <<: *VERIFY_SERVICES
+            sleepbetweenworkloads: 90
+
+ChangeNSXManagerAdminPassword:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "CLI"
+    Developer: "ugaurav"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Duration: '5'
+    Tags: 'nsxsuite,cat,CLI'
+    Partnerfacing: "Y"
+    Priority: "P0"
+    QCPath: ""
+    TestName: "ChangeNSXManagerAdminPassword"
+    Summary: "Change NSXmanager password using CLI"
+    Procedure: '1. Get into configure terminal mode
+                2. Change the NSXManager password
+                3. Verify NSXManager services with new password'
+    ExpectedResult: 'CLI should change the NSXManager password'
+    TestbedSpec: *1ESX_4NSXMANAGER
+    WORKLOADS:
+        Sequence:
+          - ['SetServiceId']
+          - ['ChangePassword']
+          - ['VerifyServicesAfterPasswordChange']
+        SetServiceId:
+            <<: *SET_SERVICE_ID
+            TestNSX: "nsxmanager.[4]"
+
+        ChangePassword:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[4]"
+            set_user_password:
+                execution_type: 'cli'
+                username: 'admin'
+                password: 'ca$hc0w1'
+
+        VerifyServicesAfterPasswordChange:
+            <<: *VERIFY_SERVICES
+            TestService: "nsxmanager.[4].nsxservice.[1]"
+            runtime_params:
+                username: "admin"
+                password: "ca$hc0w1"
+                execution_type: "cli"

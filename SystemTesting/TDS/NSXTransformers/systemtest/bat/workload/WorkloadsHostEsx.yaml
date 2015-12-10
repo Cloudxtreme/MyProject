@@ -1,0 +1,153 @@
+WorkloadsHostEsx: &WorkloadsHostEsx
+
+#---------------------------------------
+# REGISTER 3 CONTROLLERS AND FORM CLUSTER
+#---------------------------------------
+    JoinController1ToCluster:
+        Type: Controller
+        TestController: 'nsxcontroller.[1]'
+        clusternode:
+            '[1]':
+                controller_ip: 'nsxcontroller.[1]'
+                execution_type: 'cli'
+
+    JoinController2ToCluster:
+         Type: Controller
+         TestController: 'nsxcontroller.[2]'
+         clusternode:
+             '[2]':
+                 controller_ip: 'nsxcontroller.[1]'
+                 execution_type: 'cli'
+
+    JoinController3ToCluster:
+        Type: Controller
+        TestController: 'nsxcontroller.[3]'
+        clusternode:
+            '[3]':
+                controller_ip: 'nsxcontroller.[1]'
+                execution_type: 'cli'
+
+    RegisterControllers2And3ToMP:
+        Type: Controller
+        TestController: 'nsxcontroller.[2-3]'
+        set_nsx_registration:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+    AddControllersToCluster:
+        - ['JoinController1ToCluster']
+        - ['JoinController2ToCluster']
+        - ['JoinController3ToCluster']
+
+    Register3ControllersAndFormCluster: &REGISTER_3_CONTROLLERS_AND_FORM_CLUSTER
+        - ['RegisterControllers2And3ToMP']
+        - ['AddControllersToCluster']
+
+#---------------------------------------
+# VERIFY 3 NODE CCP CLUSTER
+#---------------------------------------
+    Verify3NodeCCPCluster: &VERIFY_3_NODE_CCP_CLUSTER_STATUS
+           Type: "ClusterNode"
+           Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+           execution_type: 'cli'
+           'get_cluster_node':
+               'id_[?]equal_to': nsxcontroller.[1].clusternode.[1]
+               'in_majority[?]equal_to': "true"
+               'cluster_nodes[?]contain_once':
+                   - controller_ip: "nsxcontroller.[1]"
+                     id_: "nsxcontroller.[1].clusternode.[1]"
+                     status: "active"
+                   - controller_ip: "nsxcontroller.[2]"
+                     id_: "nsxcontroller.[2].clusternode.[2]"
+                     status: "active"
+                   - controller_ip: "nsxcontroller.[3]"
+                     id_: "nsxcontroller.[3].clusternode.[3]"
+
+#---------------------------------------
+# REGISTER HOST NODES
+#---------------------------------------
+    RegisterHostEsx: &REGISTER_HOST_ESX
+        Type: Host
+        TestHost: 'esx.[1-11]'  # last host is dedicated for Edge
+        set_nsx_manager:
+            manager_ip: 'nsxmanager.[1]'
+            manager_thumbprint: 'nsxmanager.[1]'
+            execution_type: 'cli'
+
+#---------------------------------------
+# DISCOVER HOST NODES
+#---------------------------------------
+    DiscoverHostEsx: &DISCOVER_HOST_ESX
+        Type: NSX
+        TestNSX: 'nsxmanager.[1]'
+        hostnode:
+            '[1-11]':  # last host is dedicated for Edge
+                discover: 'true'
+                ip_addresses: 'esx.[x=hostnode_index]'
+
+#---------------------------------------
+# CREATE TRANSPORT ZONE
+#---------------------------------------
+    CreateTransportZone: &CREATE_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportzone:
+            '[1]':
+                name: autogenerate
+                transport_zone_type: 'OVERLAY' # or VLAN, both case-sensitive
+                switch_name: 'nsxvswitch'
+
+#---------------------------------------
+# CREATE TRANSPORT NODES
+#---------------------------------------
+    CreateTransportNodeEsx: &CREATE_TRANSPORT_NODE_ESX
+        Type: NSX
+        TestNSX: nsxmanager.[1]
+        transportnode:
+            '[1-11]':  # last host is dedicated for Edge
+                node_id: 'nsxmanager.[1].hostnode.[x=transportnode_index]'
+                host_switches:
+                  - switch_name: 'nsxvswitch'
+                    host_switch_profile_ids:
+                       - key: 'UplinkHostSwitchProfile'
+                         value: 'nsxmanager.[1].uplinkprofile.[1]->id'
+                    uplinks:
+                      - device_name: 'vmnic1'
+                        adapter_name: 'uplink1'
+                transport_zone_endpoint:
+                  - transport_zone_id: nsxmanager.[1].transportzone.[1]
+
+#---------------------------------------
+# DISCOVER VTEP EVM
+#---------------------------------------
+    DiscoverVtepEsx: &DISCOVER_VTEP_ESX
+        Type: Host
+        TestHost: esx.[1-11]
+        vtep:
+            '[1]':
+                discover: 'true'
+                name: vmk10
+
+#---------------------------------------
+# CONFIGURE VTEP IP
+#---------------------------------------
+    ConfigureVtepIpEsx: &CONFIGURE_VTEP_IP_ESX
+        Type: NetAdapter
+        TestAdapter: esx.[1-10].vtep.[1]
+        IPv4: auto
+
+#---------------------------------------
+# SET CONTROLLER ON HOST
+#---------------------------------------
+    SetControllerOnHostEsx: &SET_CONTROLLER_ON_HOST_ESX
+        Type: Host
+        TestHost: 'esx.[1-11]'  # last host is dedicated for Edge
+        set_nsx_controller:
+            controller_ip: 'nsxcontroller.[1]'
+            node_id: 'nsxmanager.[1].transportnode.[x=esx_index]'
+            execution_type: 'cli'
+        sleepbetweenworkloads: 3
+
+# //++/++//////////////////////////////
+# last line is empty no spaces, nada, so yaml files join happens correctly

@@ -1,0 +1,59 @@
+AddDHCPIPPoolToGatewayServicesEdge:
+    Component: "Install"
+    Category: "vShield-Edge"
+    Product: "vShield"
+    TestName: "Add DHCP IPPool to Gateway Services Edge"
+    Version: "2"
+    Tags: "vsm"
+    Summary: "This test case will add DHCP IPPool to Gateway Services Edge"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "dgargote"
+    Partnerfacing: "n"
+    TestbedSpec: *OneVSM_OneVC_OneDC_OneVDS_TwoHost_TwoCluster
+    WORKLOADS:
+        Sequence:
+            - ["DeployGatewayServicesEdge"]
+            - ["CreateGatewayInterface"]
+            - ["CreateDHCPIPPool"]
+        ExitSequence:
+            - ["DeleteGatewayServicesEdge"]
+        DeployGatewayServicesEdge:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            gateway:
+                '[1]':
+                    name: "Edge-1001"
+                    resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+                    datacenter: "vc.[1].datacenter.[1]"
+                    host: "host.[1]"
+                    portgroup: "vc.[1].dvportgroup.[1]"
+                    primaryaddress: "10.10.1.10"
+                    subnetmask: "255.255.255.0"
+        CreateGatewayInterface:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1]"
+            interface:
+                '[1]':
+                    name: "vnic1"
+                    index: "1"
+                    portgroup: "vc.[1].dvportgroup.[2]"
+                    ipv4address: "10.10.2.10"
+                    netmask: "255.255.255.0"
+        CreateDHCPIPPool:
+            Type: "VM"
+            TestVM: "vsm.[1].gateway.[1]"
+            dhcpippool:
+                '[1]':
+                    defaultgateway: "10.10.2.10"
+                    iprange: "10.10.2.100-10.10.2.200"
+        DeleteGatewayServicesEdge:
+            Type: "NSX"
+            TestNSX: "vsm.[1]"
+            sleepbetweenworkloads: "60"
+            deletegateway: "vsm.[1].gateway.[1]"

@@ -1,0 +1,56 @@
+WORKLOADS:
+    CreateIPPool: &CREATE_IPPOOL
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        ippool:
+            '[1]':
+                name: 'autogenerate'
+                summary: "IPPool created through automation"
+                subnets:
+                  - allocation_ranges:
+                      - end: 192.168.1.10
+                        begin: 192.168.1.2
+                      - end: 192.168.1.20
+                        begin: 192.168.1.11
+                    cidr: 192.168.1.0/24
+                    gateway_ip: 192.168.1.255
+                    servers:
+                      - 192.1.1.1
+
+    DeleteAllIPPool: &DELETE_ALL_IPPOOLS
+        Type: "NSX"
+        TestNSX: "nsxmanager.[1]"
+        deleteippool: "nsxmanager.[1].ippool.[-1]"
+
+    VerifyIPPoolOnClusterNode1: &IPPOOL_VERIFICATION_NODE1
+        Type: "GroupingObject"
+        Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+        read:
+          'name[?]defined': ''
+          'subnets[?]contain_once':
+            - allocation_ranges:
+                - end: 192.168.1.10
+                  begin: 192.168.1.2
+              gateway_ip: 192.168.1.255
+
+    VerifyIPPoolOnClusterNode2: &IPPOOL_VERIFICATION_NODE2
+        Type: "GroupingObject"
+        Testgroupingobject: "nsxmanager.[2].ippool.[1]"
+        read:
+          'name[?]defined': ''
+          'subnets[?]contain_once':
+            - allocation_ranges:
+                - end: 192.168.1.10
+                  begin: 192.168.1.2
+              gateway_ip: 192.168.1.255
+
+    VerifyIPPoolOnClusterNode3: &IPPOOL_VERIFICATION_NODE3
+        Type: "GroupingObject"
+        Testgroupingobject: "nsxmanager.[3].ippool.[1]"
+        read:
+          'name[?]defined': ''
+          'subnets[?]contain_once':
+            - allocation_ranges:
+                - end: 192.168.1.10
+                  begin: 192.168.1.2
+              gateway_ip: 192.168.1.255

@@ -1,0 +1,112 @@
+TestEdgeCreateCluster:
+    Product: "NSXTransformers"
+    Category: "Edge"
+    Component: "Cluster"
+    TestName: "Applying same profile to multiple Clusters"
+    Summary: " Applying same profile to multiple Clusters"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: TBD
+    Priority: "P0"
+    Developer: "sarkars"
+    QCPath: "/NSXTransformers/EDGE/Clustering"
+    Procedure: '
+                1. Create a Fabric Profile
+                2. Create 2 edge nodes
+                3. Create one Edge Cluster with node 1 and profile 1
+                4. Create another Edge Cluster with node 2 and profile 1
+                5. Perform Read operations for both clusters
+                6. Delete the Edge Cluster
+                7. Delete Fabric Profile'
+    ExpectedResult: "Verify same profile applied to multiple Clusters"
+    Duration: '5'
+    Tags: 'cat-01'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+
+    WORKLOADS:
+        Sequence:
+            - ["CreateFabricProfile"]
+            - ["CreateEdgeNode1"]
+            - ["CreateEdgeNode2"]
+            - ["CreateEdgeCluster1"]
+            - ["CreateEdgeCluster2"]
+            - ["ReadEdgeCluster1", "ReadEdgeCluster2"]
+        ExitSequence:
+            - ["DeleteEdgeCluster"]
+            - ["DeleteEdgeNode"]
+            - ["DeleteFabricProfile"]
+
+        CreateFabricProfile: *CREATE_FABRIC_PROFILE
+
+        CreateEdgeNode1: *CREATE_EDGE_NODE
+
+        CreateEdgeNode2: *CREATE_EDGE_NODE_02
+
+        CreateEdgeCluster1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            edgecluster:
+                '[1]':
+                    name: 'Edge_Cluster_1'
+                    summary: "Edge Cluster created through automation"
+                    members:
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[1]'
+                    fabric_profile_bindings:
+                      - resource_type: "FabricProfileClusterKeepAlive"
+                        # enter the fabric_profile_id: uuid1
+                        fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        CreateEdgeCluster2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            edgecluster:
+                '[2]':
+                    name: 'Edge_Cluster_2'
+                    summary: "Edge Cluster created through automation"
+                    members:
+                      - edge_node_id: 'nsxmanager.[1].edgenode.[2]'
+                    fabric_profile_bindings:
+                      - resource_type: "FabricProfileClusterKeepAlive"
+                        # enter the fabric_profile_id: uuid1
+                        fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        ReadEdgeCluster1:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].edgecluster.[1]"
+            read:
+              'name[?]defined': 'Edge_Cluster_1'
+              'summary[?]equal_to': "Edge Cluster created through automation"
+              'id_[?]equal_to': 'nsxmanager.[1].edgecluster.[1]'
+              'resource_type[?]equal_to': "EdgeCluster"
+              'fabric_profile_bindings[?]contain_once':
+                - resource_type: "FabricProfileClusterKeepAlive"
+                  # enter the fabric_profile_id: uuid1
+                  fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        ReadEdgeCluster2:
+            Type: "Gateway"
+            TestGateway: "nsxmanager.[1].edgecluster.[2]"
+            read:
+              'name[?]defined': 'Edge_Cluster_2'
+              'summary[?]equal_to': "Edge Cluster created through automation"
+              'id_[?]equal_to': 'nsxmanager.[1].edgecluster.[2]'
+              'resource_type[?]equal_to': "EdgeCluster"
+              'fabric_profile_bindings[?]contain_once':
+                - resource_type: "FabricProfileClusterKeepAlive"
+                  # enter the fabric_profile_id: uuid1
+                  fabric_profile_id: 'nsxmanager.[1].fabricprofile.[1]'
+
+        DeleteEdgeNode: *DELETE_EDGE_NODE
+
+        DeleteEdgeCluster: *DELETE_EDGE_CLUSTER
+
+        DeleteFabricProfile: *DELETE_FABRIC_PROFILE

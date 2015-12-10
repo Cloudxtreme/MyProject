@@ -1,0 +1,72 @@
+#######################################################################
+# 1LS 1VM PER HV 2HV Topology
+# HV1---VM1--- LP1---
+#                   |--- LS1
+# HV1---VM2--- LP2---
+#######################################################################
+
+Topo_1LS_2LP_2HV: &Topo_1LS_2LP_2HV
+    LogicalSetup:
+        - - CreateTZ-1
+        - - CreateUPROF-1_MTU-1600
+        - - CreateLS-1
+          - CreateLS-2
+    TNSetup--ESX:
+        - - SetManagerOnESX-1
+          - SetManagerOnESX-2
+        - - DiscoverHostNode1FromESX1
+          - DiscoverHostNode2FromESX2
+        - - CreateTN-1_HOSTNODE-1_TZ-1_DEVICE-vmnic1
+          - CreateTN-2_HOSTNODE-2_TZ-1_DEVICE-vmnic1
+    TNSetup--KVM:
+        - - SetManagerOnKVM-1
+          - SetManagerOnKVM-2
+        - - DiscoverHostNode1FromKVM1
+          - DiscoverHostNode2FromKVM2
+        - - CreateTN-1_HOSTNODE-1_TZ-1_DEVICE-eth1
+          - CreateTN-2_HOSTNODE-2_TZ-1_DEVICE-eth1
+    VMSetup--ESX:
+        - - AddVM1Vnic1ToLS1
+          - AddVM2Vnic1ToLS1
+        - - DiscoverLport1FromVM1Vnic1
+          - DiscoverLport2FromVM2Vnic1
+        - - ConfigureVM1Vnic1IP-192.168.1.10
+          - ConfigureVM2Vnic1IP-192.168.1.11
+    VMSetup--KVM:
+        - - AddVM1Vif1ToKVM1Bridge1
+          - AddVM2Vif1ToKVM2Bridge1
+        - - CreateLP1OnLS1ForVM1Vif1
+          - CreateLP2OnLS1ForVM2Vif1
+        - - ConfigureVM1Vif1IP-192.168.1.10
+          - ConfigureVM2Vif1IP-192.168.1.11
+    L2Traffic--ESX:
+        - - PingFromVM1Vnic1ToVM2Vnic1
+    L2Traffic--KVM:
+        - - PingFromVM1Vif1ToVM2Vif1
+    VMCleanup--ESX:
+        - - DeleteVnic-1_VM-1
+          - DeleteVnic-1_VM-2
+        - - UndiscoverLSP-1-2
+    VMCleanup--KVM:
+        - - DeleteVif-1_VM-1
+          - DeleteVif-1_VM-2
+        - - DeleteLSP-1-2
+    TNCleanup--ESX:
+        - - DeleteTN-1
+          - DeleteTN-2
+        - - RemoveManagerOnESX-1
+          - RemoveManagerOnESX-2
+        - - UndiscoverHostNode-1
+          - UndiscoverHostNode-2
+    TNCleanup--KVM:
+        - - DeleteTN-1
+          - DeleteTN-2
+        - - RemoveManagerOnKVM-1
+          - RemoveManagerOnKVM-2
+        - - UndiscoverHostNode-1
+          - UndiscoverHostNode-2
+    LogicalCleanup:
+        - - DeleteLS-1
+          - DeleteLS-2
+        - - DeleteUPROF-1
+        - - DeleteTZ-1

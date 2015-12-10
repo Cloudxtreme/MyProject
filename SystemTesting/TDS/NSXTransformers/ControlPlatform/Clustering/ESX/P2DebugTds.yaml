@@ -1,0 +1,1111 @@
+CCPClusterNegativeShutdownNodeDuringAddition:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ControlPlatform'
+    Version: 2
+    TestName: 'CCPClusterNegativeShutdownNodeDuringAddition'
+    TestbedSpec: *CCP_Clustering_TOPOLOGY_02--ESX
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    Testbed: 'Testbed with 1 MP nodes, 3 CCP node and 2 ESX host'
+    Summary: 'While joining - shutdown CCP node'
+    Procedure:
+                '1. Using REST call - /cluster/nodes - join CCP node to
+                    existing cluster
+                 2. While join operation is in progress, shutdown the node
+                 Shutdown the node when Proton is restarted'
+    ExpectedResult:
+                 'Join operation should time out and report failure and new
+                  node is not part of cluster Confirm by REST and UI'
+    Duration: '300'
+    Tags: 'nsx,control,clustering'
+    AutomationLevel: 'Automated'
+    Developer: 'Jason'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    WORKLOADS:
+        Sequence:
+            - ['NSXManagerClusterSetup']
+            - ['RegisterController1']
+            - ['RegisterController2']
+            - ['InitializeController1']
+            - ['JoinController1ToCluster']
+            - ['JoinController2ToCluster_IGNORE','PowerOffCCPNode2']
+            - ['Register2Hosts']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1']
+            - ['AttachVM2toSwitch1']
+            - ['ConfigureVnicIP']
+            - ['DiscoverLogicalPorts']
+            - ['VerifyCCPCluster_1']
+            - ['VerifyLogicalSwitchPortsInfoOnController1']
+            - ['LogicalSwitch1Traffic']
+            - ['PowerOnCCPNode2','JoinController2ToCluster_IGNORE']
+            - ['LogicalSwitch1Traffic']
+            - ['JoinController2ToCluster']
+            - ['ActivateController2']
+            - ['VerifyCCPCluster_12']
+            - ['VerifyLogicalSwitchPortsInfoOnController1']
+            - ['VerifyLogicalSwitchPortsInfoOnController2']
+            - ['ReadLS1VniMasterCCP_From12']
+            - ['RegisterController3']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+            - ['PowerOffCCPNode3','JoinController3ToCluster_IGNORE']
+            - ['PowerOnCCPNode3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController3']
+            - ['VerifyCCPCluster']
+            - ['VerifyLogicalSwitchPortsInfoOnController1']
+            - ['VerifyLogicalSwitchPortsInfoOnController2']
+            - ['VerifyLogicalSwitchPortsInfoOnController3']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+        ExitSequence:
+            - ['PowerOnAllCCPNode']
+            - ['DeleteVnic1', 'DeleteVnic2']
+            - ['NSXCleanup']
+            - ['UnregisterHosts']
+            - ['Cleanup3NodesMPClusterAndCCPCluster']
+
+        ActivateController2: *ACTIVATE_CONTROLLER_2
+        ActivateController3: *ACTIVATE_CONTROLLER_3
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--ESX
+        AttachVM2toSwitch1: *ATTACH_VM2_TO_SWITCH_1--ESX
+        ConfigureVnicIP: *CONFIGURE_2VMS_IP--ESX
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01--ESX
+        CreateTransportNodes: *CREATE_2_TRANSPORTNODES--ESX
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        DeleteVnic1: *DELETE_VM1_VNIC1_LSWITCH1--ESX
+        DeleteVnic2: *DELETE_VM2_VNIC1_LSWITCH1--ESX
+        DiscoverHostnodes: *DISCOVER_2_HOST_NODES--ESX
+        DiscoverLogicalPorts: *DISCOVER_LOGICAL_PORTS
+        InitializeController1: *INITIALIZE_CONTROLLER_1
+        JoinController1ToCluster: *JOIN_CONTROLLER_1_TO_CLUSTER
+        JoinController2ToCluster: *JOIN_CONTROLLER_2_TO_CLUSTER
+        JoinController3ToCluster: *JOIN_CONTROLLER_3_TO_CLUSTER
+        LogicalSwitch1Traffic: *LOGICAL_SWITCH_1_TRAFFIC--ESX
+        NSXCleanup: *NSX_CLEANUP--ESX
+        NSXManagerClusterSetup: *NSX_MANAGERCLUSTER_SETUP
+        PowerOffCCPNode2: *POWER_OFF_CCP_NODE_2
+        PowerOffCCPNode3: *POWER_OFF_CCP_NODE_3
+        PowerOnAllCCPNode: *POWER_ON_ALL_CCP_NODE
+        PowerOnCCPNode2: *POWER_ON_CCP_NODE_2
+        PowerOnCCPNode3: *POWER_ON_CCP_NODE_3
+        ReadLS1VniMasterCCP: *READ_LOGICAL_SWITCH_1_MASTER_CCP
+        Register2Hosts: *REGISTER_2_HOSTS--ESX
+        RegisterController1: *REGISTER_CONTROLLER_1
+        RegisterController2: *REGISTER_CONTROLLER_2
+        RegisterController3: *REGISTER_CONTROLLER_3
+        UnregisterHosts: *UNREGISTER_HOSTS--ESX
+        VerifyCCPCluster: *VERIFY_CCP_CLUSTER
+        VerifyLogicalSwitchPortsInfoOnController1: *VERIFY_LOGICAL_SWITCH_PORTS_INFO_ON_CONTROLLER_1--ESX
+        VerifyLogicalSwitchPortsInfoOnController2: *VERIFY_LOGICAL_SWITCH_PORTS_INFO_ON_CONTROLLER_2--ESX
+        VerifyLogicalSwitchPortsInfoOnController3: *VERIFY_LOGICAL_SWITCH_PORTS_INFO_ON_CONTROLLER_3--ESX
+        VerifyLSControllerStatusOnHost_up: *VERIFY_LOGICAL_SWITCH_1_CONTROLLER_STATUS_ON_HOST_UP--ESX
+
+        JoinController2ToCluster_IGNORE:
+            Type: Controller
+            TestController: 'nsxcontroller.[1]'
+            clusternode:
+                '[2]':
+                    controller_ip: 'nsxcontroller.[2]'
+                    control_cluster_thumbprint: 'nsxcontroller.[2]'
+                    execution_type: 'cli'
+            expectedResult: ignore
+
+        JoinController3ToCluster_IGNORE:
+            Type: Controller
+            TestController: 'nsxcontroller.[1]'
+            clusternode:
+                '[3]':
+                    controller_ip: 'nsxcontroller.[3]'
+                    control_cluster_thumbprint: 'nsxcontroller.[3]'
+                    execution_type: 'cli'
+            expectedResult: ignore
+
+        VerifyCCPCluster_1:
+            Type: "ClusterNode"
+            Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+            execution_type: 'cli'
+            'get_cluster_node':
+                'in_majority[?]equal_to': "true"
+                'cluster_nodes[?]contain_once':
+                    - controller_ip: "nsxcontroller.[1]"
+                      id_: "nsxcontroller.[1].clusternode.[1]"
+                      status: "active"
+
+        VerifyCCPCluster_12:
+            Type: "ClusterNode"
+            Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+            execution_type: 'cli'
+            'get_cluster_node':
+                'in_majority[?]equal_to': "true"
+                'cluster_nodes[?]contain_once':
+                    - controller_ip: "nsxcontroller.[1]"
+                      id_: "nsxcontroller.[1].clusternode.[1]"
+                      status: "active"
+                    - controller_ip: "nsxcontroller.[2]"
+                      id_: "nsxcontroller.[1].clusternode.[2]"
+                      status: "active"
+
+        ReadLS1VniMasterCCP_From12:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            controllers: "nsxcontroller.[1-2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            PersistData: "Yes"
+            read_switch_ccp_mapping:
+                'master_ccp_ip[?]defined': ''
+
+CCPClusterLongevity1_ShutdownUPCCPNode:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ControlPlatform'
+    TestName: 'CCPClusterLongevity1_ShutdownUPCCPNode'
+    TestbedSpec: *CCP_Clustering_TOPOLOGY_02--ESX
+    Version: 2
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath: *QCPATH--ESX
+    Testbed: 'Deploy a setup with 1 NSX managers, 3 Control Plane node,  2 ESX host, 2 VM'
+    Summary: 'Join nodes to form a cluster of 3 nodes, Shut down and Up one CCP
+              node again and again,shutdown/up 2 CCP node again and again'
+    Procedure:  '1. Deploy 3 controller,join these 3 controller  to control plan cluster
+                 2. Configure transport zone on MP
+                 3. Shutdown and up master node again and again
+                 4. Shutdown 1 node,the cluster majority still work.So cluster works fine,
+                    but sharding table should re-calcualte after CCP node down
+                 5. Shutdown 2 CCP nodes,the cluster lost  majority.So cluster does not work
+                 After shutdown CCP node and up again,the cluster should work'
+    ExpectedResult: "PASS"
+    Duration: '300'
+    Tags: 'nsx,control,clustering'
+    AutomationLevel: 'Automated'
+    Developer: 'wxzhang'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    WORKLOADS:
+        Sequence:
+            - ['Register2Hosts']
+            - ['NSXManagerClusterSetup']
+            - ['RegisterAllControllers']
+            - ['DiscoverHostnodes']
+            - ['SetSecurityOnController1']
+            - ['InitializeController1']
+            - ['JoinController1ToCluster']
+            - ['SetSecurityOnController2']
+            - ['JoinController2ToCluster']
+            - ['ActivateController2']
+            - ['SetSecurityOnController3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController3']
+            - ['VerifyCCPCluster']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['DiscoverVteps']
+            - ['Create10LogicalSwitch']
+            - ['VerifyLogicalSwitchInfoOnControllers']
+            - ['AttachVM1toSwitch1']
+            - ['AttachVM2toSwitch1']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['DiscoverLogicalPorts']
+            - ['ConfigureVnicIP']
+            - ['LogicalSwitch1Traffic']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['RepeatPowerOffMasterSlaveCCPNodes']
+            - ['VerifyLogicalSwitchInfoOnControllers']
+            - ['LogicalSwitch1Traffic']
+        ExitSequence:
+            - ['PowerOnAllCCPNode']
+            - ['DeleteVnic1', 'DeleteVnic2']
+            - ['NSXCleanup']
+            - ['UnregisterHosts']
+            - ['Cleanup3NodesMPClusterAndCCPCluster']
+
+        ActivateController2: *ACTIVATE_CONTROLLER_2
+        ActivateController3: *ACTIVATE_CONTROLLER_3
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--ESX
+        AttachVM2toSwitch1: *ATTACH_VM2_TO_SWITCH_1--ESX
+        Cleanup3NodesMPClusterAndCCPCluster: *CLEANUP_3_NODES_MP_CLUSTER_AND_CCP_CLUSTER
+        ConfigureVnicIP: *CONFIGURE_2VMS_IP--ESX
+        Create10LogicalSwitch: *CREATE_10_LOGICAL_SWITCH--ESX
+        CreateTransportNodes: *CREATE_2_TRANSPORTNODES--ESX
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        DeleteVnic1: *DELETE_VM1_VNIC1_LSWITCH1--ESX
+        DeleteVnic2: *DELETE_VM2_VNIC1_LSWITCH1--ESX
+        DiscoverHostnodes: *DISCOVER_2_HOST_NODES--ESX
+        DiscoverLogicalPorts: *DISCOVER_LOGICAL_PORTS
+        DiscoverVteps: *DISCOVER_VTEPS--ESX
+        InitializeController1: *INITIALIZE_CONTROLLER_1
+        JoinController1ToCluster: *JOIN_CONTROLLER_1_TO_CLUSTER
+        JoinController2ToCluster: *JOIN_CONTROLLER_2_TO_CLUSTER
+        JoinController3ToCluster: *JOIN_CONTROLLER_3_TO_CLUSTER
+        LogicalSwitch1Traffic: *LOGICAL_SWITCH_1_TRAFFIC--ESX
+        NSXCleanup: *NSX_CLEANUP--ESX
+        NSXManagerClusterSetup: *NSX_MANAGERCLUSTER_SETUP
+        PowerOffCCPNode2: *POWER_OFF_CCP_NODE_2
+        PowerOffMasterCCP: *POWER_OFF_MASTER_CCP
+        PowerOffMasterCCP: *POWER_OFF_MASTER_CCP
+        PowerOffSlaveCCP1: *POWER_OFF_SLAVE_CCP_1
+        PowerOnAllCCPNode: *POWER_ON_ALL_CCP_NODE
+        PowerOnCCPNode2: *POWER_ON_CCP_NODE_2
+        ReadLS1VniMasterCCP: *READ_LOGICAL_SWITCH_1_MASTER_CCP
+        ReadLS1VniMasterCCP: *READ_LOGICAL_SWITCH_1_MASTER_SLAVE_CCP
+        ReadLS1VniMasterSlaveCCP: *READ_LOGICAL_SWITCH_1_MASTER_SLAVE_CCP
+        Register2Hosts: *REGISTER_2_HOSTS--ESX
+        RegisterAllControllers: *REGISTER_ALL_CONTROLLERS
+        SetSecurityOnController1: *SET_SECURITY_ON_CONTROLLER_1
+        SetSecurityOnController2: *SET_SECURITY_ON_CONTROLLER_2
+        SetSecurityOnController3: *SET_SECURITY_ON_CONTROLLER_3
+        UnregisterHosts: *UNREGISTER_HOSTS--ESX
+        VerifyCCPCluster: *VERIFY_CCP_CLUSTER
+        VerifyLogicalSwitchInfoOnControllers: *VERIFY_LOGICAL_SWITCH_INFO_ON_CONTROLLERS
+        VerifyLSControllerStatusOnHost_up: *VERIFY_LOGICAL_SWITCH_1_CONTROLLER_STATUS_ON_HOST_UP--ESX
+        VerifyLSReplicationModeOnHost: *VERIFY_LS_REPLICATION_MODE_ON_HOST--ESX
+
+        RepeatPowerOffMasterSlaveCCPNodes:
+            Type: 'WorkloadGroup'
+            iterations: 30
+            maxtimeout: '18000'
+            sequence:
+                - ['ReadLS1VniMasterSlaveCCP']
+                - ['VerifyLSControllerStatusOnHost_up']
+                - ['PowerOffMasterCCP']
+                - ['PowerOffSlaveCCP1']
+                - ['VerifyLSControllerStatusOnHost_down']
+                - ['PowerOnAllCCPNode']
+                - ['ReadLS1VniMasterCCP']
+                - ['VerifyLSControllerStatusOnHost_up']
+
+CCPClusterStress:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ControlPlatform'
+    TestName: 'CCPClusterStress'
+    TestbedSpec: *CCP_Clustering_TOPOLOGY_02--ESX
+    Version: 2
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath: *QCPATH--ESX
+    Testbed: 'Deploy a setup with 1 NSX managers, 3 Control Plane node,  2 ESX host, 2 VM'
+    Summary: 'Join nodes to form a cluster of 3 nodes, Create/delete 10 logical switch
+             50 times to verify configuration data on CCP node and LCP '
+    Procedure:  '1. Deploy 3 controller,join these 3 controller  to control plan cluster
+                 2. Configure transport zone and create/delete 10 logical switch 50 times on MP
+                 3. Check configuration on CCP node and LCP
+                 MP configuration should sync to CCP correctly.and CCP sync to LCP correctly'
+    ExpectedResult: "PASS"
+    Duration: '300'
+    Tags: 'nsx,control,clustering'
+    AutomationLevel: 'Automated'
+    Developer: 'wxzhang'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    WORKLOADS:
+        Sequence:
+            - ['Register2Hosts']
+            - ['NSXManagerClusterSetup']
+            - ['RegisterAllControllers']
+            - ['DiscoverHostnodes']
+            - ['SetSecurityOnController1']
+            - ['InitializeController1']
+            - ['JoinController1ToCluster']
+            - ['SetSecurityOnController2']
+            - ['JoinController2ToCluster']
+            - ['ActivateController2']
+            - ['SetSecurityOnController3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController3']
+            - ['VerifyCCPCluster']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['VerifyLogicalSwitch1InfoOnControllers']
+            - ['AttachVM1toSwitch1']
+            - ['AttachVM2toSwitch1']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['DiscoverLogicalPorts']
+            - ['ConfigureVnicIP']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyLogicalSwith1EntryCountOnControllers']
+            - ['CreateDelete10LogicalSwitch',
+               'LogicalSwitch1Traffic']
+            - ['VerifyCCPCluster']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+        ExitSequence:
+            - ['DeleteVnic1', 'DeleteVnic2']
+            - ['NSXCleanup']
+            - ['UnregisterHosts']
+            - ['Cleanup3NodesMPClusterAndCCPCluster']
+
+        ActivateController2: *ACTIVATE_CONTROLLER_2                                           
+        ActivateController3: *ACTIVATE_CONTROLLER_3                                           
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--ESX                                      
+        AttachVM2toSwitch1: *ATTACH_VM2_TO_SWITCH_1--ESX                                      
+        Cleanup3NodesMPClusterAndCCPCluster: *CLEANUP_3_NODES_MP_CLUSTER_AND_CCP_CLUSTER      
+        ConfigureVnicIP: *CONFIGURE_2VMS_IP--ESX                                              
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01--ESX                                   
+        CreateTransportNodes: *CREATE_2_TRANSPORTNODES--ESX                                   
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01                                        
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01                                        
+        DeleteVnic1: *DELETE_VM1_VNIC1_LSWITCH1--ESX                                          
+        DeleteVnic2: *DELETE_VM2_VNIC1_LSWITCH1--ESX                                          
+        DiscoverHostnodes: *DISCOVER_2_HOST_NODES--ESX                                        
+        DiscoverLogicalPorts: *DISCOVER_LOGICAL_PORTS                                         
+        DiscoverVteps: *DISCOVER_VTEPS--ESX                                                   
+        InitializeController1: *INITIALIZE_CONTROLLER_1                                       
+        JoinController1ToCluster: *JOIN_CONTROLLER_1_TO_CLUSTER                               
+        JoinController2ToCluster: *JOIN_CONTROLLER_2_TO_CLUSTER                               
+        JoinController3ToCluster: *JOIN_CONTROLLER_3_TO_CLUSTER                               
+        LogicalSwitch1Traffic: *LOGICAL_SWITCH_1_TRAFFIC--ESX                                 
+        NSXCleanup: *NSX_CLEANUP--ESX                                                         
+        NSXManagerClusterSetup: *NSX_MANAGERCLUSTER_SETUP                                     
+        ReadLS1VniMasterCCP: *READ_LOGICAL_SWITCH_1_MASTER_SLAVE_CCP                          
+        Register2Hosts: *REGISTER_2_HOSTS--ESX                                                
+        RegisterAllControllers: *REGISTER_ALL_CONTROLLERS                                     
+        SetSecurityOnController1: *SET_SECURITY_ON_CONTROLLER_1                               
+        SetSecurityOnController2: *SET_SECURITY_ON_CONTROLLER_2                               
+        SetSecurityOnController3: *SET_SECURITY_ON_CONTROLLER_3                               
+        UnregisterHosts: *UNREGISTER_HOSTS--ESX                                               
+        VerifyCCPCluster: *VERIFY_CCP_CLUSTER
+        VerifyLogicalSwitch1InfoOnControllers: *VERIFY_LOGICAL_SWITCH_1_INFO_ON_CONTROLLERS   
+        VerifyLogicalSwith1EntryCountOnControllers: *VERIFY_LOGICAL_SWITCH_1_ENTRY_COUNT_ON_CONTROLLERS
+        VerifyLSControllerStatusOnHost_up: *VERIFY_LOGICAL_SWITCH_1_CONTROLLER_STATUS_ON_HOST_UP--ESX
+        VerifyLSReplicationModeOnHost: *VERIFY_LS_REPLICATION_MODE_ON_HOST--ESX               
+
+        CreateDelete10LogicalSwitch:
+            Type: 'WorkloadGroup'
+            iterations: 30
+            maxtimeout: '18000'
+            sequence:
+                - ['Create10LogicalSwitch']
+                - ['VerifyLogicalSwith11EntryCountOnControllers']
+                - ['Delete10LogicalSwitch']
+                - ['VerifyLogicalSwith1EntryCountOnControllers']
+
+        Create10LogicalSwitch:
+           Type: NSX
+           TestNSX: nsxmanager.[1]
+           logicalswitch:
+               '[2-6]':
+                   name: autogenerate
+                   transport_zone_id: nsxmanager.[1].transportzone.[1]
+                   admin_state: UP
+                   replication_mode: MTEP
+               '[7-11':
+                   name: autogenerate
+                   transport_zone_id: nsxmanager.[1].transportzone.[1]
+                   admin_state: UP
+                   replication_mode: SOURCE
+
+        Delete10LogicalSwitch:
+            <<: *DELETE_LOGICAL_SWITCHS
+            deletelogicalswitch: 'nsxmanager.[1].logicalswitch.[2-11]'
+
+        VerifyLogicalSwith11EntryCountOnControllers:
+            Type: "Controller"
+            TestController: 'nsxcontroller.[-1]'
+            execution_type: *CONTROLLER_EXECUTION_TYPE
+            'get_entry_count':
+                logical_switch[?]equal_to: 11
+                transport_node[?]equal_to: 2
+                logical_switch_port[?]equal_to: 2
+
+CCPClusterNegativeShutdownNodeDuringRemoval_1:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ControlPlatform'
+    Version: 2
+    TestName: 'CCPClusterNegativeShutdownNodeDuringRemoval_1'
+    TestbedSpec: *CCP_Clustering_TOPOLOGY_02--ESX
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    Testbed: 'Testbed with 1 MP nodes, 3 CCP node and 2 ESX host'
+    Summary: 'While removal - shutdown CCP node'
+    Procedure:  '1. Join CCP node to existing cluster
+                 2. While removal operation is in progress, shutdown the CCP node that is getting removed'
+    ExpectedResult: 'Removal operation should time out and report failure'
+    Duration: '300'
+    Tags: 'nsx,control,clustering'
+    AutomationLevel: 'Automated'
+    Developer: 'Jason'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    WORKLOADS:
+        Sequence:
+            - ['Register2Hosts']
+            - ['NSXManagerClusterSetup']
+            - ['RegisterAllControllers']
+            - ['DiscoverHostnodes']
+            - ['SetSecurityOnController1']
+            - ['InitializeController1']
+            - ['JoinController1ToCluster']
+            - ['SetSecurityOnController2']
+            - ['JoinController2ToCluster']
+            - ['ActivateController2']
+            - ['SetSecurityOnController3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController3']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1']
+            - ['AttachVM2toSwitch1']
+            - ['ConfigureVnicIP']
+            - ['DiscoverLogicalPorts']
+            - ['VerifyCCPCluster']
+            - ['VerifyLogicalSwitchPortsInfoOnController1']
+            - ['VerifyLogicalSwitchPortsInfoOnController2']
+            - ['VerifyLogicalSwitchPortsInfoOnController3']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+            - ['RemoveCCPNode3FromCluster_RETRY','PowerOffCCPNode3']
+            - ['UnregisterController3']
+            - ['VerifyCCPCluster_12']
+            - ['VerifyLogicalSwitchPortsInfoOnController1']
+            - ['VerifyLogicalSwitchPortsInfoOnController2']
+            - ['ReadLS1VniMasterCCP_From12']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+            - ['RemoveCCPNode2FromCluster_FAIL','PowerOffCCPNode2']
+            - ['PowerOnCCPNode3','PowerOnCCPNode2']
+            - ['DeleteBootStrapOnController3']
+            - ['DeleteControllerNodeUUIDFileOnController3']
+            - ['LogicalSwitch1Traffic']
+            - ['RegisterController3']
+            - ['SetSecurityOnController3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController3']
+            - ['VerifyCCPCluster']
+            - ['VerifyLogicalSwitchPortsInfoOnController1']
+            - ['VerifyLogicalSwitchPortsInfoOnController2']
+            - ['VerifyLogicalSwitchPortsInfoOnController3']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+        ExitSequence:
+            - ['PowerOnAllCCPNode']
+            - ['DeleteVnic1', 'DeleteVnic2']
+            - ['NSXCleanup']
+            - ['UnregisterHosts']
+            - ['Cleanup3NodesMPClusterAndCCPCluster']
+
+        ActivateController2: *ACTIVATE_CONTROLLER_2
+        ActivateController3: *ACTIVATE_CONTROLLER_3
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--ESX
+        AttachVM2toSwitch1: *ATTACH_VM2_TO_SWITCH_1--ESX
+        ConfigureVnicIP: *CONFIGURE_2VMS_IP--ESX
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01--ESX
+        CreateTransportNodes: *CREATE_2_TRANSPORTNODES--ESX
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        DeleteBootStrapOnController3: *DELETE_BOOT_STRAP_ON_CONTROLLER_3
+        DeleteControllerNodeUUIDFileOnController3: *DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER_3
+        DeleteVnic1: *DELETE_VM1_VNIC1_LSWITCH1--ESX
+        DeleteVnic2: *DELETE_VM2_VNIC1_LSWITCH1--ESX
+        DiscoverHostnodes: *DISCOVER_2_HOST_NODES--ESX
+        DiscoverLogicalPorts: *DISCOVER_LOGICAL_PORTS
+        InitializeController1: *INITIALIZE_CONTROLLER_1
+        JoinController1ToCluster: *JOIN_CONTROLLER_1_TO_CLUSTER
+        JoinController2ToCluster: *JOIN_CONTROLLER_2_TO_CLUSTER
+        JoinController3ToCluster: *JOIN_CONTROLLER_3_TO_CLUSTER
+        LogicalSwitch1Traffic: *LOGICAL_SWITCH_1_TRAFFIC--ESX
+        NSXCleanup: *NSX_CLEANUP--ESX
+        NSXManagerClusterSetup: *NSX_MANAGERCLUSTER_SETUP
+        PowerOffCCPNode2: *POWER_OFF_CCP_NODE_2
+        PowerOffCCPNode3: *POWER_OFF_CCP_NODE_3
+        PowerOnAllCCPNode: *POWER_ON_ALL_CCP_NODE
+        PowerOnCCPNode2: *POWER_ON_CCP_NODE_2
+        PowerOnCCPNode3: *POWER_ON_CCP_NODE_3
+        ReadLS1VniMasterCCP: *READ_LOGICAL_SWITCH_1_MASTER_CCP
+        Register2Hosts: *REGISTER_2_HOSTS--ESX
+        RegisterAllControllers: *REGISTER_ALL_CONTROLLERS
+        RegisterController3: *REGISTER_CONTROLLER_3
+        SetSecurityOnController1: *SET_SECURITY_ON_CONTROLLER_1
+        SetSecurityOnController2: *SET_SECURITY_ON_CONTROLLER_2
+        SetSecurityOnController3: *SET_SECURITY_ON_CONTROLLER_3
+        UnregisterController3: *UNREGISTER_CONTROLLER_3
+        UnregisterHosts: *UNREGISTER_HOSTS--ESX
+        VerifyCCPCluster: *VERIFY_CCP_CLUSTER
+        VerifyLogicalSwitchPortsInfoOnController1: *VERIFY_LOGICAL_SWITCH_PORTS_INFO_ON_CONTROLLER_1--ESX
+        VerifyLogicalSwitchPortsInfoOnController2: *VERIFY_LOGICAL_SWITCH_PORTS_INFO_ON_CONTROLLER_2--ESX
+        VerifyLogicalSwitchPortsInfoOnController3: *VERIFY_LOGICAL_SWITCH_PORTS_INFO_ON_CONTROLLER_3--ESX
+        VerifyLSControllerStatusOnHost_up: *VERIFY_LOGICAL_SWITCH_1_CONTROLLER_STATUS_ON_HOST_UP--ESX
+
+        RemoveCCPNode2FromCluster_FAIL:
+            Type: Controller
+            TestController: 'nsxcontroller.[1]'
+            sleepbetweenworkloads: '15'
+            remove_ccp_cluster_node:
+                controller_ip: 'nsxcontroller.[2]'
+                execution_type: 'cli'
+            expectedResult: fail
+
+        RemoveCCPNode3FromCluster_RETRY:
+            Type: Controller
+            TestController: 'nsxcontroller.[1]'
+            sleepbetweenworkloads: '15'
+            remove_ccp_cluster_node:
+                controller_ip: 'nsxcontroller.[3]'
+                execution_type: 'cli'
+            noofretries: "10"
+
+        VerifyCCPCluster_12:
+            Type: "ClusterNode"
+            Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+            execution_type: 'cli'
+            'get_cluster_node':
+                'in_majority[?]equal_to': "true"
+                'cluster_nodes[?]contain_once':
+                    - controller_ip: "nsxcontroller.[1]"
+                      id_: "nsxcontroller.[1].clusternode.[1]"
+                      status: "active"
+                    - controller_ip: "nsxcontroller.[2]"
+                      id_: "nsxcontroller.[1].clusternode.[2]"
+                      status: "active"
+
+        ReadLS1VniMasterCCP_From12:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            controllers: "nsxcontroller.[1-2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            PersistData: "Yes"
+            read_switch_ccp_mapping:
+                'master_ccp_ip[?]defined': ''
+
+CCPClusterNegativeShutdownNodeDuringRemoval_2:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ControlPlatform'
+    Version: 2
+    TestName: 'CCPClusterNegativeShutdownNodeDuringRemoval_2'
+    TestbedSpec: *CCP_Clustering_TOPOLOGY_02--ESX
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  ''
+    Testbed: 'Testbed with 1 MP nodes, 3 CCP node and 2 ESX host'
+    Summary: 'While removal - CCP node becomes unreachable and use force_remove option'
+    Procedure:  '1. Using REST call - /cluster/nodes - join CCP node to existing cluster
+                 2. Remove CCP node from cluster
+                 3. During removal the CCP node becomes unreachable
+                 4. Again fire REST to remove node using force_remove option
+                 Confirm this action through UI as well'
+    ExpectedResult: 'PASS'
+    Duration: '300'
+    Tags: 'nsx,control,clustering'
+    AutomationLevel: 'Automated'
+    Developer: 'Jason'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    WORKLOADS:
+        Sequence:
+            - ['Register2Hosts']
+            - ['NSXManagerClusterSetup']
+            - ['RegisterAllControllers']
+            - ['DiscoverHostnodes']
+            - ['SetSecurityOnController1']
+            - ['InitializeController1']
+            - ['JoinController1ToCluster']
+            - ['SetSecurityOnController2']
+            - ['JoinController2ToCluster']
+            - ['ActivateController2']
+            - ['SetSecurityOnController3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController3']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateLogicalSwitch']
+            - ['AttachVM1toSwitch1']
+            - ['AttachVM2toSwitch1']
+            - ['ConfigureVnicIP']
+            - ['DiscoverLogicalPorts']
+            - ['VerifyCCPCluster']
+            - ['VerifyLogicalSwitchPortsInfoOnController1']
+            - ['VerifyLogicalSwitchPortsInfoOnController2']
+            - ['VerifyLogicalSwitchPortsInfoOnController3']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+            - ['RemoveCCPNode3FromCluster_fail']
+            - ['BlockConnectionBetweenController3and2']
+            - ['BlockConnectionBetweenController3and1']
+            - ['BlockRabbitMqConnectionOnController3']
+            - ['RemoveCCPNode3FromCluster_force']
+            - ['ResetConnectionBetweenController3and2']
+            - ['ResetConnectionBetweenController3and1']
+            - ['ResetRabbitMqConnectionOnController3']
+            - ['UnregisterController3']
+            - ['DeleteBootStrapOnController3']
+            - ['DeleteControllerNodeUUIDFileOnController3']
+            - ['VerifyCCPCluster_12']
+            - ['VerifyLogicalSwitchPortsInfoOnController1']
+            - ['VerifyLogicalSwitchPortsInfoOnController2']
+            - ['ReadLS1VniMasterCCP_From12']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+            - ['RegisterController3']
+            - ['SetSecurityOnController3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController3']
+            - ['VerifyCCPCluster']
+            - ['VerifyLogicalSwitchPortsInfoOnController1']
+            - ['VerifyLogicalSwitchPortsInfoOnController2']
+            - ['VerifyLogicalSwitchPortsInfoOnController3']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+        ExitSequence:
+            - ['ResetConnectionBetweenController3and2']
+            - ['ResetConnectionBetweenController3and1']
+            - ['ResetRabbitMqConnectionOnController3']
+            - ['PowerOnAllCCPNode']
+            - ['DeleteVnic1', 'DeleteVnic2']
+            - ['NSXCleanup']
+            - ['UnregisterHosts']
+            - ['Cleanup3NodesMPClusterAndCCPCluster']
+
+        ActivateController2: *ACTIVATE_CONTROLLER_2
+        ActivateController3: *ACTIVATE_CONTROLLER_3
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--ESX
+        AttachVM2toSwitch1: *ATTACH_VM2_TO_SWITCH_1--ESX
+        ConfigureVnicIP: *CONFIGURE_2VMS_IP--ESX
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01--ESX
+        CreateTransportNodes: *CREATE_2_TRANSPORTNODES--ESX
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        DeleteBootStrapOnController3: *DELETE_BOOT_STRAP_ON_CONTROLLER_3
+        DeleteControllerNodeUUIDFileOnController3: *DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER_3
+        DeleteVnic1: *DELETE_VM1_VNIC1_LSWITCH1--ESX
+        DeleteVnic2: *DELETE_VM2_VNIC1_LSWITCH1--ESX
+        DiscoverHostnodes: *DISCOVER_2_HOST_NODES--ESX
+        DiscoverLogicalPorts: *DISCOVER_LOGICAL_PORTS
+        InitializeController1: *INITIALIZE_CONTROLLER_1
+        JoinController1ToCluster: *JOIN_CONTROLLER_1_TO_CLUSTER
+        JoinController2ToCluster: *JOIN_CONTROLLER_2_TO_CLUSTER
+        JoinController3ToCluster: *JOIN_CONTROLLER_3_TO_CLUSTER
+        LogicalSwitch1Traffic: *LOGICAL_SWITCH_1_TRAFFIC--ESX
+        NSXCleanup: *NSX_CLEANUP--ESX
+        NSXManagerClusterSetup: *NSX_MANAGERCLUSTER_SETUP
+        PowerOffCCPNode2: *POWER_OFF_CCP_NODE_2
+        PowerOffCCPNode3: *POWER_OFF_CCP_NODE_3
+        PowerOnAllCCPNode: *POWER_ON_ALL_CCP_NODE
+        PowerOnCCPNode2: *POWER_ON_CCP_NODE_2
+        PowerOnCCPNode3: *POWER_ON_CCP_NODE_3
+        ReadLS1VniMasterCCP: *READ_LOGICAL_SWITCH_1_MASTER_CCP
+        Register2Hosts: *REGISTER_2_HOSTS--ESX
+        RegisterAllControllers: *REGISTER_ALL_CONTROLLERS
+        RegisterController3: *REGISTER_CONTROLLER_3
+        SetSecurityOnController1: *SET_SECURITY_ON_CONTROLLER_1
+        SetSecurityOnController2: *SET_SECURITY_ON_CONTROLLER_2
+        SetSecurityOnController3: *SET_SECURITY_ON_CONTROLLER_3
+        UnregisterController3: *UNREGISTER_CONTROLLER_3
+        UnregisterHosts: *UNREGISTER_HOSTS--ESX
+        VerifyCCPCluster: *VERIFY_CCP_CLUSTER
+        VerifyLogicalSwitchPortsInfoOnController1: *VERIFY_LOGICAL_SWITCH_PORTS_INFO_ON_CONTROLLER_1--ESX
+        VerifyLogicalSwitchPortsInfoOnController2: *VERIFY_LOGICAL_SWITCH_PORTS_INFO_ON_CONTROLLER_2--ESX
+        VerifyLogicalSwitchPortsInfoOnController3: *VERIFY_LOGICAL_SWITCH_PORTS_INFO_ON_CONTROLLER_3--ESX
+        VerifyLSControllerStatusOnHost_up: *VERIFY_LOGICAL_SWITCH_1_CONTROLLER_STATUS_ON_HOST_UP--ESX
+
+        BlockConnectionBetweenController3and2:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[3]'
+            network_partitioning:
+                operation: 'set'
+                ip_address: 'nsxcontroller.[2]->controller_ip'
+                execution_type: 'cmd'
+
+        BlockConnectionBetweenController3and1:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[3]'
+            network_partitioning:
+                operation: 'set'
+                ip_address: 'nsxcontroller.[1]->controller_ip'
+                execution_type: 'cmd'
+
+        ResetConnectionBetweenController3and2:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[3]'
+            network_partitioning:
+                operation: 'reset'
+                ip_address: 'nsxcontroller.[2]->controller_ip'
+                execution_type: 'cmd'
+
+        ResetConnectionBetweenController3and1:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[3]'
+            network_partitioning:
+                operation: 'reset'
+                ip_address: 'nsxcontroller.[1]->controller_ip'
+                execution_type: 'cmd'
+
+        BlockRabbitMqConnectionOnController3:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[3]'
+            network_partitioning:
+                operation: 'set'
+                protocol: 'tcp'
+                port: '5671'
+                execution_type: 'cmd'
+
+        ResetRabbitMqConnectionOnController3:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[3]'
+            network_partitioning:
+                operation: 'reset'
+                protocol: 'tcp'
+                port: '5671'
+                execution_type: 'cmd'
+
+        RemoveCCPNode3FromCluster_force:
+            Type: Controller
+            TestController: 'nsxcontroller.[1]'
+            sleepbetweenworkloads: '15'
+            remove_ccp_cluster_node:
+                controller_ip: 'nsxcontroller.[3]'
+                force: 'yes'
+                execution_type: 'cli'
+
+        RemoveCCPNode3FromCluster_fail:
+            Type: Controller
+            TestController: 'nsxcontroller.[1]'
+            sleepbetweenworkloads: '15'
+            remove_ccp_cluster_node:
+                controller_ip: 'nsxcontroller.[3]'
+                force: 'yes'
+                execution_type: 'cli'
+            expectedResult: fail
+
+        VerifyCCPCluster_12:
+            Type: "ClusterNode"
+            Testclusternode: "nsxcontroller.[1].clusternode.[1]"
+            execution_type: 'cli'
+            'get_cluster_node':
+                'in_majority[?]equal_to': "true"
+                'cluster_nodes[?]contain_once':
+                    - controller_ip: "nsxcontroller.[1]"
+                      id_: "nsxcontroller.[1].clusternode.[1]"
+                      status: "active"
+                    - controller_ip: "nsxcontroller.[2]"
+                      id_: "nsxcontroller.[1].clusternode.[2]"
+                      status: "active"
+
+        ReadLS1VniMasterCCP_From12:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            controllers: "nsxcontroller.[1-2]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            PersistData: "Yes"
+            read_switch_ccp_mapping:
+                'master_ccp_ip[?]defined': ''
+
+CCPClusterLongevity2_AddDecommissionsCCPNode:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ControlPlatform'
+    TestName: 'CCPClusterLongevity2_AddDecommissionsCCPNode'
+    TestbedSpec: *CCP_Clustering_TOPOLOGY_02--ESX
+    Version: 2
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Uptime'
+    QCPath: *QCPATH--ESX
+    Testbed: 'Deploy a setup with 1 NSX managers, 3 Control Plane node,  2 ESX host, 2 VM'
+    Summary: 'Join nodes to form a cluster of three nodes, Add and decommissions 1/2 CCP node'
+    Procedure:  '1. Deploy three controller,join these three controller to cluster
+                 2. Configure transport zone on MP
+                 3. Add and decommissions 1/2 node again and again
+                 4. Decommissions 1 and 2 CCP node,the cluster lost majority.
+                    So cluster does not work,LCP can not work with CCP,control
+                    plan was down'
+    ExpectedResult: 'After decommissions CCP node and add again,the cluster should work'
+    Duration: '300'
+    Tags: 'nsx,control,clustering'
+    AutomationLevel: 'Automated'
+    Developer: 'Jason'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    WORKLOADS:
+        Sequence:
+            - ['Register2Hosts']
+            - ['NSXManagerClusterSetup']
+            - ['RegisterAllControllers']
+            - ['DiscoverHostnodes']
+            - ['SetSecurityOnController1']
+            - ['InitializeController1']
+            - ['JoinController1ToCluster']
+            - ['SetSecurityOnController2']
+            - ['JoinController2ToCluster']
+            - ['ActivateController2']
+            - ['SetSecurityOnController3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController3']
+            - ['VerifyCCPCluster']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['VerifyLogicalSwitch1InfoOnControllers']
+            - ['AttachVM1toSwitch1']
+            - ['AttachVM2toSwitch1']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['DiscoverLogicalPorts']
+            - ['ConfigureVnicIP']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyLogicalSwith1EntryCountOnControllers']
+            - ['PowerOnOffCCPNode2and3_longevity','LogicalSwitch1Traffic_longevity']
+            - ['VerifyCCPCluster']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+        ExitSequence:
+            - ['DeleteVnic1', 'DeleteVnic2']
+            - ['NSXCleanup']
+            - ['UnregisterHosts']
+            - ['Cleanup3NodesMPClusterAndCCPCluster']
+
+        ActivateController2: *ACTIVATE_CONTROLLER_2
+        ActivateController3: *ACTIVATE_CONTROLLER_3
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--ESX
+        AttachVM2toSwitch1: *ATTACH_VM2_TO_SWITCH_1--ESX
+        Cleanup3NodesMPClusterAndCCPCluster: *CLEANUP_3_NODES_MP_CLUSTER_AND_CCP_CLUSTER
+        ConfigureVnicIP: *CONFIGURE_2VMS_IP--ESX
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01--ESX
+        CreateTransportNodes: *CREATE_2_TRANSPORTNODES--ESX
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        DeleteBootStrapOnController2: *DELETE_BOOT_STRAP_ON_CONTROLLER_2
+        DeleteBootStrapOnController3: *DELETE_BOOT_STRAP_ON_CONTROLLER_3
+        DeleteControllerNodeUUIDFileOnController2: *DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER_2
+        DeleteControllerNodeUUIDFileOnController3: *DELETE_CONTROLLER_NODE_UUID_FILE_ON_CONTROLLER_3
+        DeleteVnic1: *DELETE_VM1_VNIC1_LSWITCH1--ESX
+        DeleteVnic2: *DELETE_VM2_VNIC1_LSWITCH1--ESX
+        DiscoverHostnodes: *DISCOVER_2_HOST_NODES--ESX
+        DiscoverLogicalPorts: *DISCOVER_LOGICAL_PORTS
+        DiscoverVteps: *DISCOVER_VTEPS--ESX
+        InitializeController1: *INITIALIZE_CONTROLLER_1
+        JoinController1ToCluster: *JOIN_CONTROLLER_1_TO_CLUSTER
+        JoinController2ToCluster: *JOIN_CONTROLLER_2_TO_CLUSTER
+        JoinController3ToCluster: *JOIN_CONTROLLER_3_TO_CLUSTER
+        LogicalSwitch1Traffic: *LOGICAL_SWITCH_1_TRAFFIC--ESX
+        NSXCleanup: *NSX_CLEANUP--ESX
+        NSXManagerClusterSetup: *NSX_MANAGERCLUSTER_SETUP
+        PowerOffCCPNode2: *POWER_OFF_CCP_NODE_2
+        PowerOffCCPNode3: *POWER_OFF_CCP_NODE_3
+        PowerOnCCPNode2: *POWER_ON_CCP_NODE_2
+        PowerOnCCPNode3: *POWER_ON_CCP_NODE_3
+        ReadLS1VniMasterCCP: *READ_LOGICAL_SWITCH_1_MASTER_SLAVE_CCP
+        ReadLS1VniMasterSlaveCCP: *READ_LOGICAL_SWITCH_1_MASTER_SLAVE_CCP
+        Register2Hosts: *REGISTER_2_HOSTS--ESX
+        RegisterAllControllers: *REGISTER_ALL_CONTROLLERS
+        RegisterController2: *REGISTER_CONTROLLER_2
+        RegisterController3: *REGISTER_CONTROLLER_3
+        RemoveCCPNode2FromCluster: *REMOVE_CCPNODE_FROM_CLUSTER_2
+        RemoveCCPNode3FromCluster: *REMOVE_CCPNODE_FROM_CLUSTER_3
+        SetSecurityOnController1: *SET_SECURITY_ON_CONTROLLER_1
+        SetSecurityOnController2: *SET_SECURITY_ON_CONTROLLER_2
+        SetSecurityOnController3: *SET_SECURITY_ON_CONTROLLER_3
+        UnregisterController2: *UNREGISTER_CONTROLLER_2
+        UnregisterController3: *UNREGISTER_CONTROLLER_3
+        UnregisterHosts: *UNREGISTER_HOSTS--ESX
+        VerifyCCPCluster: *VERIFY_CCP_CLUSTER
+        VerifyLogicalSwitch1InfoOnControllers: *VERIFY_LOGICAL_SWITCH_1_INFO_ON_CONTROLLERS
+        VerifyLogicalSwith1EntryCountOnControllers: *VERIFY_LOGICAL_SWITCH_1_ENTRY_COUNT_ON_CONTROLLERS
+        VerifyLSControllerStatusOnHost_up: *VERIFY_LOGICAL_SWITCH_1_CONTROLLER_STATUS_ON_HOST_UP--ESX
+        VerifyLSReplicationModeOnHost: *VERIFY_LS_REPLICATION_MODE_ON_HOST--ESX
+
+        PowerOnOffCCPNode2and3_longevity:
+            Type: 'WorkloadGroup'
+            iterations: 30
+            maxtimeout: '18000'
+            sequence:
+                - ['PowerOffCCPNode3']
+                - ['RemoveCCPNode3FromCluster']
+                - ['UnregisterController3']
+                - ['PowerOffCCPNode2']
+                - ['RemoveCCPNode2FromCluster']
+                - ['UnregisterController2']
+                - ['PowerOnCCPNode3']
+                - ['PowerOnCCPNode2']
+                - ['DeleteBootStrapOnController3']
+                - ['DeleteControllerNodeUUIDFileOnController3']
+                - ['DeleteBootStrapOnController2']
+                - ['DeleteControllerNodeUUIDFileOnController2']
+                - ['RegisterController3']
+                - ['SetSecurityOnController3']
+                - ['JoinController3ToCluster']
+                - ['RegisterController2']
+                - ['SetSecurityOnController2']
+                - ['JoinController2ToCluster']
+                - ['ActivateController3']
+                - ['ActivateController2']
+                - ['ReadLS1VniMasterSlaveCCP']
+
+        LogicalSwitch1Traffic_longevity:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4"
+            L4Protocol    : "tcp,udp"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+            TestDuration  : "3600"
+
+CCPCluster3Nodes_FT_PartialPersistentLoss:
+    Product: 'NSXTransformers'
+    Component: 'Clustering'
+    Category: 'ControlPlatform'
+    TestName: 'CCPCluster3Nodes_FT_PartialPersistentLoss'
+    TestbedSpec: *CCP_Clustering_TOPOLOGY_02--ESX
+    Version: 2
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath: *QCPATH--ESX
+    Testbed: 'Deploy a setup with 1 NSX managers, 3 Control Plane node, 2 ESX host'
+    Summary: 'Join nodes to form a cluster of three nodes, verify CCP node partially lost
+              persistent dat'
+    Procedure:  '1. Form CCP cluster of 3 nodes
+                 2. CCP node loses its controllerd info file but still has the IPsec
+                    key and its own private key
+                 3. Reboot CCP node,the controllerd info file regenerated automatically
+                After step 3:
+                The CCP clustering should be worked'
+    ExpectedResult: "PASS"
+    Duration: '300'
+    Tags: 'nsx,control,clustering'
+    AutomationLevel: 'Automated'
+    Developer: 'wxzhang'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+    WORKLOADS:
+        Sequence:
+            - ['Register2Hosts']
+            - ['NSXManagerClusterSetup']
+            - ['RegisterAllControllers']
+            - ['DiscoverHostnodes']
+            - ['SetSecurityOnController1']
+            - ['InitializeController1']
+            - ['JoinController1ToCluster']
+            - ['SetSecurityOnController2']
+            - ['JoinController2ToCluster']
+            - ['ActivateController2']
+            - ['SetSecurityOnController3']
+            - ['JoinController3ToCluster']
+            - ['ActivateController3']
+            - ['VerifyCCPCluster']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateLogicalSwitch']
+            - ['VerifyLogicalSwitch1InfoOnControllers']
+            - ['AttachVM1toSwitch1']
+            - ['AttachVM2toSwitch1']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['DiscoverLogicalPorts']
+            - ['ConfigureVnicIP']
+            - ['LogicalSwitch1Traffic']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['DeleteControllerInfoFileOnController3']
+            - ['RebootCCPNode3']
+            - ['LogicalSwitch1Traffic']
+            - ['VerifyCCPCluster']
+            - ['VerifyLogicalSwitch1InfoOnControllers']
+            - ['ReadLS1VniMasterCCP']
+            - ['VerifyLSControllerStatusOnHost_up']
+            - ['LogicalSwitch1Traffic']
+        ExitSequence:
+            - ['DeleteVnic1', 'DeleteVnic2']
+            - ['NSXCleanup']
+            - ['UnregisterHosts']
+            - ['Cleanup3NodesMPClusterAndCCPCluster']
+
+        ActivateController2: *ACTIVATE_CONTROLLER_2
+        ActivateController3: *ACTIVATE_CONTROLLER_3
+        AttachVM1toSwitch1: *ATTACH_VM1_TO_SWITCH_1--ESX
+        AttachVM2toSwitch1: *ATTACH_VM2_TO_SWITCH_1--ESX
+        Cleanup3NodesMPClusterAndCCPCluster: *CLEANUP_3_NODES_MP_CLUSTER_AND_CCP_CLUSTER
+        ConfigureVnicIP: *CONFIGURE_2VMS_IP--ESX
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01--ESX
+        CreateTransportNodes: *CREATE_2_TRANSPORTNODES--ESX
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01
+        DeleteVnic1: *DELETE_VM1_VNIC1_LSWITCH1--ESX
+        DeleteVnic2: *DELETE_VM2_VNIC1_LSWITCH1--ESX
+        DiscoverHostnodes: *DISCOVER_2_HOST_NODES--ESX
+        DiscoverLogicalPorts: *DISCOVER_LOGICAL_PORTS
+        InitializeController1: *INITIALIZE_CONTROLLER_1
+        JoinController1ToCluster: *JOIN_CONTROLLER_1_TO_CLUSTER
+        JoinController2ToCluster: *JOIN_CONTROLLER_2_TO_CLUSTER
+        JoinController3ToCluster: *JOIN_CONTROLLER_3_TO_CLUSTER
+        LogicalSwitch1Traffic: *LOGICAL_SWITCH_1_TRAFFIC--ESX
+        NSXCleanup: *NSX_CLEANUP--ESX
+        NSXManagerClusterSetup: *NSX_MANAGERCLUSTER_SETUP
+        ReadLS1VniMasterCCP: *READ_LOGICAL_SWITCH_1_MASTER_SLAVE_CCP
+        RebootCCPNode3: *REBOOT_CCP_NODE_3
+        Register2Hosts: *REGISTER_2_HOSTS--ESX
+        RegisterAllControllers: *REGISTER_ALL_CONTROLLERS
+        SetSecurityOnController1: *SET_SECURITY_ON_CONTROLLER_1
+        SetSecurityOnController2: *SET_SECURITY_ON_CONTROLLER_2
+        SetSecurityOnController3: *SET_SECURITY_ON_CONTROLLER_3
+        UnregisterHosts: *UNREGISTER_HOSTS--ESX
+        VerifyCCPCluster: *VERIFY_CCP_CLUSTER
+        VerifyLogicalSwitch1InfoOnControllers: *VERIFY_LOGICAL_SWITCH_1_INFO_ON_CONTROLLERS
+        VerifyLSControllerStatusOnHost_up: *VERIFY_LOGICAL_SWITCH_1_CONTROLLER_STATUS_ON_HOST_UP--ESX
+        VerifyLSReplicationModeOnHost: *VERIFY_LS_REPLICATION_MODE_ON_HOST--ESX
+
+        DeleteControllerInfoFileOnController3:
+            Type: 'NSX'
+            TestNSX: 'nsxcontroller.[3]'
+            delete_backend_file:
+                file_name: 'controllerd.info'
+                execution_type: 'cmd'
+                path: '/var/cloudnet/data'

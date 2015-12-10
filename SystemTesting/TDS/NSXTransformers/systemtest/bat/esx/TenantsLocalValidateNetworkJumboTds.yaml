@@ -1,0 +1,128 @@
+!include ../TestbedSpecEsx.yaml
+!include ../workload/WorkloadsCommon.yaml
+!include ../workload/WorkloadsHostIpRoute.yaml
+!include ../workload/WorkloadsHostEsx.yaml
+!include ../workload/WorkloadsHostVif.yaml
+!include ../workload/WorkloadsNetwork.yaml
+!include ../workload/WorkloadsJumbo.yaml
+!include ../workload/WorkloadsTraffic.yaml
+!include ../workload/WorkloadsAliasesEsx.yaml
+
+# 3rd in YAML file merge
+
+Validate:
+    AutomationLevel: Automated
+    Category: SystemTest
+    Component: BAT
+    Developer: jworsnup
+    ExpectedResult: pass
+    FullyAutomatable: Y
+    Priority: P0
+    Procedure:
+    -
+    -
+    Product: NSXTransformers
+    Summary: Testcase deploys testbed and verifies with various pings between VMs in network
+    Tags: nsx,avalanche
+    TestName: esx/TenantsLocalValidateNetworkTds
+    TestcaseLevel: SystemTest
+    TestcaseType: SystemTest
+    Version: 2
+
+    TestbedSpec: *BAT_TESTBED_SPEC_ESX
+
+    WORKLOADS:
+        <<: *WorkloadsCommon
+        <<: *WorkloadsHostIpRoute
+        <<: *WorkloadsHostEsx
+        <<: *WorkloadsHostVif
+        <<: *WorkloadsNetwork
+        <<: *WorkloadsJumbo
+        <<: *WorkloadsTraffic
+        <<: *WorkloadsAliasesEsx
+        Sequence:
+#---------------------------------------
+# CREATE NSX MANAGEMENT
+#---------------------------------------
+
+          # - [RegisterHostEsx]  # 12/17/2014 3:21:40 PM  rtqa10c4
+          - [DiscoverHostEsx]
+          - [CreateTransportZone]
+
+          - [Create9KUplinkProfile]
+          - [CreateTransportNodeEsx]
+          - [DiscoverVtepEsx]
+          - [ConfigureVtepIpEsx]
+
+          - [SetControllerOnHostEsx]
+
+#---------------------------------------
+# CREATE NETWORK - LOGICAL SWITCHES AND VIF ATTACHMENTS
+#---------------------------------------
+
+          - [CreateLogicalSwitches]
+
+          - [VifAttachmentsVm1Esx,VifAttachmentsVm2Esx,VifAttachmentsVm3Esx,VifAttachmentsVm4Esx,VifAttachmentsVm5Esx,
+            VifAttachmentsVm6Esx,VifAttachmentsVm7Esx,VifAttachmentsVm8Esx,VifAttachmentsVm9Esx,VifAttachmentsVm10Esx,VifAttachmentsVm11Esx, VifAttachmentsVm12Esx]
+          # - [VifAttachmentsVm13Esx,VifAttachmentsVm14Esx,VifAttachmentsVm15Esx]
+
+          - [Set9kMtuOnHostEsx]
+          - [Set9kMtuOnVmESX]
+          - [PowerOnVM]
+
+#---------------------------------------
+# CREATE NETWORK - LOGICAL ROUTERS
+#---------------------------------------
+
+          # - [DiscoverLogicalPortVifEsx]
+          - [CreateLogicalPorts]
+          - [CreateLogicalRouter]
+          - [CreateLRPorts]
+
+#---------------------------------------
+# CREATE VM VNICIPS AND VM ROUTES
+#---------------------------------------
+
+          - [ConfigureVmIp_1-1,ConfigureVmIp_2-1,ConfigureVmIp_3-1,ConfigureVmIp_4-1,ConfigureVmIp_5-1,ConfigureVmIp_6-1,ConfigureVmIp_7-1,ConfigureVmIp_8-1,ConfigureVmIp_9-1,ConfigureVmIp_10-1,ConfigureVmIp_11-1,ConfigureVmIp_12-1]
+          # - [ConfigureVmIp_13-1,ConfigureVmIp_14-1,ConfigureVmIp_15-1, ConfigureVmIp_16-1]
+
+          - [AddGwLocalVm_1,AddGwLocalVm_2,AddGwLocalVm_3,AddGwLocalVm_4,AddGwLocalVm_5,AddGwLocalVm_6,AddGwLocalVm_7,AddGwLocalVm_8,AddGwLocalVm_9,AddGwLocalVm_10,AddGwLocalVm_11,AddGwLocalVm_12]
+          #- [AddGwLocalVm_13,AddGwLocalVm_14,AddGwLocalVm_15,AddGwLocalVm_16]
+
+#---------------------------------------
+# NETWORK VALIDATION
+#---------------------------------------
+
+          - [Traffic9kPingSrc_1-1]
+          - [Traffic9kPingSrc_2-1]
+          - [Traffic9kPingSrc_4-1]
+          - [Traffic9kPingSrc_6-1]
+          - [Traffic9kPingSrc_7-1]
+          - [Traffic9kPingSrc_10-1]
+
+          - [TrafficArpPingSrc_1-1]
+          - [TrafficArpPingSrc_2-1]
+          - [TrafficArpPingSrc_4-1]
+          - [TrafficArpPingSrc_6-1]
+          - [TrafficArpPingSrc_7-1]
+          - [TrafficArpPingSrc_10-1]
+
+#---------------------------------------
+# CLEANUP AND EXIT
+#---------------------------------------
+        ExitSequence:
+#          - [PowerOffAllVM]
+#          - [DeleteEdgenode]
+#          - [DeleteLogicalRouterPort]
+#          - [DeleteLogicalRouter]
+#          - [DeleteLogicalSwitch]
+#          - [DeleteVnic]
+#          - [DeleteUpinkProfile]
+#          - [DeleteFabricHost]
+#          - [DeleteTransportNode]
+#          - [DeleteTransportZone]
+
+          # - [DeleteManagerOnHost]
+
+# //++/++//////////////////////////////
+# last line is empty no spaces, nada, so yaml files join happens correctly

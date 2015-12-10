@@ -1,0 +1,962 @@
+PingESXGuestToKVMGuest:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test case pings from ESX Guest to KVM Guest from workloads
+  Tags: ''
+  TestName: PingESXGuestToKVMGuest
+  Version: '2'
+
+  TestbedSpec:
+    kvm:
+      '[1]':
+        pif:
+          '[0-1]': {}
+    host:
+      '[2]':
+        vmnic:
+          '[1]': {}
+
+  WORKLOADS:
+    Sequence:
+      - [SetupKVMHostForVDNet]
+      - [InitializeBridges]
+      - [InitializeVSS]
+      - [InitializePortgroup]
+      - [CreateVM1]
+      - [CreateVM2]
+      - [PoweronVM1]
+      - [PoweronVM2]
+      - [SetIP]
+      - [TrafficWithVerification]
+
+    SetupKVMHostForVDNet:
+      Type: Host
+      Testhost: kvm.[1]
+      framework_setup:
+         - disablefirewall
+         - createanchor
+         - copysshkey
+
+    InitializeBridges:
+      Type: Host
+      Testhost: kvm.[1]
+      bridge:
+        '[1]':
+          name: breth1
+
+    InitializeVSS:
+      Type: Host
+      Testhost: host.[2]
+      vss:
+        '[1]':
+            vmnicadapter: host.[2].vmnic.[1]
+            configureuplinks : add
+
+    InitializePortgroup:
+      Type: Host
+      Testhost: host.[2]
+      portgroup:
+        '[1]':
+          vss: host.[2].vss.[1]
+
+    CreateVM1:
+      Type: Root
+      TestNode: root.[1]
+      vm:
+        '[1]':
+          host: kvm.[1]
+          installtype: fullclone
+          template: template_kvm_debian
+          vmstate: poweroff
+          vif:
+            '[1]':
+              backing: kvm.[1].bridge.[1]
+
+    CreateVM2:
+      Type: Root
+      TestNode: root.[1]
+      vm:
+        '[2]':
+          host: host.[2]
+          installtype: legacyclone
+          template: rhel53-srv-32
+          vmstate: poweroff
+          vnic:
+            '[1]':
+              portgroup : host.[2].portgroup.[1]
+
+    PoweronVM1:
+      Type: VM
+      TestVM: vm.[1]
+      vmstate: poweron
+
+    PoweronVM2:
+      Type: VM
+      TestVM: vm.[2]
+      vmstate: poweron
+
+    SetIP:
+      Type: NetAdapter
+      Testadapter: vm.[2].vnic.[1],vm.[1].vif.[1]
+      ipv4: auto
+
+
+    TrafficWithVerification:
+      Type: Traffic
+      Testadapter: vm.[1].vif.[1]
+      Supportadapter: vm.[2].vnic.[1]
+      ToolName: Ping
+      NoofInbound: 1
+      NoofOutbound: 1
+      Verification: Verification_1
+
+    Verification_1:
+      PktCapVerificaton:
+         target: vm.[1].vif.[1]
+         verificationtype: pktcap
+         pktcount: 2+
+         badpkt  : 0
+
+
+PingESXGuestToKVMGuest_2:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test case pings from ESX Guest to KVM Guest
+  Tags: ''
+  TestName: PingESXGuestToKVMGuest_2
+  Version: '2'
+
+  TestbedSpec:
+    kvm:
+      '[1]':
+        pif:
+          '[0]': {}
+        bridge:
+          '[1]':
+            name: breth1
+        framework_setup:
+           - disablefirewall
+           - createanchor
+           - copysshkey
+    host:
+      '[2]':
+        vmnic:
+          '[1]':
+            driver: any
+        vss:
+          '[1]':
+            vmnicadapter: host.[2].vmnic.[1]
+            configureuplinks : add
+        portgroup:
+          '[1]':
+            vss: host.[2].vss.[1]
+    vm:
+      '[1]':
+         host: kvm.[1]
+         installtype: fullclone
+         template: rhel53-srv-32
+         vmstate: poweron
+         vif:
+           '[1]':
+             backing: kvm.[1].bridge.[1]
+      '[2]':
+         host: host.[2]
+         installtype: legacyclone
+         template: rhel53-srv-32
+         vmstate: poweron
+         vnic:
+           '[1]':
+             portgroup: host.[2].portgroup.[1]
+
+  WORKLOADS:
+    Sequence:
+      - [TrafficFlow]
+
+    TrafficFlow:
+      Type: Traffic
+      Testadapter: vm.[1].vif.[1]
+      Supportadapter: vm.[2].vnic.[1]
+      ToolName: Ping
+      NoofOutbound: 1
+      NoofInbound: 1
+
+
+VDTestInventory:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test case checks Test Inventory
+  Tags: 'precheckin'
+  TestName: VDTestInventory
+  TestbedSpec:
+    testinventory:
+      '[1-2]': {}
+      '[3]':
+         'ipv4address': 'x=testinventory_index*2.testinventory_index*2.4.4'
+  Version: '2'
+  WORKLOADS:
+    Duration: time in seconds
+
+    Sequence:
+     - [InventoryWorkloadNoRecursionSchemaSame]
+     - [InventoryWorkload1]
+     - [componentStep3, componentStep4, customsequence]
+     - [customsequence, componentStep3, componentStep4]
+     - [customsequence]
+     - [componentStep3,componentStep4,componentStep5]
+    ExitSequence:
+     - [componentStep3]
+     - [customsequence]
+     - [InventoryWorkload1]
+
+    componentStep3:
+      Type: 'TestComponent'
+      testcomponent: 'testinventory.[1].testcomponent.[1]'
+      foo: 'disable'
+
+    componentStep4:
+      Type: 'TestComponent'
+      testcomponent: 'testinventory.[1].testcomponent.[1]'
+      foo: 'enable'
+
+    componentStep5:
+      Type: 'TestComponent'
+      testcomponent: 'testinventory.[1].testcomponent.[1]'
+      foo: 'enable'
+
+    InventoryWorkloadNoRecursionSchemaSame:
+      Type: TestInventory
+      Testinventory: testinventory.[1]
+      testcomponent:
+        '[3-4]':
+          sleep: '0'
+          foo: 'enable'
+          bar:
+            foo: 'disable'
+            component_mac: '2.6'
+          alpha:
+             - 'remote'
+          baz:
+            - foo:  'enable'
+              sleep: '3'
+          conf:
+            - 'high'
+
+    InventoryWorkload1:
+      Type: TestInventory
+      Testinventory: testinventory.[1]
+      testcomponent:
+        '[1]':
+          sleep: '0'
+          foo: 'enable'
+          bar:
+            foo: 'disable'
+            component_mac: '2.6'
+          alpha:
+             - 'remote'
+          baz:
+            - foo:  'enable'
+              sleep: '3'
+          conf:
+            - 'high'
+        '[2]':
+          sleep: '0'
+          beta:
+              sleep: '0'
+              foo: 'enable'
+              bar:
+                foo: 'disable'
+                sleep: '2.6'
+              alpha:
+                 - 'remote'
+              baz:
+                - foo:  'enable'
+                  sleep: '3'
+              conf:
+                - 'high'
+    VerifyNested:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testcomponent.[1]
+      nested:
+          'sleep[?]equal_to': '0'
+          'foo[?]equal_to': '0000 1111'
+          'bar[?]equal_to':
+            'foo[?]equal_to': '0000 0000'
+            'component_mac[?]equal_to': 'testinventory.[1].testcomponent.[1]'
+          'alpha[?]contain_once':
+             - 'remote'
+          'baz[?]contain_once':
+            - foo:  '0000 1111'
+              sleep: '3'
+          'conf[?]contain_once':
+            - 'high'
+    VerifyNestedNegative:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testcomponent.[1]
+      ExpectedResult: FAIL
+      nested_negative:
+          'bar[?]equal_to':
+            'foo': '123456789'
+            'component_mac': '12345678'
+
+TestEsx:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: 'This test case is used for running commands on esx'
+  Tags: esx
+  TestName: TestEsx
+  TestbedSpec:
+    esx:
+      '[1]': {}
+  Version: '2'
+  WORKLOADS:
+    Sequence:
+     - [InventoryWorkload1]
+     - [InventoryWorkload2]
+     - [InventoryWorkload3]
+     - [InventoryWorkload4]
+     - [InventoryWorkload5]
+     - [InventoryWorkload6]
+     - [InventoryWorkload7]
+    InventoryWorkload1:
+      Type: Host
+      TestHost: 'esx.[1]'
+      configure_service_state:
+        execution_type: 'cli'
+        service_name: 'memscrubd'
+        state: 'stop'
+        strict: 0
+    InventoryWorkload2:
+      Type: Host
+      TestHost: 'esx.[1]'
+      configure_service_state:
+        execution_type: 'cli'
+        service_name: 'memscrubd'
+        state: 'stop'
+        strict: 0
+    InventoryWorkload3:
+      Type: Host
+      TestHost: 'esx.[1]'
+      configure_service_state:
+        execution_type: 'cli'
+        service_name: 'memscrubd'
+        state: 'start'
+        strict: 0
+    InventoryWorkload4:
+      Type: Host
+      TestHost: 'esx.[1]'
+      configure_service_state:
+        execution_type: 'cli'
+        service_name: 'memscrubd'
+        state: 'start'
+        strict: 0
+    InventoryWorkload5:
+      Type: Host
+      TestHost: 'esx.[1]'
+      configure_service_state:
+        execution_type: 'cli'
+        service_name: 'memscrubd'
+        state: 'restart'
+        strict: 0
+    InventoryWorkload6:
+      Type: Host
+      TestHost: 'esx.[1]'
+      configure_service_state:
+        execution_type: 'cli'
+        service_name: 'memscrubd'
+        state: 'restart'
+        strict: 0
+    InventoryWorkload7:
+      Type: Host
+      TestHost: 'esx.[1]'
+      configure_service_state:
+        execution_type: 'cli'
+        service_name: 'memscrubd'
+        state: 'kill'
+        strict: 0
+
+TestRead:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test case checks different read structures
+  Tags: VDTestInventory,precheckin,verification
+  TestName: TestRead
+  TestbedSpec:
+    testinventory:
+      '[1-2]': {}
+  Version: '2'
+  WORKLOADS:
+    Duration: time in seconds
+
+    Sequence:
+    - [InventoryWorkload1]
+    - [PersistData]
+    - [FetchPersistData]
+    - [PersistDataStartWithNoReadStr]
+    - [FetchPersistDataStartWithNoReadStr]
+
+    InventoryWorkload1:
+      Type: TestInventory
+      Testinventory: testinventory.[1]
+      testpylib:
+        '[1]':
+          sleep: '0'
+        '[2]':
+          sleep: '0'
+
+    PersistData:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testpylib.[1]
+      PersistData: "Yes"
+      read_array:
+         'result_count[?]equal_to': 2
+         'result':
+           - 'interface_id[?]defined' : ''
+             'physical_address[?]defined' : ''
+           - 'interface_id[?]defined' : ''
+             'physical_address[?]defined' : ''
+    FetchPersistData:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testpylib.[1]
+      PersistData: "Yes"
+      helper_read_array:
+            'address[?]equal_to' : "testinventory.[1].testpylib.[1]->read_array->['result', ['1','physical_address']]"
+
+    PersistDataStartWithNoReadStr:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testpylib.[1]
+      PersistData: "Yes"
+      get_array:
+         'result_count[?]equal_to': 2
+         'result':
+           - 'interface_id[?]defined' : ''
+             'physical_address[?]defined' : ''
+           - 'interface_id[?]defined' : ''
+             'physical_address[?]defined' : ''
+    FetchPersistDataStartWithNoReadStr:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testpylib.[1]
+      PersistData: "Yes"
+      helper_get_array:
+            'address[?]equal_to' : "testinventory.[1].testpylib.[1]->get_array->['result', ['1','physical_address']]"
+
+TestPylib:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test case checks Test Pylib
+  Tags: VDTestInventory,precheckin,verification
+  TestName: TestPylib
+  TestbedSpec:
+    testinventory:
+      '[1-2]': {}
+  Version: '2'
+  WORKLOADS:
+    Duration: time in seconds
+
+    Sequence:
+    - [InventoryWorkload1]
+    - [VerifyException]
+    - [VerifySuccess]
+    - [VerifySCFooExcNoneReturn]
+    - [VerifySCFooExcBarReturn]
+
+    InventoryWorkload1:
+      Type: TestInventory
+      Testinventory: testinventory.[1]
+      testpylib:
+        '[1]':
+          sleep: '0'
+        '[2]':
+          sleep: '0'
+
+    VerifyException:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testpylib.[1]
+      ExpectedResult:
+         status_code: 'METHOD_NOT_ALLOWED'
+      exception_unit_test:
+          'sleep[?]equal_to': '0'
+
+    VerifySuccess:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testpylib.[1]
+      success_unit_test:
+          'sleep[?]equal_to': '0'
+
+    VerifySCFooExcNoneReturn:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testpylib.[1]
+      ExpectedResult:
+         status_code: Foo
+      status_code_exception_unit_test:
+         return_sc: Foo
+         return_exc: null
+
+    VerifySCFooExcBarReturn:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testpylib.[1]
+      ExpectedResult:
+        status_code: Foo
+        error: Bar
+      status_code_exception_unit_test:
+        return_sc: Foo
+        return_exc: Bar
+
+VerificationDiffTest:
+  Category: Internal
+  Component: Verification
+  Summary: Precheckin test for verification
+  Tags: precheckin
+  TestName: VerificationDiffTest
+  TestbedSpec:
+    testinventory:
+      '[1]':
+        testcomponent:
+          '[1]':
+            ipaddress: 10.10.10.10
+            name: test1
+            password: default
+            schema: '12345'
+            username: admin
+  Version: '2'
+  WORKLOADS:
+    CollectLogs:
+      CheckifExists:
+      - abc:
+        - array:
+          - cdf:
+              zone[?]equal_to: '0'
+          ipaddress[?]!=: 10.11.12.13
+          name[?]!=: test2
+          password[?]equal_to: default
+          schema[?]equal_to: '0'
+          username[?]equal_to: admin
+      TestComponent: testinventory.[1].testcomponent.[1]
+      Type: TestComponent
+      VerificationStyle: diff
+    CollectLogsAgain:
+      CheckifExists:
+      - abc:
+        - array:
+          - cdf:
+              zone[?]equal_to: '0'
+          ipaddress[?]!=: 10.11.12.13
+          name[?]!=: test2
+          password[?]equal_to: default
+          schema[?]equal_to: '0'
+          username[?]equal_to: admin
+      TestComponent: testinventory.[1].testcomponent.[1]
+      Type: TestComponent
+      VerificationStyle: diff
+    Sequence:
+    - [CollectLogs]
+    - [CollectLogs]
+    - [CollectLogsAgain]
+    - [CollectLogsAgain]
+
+
+VerificationUnitTest:
+  Category: Internal
+  Component: Verification
+  Summary: Precheckin test for verification
+  Tags: precheckin
+  TestName: VerificationUnitTest
+  TestbedSpec:
+    testinventory:
+      '[1]':
+        testcomponent:
+          '[1]':
+            ipaddress: 10.10.10.10
+            name: test1
+            password: default
+            schema: '12345'
+            username: admin
+      '[2]':
+        testcomponent:
+          '[1]':
+            ipaddress: 10.10.10.10
+            name: test2
+            password: default
+            schema: '12345'
+            username: admin
+  Version: '2'
+  WORKLOADS:
+    FirstVerification1:
+      CheckifExists:
+      - abc:
+        - array:
+          - cdf:
+              zone[?]equal_to: testinventory.[1].testcomponent.[1]
+          ipaddress[?]equal_to: self
+          name[?]equal_to: test2
+          password[?]equal_to: testinventory.[1].testcomponent.[1]
+          username[?]equal_to: testinventory.[1].testcomponent.[1]
+      Inventory: testinventory.[1]
+      TestComponent: testinventory.[2].testcomponent.[1]
+      Type: TestComponent
+    FirstVerification_CheckForDuplicate:
+      Inventory: testinventory.[1]
+      TestComponent: testinventory.[1].testcomponent.[1]
+      Type: TestComponent
+      verifyABCD[?]contain_once:
+      - groupaddr[?]equal_to: 239.1.1.1
+        mcastmode[?]equal_to: exclude
+        mcastprotocol[?]equal_to: igmp
+        mcastversion[?]equal_to: testinventory.[2].testcomponent.[1]
+        sourceaddrs[?]contain_once:
+        - ip[?]contain_once:
+          - 192.168.1.1
+          - 192.168.1.2
+          mac[?]equal_to: ABCDEFG
+    Sequence:
+    - [FirstVerification1]
+    - [FirstVerification_CheckForDuplicate]
+
+
+AuthenticationServerSanity:
+    Component: "AuthenticationServer"
+    Category: "vSM-Core"
+    Product: "VSM"
+    TestName: "Authentication Server Sanity"
+    Version: "2"
+    Tags: "vsm"
+    Summary: "This is sanity test case of Authentication Server"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "dgargote"
+    Partnerfacing: "Y"
+    TestbedSpec:
+        authserver:
+            '[1]':
+    WORKLOADS:
+        Sequence:
+            - ["ExecuteCommandOnAuthenticationServer"]
+        ExecuteCommandOnAuthenticationServer:
+            Type: "AuthServer"
+            TestAuthServer: "authserver.[1]"
+            authserver_command: 'ls'
+
+Autoload:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test case checks Autoload
+  Tags:
+  TestName: Autoload
+  TestbedSpec:
+    testinventory:
+      '[1]': {}
+  Version: '2'
+  WORKLOADS:
+    Duration: time in seconds
+    InventoryWorkload1:
+      Type: TestInventory
+      testinventory: testinventory.[1]
+      fubar: true
+    Sequence:
+    - [InventoryWorkload1]
+
+ThreadTest:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test case tests the thread behavior of vdnet
+  Tags: ''
+  TestName: ThreadTest
+  TestbedSpec:
+    testinventory:
+      '[1-5]': {
+         action1 : "2"
+      }
+  Version: '2'
+  WORKLOADS:
+    Duration: time in seconds
+
+    Sequence:
+    - [WorkloadRoot]
+    - [Workload1, Workload2]
+    - [ParallelTestObjWorkload3]
+    - [InventoryWorkload1]
+    - [VerifyException]
+    - [NegativeThreadTest]
+
+    WorkloadRoot:
+      Type: Root
+      TestNode : root.[1]
+      testinventory:
+        '[1-3]':
+          action1: '3'
+
+    Workload1:
+      Type: TestInventory
+      TestInventory: testinventory.[1]
+      testcomponent:
+        '[1-3]':
+          action1: '3'
+
+    Workload2:
+      Type: TestInventory
+      TestInventory: testinventory.[1-3]
+      testcomponent:
+        '[1-5]':
+          action1: '1'
+        '[6]':
+          action1: '2'
+
+    ParallelTestObjWorkload3:
+      Type: TestInventory
+      TestInventory: testinventory.[1-3]
+      action1: '3'
+
+    VerifyException:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testpylib.[1]
+      ExpectedResult:
+         status_code: 'METHOD_NOT_ALLOWED'
+      exception_unit_test:
+          'sleep[?]equal_to': '0'
+
+    InventoryWorkload1:
+      Type: TestInventory
+      Testinventory: testinventory.[1]
+      testpylib:
+        '[1]':
+          sleep: '0'
+        '[2]':
+          sleep: '0'
+
+    NegativeThreadTest:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testcomponent.[1-6],testinventory.[1].testpylib.[1]
+      action1: '3'
+      ExpectedResult: 'FAIL'
+
+RemoveMultiplyComponents:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test case remove a list of component from inventory
+  Tags: ''
+  TestName: RemoveMultiplyComponents
+  Version: '2'
+
+  TestbedSpec:
+    testinventory:
+      '[1-3]':
+        testcomponent:
+          '[1-3]': {}
+        testpylib:
+          '[1-3]': {}
+
+  WORKLOADS:
+    Sequence:
+      - [RemoveListOfComponents]
+
+    RemoveListOfComponents:
+      Type: TestInventory
+      testinventory: testinventory.[-1]
+      DeleteListOfComponents:
+           ['testcomponent','testpylib']
+
+VdnetIndexTest:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: Test to verify vdnet index
+  Tags: precheckin
+  TestName: VdnetIndexTest
+  Version: '2'
+
+  TestbedSpec:
+    testinventory:
+      '[1-3]':
+        testcomponent:
+          '[1-3]': {}
+
+  WORKLOADS:
+    Sequence:
+      - [BadIndex01]
+      - [BadComponent01]
+      - [BadTestKey01]
+
+    BadIndex01:
+      Type: TestInventory
+      testinventory: testinventory[1]
+      reconfigure: 'true'
+      ExpectedResult:
+        status_code: EINVALID
+
+    BadComponent01:
+      Type: Switch
+      # vc.[1].vds.[1] is not defined in this test
+      testswitch: vc.[1].vds.[1]
+      reconfigure: 'true'
+      ExpectedResult:
+        status_code: EINVALID
+
+    BadTestKey01:
+      Type: Switch
+      # for switch workload, the test key should testswitch
+      # not testhost
+      testhost: vc.[1].vds.[1]
+      reconfigure: 'true'
+      ExpectedResult:
+        status_code: EINVALID
+
+PersistTestData:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test persists user specified test data in the zookeeper
+  Tags: ''
+  TestName: VDNetZookeeperPersistTestData
+  Version: '2'
+
+  TestbedSpec:
+    testinventory:
+      '[1]':
+        testcomponent:
+          '[1]':
+            foo: 'enable'
+
+  WORKLOADS:
+    Sequence:
+     - [InventoryWorkload1]
+     - [InventoryWorkload2]
+     - [VerifyComponent1]
+
+    InventoryWorkload1:
+      Type: TestComponent
+      testcomponent: testinventory.[1].testcomponent.[1]
+      foo: 'enable'
+      test_data:
+         - foo: '0000 0000'
+    InventoryWorkload2:
+      Type: TestComponent
+      testcomponent: testinventory.[1].testcomponent.[1]
+      foo: 'enable'
+      test_data:
+          - foo: '0000 1111'
+    VerifyComponent1:
+      Type: TestComponent
+      TestComponent: testinventory.[1].testcomponent.[1]
+      nested:
+          'foo[?]equal_to':
+              testinventory.[1].testcomponent.[1]->test_data->foo
+
+
+RoundRobinTest:
+  Category: vdnet
+  Component: Infrastructure
+  ExpectedResult: PASS
+  Summary: This test verifies the round-robin index resolution.
+  Tags: ''
+  TestName: RoundRobinTest
+  Version: '2'
+
+  TestbedSpec:
+    testinventory:
+      '[1-3]':
+        testcomponent:
+          '[1]':
+            foo: enable
+
+  WORKLOADS:
+    Sequence:
+     - [SetComponent1Val]
+     - [SetComponent2Val]
+     - [SetComponent3Val]
+     - [GetRoundRobinVal1]
+     - [GetRoundRobinVal2]
+     - [GetRoundRobinVal3]
+     - [GetRoundRobinVal1]
+     - [GetRoundRobinVal2]
+     - [GetRoundRobinVal3]
+     - [GetRoundRobin1UsingRange]
+     - [GetRoundRobin2UsingRange]
+     - [GetRoundRobin3UsingRange]
+     - [GetRoundRobin1UsingComma]
+     - [GetRoundRobin2UsingComma]
+     - [GetRoundRobin3UsingComma]
+
+    SetComponent1Val:
+      Type: TestComponent
+      testcomponent: testinventory.[1].testcomponent.[1]
+      test_data:
+         - bar: 'one'
+
+    SetComponent2Val:
+      Type: TestComponent
+      testcomponent: testinventory.[2].testcomponent.[1]
+      test_data:
+         - bar: 'two'
+
+    SetComponent3Val:
+      Type: TestComponent
+      testcomponent: testinventory.[3].testcomponent.[1]
+      test_data:
+         - bar: 'three'
+
+    GetRoundRobinVal1:
+      Type: TestComponent
+      TestComponent: testinventory.[roundrobin].testcomponent.[1]
+      get_test_data[?]equal_to:
+         bar: three
+
+    GetRoundRobinVal2:
+      Type: TestComponent
+      TestComponent: testinventory.[roundrobin].testcomponent.[1]
+      get_test_data[?]equal_to:
+         bar: two
+
+    GetRoundRobinVal3:
+      Type: TestComponent
+      TestComponent: testinventory.[roundrobin].testcomponent.[1]
+      get_test_data[?]equal_to:
+          bar: one
+
+    GetRoundRobin1UsingRange:
+      Type: TestComponent
+      TestComponent: testinventory.[roundrobin=1-3].testcomponent.[1]
+      get_test_data[?]equal_to:
+         bar: one
+
+    GetRoundRobin2UsingRange:
+      Type: TestComponent
+      TestComponent: testinventory.[roundrobin=1-3].testcomponent.[1]
+      get_test_data[?]equal_to:
+         bar: three
+
+    GetRoundRobin3UsingRange:
+      Type: TestComponent
+      TestComponent: testinventory.[roundrobin=1-3].testcomponent.[1]
+      get_test_data[?]equal_to:
+         bar: two
+
+    GetRoundRobin1UsingComma:
+      Type: TestComponent
+      TestComponent: testinventory.[roundrobin=1,2,3].testcomponent.[1]
+      get_test_data[?]equal_to:
+         bar: one
+
+    GetRoundRobin2UsingComma:
+      Type: TestComponent
+      TestComponent: testinventory.[roundrobin=1,2,3].testcomponent.[1]
+      get_test_data[?]equal_to:
+         bar: three
+
+    GetRoundRobin3UsingComma:
+      Type: TestComponent
+      TestComponent: testinventory.[roundrobin=1,2,3].testcomponent.[1]
+      get_test_data[?]equal_to:
+         bar: two

@@ -1,0 +1,1114 @@
+!include ../Clustering/DeploymentWorkloads.yaml
+!include ../Clustering/L2Workloads.yaml
+!include ../Clustering/MPCommonWorkloads.yaml
+!include ../Clustering/MPVerticalWorkloads.yaml
+!include ./MeshWorkloads.yaml
+!include ../Clustering/TestbedSpec.yaml
+
+StateSynchMeshTest:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTest'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Create LP-1 to LP-10 from NSXManager-1
+                5. Create LP-11 to LP-20 from NSXManager-2
+                6. Create LP-21 to LP-30 from NSXManager-3
+                7. Verify all 30 logical-ports are getting realized on all CCP nodes'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockNSXController1FromStateSynchNode:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockNSXController1FromStateSynchNode'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block NSXController-1 from State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock NSXController-1 from State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockNSXController1FromStateSynchNode
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockNSXController1FromStateSynchNode
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockNSXController1And2FromStateSynchNode:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockNSXController1And2FromStateSynchNode'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block NSXController-1 and NSXController-2 from State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock NSXController-1 and NSXController-2 from State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockNSXController1And2FromStateSynchNode
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockNSXController1And2FromStateSynchNode
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockAllNSXControllersFromStateSynchNode:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockAllNSXControllersFromStateSynchNode'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block all NSXControllers from State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock all NSXControllers from State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockAllNSXControllersFromStateSynchNode
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockAllNSXControllersFromStateSynchNode
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockNSXController1FromNonStateSynchNode:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockNSXController1FromNonStateSynchNode'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block NSXController-1 from Non-State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock NSXController-1 from Non-State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockNSXController1FromNonStateSynchNode
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockNSXController1FromNonStateSynchNode
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockNSXController1And2FromNonStateSynchNode:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockNSXController1And2FromNonStateSynchNode'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block NSXController-1 and NSXController-2 from Non-State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock NSXController-1 and NSXController-2 from Non-State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockNSXController1And2FromNonStateSynchNode
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockNSXController1And2FromNonStateSynchNode
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockAllNSXControllersFromNonStateSynchNode:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockAllNSXControllersFromNonStateSynchNode'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block all NSXControllers from Non-State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock all NSXControllers from Non-State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockAllNSXControllersFromNonStateSynchNode
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockAllNSXControllersFromNonStateSynchNode
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockNSXController1FromAllNonStateSynchNodes:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockNSXController1FromAllNonStateSynchNodes'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block NSXController-1 from all Non-State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock NSXController-1 from all Non-State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockNSXController1FromAllNonStateSynchNodes
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockNSXController1FromAllNonStateSynchNodes
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockNSXController1And2FromAllNonStateSynchNodes:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockNSXController1And2FromAllNonStateSynchNodes'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block NSXController-1 and NSXController-2 from all Non-State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock NSXController-1 and NSXController-2 from all Non-State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockNSXController1And2FromAllNonStateSynchNodes
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockNSXController1And2FromAllNonStateSynchNodes
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockAllNSXControllersFromAllNonStateSynchNodes:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockAllNSXControllersFromAllNonStateSynchNodes'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block all NSXControllers from all Non-State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock all NSXControllers from all Non-State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockAllNSXControllersFromAllNonStateSynchNodes
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockAllNSXControllersFromAllNonStateSynchNodes
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockNSXController1FromStateSynchNodeAndOneNonStateSynchNode:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockNSXController1FromStateSynchNodeAndOneNonStateSynchNode'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block NSXController-1 from State Synch Node and one Non-State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock NSXController-1 from State Synch Node and one Non-State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockNSXController1FromStateSynchNode
+            - - BlockNSXController1FromNonStateSynchNode
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockNSXController1FromStateSynchNode
+            - - UnblockNSXController1FromNonStateSynchNode
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockNSXController1And2FromStateSynchNodeAndOneNonStateSynchNode:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockNSXController1And2FromStateSynchNodeAndOneNonStateSynchNode'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block NSXController-1 and NSXController-2 from
+                State Synch Node and one Non-State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock NSXController-1 and NSXController-2 from State Synch Node
+                and one Non-State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockNSXController1FromStateSynchNode
+            - - BlockNSXController1And2FromNonStateSynchNode
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockNSXController1FromStateSynchNode
+            - - UnblockNSXController1And2FromNonStateSynchNode
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1
+
+StateSynchMeshTestBlockAllNSXControllersFromStateSynchNodeAndOneNonStateSynchNode:
+    Product: 'NSXTransformers'
+    Component: 'DCNandStateSynch'
+    Category: 'ManagementPlatform'
+    TestName: 'StateSynchMeshTestBlockAllNSXControllersFromStateSynchNodeAndOneNonStateSynchNode'
+    Version: "2"
+    TCMSId: ''
+    Priority: 'P2'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    QCPath:  'MPCCPCommunication'
+    TestbedSpec: *3MP_3CCP_4ESX
+    Summary: 'Verify all logical ports are getting realized on all CCP nodes'
+    Procedure: '1. Register 3 CCP nodes to 3 MP node cluster
+                2. Add 2 HV to MP node
+                3. Create logical switch-1 from NSXManager-1
+                4. Block all NSXControllers from State Synch Node
+                and one Non-State Synch Node
+                5. Create LP-1 to LP-10 from NSXManager-1
+                6. Create LP-11 to LP-20 from NSXManager-2
+                7. Create LP-21 to LP-30 from NSXManager-3
+                8. Verify all 30 logical-ports are getting realized on all CCP nodes
+                9. Unblock all NSXControllers from State Synch Node and
+                one Non-State Synch Node'
+    ExpectedResult: 'All 30 logical ports should get created and get realized on CCP cluster.'
+    Duration: '300'
+    Tags: 'nsxmanager,statesync'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'Y'
+    WORKLOADS:
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+        <<: *ApplianceManagementWorkloads
+        <<: *CCPClusteringConfigurationWorkloads
+        <<: *StateSynchNodeWorkloads
+        <<: *MeshNetworkWorkloads
+        <<: *MessagingWorkloads
+
+        Sequence:
+            - - MapNSXManager1ToCluster
+            - - Wait_For_Cluster_Status_Stable_On_Node1
+            - - SetupThreeNodeCCPCluster
+            - - VerifyCCPClusterStatusActive
+            - - GetClients
+            - - VerifyClientList
+            - - VerifyClientByTypeHv
+            - - VerifyClientByTypeCCP
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+            - - CreateLogicalSwitch01From_Node1
+            - - CreateStateSynchNode
+            - - GetStateSynchNodeDetails
+            - - BlockNSXController1FromStateSynchNode
+            - - BlockAllNSXControllersFromNonStateSynchNode
+            - - CreateLogicalPort1To10FromNSXManager1
+            - - CreateLogicalPort11To20FromNSXManager2
+            - - CreateLogicalPort21To30FromNSXManager3
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController1
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController2
+            - - VerifyThirtyLogicalSwitchPortsOnNSXController3
+            - - PingClient_1
+            - - PingClient_2
+            - - PingClient_3
+            - - PingClient_4
+            - - PingClient_5
+            - - VerifyHeartbeatStatusOfClient1
+            - - VerifyHeartbeatStatusOfClient2
+            - - VerifyHeartbeatStatusOfClient3
+            - - VerifyHeartbeatStatusOfClient4
+            - - VerifyHeartbeatStatusOfClient5
+        ExitSequence:
+            - - UnblockNSXController1FromStateSynchNode
+            - - UnblockAllNSXControllersFromNonStateSynchNode
+            - - DeleteLogicalPortFrom_Node1
+            - - DeleteLogicalSwitchFrom_Node1

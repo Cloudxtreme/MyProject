@@ -1,0 +1,102 @@
+1MP_1ESX: &1MP_1ESX
+
+  nsxmanager:
+    '[1]':
+      ip: none
+
+  esx:
+    '[1]':
+      vmnic:
+        '[1]':
+          driver: 'any'
+      configure_package:
+        execution_type: 'cli'
+        operation: install
+        maintenance: 1
+        signaturecheck: 0
+      set_nsx_manager:
+        manager_ip: 'nsxmanager.[1]'
+        manager_thumbprint: 'nsxmanager.[1]'
+        execution_type: 'cli'
+
+3MP_NODE: &3MP_NODE
+
+  nsxmanager:
+    '[1]':
+      ip: none
+    '[2]':
+      ip: none
+    '[3]':
+      ip: none
+
+4MP_NODE: &4MP_NODE
+  nsxmanager:
+    '[1]':
+      'ip': none
+      clusternode:
+        '[2-3]':
+          mgr_role_config:
+            username: 'admin'
+            password: 'default'
+            node_type: 'AddManagementNodeSpec'
+            manager_ip: "nsxmanager.[x=clusternode_index]"
+            manager_thumbprint: "nsxmanager.[x=clusternode_index]"
+    '[2-4]': # Node 4 is not a part of the cluster (1,2,3). Its a independent node.
+      'ip': none
+
+1MP_1CCP_2ESX: &1MP_1CCP_2ESX
+
+  nsxmanager:
+    '[1]':
+      ip: none
+
+      hostnode:
+        '[1-2]':
+          discover: 'true'
+          ip_addresses: 'esx.[x=hostnode_index]'
+
+      transportzone:
+        '[1]':
+          name: autogenerate
+          transport_zone_type: 'OVERLAY' # or VLAN, both case-senstive
+          switch_name: 'nsxvswitch'
+
+      UplinkProfile:
+        '[1]':
+          mtu: 1600
+          teaming:
+            active:
+              - adapter_name: 'uplink1'
+                adapter_type: 'PNIC'
+            policy: 'FAILOVER_ORDER'
+          vlan: '0'
+          resource_type: 'UplinkHostSwitchProfile'
+
+  nsxcontroller:
+    '[1]':
+      ip: none
+      set_nsx_registration:
+        manager_ip: 'nsxmanager.[1]'
+        manager_thumbprint: 'nsxmanager.[1]'
+        execution_type: 'cli'
+
+  esx:
+    '[1-2]':
+      vmnic:
+        '[1]':
+          driver: 'any'
+      configure_package:
+        execution_type: 'cli'
+        operation: install
+        maintenance: 1
+        signaturecheck: 0
+      set_nsx_manager:
+        manager_ip: 'nsxmanager.[1]'
+        manager_thumbprint: 'nsxmanager.[1]'
+        execution_type: 'cli'
+
+  vm:
+    '[1]':
+      host: 'esx.[1]'
+    '[2]':
+      host: 'esx.[2]'

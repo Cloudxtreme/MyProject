@@ -1,0 +1,107 @@
+TestbedSpec02: &OneVSM_OneVC_OneDC_OneVDS_TwoHosts_OneCluster
+   vsm:
+       '[1]':
+           'reconfigure': "true"
+           'vc': "vc.[1]"
+           'assignrole': "enterprise_admin"
+           'applicationservice':
+               '[1]':
+                   name: "Service-A"
+                   element:
+                       applicationprotocol: TCP
+                   inheritanceallowed: "true"
+               '[2]':
+                   name: "Service-B"
+                   element:
+                       applicationprotocol: ICMP
+                   inheritanceallowed: "true"
+               '[3]':
+                   name: "Service-C"
+                   element:
+                       applicationprotocol: UDP
+                   inheritanceallowed: "true"
+           'applicationservicegroup':
+               '[1]':
+                   name: "ServiceGroup-A"
+                   groupingobject_desc: "Service Group Description-A"
+                   scope:
+                       name: Global
+                       id: globalroot-0
+                   type:
+                       typeName: ApplicationGroup
+                   inheritanceallowed: "true"
+                   metadata:
+                       'expectedresultcode': "201"
+                   'applicationservicegroupmember':
+                       '[1]':
+                           member: "vsm.[1].applicationservice.[1]"
+                       '[2]':
+                           member: "vsm.[1].applicationservice.[2]"
+                       '[3]':
+                           member: "vsm.[1].applicationservice.[3]"
+
+           'gateway':
+               '[1]':
+                   name: autogenerate
+                   datastoreType: "shared"
+                   resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+                   datacenter: "vc.[1].datacenter.[1]"
+                   host: "host.[1]"
+                   portgroup: "vc.[1].dvportgroup.[3]"
+                   primaryaddress: "10.65.31.134"
+                   subnetmask: "255.255.240.0"
+                   username: "admin"
+                   password: "VMware.12345"
+                   remote_access: "true"
+
+   host:
+       '[1]':
+           vmnic:
+               '[1-2]':
+                   driver: "any"
+       '[2]':
+           vmnic:
+               '[1-2]':
+                   driver: "any"
+
+   vc:
+       '[1]':
+           datacenter:
+               '[1]':
+                   cluster:
+                       '[1]':
+                           host: "host.[1-2]"
+                           clustername: "Cluster-1"
+                           ha: 0
+                           drs: 1
+           vds:
+               '[1]':
+                   datacenter: "vc.[1].datacenter.[1]"
+                   configurehosts: "add"
+                   host: "host.[1-2]"
+                   vmnicadapter: "host.[1-2].vmnic.[2]"
+           dvportgroup:
+               '[1]':
+                   name: "VDS1PG1-vlan18"
+                   vds: "vc.[1].vds.[1]"
+                   vlan: "18"
+                   vlantype: "access"
+               '[2]':
+                   name: "VDS1PG2-vlan19"
+                   vds: "vc.[1].vds.[1]"
+                   vlan: "19"
+                   vlantype: "access"
+               '[3]':
+                   name: "VDS1PG5-vlan111"
+                   vds: "vc.[1].vds.[1]"
+                   vlan: "111"
+                   vlantype: "access"
+
+   vm:
+       '[1]':
+           host: host.[1]
+           vmstate: poweron
+       '[2]':
+           host: host.[2]
+           vmstate: poweron
+

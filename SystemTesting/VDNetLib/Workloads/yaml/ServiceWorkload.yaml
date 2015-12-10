@@ -1,0 +1,1601 @@
+---
+_serviceid:
+  derived_components:
+    - service
+  description: _serviceid description
+  format: string
+  method: ProcessParameters
+  sample_value: not available
+  type: parameter
+acceleration_enabled:
+  dependency: ~
+  derived_components:
+    - nsx
+    - loadbalancerservice
+  description: This key specified whether load balancer acceleration is enabled or not
+  format: boolean
+  sample_value: 1
+  type: parameter
+action:
+  derived_components:
+    - firewallrule
+  description: Firewall rule action
+  format: string
+  sample_value: allow
+  type: parameter
+affected_service: &AFFECTED_SERVICE
+  derived_components:
+    - firewallrule
+  description: specifies the services affected by the nsx firewall rule
+  format:
+    - protocolname: ICMP
+  method: ProcessParameters
+  params:
+    - affected_service
+  sample_value:
+    - protocolname: ICMP
+  type: parameter
+application_rules:
+  derived_components:
+    - nsx
+    - loadbalancerservice
+  description: array of Load Balancer application rules
+  format:
+    - lb_sub_component_name: string
+      rule_id: string
+      script: string
+  method: ProcessParameters
+  sample_value:
+    - lb_sub_component_name: Rule1
+      rule_id: applicationRule-1
+      script: capture request  header Host len 32
+  type: parameter
+category:
+  derived_components:
+    - firewallservice
+  description: Category of the service
+  format: string
+  method: ProcessParameters
+  sample_value: USER
+  type: parameter
+clusterdeploymentconfigarray:
+  derived_components:
+    - service
+  description: Cluster deployment config array desc
+  format:
+    - clusterid: vdnet index
+      datastore: vdnet index
+      services:
+        - dvportgroup: vdnet index
+          serviceinstanceid: vdnet index
+  method: ProcessParameters
+  sample_value:
+    - clusterid: 'vc.[1].datacenter.[1].cluster.[1]'
+      datastore: 'host.[1].datastore.[1]'
+      services:
+        - dvportgroup: 'vc.[1].dvportgroup.[2]'
+          serviceinstanceid: 'vsm.[1].serviceinstance.[1]'
+  type: parameter
+clusterdeploymentconfigs:
+  derived_components:
+    - service
+    - vsm
+  description: Creates cluster deployment config
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - clusterdeploymentconfigs
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+clusterid:
+  derived_components:
+    - service
+  description: cluster id description
+  format: vdnet index
+  method: ProcessParameters
+  sample_value: 'vc.[1].datacenter.[1].cluster.[1]'
+  type: parameter
+collectflows:
+  derived_components:
+    - vsm
+    - ipfix
+  description: Enable Global flow collection for DFW
+  format: boolean
+  sample_value: true
+  type: parameter
+collector:
+  derived_components:
+    - ipfixconfig
+  description: IPFIX flow message collector
+  format:
+    ip: string
+    port: string
+  method: ProcessParameters
+  sample_value:
+    ip: 10.24.226.142
+    port: 5000
+  type: parameter
+config_elements:
+  derived_components:
+    - nsx
+  description: This key specifies the DHCP configuration elements
+  format:
+    - dhcp_options:
+        default_lease_time: integer
+        domain_name: string
+        hostname: string
+        routers:
+          - ip address
+      enabled: integer
+      interface_id: vdnet index
+      ip_ranges:
+        - range: ip address
+  method: ProcessParameters
+  sample_value:
+    - dhcp_options:
+        default_lease_time: 1000
+        domain_name: vmware.com
+        hostname: host1
+        routers:
+          - 192.168.1.2
+      enabled: 1
+      interface_id: 'neutron.[1].logicalservicesnode.[1].logicalservicesnodeinterface.[1]'
+      ip_ranges:
+        - range: 192.168.1.105-192.168.1.120
+  type: parameter
+datastore:
+  derived_components:
+    - esx
+    - nsx
+  description: datastore description
+  format: vdnet index
+  method: ProcessParameters
+  sample_value: 'host.[1].datastore.[2]'
+  type: parameter
+default_lease_time:
+  derived_components:
+    - nsx
+  description: This key specifies the  default lease time for DHCP configuration
+  format: integer
+  sample_value: 1000
+  type: parameter
+default_policy:
+  derived_components:
+    - nsx
+  description: Default policy for firewall
+  format: string
+  sample_value: ACCEPT
+  type: parameter
+deleteclusterdeploymentconfigs:
+  dependency:
+    - service
+    - clusterdeploymentconfigs
+  derived_components:
+    - service
+    - vsm
+  description: Delete cluster related to the service
+  format: string
+  method: DeleteDeployCluster
+  params:
+    - deleteclusterdeploymentconfigs
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].service.[1].clusterdeploymentconfigs.[1]'
+  type: component
+deletevendortemplate:
+  dependency:
+    - vendortemplate
+  derived_components:
+    - service
+    - vsm
+  description: Delete vendor template
+  format: service
+  method: DeleteComponent
+  params:
+    - deletevendortemplate
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  sample_value: 'vsm.[1].service.[1].vendortemplate.[1]'
+  type: component
+deploymentscope:
+  derived_components:
+    - service
+  description: Set deployment scope
+  linkedworkload: ServiceWorkload
+  method: UpdateSubComponent
+  params:
+    - deploymentscope
+  preprocess: PreProcessUpdateSubComponent
+  sample_value:
+    clusterid: 'vc.[1].datacenter.[1].cluster.[1]'
+  type: component
+destination:
+  derived_components:
+    - nsx
+  description: array of destination ipsets
+  format: array
+  method: ProcessParameters
+  sample_value: not available
+  type: parameter
+destinations: &DESTINATIONS
+  derived_components:
+    - firewallrule
+  description: members in TO column of firewall rule
+  format:
+    - type: string
+      value: vdnet index
+  method: ProcessParameters
+  sample_value:
+    - type: VirtualMachine
+      value: vm.[2]
+  type: parameter
+destinationnegate:
+  derived_components:
+    - firewallrule
+  description: specifies to negate destination while creating nsx firewall rule
+  format: boolean
+  sample_value: false
+  type: parameter
+destinationport:
+  derived_components:
+    - applicationservice
+    - firewallrule
+  description: destination port to be used while creating the application service in nsx
+  format: integer
+  sample_value: 5500
+  type: parameter
+dhcp_options:
+  derived_components:
+    - nsx
+  description: DHCP configuration options
+  format:
+    default_lease_time: integer
+    domain_name: string
+    hostname: string
+    routers: array
+  method: ProcessParameters
+  sample_value:
+    default_lease_time: 1000
+    domain_name: vmware.com
+    hostname: host1
+    routers:
+      - 192.168.1.2
+  type: parameter
+domain_name:
+  derived_components:
+    - nsx
+  description: This key specifies the domain_name for configuration
+  format: string
+  sample_value: domain_name
+  type: parameter
+domain_name_servers:
+  derived_components:
+    - nsx
+  description: array of domain name servers
+  format: array
+  method: ProcessParameters
+  sample_value: not available
+  type: parameter
+drop_invalid_traffic:
+  derived_components:
+    - firewallservice
+  description: drop_invalid_traffic
+  format: boolean
+  sample_value: 1
+  type: parameter
+dvportgroup:
+  derived_components:
+    - vc
+  description: dv port group description
+  format: string
+  method: ProcessParameters
+  sample_value:
+    dvport: not available
+    vds: 'vc.[1].vds.[1]'
+  type: parameter
+enabled:
+  dependency: ~
+  derived_components:
+    - vsm
+    - ipfixconfig
+  description: This key specified whether correspondning service is enabled or not
+  format: boolean
+  sample_value: true
+  type: parameter
+global_config:
+  derived_components:
+    - nsx
+  description: Firewall global configuration options
+  format:
+    drop_invalid_traffic: integer
+    icmp6_timeout: integer
+    icmp_timeout: integer
+    ip_generic_timeout: integer
+    log_invalid_traffic: integer
+    tcp_allow_outofwindow_packets: integer
+    tcp_pick_ongoing_conn: integer
+    tcp_send_resets_for_closed_servicerouter_ports: integer
+    tcp_timeout_close: integer
+    tcp_timeout_established: integer
+    tcp_timeout_open: integer
+    udp_timeout: integer
+  method: ProcessParameters
+  sample_value:
+    drop_invalid_traffic: 1
+    icmp6_timeout: 10
+    icmp_timeout: 10
+    ip_generic_timeout: 120
+    log_invalid_traffic: 0
+    tcp_allow_outofwindow_packets: 0
+    tcp_pick_ongoing_conn: 0
+    tcp_send_resets_for_closed_servicerouter_ports: 1
+    tcp_timeout_close: 30
+    tcp_timeout_established: 3600
+    tcp_timeout_open: 30
+    udp_timeout: 60
+  type: parameter
+hostname:
+  derived_components:
+    - nsx
+  description: This key specifies the  hostname for static binding
+  format: string
+  sample_value: host1
+  type: parameter
+hostversion:
+  derived_components:
+    - service
+  description: hostversion description
+  format: string
+  sample_value: 5.5.*
+  type: parameter
+icmp6_timeout:
+  derived_components:
+    - firewallservice
+  description: icmp6_timeout
+  format: integer
+  sample_value: 10
+  type: parameter
+icmp_timeout:
+  derived_components:
+    - firewallservice
+  description: icmp_timeout
+  format: integer
+  sample_value: 10
+  type: parameter
+implementations:
+  derived_components:
+    - vsm
+  description: Implemenatations Description
+  format:
+    - type: string
+  method: ProcessParameters
+  sample_value:
+    - type: HOST_BASED_VNIC
+  type: parameter
+installservice:
+  derived_components:
+    - service
+  description: Install service
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - installservice
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+interface_id:
+  derived_components:
+    - nsx
+  description: logical services router interface-id for DHCP configuration
+  format: vdnet index
+  method: ProcessParameters
+  sample_value: 'neutron.[1].logicalservicesnode.[1].logicalservicesnodeinterface.[1]'
+  type: parameter
+ip_generic_timeout:
+  derived_components:
+    - firewallservice
+  description: ip_generic_timeout
+  format: integer
+  sample_value: 120
+  type: parameter
+ip_ranges:
+  derived_components:
+    - nsx
+  description: Array of IP ranges for DHCP configuration
+  format:
+    - range: ip address
+  method: ProcessParameters
+  sample_value:
+    - range: 192.168.1.105-192.168.1.120
+  type: parameter
+log_invalid_traffic:
+  derived_components:
+    - firewallservice
+  description: log_invalid_traffic
+  format: boolean
+  sample_value: 1
+  type: parameter
+logging:
+  derived_components:
+    - nsx
+    - loadbalancerservice
+  description: Load balancer logging information
+  format:
+    enable: integer
+    log_level: string
+  method: ProcessParameters
+  sample_value:
+    enable: 1
+    log_level: INFO
+  type: parameter
+logging_enabled:
+  derived_components:
+    - firewallservice
+  description: This key specifies whether logging is enabled or not
+  format: boolean
+  sample_value: 1
+  type: parameter
+monitors:
+  derived_components:
+    - nsx
+    - loadbalancerservice
+  description: array of Load Balancer monitors
+  format:
+    - lb_sub_component_name: string
+      method: string
+      monitor_id: string
+      type: string
+  method: ProcessParameters
+  sample_value:
+    - lb_sub_component_name: Monitor1
+      method: POST
+      monitor_id: monitor-1
+      type: HTTP
+  type: parameter
+objectid:
+  derived_components:
+    - nsx
+  description: object id description
+  format: vdnet index
+  sample_value: 'vsm.[1].serviceinstance.[1]'
+  type: parameter
+objecttypename:
+  derived_components:
+    - nsx
+  description: object type name
+  format: string
+  sample_value: ServiceManager
+  type: parameter
+ovfurl:
+  derived_components:
+    - service
+  description: ovfurl description
+  format: string
+  sample_value: http://pa-dbc1113.eng.vmware.com/netfvt/ovf/service_insertion/rhel-5-32-svr.ovf
+  type: parameter
+pools:
+  derived_components:
+    - nsx
+    - loadbalancerservice
+  description: array of Load Balancer pools
+  format:
+    - algorithm: string
+      lb_sub_component_name: string
+      members:
+        - ip_address: ip address
+          lb_sub_component_name: string
+          max_conn: integer
+          member_id: string
+          min_conn: integer
+          monitor_port: integer
+          port: integer
+          weight: integer
+      monitor_ids:
+        - string
+      pool_id: string
+  method: ProcessParameters
+  sample_value:
+    - algorithm: round_robin
+      lb_sub_component_name: Pool1
+      members:
+        - ip_address: 192.168.1.10
+          lb_sub_component_name: Member1
+          max_conn: 5
+          member_id: member-1
+          min_conn: 0
+          monitor_port: 80
+          port: 80
+          weight: 100
+      monitor_ids:
+        - monitor-1
+      pool_id: pool-1
+  type: parameter
+profileattributes:
+  derived_components:
+    - vsm
+  description: Vendor Attr desc
+  format:
+    - key: string
+      name: string
+      value: string
+  method: ProcessParameters
+  sample_value:
+    - key: tenantID
+      name: Tenant
+      value: tenant
+    - key: basic__addr
+      name: Virtual server address
+      value: 80
+  type: parameter
+protocolname:
+  derived_components:
+    - firewallrule
+  description: Type of L2/L3 protocol name used for the firewall rules in nsx
+  format: string
+  sample_value: ICMP
+  type: parameter
+protocolnumber:
+  derived_components:
+    - firewallrule
+  description: user can specify protocolnumber like 6 for TCP instead of protocol name TCP in the firewallrule
+  format: integer
+  sample_value: not available
+  type: parameter
+range:
+  derived_components:
+    - nsx
+  description: IP range for DHCP configuration
+  format: ip address
+  method: ProcessParameters
+  sample_value: 192.168.1.105-192.168.1.120
+  type: parameter
+resturl:
+  derived_components:
+    - nsx
+  description: rest url
+  format: string
+  sample_value: not available
+  type: parameter
+revision:
+  derived_components:
+    - nsx
+  description: revision
+  format: string
+  sample_value: 4
+  type: parameter
+routers:
+  derived_components:
+    - nsx
+  description: array of routers
+  format:
+    - ip address
+  method: ProcessParameters
+  sample_value:
+    - 192.168.1.2
+  type: parameter
+rule_type:
+  derived_components:
+    - firewallservice
+  description: Firewall rule type
+  format: string
+  sample_value: not available
+  type: parameter
+rules: &RULES
+  derived_components:
+    - nsx
+  description: Firewall rules
+  format:
+    - action: string
+      destination: array
+      enabled: integer
+      logging_enabled: integer
+      rule_type: string
+      services: array
+      source: array
+  method: ProcessParameters
+  sample_value:
+    - action: ACCEPT
+      destination: not available
+      enabled: 1
+      logging_enabled: 1
+      rule_type: USER
+      services: not available
+      source: not available
+  type: parameter
+scope_of_rule:
+  derived_components:
+    - firewallrule
+  description: specifies the applicability/appliedTo for nsx firewall rule
+  format: vdnet index
+  method: ProcessParameters
+  sample_value: 'vc.[1].dvportgroup.[1]'
+  type: parameter
+sectionname:
+  derived_components:
+    - dfwsection
+  description: name of DFW sectiond
+  format: string
+  method: AutogenerateName
+  sample_value: 'Section1'
+  type: parameter
+section:
+  derived_components:
+    - firewallrule
+  description: layer3 or layer2 section under which the nsx firewall rule will be created
+  format: vdnet index
+  method: ProcessParameters
+  sample_value: 'vsm.[1].dfwsection.[1]'
+  type: parameter
+service:
+  derived_components:
+    - vsm
+  description: Name of the service component
+  format:
+    objectid: vdnet index
+  method: ProcessParameters
+  sample_value:
+    objectid: 'vsm.[1].service.[1]'
+  type: parameter
+serviceattributes:
+  derived_components:
+    - vsm
+  description: 'Service Attributes Description '
+  format:
+    - key: string
+      name: string
+      value: string
+    - key: string
+      name: string
+      value: string
+  method: ProcessParameters
+  sample_value:
+    - key: agentName
+      name: Agent Name
+      value: My_agent
+    - key: failOpen
+      name: Fail Open
+      value: true
+  type: parameter
+serviceid:
+  derived_components:
+    - nsx
+  description: serviceid string
+  format: vdnet index
+  method: ProcessParameters
+  sample_value: 'vsm.[1].service.[1]'
+  type: parameter
+serviceinstance:
+  derived_components:
+    - vsm
+  description: Name of the service instance component
+  format:
+    objectid: vdnet index
+  method: ProcessParameters
+  sample_value:
+    objectid: 'vsm.[1].serviceinstance.[1]'
+  type: parameter
+serviceinstanceid:
+  derived_components:
+    - service
+  description: service instance id description
+  format: string
+  method: ProcessParameters
+  sample_value: 'vsm.[1].serviceinstance.[1]'
+  type: parameter
+servicemanager:
+  derived_components:
+    - vsm
+  description: Name of the service manager component
+  format:
+    description: string
+    name: string
+    objecttypename: string
+    password: string
+    resturl: string
+    revision: integer
+    status: string
+    thumbprint: string
+    url: string
+    username: string
+    vendorid: string
+    vendorname: string
+    verifypassword: string
+  method: ProcessParameters
+  sample_value:
+    description: ABC Company Service Manager Desc
+    name: ABC Company Service Manager 12176
+    objecttypename: ServiceManager
+    password: not available
+    resturl: not available
+    revision: 4
+    status: IN_SERVICE
+    thumbprint: not available
+    url: not available
+    username: not available
+    vendorid: ABC Vendor ID
+    vendorname: ABC Vendor Name
+    verifypassword: not available
+  type: parameter
+services:
+  derived_components:
+    - nsx
+  description: array of services
+  format: array
+  method: ProcessParameters
+  sample_value: not available
+  type: parameter
+source:
+  derived_components:
+    - nsx
+  description: array of source ipsets
+  format: array
+  method: ProcessParameters
+  sample_value: not available
+  type: parameter
+sources: &SOURCES
+  derived_components:
+    - firewallrule
+  description: members in FROM column of firewall rule
+  format:
+    - type: string
+      value: vdnet index
+  method: ProcessParameters
+  sample_value:
+    - type: VirtualMachine
+      value: vm.[1]
+  type: parameter
+sourcenegate:
+  derived_components:
+    - firewallrule
+  description: specifies to negate source while creating nsx firewall rule
+  format: boolean
+  sample_value: true
+  type: parameter
+sourceport:
+  derived_components:
+    - applicationservice
+    - firewallrule
+  description: source port to be used while creating the application service in nsx
+  format: integer
+  sample_value: 33000
+  type: parameter
+static_bindings:
+  derived_components:
+    - nsx
+  description: This key specifies the static binding details
+  format: string
+  method: ProcessParameters
+  sample_value: not available
+  type: parameter
+status:
+  derived_components:
+    - host
+  description: status
+  format: string
+  sample_value: enabled
+  type: parameter
+subprotocolname:
+  derived_components:
+    - firewallrule
+  description: sub-protocol name to be used while configuring the firewall rules in nsx
+  format: string
+  sample_value: echo-request
+  type: parameter
+subprotocol:
+  derived_components:
+    - firewallrule
+  description: sub-protocol type to be used while configuring the firewall rules in nsx
+  format: integer
+  sample_value: 1
+  type: parameter
+tcp_allow_outofwindow_packets:
+  derived_components:
+    - firewallservice
+  description: tcp_allow_outofwindow_packets
+  format: boolean
+  sample_value: 1
+  type: parameter
+tcp_pick_ongoing_conn:
+  derived_components:
+    - firewallservice
+  description: tcp_pick_ongoing_conn
+  format: boolean
+  sample_value: 1
+  type: parameter
+tcp_send_resets_for_closed_servicerouter_ports:
+  derived_components:
+    - firewallservice
+  description: tcp_send_resets_for_closed_servicerouter_ports
+  format: boolean
+  sample_value: 1
+  type: parameter
+tcp_timeout_close:
+  derived_components:
+    - firewallservice
+  description: tcp_timeout_close
+  format: integer
+  sample_value: 30
+  type: parameter
+tcp_timeout_established:
+  derived_components:
+    - firewallservice
+  description: tcp_timeout_established
+  format: integer value
+  sample_value: 3600
+  type: parameter
+tcp_timeout_open:
+  derived_components:
+    - firewallservice
+  description: tcp_timeout_open
+  format: integer
+  sample_value: 30
+  type: parameter
+thumbprint:
+  derived_components:
+    - nsx
+  description: thumbprint
+  format: string
+  sample_value: not available
+  type: parameter
+transports:
+  derived_components:
+    - vsm
+  description: Transports Description
+  format:
+    - type: string
+  method: ProcessParameters
+  sample_value:
+    - type: VMCI
+  type: parameter
+udp_timeout:
+  derived_components:
+    - firewallservice
+  description: udp_timeout
+  format: integer value
+  sample_value: 60
+  type: parameter
+url:
+  derived_components:
+    - nsx
+  description: url
+  format: string
+  sample_value: not available
+  type: parameter
+usedby:
+  derived_components:
+    - nsx
+  description: usedby
+  format: string
+  sample_value: not available
+  type: parameter
+vendorattributes:
+  derived_components:
+    - service
+  description: Vendor Attr desc
+  format:
+    - key: string
+      name: string
+      value: string
+  method: ProcessParameters
+  sample_value:
+    - key: Key 1
+      name: Value 1
+      value: Name 1
+    - key: Key 2
+      name: Value 2
+      value: Name 2
+  type: parameter
+vendorid:
+  derived_components:
+    - nsx
+    - service
+  description: vendor id
+  format: string
+  sample_value: ABC Vendor ID
+  type: parameter
+vendorname:
+  derived_components:
+    - nsx
+    - service
+  description: vendor name
+  format: string
+  sample_value: ABC Vendor Name
+  type: parameter
+vendortemplate:
+  derived_components:
+    - service
+  description: Creates vendor template
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - vendortemplate
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+vendortemplateattribute:
+  derived_components:
+    - vsm
+  description: Name of the vendortemplate component
+  format:
+    description: string
+    id: vdnet index
+    name: string
+    vendorid: string
+  method: ProcessParameters
+  sample_value:
+    description: ABC Company Vendor Template Description
+    id: 'vsm.[1].service.[1].vendortemplate.[1]'
+    name: ABC Company Vendor Template
+    vendorid: Vendor-ID
+  type: parameter
+vendortemplates:
+  derived_components:
+    - nsx
+  description: vendortemplates
+  format: string
+  sample_value: not available
+  type: parameter
+verifypassword:
+  derived_components:
+    - nsx
+  description: verify password
+  format: string
+  sample_value: password
+  type: parameter
+versioneddeploymentspec:
+  derived_components:
+    - vsm
+  description: Creates versioned deployment scope
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - versioneddeploymentspec
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+vif_id:
+  derived_components:
+    - nsx
+  description: VM moid and interface-id for static binding
+  format: string
+  method: ProcessParameters
+  sample_value: not available
+  type: parameter
+virtual_servers:
+  derived_components:
+    - nsx
+    - loadbalancerservice
+  description: array of Load Balancer virtual servers
+  format:
+    - acceleration_enabled: integer
+      enabled: integer
+      ip_address: ip address
+      lb_sub_component_name: string
+      port: integer
+      protocol: string
+  method: ProcessParameters
+  sample_value:
+    - acceleration_enabled: 1
+      enabled: 1
+      ip_address: 192.168.1.9
+      lb_sub_component_name: vs1
+      port: 8080
+      protocol: HTTP
+  type: parameter
+vmcienabled:
+  derived_components:
+    - service
+  description: vmcienabled description
+  format: boolean
+  sample_value: true
+  type: parameter
+state:
+  derived_components:
+    - service
+  description: state
+  format: string
+  sample_value: INSTALLED
+  type: parameter
+internalservice:
+  derived_components:
+    - service
+  description: internalservice
+  format: string
+  sample_value: false
+  type: parameter
+precedence:
+  derived_components:
+    - service
+  description: precedence
+  format: string
+  sample_value: 0
+  type: parameter
+
+flow_timeout:
+  derived_components:
+    - ipfixconfig
+  description: active timeout for ipfix flows
+  format: integer
+  sample_value: 30
+  type: parameter
+
+idle_timeout:
+  derived_components:
+    - ipfixconfig
+  description: idle_timeout for ipfix flows
+  format: integer
+  sample_value: 30
+  type: parameter
+
+packet_sample_probability:
+  derived_components:
+    - ipfixconfig
+  description: percentage of packets sampled in range 0.0-1.0, default=0.001.
+  format: float
+  sample_value: 0.05
+  type: parameter
+
+max_flows:
+  derived_components:
+    - ipfixconfig
+  description: the maximum number of flow entries in each exporter flow cache
+  format: integer
+  sample_value: 10000
+  type: parameter
+
+functionalities:
+  derived_components:
+    - service
+  description: Functionalities description
+  format: object
+  method: ProcessParameters
+  sample_value:
+    type: ADC
+  type: parameter
+installstate:
+  derived_components:
+    - service instance
+  description: state of installation
+  format: string
+  sample_value: INSTALLED
+  method: ProcessParameters
+  type: parameter
+versioneddeploymentspecid:
+  derived_components:
+    - service instance
+  description: versioneddeploymentspecid description
+  format: vdnet index
+  sample_value: 'vsm.[1].service.[1].versioneddeploymentspec.[1]'
+  method: ProcessParameters
+  type: parameter
+deloymentscope:
+  derived_components:
+    - service instance
+  description: status description
+  format:
+      clusters:
+        - clustermorid: vdnet index
+      dvpgmorid:
+        - dvportgroup: vdnet index
+      datastore: vdnet index
+  sample_value:
+      clusters:
+        - clustermorid: 'vc.[1].datacenter.[1].cluster.[1]'
+      dvpgmorid:
+        - dvportgroup: 'vc.[1].dvportgroup.[1]'
+      datastore: 'host.[1].datastore.[1]'
+  method: ProcessParameters
+  type: parameter
+serviceinstanceruntimeinfo:
+  derived_components:
+    - service instance
+  description: Create service instance runtime information
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - serviceinstanceruntimeinfo
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+reconfigure:
+  derived_components:
+    - service instance
+    - serviceprofile
+    - ipfixconfig
+  description: Reconfigures Service Instance/Service Profile/Ipfix Runtime Info
+  format: boolean
+  method: UpdateComponent
+  params:
+    - operation
+    - name
+    - resource_type
+    - ipaddresses
+    - enabled
+    - ip_address
+    - port
+    - domain_id
+    - packet_sample_probability
+    - flow_timeout
+    - idle_timeout
+    - max_flows
+    - service_properties
+    - mtu
+    - applied_tos
+    - layer
+    - sectionname
+    - dfw_rules
+    - section_id
+    - action
+    - direction
+    - source_object
+    - destination_object
+    - service_affected
+    - stateful
+    - services
+  preprocess: PreProcessHashRefTypeAPI
+  sample_value: true
+  type: action
+requiredinstanceattributes:
+  derived_components:
+    - service
+  description: Required Instance Attributes Desc.
+  format:
+    - key: string
+      name: string
+      value: string
+  method: ProcessParameters
+  sample_value:
+    - key: Key 1
+      name: Value 1
+      value: Name 1
+    - key: Key 2
+      name: Value 2
+      value: Name 2
+  type: parameter
+instancetemplateid:
+  derived_components:
+    - nsx
+    - service
+  description: Instance Template Id
+  format: string
+  sample_value: gold-service-1
+  type: parameter
+serviceinstancetemplate:
+  derived_components:
+    - service
+  description: Creates service instance template
+  linkedworkload: ServiceWorkload
+  method: CreateAndVerifyComponent
+  params:
+    - serviceinstancetemplate
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+appliedto:
+  derived_components:
+    - firewallrule
+  description: Context to which the rule is to be applied
+  format:
+    - type: string
+      value: vdnet index
+  method: ProcessParameters
+  sample_value:
+    - type: HostSystem
+      value: host.[1]
+  type: parameter
+v6ip:
+  derived_components:
+    - ipfixconfig
+  description: IPFIX collector's IPv6 address
+  format: vdnet index
+  method: ProcessParameters
+  sample_value: 'vm.[1].vnic.[1]'
+  type: parameter
+v4ip:
+  derived_components:
+    - ipfixconfig
+  description: IPFIX collector's IPv4 address
+  format: vdnet index
+  method: ProcessParameters
+  sample_value: 'vm.[1].vnic.[1]'
+  type: parameter
+
+siprofile:
+  derived_components:
+    - nsx
+  description: Service Profile
+  format: vdnet index
+  method: ProcessParameters
+  sample_value:
+    objectid: 'vsm.[1].serviceprofile.[1]'
+    name: 'ABC Company Vendor Template'
+  type: parameter
+
+serviceprofilename:
+  derived_components:
+    - nsx
+  description: Service Profile Name
+  format: string
+  sample_value: "ABC Company Service_ABC Company Vendor Template"
+  type: parameter
+
+getserviceprofileflag:
+  derived_components:
+    - nsx
+  description: Flag indicating whether user want to get service profile or not
+  format: string
+  sample_value: "true"
+  type: parameter
+
+service_profile_attributes:
+  derived_components:
+    - serviceprofile
+  description: Service Profile attributes
+  format:
+    - name: "ref: name"
+      ipaddresses: "ref: ipaddresses"
+  method: ProcessParameters
+  sample_value:
+    - name: 'dhcp_relay'
+      ipaddresses:
+        - 192.168.1.1
+        - 192.168.1.2
+  type: parameter
+
+memorythreshold:
+  derived_components:
+    - DFW event threshold
+  description: Threshold to trigger memory event
+  format:
+    percentvalue: integer
+  sample_value:
+    percentvalue: 10
+  type: parameter
+
+cputhreshold:
+  derived_components:
+    - DFW event threshold
+  description: Threshold to trigger CPU event
+  format:
+    percentvalue: integer
+  sample_value:
+    percentvalue: 10
+  type: parameter
+
+cpsthreshold:
+  derived_components:
+    - DFW event threshold
+  description: Threshold to trigger CPS event
+  format:
+    value: integer
+  sample_value:
+    value: 10
+  type: parameter
+
+runtime_state:
+  derived_components:
+    - nsxservice
+  description : Runtime state of service
+  format : string
+  sample_value: 'stopped'
+  type : parameter
+
+pids:
+  derived_components:
+    - nsxservice
+  description : process id of service
+  format : integer
+  sample_value: 2172
+  type : parameter
+
+monitor_pid:
+  derived_components:
+    - nsxservice
+  description : monitor process id of service
+  format : integer
+  sample_value: 2172
+  type : parameter
+
+monitor_runtime_state:
+  derived_components:
+    - nsxservice
+  description : Monitor Runtime state of service
+  format : string
+  sample_value: 'stopped'
+  type : parameter
+
+get_services:
+  derived_components:
+    - nsxservice
+  description: Check
+  allowed_values:
+    - service_name: 'ntp'
+  method: query
+  params:
+    - get_services
+    - runtime_params
+  preprocess: PreProcessVerification
+  type: verification
+  format:
+    'service_name[?]equal_to': 'snmp'
+
+get_service_state:
+  derived_components:
+    - nsxservice
+  description: Check
+  allowed_values:
+    - execution_type: 'cli'
+  method: ReadComponent
+  params:
+    - execution_type
+    - runtime_params
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  format:
+    'runtime_state[?]equal_to': 'stopped'
+
+configure_service_state:
+  allowed_values:
+    - state : 'stop'
+    - state : 'start'
+    - state : 'restart'
+    - service_name : 'ntp'
+  derived_components:
+    - nsxservice
+  description: Stop/Start/Restart service on NSX Manager e.g syslog,ntp,rabbitmq
+  format: string
+  method: configure_service_state
+  params:
+    - configure_service_state
+  preprocess: PreProcessShiftTypeAPI
+  sample_value:
+    state: 'stop'
+    service_name: 'ntp'
+  type: action
+
+master_broker_node_service_status:
+  type: action
+  derived_components:
+    - nsxservice
+  method: ConfigureServiceStateOnMasterBrokerNode
+  preprocess: PreProcessShiftTypeAPI
+  description: Stop/Start/Restart service on master broker node
+  format:
+     'managers': vdnet index
+     'ipaddress': ip address
+     'service_name': string
+     'master_broker_node_service_status': string
+  sample_value:
+     'managers': nsxmanager.[-1]
+     'ipaddress':  'esx.[1]->read_master_broker_ip->master_broker_ip'
+     'service_name': proton
+     'master_broker_node_service_status': restart
+  params:
+    - managers
+    - ipaddress
+    - service_name
+    - master_broker_node_service_status
+
+state_synch_node_service_status:
+  type: action
+  derived_components:
+    - nsxservice
+  method: ConfigureServiceStateOnStateSynchNode
+  preprocess: PreProcessShiftTypeAPI
+  description: Stop/Start/Restart service on state synch node
+  format:
+     'managers': vdnet index
+     'ipaddress': ip address
+     'service_name': string
+     'state_synch_node_service_status': string
+  samplevalue:
+     'managers': nsxmanager.[-1]
+     'ipaddress': 'nsxmanager.[1].state_synch_node.[1]->read->ipaddress'
+     'service_name': proton
+     'state_synch_node_service_status': restart
+  params:
+    - managers
+    - ipaddress
+    - service_name
+    - state_synch_node_service_status
+
+non_state_synch_node_service_status:
+  type: action
+  derived_components:
+    - nsxservice
+  method: ConfigureServiceStateOnNonStateSynchNode
+  preprocess: PreProcessShiftTypeAPI
+  description: Stop/Start/Restart service on non-state synch node
+  format:
+     'managers': vdnet index
+     'ipaddress': ip address
+     'service_name': string
+     'non_state_synch_node_service_status': string
+  samplevalue:
+     'managers': nsxmanager.[-1]
+     'ipaddress': 'nsxmanager.[1].state_synch_node.[1]->read->ipaddress'
+     'service_name': proton
+     'non_state_synch_node_service_status': restart
+  params:
+    - managers
+    - ipaddress
+    - service_name
+    - non_state_synch_node_service_status
+
+service_properties:
+  derived_components:
+    - ntpserver
+  description : NSX service properties eg. ntp servers
+  format : string
+  sample_value:
+      - 'time.vmware.com'
+      - 'ntp2-blr2.eng.vmware.com'
+  type : parameter
+
+get_interface_list:
+  derived_components:
+    - nsxinterface
+  description: Gets list of interfaces of NSX Manager
+  method: query
+  params:
+    - get_interface_list
+    - execution_type
+  preprocess: PreProcessVerification
+  type: verification
+  format:
+    result_count: 2
+    results:
+      - interface_id: lo
+      - interface_id: mgmt
+
+mtu:
+  derived_components:
+    - nsxinterface
+  description: mtu of an interface
+  format: number
+  sample_value: 1500
+  type: parameter
+
+get_interface_stats:
+  derived_components:
+    - nsxinterface
+  description: Gets statistics of interface of NSX Manager
+  allowed_values:
+    - interface_id: 'mgmt'
+  method: get_interface_statistics
+  params:
+    - interface_id
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  format:
+     'tx_bytes[?]>': integer
+  samplevalue:
+     'tx_bytes[?]>': 0
+
+get_processes:
+  derived_components:
+    - process
+  description: Gets list of processes of NSX Manager
+  allowed_values:
+    - process_name: 'java'
+  method: query
+  params:
+    - get_processes
+    - execution_type
+  preprocess: PreProcessVerification
+  type: verification
+  format:
+     'process_name[?]equal_to': 'string'
+  samplevalue:
+     'process_name[?]equal_to': 'java'
+
+applied_tos:
+  derived_components:
+    - DFWRule
+    - DFWSection
+  description: List of objects where rules are enforced
+  format:
+    - name: string
+      id: string
+      logical_entity: string
+  method: PreProcessNestedParameters
+  sample_value:
+    - name: ls-1
+      id: nsxmanager.[1].logicalswitch.[1]
+      logical_entity: LogicalSwitch
+  type: parameter
+
+stateful:
+  derived_components:
+    - all
+  description: Stateful service enabled or disabled
+  format: boolean
+  sample_value: true
+  type: parameter
+
+nsxgroup:
+  derived_components:
+    - all
+  description: group of nsx logical entities
+  format:
+    - id
+      logical_entity
+  sample_value:
+    - id: 'vm.[1].vif.[1]'
+      logical_entity: 'VIF'
+  method: PreProcessNestedParameters
+  type: parameter
+
+direction:
+  derived_components:
+    - firewallrule
+  description: Direction of rule
+  format: string
+  sample_value: IN_OUT
+  type: parameter
+
+service_affected:
+  <<: *AFFECTED_SERVICE
+  method: PreProcessNestedParameters
+
+source_object:
+  <<: *SOURCES
+  method: PreProcessNestedParameters
+
+destination_object:
+  <<: *DESTINATIONS
+  method: PreProcessNestedParameters
+
+dfw_rules:
+  <<: *RULES
+  method: PreProcessNestedParameters
+
+get_section_with_rules:
+  derived_components:
+    - dfwsection
+  description: read dfw section details along with configured rules
+  linkedworkload: ServiceWorkload
+  params:
+    - TBD
+    - get_section_with_rules
+  preprocess: PreProcessVerification
+  method: get_section_with_rules
+  type: verification
+
+revise_section:
+  derived_components:
+    - dfwsection
+  description: Revise firewall section with ordering
+  linkedworkload: ServiceWorkload
+  preprocess: PreProcessNestedParametersForAction
+  method: revise_section
+  type: action
+
+revise_section_with_rules:
+  derived_components:
+    - dfwsection
+  description: Revise firewall section with rules and ordering
+  linkedworkload: ServiceWorkload
+  preprocess: PreProcessNestedParametersForAction
+  method: revise_section_with_rules
+  type: action
+
+revise_rules:
+  derived_components:
+    - firewallrule
+  description: update firewall rules with ordering
+  linkedworkload: ServiceWorkload
+  preprocess: PreProcessNestedParametersForAction
+  method: revise_rules
+  type: action
+
+delete_rule:
+  derived_components:
+    - firewallrule
+  description: delete a given firewall rule
+  linkedworkload: ServiceWorkload
+  preprocess: PreProcessNestedParametersForAction
+  postprocess: RemoveComponentObject
+  method: delete
+  type: action

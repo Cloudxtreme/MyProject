@@ -1,0 +1,979 @@
+!include ../../L2/CommonWorkloads.yaml
+!include ../../L2/TestbedSpec.yaml
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+!include ../../Common/Topo_Clusters.yaml
+
+IPFIXESXGating:
+    Product: "NSXTransformers"
+    Category: "Operations"
+    Component: "IPFIX"
+    TestName: "IPFIXESXGating"
+    Version: "2"
+    QCPath: "ESX"
+    Summary: "Test basic IPFIX API by doing Create, Read and Update API calls."
+    Procedure:
+        - Setup L2 topology.
+        - Enable IPFIX.
+        - Update the IPFIX configuration with the 1st set of values.
+        - Verify the IPFIX configuration from READ API call to nsx-manager.
+        - Verify this configuration on the hosts using cli.
+        - Start the capture process on the collector.
+        - Toggle IPFIX.
+        - Send ICMP IPv4 traffic.
+        - Verify the captured data.
+        - Disable IPFIX.
+        - Cleanup L2 setup.
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "gangarm"
+    Partnerfacing: "N"
+    TestbedSpec: *L2_ESX_TOPOLOGY_02
+    WORKLOADS:
+        Sequence:
+            - ['Register3ControllersAndFormCluster']
+            - ['Verify3NodeCCPCluster']
+            - ['RegisterHosts']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['CreateLogicalSwitch']
+            - ['VifAttachment']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['VerifyLSConnTableOnControllers']
+            - ['DiscoverLogicalPorts']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSMacEntryOnControllers',
+               'VerifyLSVtepEntryOnControllers',
+               'VerifyLSVtepEntryOnHost1',
+               'VerifyLSVtepEntryOnHost2']
+            - ['Traffic', 'VerifyLSMacEntryOnHost1',
+               'VerifyLSMacEntryOnHost2']
+            - ['EnableIPFIX']
+            - ['UpdateIPFIXConfig']
+            - ['ReadIPFIXConfig']
+            - ['VerifyIPFIXConfigOnHost1to2']
+            - ['StartTShark']
+            - ['ToggleIPFIX']
+            - ['IPv4ICMPTraffic']
+            - ['GetIPFIXCapturedData']
+        ExitSequence:
+            - ['DisableIPFIX']
+            - ['DeleteVnic1', 'DeleteVnic2']
+            - ['DeleteLogicalSwitch']
+            - ['DeleteTransportNode']
+            - ['DeleteUplinkProfile']
+            - ['DeleteTransportZone']
+            - ['UnregisterHosts']
+            - ['DeleteAllIPDiscoveryProfiles']
+            - ['Cleanup3NodesCCPCluster']
+
+        DeleteAllIPDiscoveryProfiles: *DELETE_ALL_IPDISCOVERY_PROFILES
+        Verify3NodeCCPCluster: *VERIFY_3_NODE_CCP_CLUSTER_STATUS
+        Register3ControllersAndFormCluster: *REGISTER_3_CONTROLLERS_AND_FORM_CLUSTER
+        Cleanup3NodesCCPCluster: *CLEANUP_3_NODES_CCP_CLUSTER
+
+        RegisterHosts:
+            Type: Host
+            TestHost: 'esx.[1-2]'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+
+        UnregisterHosts:
+            Type: Host
+            TestHost: 'esx.[1-2]'
+            remove_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+
+        DiscoverLogicalPorts:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            logicalport:
+                '[1-2]':
+                    discover: 'true'
+                    attachment:
+                       attachment_type : VIF
+                       id_: 'vm.[x=logicalport_index].vnic.[1]->uuid'
+
+        DiscoverHostnodes:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            hostnode:
+                '[1-2]':
+                    discover: 'true'
+                    ip_addresses: 'esx.[x=hostnode_index]'
+
+        DiscoverVteps:
+            Type: Host
+            TestHost: 'esx.[1-2]'
+            vtep:
+                '[1]':
+                    execution_type: cli
+                    discover: 'true'
+                    name: 'vmk10'
+
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01--ESX
+        CreateTransportNodes: *CREATE_TRANSPORT_NODE_01--ESX
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01
+        VifAttachment: *VIF_ATTACHMENT_01--ESX
+        DeleteLogicalSwitch: *DELETE_LOGICAL_SWITCH_01
+        DeleteTransportZone: *DELETE_TRANSPORT_ZONE_01
+        DeleteTransportNode: *DELETE_TRANSPORT_NODE_01
+        DeleteUplinkProfile: *DELETE_UPLINK_PROFILE_01
+
+        ConfigureVnicIP:
+            Type: NetAdapter
+            TestAdapter: vm.[1-2].vnic.[1]
+            IPv4: auto
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            TestHost: "esx.[1-2]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+               table:
+                   - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                     replication_mode: 'mtep'
+
+        VerifyLSConnTableOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            endpoints: 'nsxcontroller.[-1]'
+            execution_type: 'cli'
+            switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+            get_connection_table[?]contain_once:
+                table:
+                    - adapter_ip: "esx.[1]->mgmt_ip"
+                    - adapter_ip: "esx.[2]->mgmt_ip"
+
+        Traffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+            TestDuration  : "10"
+
+        DeleteVtep1:
+            Type: Host
+            TestHost: 'esx.[1]'
+            deletevtep: 'esx.[1].vtep.[1]'
+
+        DeleteVtep2:
+            Type: Host
+            TestHost: 'esx.[2]'
+            deletevtep: 'esx.[2].vtep.[1]'
+
+        DeleteVnic1:
+            Type: VM
+            TestVM: 'vm.[1]'
+            deletevnic: 'vm.[1].vnic.[1]'
+
+        DeleteVnic2:
+            Type: VM
+            TestVM: 'vm.[2]'
+            deletevnic: 'vm.[2].vnic.[1]'
+
+        VerifyLSMacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vnic.[1]"
+                      adapter_ip: "esx.[1].vtep.[1]"
+                    - adapter_mac: "vm.[2].vnic.[1]"
+                      adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLSVtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[1].vtep.[1]"
+                    - adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLSVtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[1]'
+            noofretries: "3"
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLSVtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[2]'
+            noofretries: "3"
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[1].vtep.[1]"
+
+        VerifyLSMacEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[1]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[2].vnic.[1]"
+                      adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLSMacEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[2]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[1].vnic.[1]"
+                      adapter_ip: "esx.[1].vtep.[1]"
+
+        EnableIPFIX:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ipfixconfig:
+                "[1]":
+                    enabled: "true"
+                    ip_address: 'vm.[1]->ip'
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            enabled: "true"
+            ip_address: 'vm.[1]->ip'
+            domain_id: '10'
+            port: 9999
+            idle_timeout: '60'
+            flow_timeout: '65'
+            packet_sample_probability: '1'
+            max_flows: '1000'
+
+        ReadIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            read:
+              'domain_id[?]equal_to': '10'
+              'port[?]equal_to': 9999
+              'idle_timeout[?]equal_to': '60'
+              'flow_timeout[?]equal_to': '65'
+              'max_flows[?]equal_to': '1000'
+              'ip_address[?]equal_to': 'vm.[1]->ip'
+              'packet_sample_probability[?]equal_to': '1.0'
+
+        VerifyIPFIXConfigOnHost1to2:
+            Type: Host
+            TestHost: 'esx.[1-2]'
+            execution_type: 'cli'
+            'get_ipfix_config[?]contain_once':
+                # For ESX, sampling is in terms of number of packets dropped.
+                # Hence, drop 0 packets for 100% sampling.
+                packet_sample_probability: '0'
+                ip_address: 'vm.[1]->ip'
+                port: '9999'
+                flow_timeout: '65'
+                idle_timeout: '60'
+
+        StartTShark:
+            Type: VM
+            TestVM: 'vm.[1]'
+            capture:
+                tool: 'tshark'
+                file_name: '/tmp/tshark123.cap'
+                capture_filter: '-f "dst port 9999"'
+                adapter_name: 'eth0'
+                execution_type: 'cmd'
+
+        ToggleIPFIX:
+            - ['DisableIPFIX']
+            - ['EnableIPFIX']
+            # Since it is not possible to just disable and re-enable IPFIX and
+            # have the config persisted, we also need to re-update it.
+            - ['UpdateIPFIXConfig']
+
+        IPv4ICMPTraffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+            TestDuration  : "10"
+            sleepbetweenworkloads: "10"
+            connectivitytest: "0"
+
+        GetIPFIXCapturedData:
+            Type: VM
+            TestVM: 'vm.[1]'
+            sleepbetweenworkloads: "65"
+            tool: 'tshark'
+            execution_type: 'cmd'
+            file_name: '/tmp/tshark123.cap'
+            port: 9999
+            stop_capture: true
+            read_filter: '-T fields -E header=y -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.protocol -R "cflow.srcaddr==vm.[1].vnic.[1]->GetIPv4 && cflow.dstaddr==vm.[2].vnic.[1]->GetIPv4 " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - pktcount: '10'
+                      src_ip: 'vm.[1].vnic.[1]->adapter_ip'
+                      dst_ip: 'vm.[2].vnic.[1]->adapter_ip'
+                      protocol: '1'  # ICMP
+                      # DomainID is only supported on ESX6.0 and later, not
+                      # supported for Avalanche as it is based on ESX5.5.
+                      #domain_id: '10'
+
+        DisableIPFIX:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            enabled: "false"
+
+IPFIXKVMGating:
+    Product: "NSXTransformers"
+    Category: "Operations"
+    Component: "IPFIX"
+    TestName: "IPFIXKVMGating"
+    Version: "2"
+    QCPath: "KVM"
+    Summary: "Test basic IPFIX API by doing Create, Read and Update API calls."
+    Procedure:
+        - Setup L2 topology.
+        - Enable IPFIX.
+        - Update the IPFIX configuration with the 1st set of values.
+        - Verify the IPFIX configuration from READ API call to nsx-manager.
+        - Verify this configuration on the hosts using cli.
+        - Start the capture process on the collector.
+        - Toggle IPFIX.
+        - Send ICMP IPv4 traffic.
+        - Verify the captured data.
+        - Disable IPFIX.
+        - Cleanup L2 setup.
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "gangarm"
+    Partnerfacing: "N"
+    TestbedSpec: *L2_KVM_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+             - ['Register3ControllersAndFormCluster']
+             - ['Verify3NodeCCPCluster']
+             - ['RegisterHosts']
+             - ['DiscoverHostnodes']
+             - ['CreateTransportZone']
+             - ['CreateUplinkProfile']
+             - ['CreateTransportNodes']
+             - ['CreateIPDiscoveryProfile']
+             - ['DiscoverVteps']
+             - ['VerifyVTEPConnectivity']
+             - ['CreateLogicalSwitch']
+             - ['CreateVIFs']
+             - ['AttachVIFtoLogicalSwitch1']
+             - ['VerifyLSwitchConnectionTableOnControllers']
+             - ['VerifyLSInfoOnHosts']
+             - ['ConfigureVIFIPs']
+             - ['VerifyMacEntriesOnHost1', 'VerifyMacEntriesOnHost2']
+             - ['VerifyLS1VtepEntryOnHost1', 'VerifyLS1VtepEntryOnHost2']
+             - ['VerifyMacEntriesOnControllers',
+                'VerifyLS1VtepEntriesOnControllers']
+             # Following workload needs to be enabled after #1342638 is
+             # resolved
+             # - ['ArpPingVM1']
+             - ['Traffic']
+             - ['EnableIPFIX']
+             - ['UpdateIPFIXConfig']
+             - ['ReadIPFIXConfig']
+             - ['VerifyIPFIXConfigOnHost1to2']
+             - ['StartTShark']
+             - ['ToggleIPFIX']
+             - ['IPv4ICMPTraffic']
+             - ['GetIPFIXCapturedData']
+
+        ExitSequence:
+             - ['DisableIPFIX']
+             - ['DeleteLogicalPort']
+             - ['DeleteLogicalSwitch']
+             - ['DeleteTransportNode']
+             - ['DeleteUplinkProfile']
+             - ['DeleteTransportZone']
+             # XXX(salmanm): Tunnel ports exist even after VIF deletion
+             # Bugzilla: #1325403
+             - ['DeleteVIFs']
+             - ['UnregisterHosts']
+             - ['DeleteAllIPDiscoveryProfiles']
+             - ['Cleanup3NodesCCPCluster']
+
+        Verify3NodeCCPCluster: *VERIFY_3_NODE_CCP_CLUSTER_STATUS
+        Register3ControllersAndFormCluster: *REGISTER_3_CONTROLLERS_AND_FORM_CLUSTER
+        Cleanup3NodesCCPCluster: *CLEANUP_3_NODES_CCP_CLUSTER
+        DeleteAllIPDiscoveryProfiles: *DELETE_ALL_IPDISCOVERY_PROFILES
+
+        RegisterHosts:
+            Type: Host
+            TestHost: 'kvm.[1-2]'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+
+        UnregisterHosts:
+            Type: Host
+            TestHost: 'kvm.[1-2]'
+            remove_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+
+        DiscoverHostnodes:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            hostnode:
+                '[1-2]':
+                    discover: 'true'
+                    ip_addresses: 'kvm.[x=hostnode_index]'
+
+        DiscoverVteps:
+            Type: Host
+            TestHost: 'kvm.[1-2]'
+            vtep:
+                '[1]':
+                    discover: 'true'
+                    # Name of the VTEP is of form nsx-vtepX.Y where X is the
+                    # index of the VTEP interface and Y is the index of the
+                    # transport bridge on the host.
+                    name: 'nsx-vtep0.0'
+
+        VerifyVTEPConnectivity:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "kvm.[2].vtep.[1]"
+            SupportAdapter: "kvm.[1].vtep.[1]"
+            TestDuration  : "5"
+
+        CreateVIFs:
+            Type: VM
+            TestVM: 'vm.[1-2]'
+            vif:
+                '[1]':
+                    backing: 'kvm.[x=vm_index].bridge.[1]'
+
+        RegisterHost:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+
+        VerifyLSInfoOnHosts:
+            Type: "Host"
+            TestHost: "kvm.[1-2]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+               table:
+                   - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                     replication_mode: 'mtep'
+                     controller_status: 'up'
+
+        VerifyLSwitchConnectionTableOnControllers:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            # Let the handshake between hosts and CCP complete.
+            sleepbetweenworkloads: 15
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            get_connection_table[?]contain_once:
+                table:
+                    - adapter_ip: "kvm.[1]->mgmt_ip"
+                    - adapter_ip: "kvm.[2]->mgmt_ip"
+
+        ConfigureVIFIPs:
+            Type: NetAdapter
+            TestAdapter: 'vm.[1-2].vif.[1]'
+            IPv4: auto
+
+        ArpPingVM1:
+            Type: "Traffic"
+            toolName: "ArpPing"
+            TestAdapter: "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[2].vif.[1]"
+            TestDuration: "2"
+            connectivitytest: "0"
+            verification  : 'Verification_0'
+
+        Verification_0:
+            PktCapVerification:
+                target:       'kvm.[1].pif.[1]'
+                pktcapfilter: 'count 100,dst port 7471'
+                verificationtype: 'pktcap'
+                vni:      "nsxmanager.[1].logicalswitch.[1]"
+                pktcount: '2'
+                innerpkttype: 'broadcast'
+                innerl3protocol: 'arp'
+
+        Traffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[2].vif.[1]"
+            SupportAdapter: "vm.[1].vif.[1]"
+            TestDuration  : "10"
+
+        VerifyMacEntriesOnControllers:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            get_mac_table[?]contain_once:
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                      adapter_mac: "vm.[1].vif.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                      adapter_mac: "vm.[2].vif.[1]"
+
+        VerifyMacEntriesOnHost1:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            get_mac_table[?]contain_once:
+                table:
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                      adapter_mac: "vm.[2].vif.[1]"
+
+        VerifyMacEntriesOnHost2:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            get_mac_table[?]contain_once:
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                      adapter_mac: "vm.[1].vif.[1]"
+
+        VerifyLS1VtepEntriesOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateTransportNodes: *CREATE_TRANSPORT_NODE_01--KVM
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01--KVM
+        AttachVIFtoLogicalSwitch1: *VIF_ATTACHMENT_01--KVM
+        DeleteLogicalSwitch: *DELETE_LOGICAL_SWITCH_01
+        DeleteTransportZone: *DELETE_TRANSPORT_ZONE_01
+        DeleteTransportNode: *DELETE_TRANSPORT_NODE_01
+        DeleteUplinkProfile: *DELETE_UPLINK_PROFILE_01
+
+        DeleteVIFs:
+            Type: VM
+            TestVM: 'vm.[1-2]'
+            deletevif: 'vm.[x=vm_index].vif.[1]'
+
+        DeleteLogicalPort:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+            query_params:
+                detach: 'true'
+
+        DeleteVM1:
+            Type: Root
+            TestNode: 'root.[1]'
+            deletevm: 'vm.[1]'
+
+        DeleteVM2:
+            Type: Root
+            TestNode: 'root.[1]'
+            deletevm: 'vm.[2]'
+
+        UnregisterHost:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            deletehostnode: 'nsxmanager.[1].hostnode.[-1]'
+
+        EnableIPFIX:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ipfixconfig:
+                "[1]":
+                    enabled: "true"
+                    ip_address: 'vm.[1]->ip'
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            enabled: "true"
+            ip_address: 'vm.[1]->ip'
+            domain_id: '10'
+            port: 9999
+            idle_timeout: '60'
+            flow_timeout: '65'
+            packet_sample_probability: '1'
+            max_flows: '1000'
+
+        ReadIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            read:
+              'domain_id[?]equal_to': '10'
+              'port[?]equal_to': 9999
+              'idle_timeout[?]equal_to': '60'
+              'flow_timeout[?]equal_to': '65'
+              'max_flows[?]equal_to': '1000'
+              'ip_address[?]equal_to': 'vm.[1]->ip'
+              'packet_sample_probability[?]equal_to': '1.0'
+
+        VerifyIPFIXConfigOnHost1to2:
+            Type: Host
+            TestHost: 'kvm.[1-2]'
+            execution_type: 'cli'
+            'get_ipfix_config[?]contain_once':
+                packet_sample_probability: '1'
+                ip_address: 'vm.[1]->ip'
+                port: 9999
+                flow_timeout: '65'
+                max_flows: '1000'
+                domain_id: '10'
+
+        StartTShark:
+            Type: VM
+            TestVM: 'vm.[1]'
+            capture:
+                tool: 'tshark'
+                file_name: '/tmp/tshark123.cap'
+                capture_filter: '-f "dst port 9999"'
+                adapter_name: 'eth0'
+                execution_type: 'cmd'
+
+        ToggleIPFIX:
+            - ['DisableIPFIX']
+            - ['EnableIPFIX']
+            # Since it is not possible to just disable and re-enable IPFIX and
+            # have the config persisted, we also need to re-update it.
+            - ['UpdateIPFIXConfig']
+
+        IPv4ICMPTraffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[2].vif.[1]"
+            TestDuration  : "10"
+            sleepbetweenworkloads: "10"
+            connectivitytest: "0"
+
+        GetIPFIXCapturedData:
+            Type: VM
+            TestVM: 'vm.[1]'
+            sleepbetweenworkloads: "65"
+            tool: 'tshark'
+            execution_type: 'cmd'
+            file_name: '/tmp/tshark123.cap'
+            port: 9999
+            stop_capture: true
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -R "cflow.srcaddr==vm.[1].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[2].vif.[1]->GetIPv4 " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+
+        DisableIPFIX:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            enabled: "false"
+
+IPFIXSingleKVMGating:
+    Product: "NSXTransformers"
+    Category: "Operations"
+    Component: "IPFIX"
+    TestName: "IPFIXSingleKVMGating"
+    Version: "2"
+    QCPath: "KVM"
+    Summary: "Test basic IPFIX API by doing Create, Read and Update API calls."
+    Procedure:
+        - Setup L2 topology.
+        - Enable IPFIX.
+        - Update the IPFIX configuration.
+        - Verify the IPFIX configuration from READ API call to nsx-manager.
+        - Verify this configuration on the host using cli.
+        - Start the capture process on the collector.
+        - Toggle IPFIX.
+        - Send ICMP IPv4 traffic for 10s.
+        - Verify the captured data.
+        - Start the capture process on the collector.
+        - Toggle IPFIX.
+        - Send ICMP IPv4 traffic for 30s.
+        - Verify the captured data.
+        - Disable IPFIX.
+        - Cleanup L2 setup.
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "gangarm"
+    Partnerfacing: "N"
+    TestbedSpec: *TOPO_1_KVM
+    WORKLOADS:
+        <<: *Topo_3MP_3CCP
+        <<: *Autogenerated_Workloads
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - SetManagerOnKVM-1
+            - - DiscoverHostNode1FromKVM1
+            - - CreateTZ-1
+            - - CreateUPROF-1_MTU-1600
+            - - CreateTN-1_HOSTNODE-1_TZ-1_ETH-1
+            - - DiscoverKVM1Vtep1FromDevice-nsx-vtep0.0
+            - - CreateLS-1_RMODE-MTEP
+            - - AddVM1Vif1ToKVM1Bridge1
+            - - AddVM2Vif1ToKVM1Bridge1
+            - - CreateLP1OnLS1ForVM1Vif1
+            - - CreateLP2OnLS1ForVM2Vif1
+            - - VerifyLSwitchConnectionTableOnControllers
+            - - VerifyLSReplicationModeOnHost--KVM
+            - - VerifyLS1MacEntryOnControllers--KVM
+            - - PingFromVM1Vif1ToVM2Vif1
+            - - EnableIPFIX
+            - - UpdateIPFIXConfig
+            - - ReadIPFIXConfig
+            - - VerifyIPFIXConfigOnHost1
+            - - StartTShark
+            - - ToggleIPFIX
+            - - PingFromVM1Vif1ToVM2Vif1
+            - - GetIPFIXCapturedData1
+
+            - - StartTShark
+            - - ToggleIPFIX
+            - - PingFromVM1Vif1ToVM2Vif1For30s
+            - - GetIPFIXCapturedData2
+
+        ExitSequence:
+            - - DisableIPFIX
+            - - DeleteVif-1_VM-1
+            - - DeleteVif-1_VM-2
+            - - DeleteLSP-1-2
+            - - DeleteTN-1
+            - - RemoveManagerOnKVM-1
+            - - UndiscoverHostNode-1
+            - - DeleteLS-1
+            - - DeleteUPROF-1
+            - - DeleteTZ-1
+            - - ClusterCleanup
+
+        VerifyLSwitchConnectionTableOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            endpoints: 'nsxcontroller.[-1]'
+            execution_type: cli
+            switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+            noofretries: "3"
+            get_connection_table[?]contain_once:
+              table:
+                - adapter_ip: "kvm.[1]->mgmt_ip"
+
+        VerifyLSReplicationModeOnHost--KVM:
+            Type: "Host"
+            testHost: "kvm.[1]"
+            execution_type: 'cli'
+            get_logical_switch[?]contain_once:
+              table:
+                - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                  replication_mode: 'mtep'
+
+        VerifyLS1MacEntryOnControllers--KVM:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: cli
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: "3"
+            get_mac_table[?]contain_once:
+              table:
+                - adapter_mac: "vm.[1].vif.[1]"
+                  adapter_ip: "kvm.[1].vtep.[1]"
+                - adapter_mac: "vm.[2].vif.[1]"
+                  adapter_ip: "kvm.[1].vtep.[1]"
+
+        EnableIPFIX:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ipfixconfig:
+                "[1]":
+                    enabled: "true"
+                    ip_address: 'vm.[3]->ip'
+
+        UpdateIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            enabled: "true"
+            ip_address: 'vm.[3]->ip'
+            domain_id: '10'
+            port: 9999
+            idle_timeout: '60'
+            flow_timeout: '60'
+            packet_sample_probability: '1'
+            max_flows: '1000'
+
+        ReadIPFIXConfig:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            read:
+              'domain_id[?]equal_to': '10'
+              'port[?]equal_to': 9999
+              'idle_timeout[?]equal_to': '60'
+              'flow_timeout[?]equal_to': '60'
+              'max_flows[?]equal_to': '1000'
+              'ip_address[?]equal_to': 'vm.[3]->ip'
+              'packet_sample_probability[?]equal_to': '1.0'
+
+        VerifyIPFIXConfigOnHost1:
+            Type: Host
+            TestHost: 'kvm.[1]'
+            execution_type: 'cli'
+            'get_ipfix_config[?]contain_once':
+                packet_sample_probability: '1'
+                ip_address: 'vm.[3]->ip'
+                port: 9999
+                flow_timeout: '60'
+                max_flows: '1000'
+                domain_id: '10'
+
+        StartTShark:
+            Type: VM
+            TestVM: 'vm.[3]'
+            capture:
+                tool: 'tshark'
+                file_name: '/tmp/tshark123.cap'
+                capture_filter: '-f "dst port 9999"'
+                adapter_name: 'eth0'
+                execution_type: 'cmd'
+
+        ToggleIPFIX:
+            - ['DisableIPFIX']
+            - ['EnableIPFIX']
+            # Since it is not possible to just disable and re-enable IPFIX and
+            # have the config persisted, we also need to re-update it.
+            - ['UpdateIPFIXConfig']
+
+        PingFromVM1Vif1ToVM2Vif1For30s:
+            SupportAdapter: vm.[2].vif.[1]
+            TestAdapter: vm.[1].vif.[1]
+            TestDuration: 30
+            ToolName: ping
+            Type: Traffic
+            connectivitytest: 0
+
+        GetIPFIXCapturedData1: &GetIPFIXCapturedData1
+            Type: VM
+            TestVM: 'vm.[3]'
+            sleepbetweenworkloads: "65"
+            tool: 'tshark'
+            execution_type: 'cmd'
+            file_name: '/tmp/tshark123.cap'
+            port: 9999
+            stop_capture: true
+            read_filter: '-T fields -E header=y -e cflow.od_id -e cflow.packets64 -e cflow.srcaddr -e cflow.dstaddr -e cflow.srcmac -e cflow.dstmac -e cflow.ip_version -e cflow.protocol -e ip.src -R "cflow.srcaddr==vm.[1].vif.[1]->GetIPv4 && cflow.dstaddr==vm.[2].vif.[1]->GetIPv4 " -2'
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      pktcount: '10'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+
+        GetIPFIXCapturedData2:
+            <<: *GetIPFIXCapturedData1
+            'get_ipfix_capture_data[?]contains':
+                table:
+                    - domain_id: '10'
+                      pktcount: '30'
+                      src_ip: 'vm.[1].vif.[1]->adapter_ip'
+                      src_mac: 'vm.[1].vif.[1]->adapter_mac'
+                      dst_ip: 'vm.[2].vif.[1]->adapter_ip'
+                      dst_mac: 'vm.[2].vif.[1]->adapter_mac'
+                      protocol: '1'  # ICMP
+                      ip_version: '04'
+                      exporter_ip: 'kvm.[1]->mgmt_ip'
+
+        DisableIPFIX:
+            Type: "Service"
+            Testservice: "nsxmanager.[1].ipfixconfig.[1]"
+            reconfigure: true
+            enabled: "false"

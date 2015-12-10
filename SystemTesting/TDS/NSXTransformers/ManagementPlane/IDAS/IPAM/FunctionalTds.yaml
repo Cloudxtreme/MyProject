@@ -1,0 +1,3801 @@
+#####################################################################
+# Title : Avalanche IPAM TDS                                        |
+#####################################################################
+
+
+#####################################################################
+#                 P0 Test Cases                                     |
+#####################################################################
+
+CrudIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CrudIPPool"
+    Version: "2"
+    Summary: "Verify IPPool gets created"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "dgargote"
+    Procedure: '1. Create one IPPool
+                2. Verify IPPool gets created successfully
+                3. Update IPPool'
+    ExpectedResult: 'IPPool should get created successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+GetDetailsOfAllIPPools:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'GetDetailsOfAllIPPools'
+    Version: "2"
+    Summary: 'Get details of all IPPools'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create multiple IPPools
+                2. Query details of all IPPools
+                3. Verify details of all IPPools are retrieved'
+    ExpectedResult: 'In Step-3 details of all IPPools should be retrieved'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool1"]
+            - ["CreateIPPool2"]
+            - ["VerifyIPPoolList"]
+        ExitSequence:
+            - ["DeleteIPPools"]
+        CreateIPPool1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'AUTO-IPPool-1'
+                    summary: "IPPool ONE created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+        CreateIPPool2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[2]':
+                    name: 'AUTO-IPPool-2'
+                    summary: "IPPool TWO created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.2.10
+                            begin: 192.168.2.2
+                          - end: 192.168.2.20
+                            begin: 192.168.2.11
+                        cidr: 192.168.2.0/24
+                        gateway_ip: 192.168.2.255
+                        servers:
+                          - 192.1.2.1
+
+        VerifyIPPoolList:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].ippool.[1]"
+            get_pool_list:
+               'result_count[?]equal_to': 2
+               'results[?]contain_once':
+                   - name: 'AUTO-IPPool-1'
+                     summary: 'IPPool ONE created through automation'
+                     subnets:
+                        - cidr: '192.168.1.0/24'
+                   - name: 'AUTO-IPPool-2'
+                     summary: 'IPPool TWO created through automation'
+                     subnets:
+                        - cidr: '192.168.2.0/24'
+
+        DeleteIPPools: *DELETE_ALL_IPPOOLS
+
+GetDetailsOfIPPoolWithCorrectIPPoolId:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'GetDetailsOfIPPoolWithCorrectIPPoolId'
+    Version: "2"
+    Summary: 'Get IPPool details with correct IPPool Id'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create one IPPool
+                2. Get details of all IPPool with correct IPPool Id
+                3. Verify details of all IPPool are retrieved correctly'
+    ExpectedResult: 'In Step-3 details of IPPool should be retrieved correctly'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["VerifyIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        VerifyIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.10
+                      begin: 192.168.1.2
+                    - end: 192.168.1.20
+                      begin: 192.168.1.11
+                  cidr: 192.168.1.0/24
+                  gateway_ip: 192.168.1.255
+                  servers:
+                    - 192.1.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+CreateIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPool"
+    Version: "2"
+    Summary: "Verify IPPool gets created"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create one IPPool
+                2. Verify IPPool gets created successfully'
+    ExpectedResult: 'IPPool should get created successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolName:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateIPPoolName'
+    Version: "2"
+    Summary: 'To verify if IPPool name gets updated'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool name
+                3. Verify IPPool name is updated'
+    ExpectedResult: 'IPPool name should get updated'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolDescription:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateIPPoolDescription'
+    Version: "2"
+    Summary: 'To verify if IPPool description gets updated'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool description
+                3. Verify IPPool description is updated'
+    ExpectedResult: 'IPPool description should get updated'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'summary[?]equal_to': "Updated summary"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolGateway:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateIPPoolGateway'
+    Version: "2"
+    Summary: 'To verify if IPPool gateway gets updated'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool gateway
+                3. Verify IPPool gateway is updated'
+    ExpectedResult: 'IPPool gateway should get updated'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.10
+                      begin: 192.168.1.2
+                  gateway_ip: 192.168.1.255
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "IPPool created through automation"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.9
+                    begin: 192.168.1.2
+                  - end: 192.168.1.150
+                    begin: 192.168.1.15
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.253
+                servers:
+                  - 192.1.1.1
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.9
+                      begin: 192.168.1.2
+                  gateway_ip: 192.168.1.253
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolDNSNameServer:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'UpdateIPPoolDNSNameServer'
+    Version: "2"
+    Summary: 'To verify if IPPool DNS name server gets updated'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool DNS name server
+                3. Verify IPPool DNS name server is updated'
+    ExpectedResult: 'IPPool DNS name server should get updated'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.10
+                      begin: 192.168.1.2
+                  servers:
+                    - 192.1.1.1
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "IPPool created through automation"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.199
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.10
+                      begin: 192.168.1.2
+                  servers:
+                    - 192.1.1.199
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+AddRangeToIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'AddRangeToIPPool'
+    Version: "2"
+    Summary: 'To verify if IPPool gets updated with newly added range'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to add range in the subnet of newly created IPPool
+                3. IPPool should get updated with newly added range'
+    ExpectedResult: 'IPPool should get updated with newly added range'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["AddRangeIPPool"]
+            - ["ReadIPPoolAfterAddRange"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.10
+                      begin: 192.168.1.2
+                    - end: 192.168.1.20
+                      begin: 192.168.1.11
+
+        AddRangeIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "IPPool created through automation"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                  - end: 192.168.1.30
+                    begin: 192.168.1.21
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        ReadIPPoolAfterAddRange:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.10
+                      begin: 192.168.1.2
+                    - end: 192.168.1.20
+                      begin: 192.168.1.11
+                    - end: 192.168.1.30
+                      begin: 192.168.1.21
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+DeleteRangeFromIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'DeleteRangeFromIPPool'
+    Version: "2"
+    Summary: 'To verify if IPPool range gets deleted from subnet'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to delete range from the subnet of newly created IPPool
+                3. Verify range is deleted from subnet of IPPool'
+    ExpectedResult: 'Range should get deleted from IPPool'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["DeleteRangeIPPool"]
+            - ["ReadIPPoolAfterDeleteRange"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.10
+                      begin: 192.168.1.2
+                    - end: 192.168.1.20
+                      begin: 192.168.1.11
+
+        DeleteRangeIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "IPPool created through automation"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        ReadIPPoolAfterDeleteRange:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': "Auto-IPPool-1"
+              'subnets[?]not_contains':
+                - allocation_ranges:
+                    - end: 192.168.1.20
+                      begin: 192.168.1.11
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+ExpandRangeFromIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "ExpandRangeFromIPPool"
+    Version: "2"
+    Summary: "To verify if IPPool range gets expanded from subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to expand range from the subnet
+                3. Verify range is expanded from subnet of IPPool'
+    ExpectedResult: 'Range should get expanded from IPPool'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ExpandIPPool"]
+            - ["VerifyIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        VerifyIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                  - end: 192.168.1.40
+                    begin: 192.168.1.11
+
+        ExpandIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.40
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+ShrinkRangeFromIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'ShrinkRangeFromIPPool'
+    Version: "2"
+    Summary: 'To verify if IPPool range gets shrinked from subnet'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to shrink range from the subnet
+                3. Verify range is shrinked from subnet of IPPool'
+    ExpectedResult: 'Range should get shrinked from IPPool'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ShrinkIPPool"]
+            - ["VerifyIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.40
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+
+        VerifyIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+
+        ShrinkIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+AddSubnetToIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'AddSubnetToIPPool'
+    Version: "2"
+    Summary: 'To verify if subnet gets added to IPPool'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to add subnet to IPPool
+                3. Verify subnet is added to IPPool'
+    ExpectedResult: 'Subnet should get added to IPPool'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["AddSubnet"]
+            - ["VerifyIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        VerifyIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                  - end: 192.168.2.20
+                    begin: 192.168.2.11
+
+        AddSubnet:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+              - allocation_ranges:
+                  - end: 192.168.2.10
+                    begin: 192.168.2.2
+                  - end: 192.168.2.20
+                    begin: 192.168.2.11
+                cidr: 192.168.2.0/24
+                gateway_ip: 192.168.2.255
+                servers:
+                  - 192.1.2.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+DeleteSubnetFromIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'DeleteSubnetFromIPPool'
+    Version: "2"
+    Summary: 'To verify if subnet gets deleted from IPPool'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to delete subnet from IPPool
+                3. Verify subnet gets deleted from IPPool'
+    ExpectedResult: 'Subnet should get deleted from IPPool'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["DeleteSubnet"]
+            - ["VerifyIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+                      - allocation_ranges:
+                          - end: 192.168.2.10
+                            begin: 192.168.2.2
+                          - end: 192.168.2.20
+                            begin: 192.168.2.11
+                        cidr: 192.168.2.0/24
+                        gateway_ip: 192.168.2.255
+                        servers:
+                          - 192.1.2.1
+
+        VerifyIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]not_contains':
+                - allocation_ranges:
+                  - end: 192.168.2.20
+                    begin: 192.168.2.11
+
+        DeleteSubnet:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+DeleteIPPoolWithoutAnyAllocatedIPs:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "DeleteIPPoolWithoutAnyAllocatedIPs"
+    Version: "2"
+    Summary: "To verify if IPPool gets deleted without any allocated IPs"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                3. Try to delete IPPool
+                4. Verify IPPool is getting deleted'
+    ExpectedResult: 'IPPool should deleted as there are no allocated IPs'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+VerifyPagination:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'VerifyPagination'
+    Version: "2"
+    Summary: 'Verify pagination support for GET APIs for IPPool'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "kchougule"
+    Procedure: '1. Create multiple IPPools
+                2. Execute GET API on IPPool by specifying page_size and cursor
+                3. Verify pagination is working and entries are getting
+                   retrieved using page_size and cursor'
+    ExpectedResult: 'Pagination should be supported for GET APIs and entries
+                     should get retrieved using page_size and cursor'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["VerifyIPPoolList"]
+        ExitSequence:
+            - ["DeleteIPPools"]
+
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1-5]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+
+        VerifyIPPoolList:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].ippool.[1]"
+            get_pool_list:
+               'cursor[?]defined': ''
+
+        DeleteIPPools: *DELETE_ALL_IPPOOLS
+
+#####################################################################
+#                 P1 Test Cases                                     |
+#####################################################################
+
+CreateIPPoolWithIncorrectSubnet:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithIncorrectSubnet"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with incorrect subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with incorrect subnet
+                2. Verify IPPool creation is failing with correct
+                error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 392.268.1.0/24  # incorrect subnet
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+
+CreateIPPoolWithIncorrectGateway:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithIncorrectGateway"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with incorrect gateway"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with incorrect gateway
+                2. Verify IPPool creation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 492.268.1.255 # incorrect gateway
+                        servers:
+                          - 192.1.1.1
+
+CreateIPPoolWithGatewayOutsideSubnetIPv4:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithGatewayOutsideSubnetIPv4"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with gateway outside subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with gateway not part of subnet
+                2. Verify IPPool creation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPool
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.7.255 # gateway not part of subnet
+                        servers:
+                          - 192.1.1.1
+
+CreateIPPoolWithIncorrectDNSNameServer:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithIncorrectDNSNameServer"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with incorrect DNS name server"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with incorrect DNS name server
+                2. Verify IPPool creation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 492.256.1.1 # incorrect dns name server
+
+CreateIPPoolWithGatewayPartOfIPRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithGatewayPartOfIPRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with gateway part of IP range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with gateway part of IP range
+                2. Verify IPPool creation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.5 # gateway is part of range
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithRangeOutsideTheSubnet:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithRangeOutsideTheSubnet"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with range outside the subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with range outside the subnet
+                2. Verify IPPool creation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.2.10
+                            begin: 192.168.2.2  # range outside the subnet
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithStartIPGreaterThanEndIPOfRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithStartIPGreaterThanEndIPOfRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with start IP greater
+              than end IP of range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with start IP greater
+                than end IP of range
+                2. Verify IPPool creation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.22  # start IP greater than end IP
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithStartIPNullInTheRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithStartIPNullInTheRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with start IP null in the range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with start IP null in the range
+                2. Verify IPPool creation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            # start IP null
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithEndIPNullInTheRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithEndIPNullInTheRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with end IP null in the range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with end IP null in the range
+                2. Verify IPPool creation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - begin: 192.168.1.2
+                            # end IP null
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithStartIPInTheRangeOutsideTheSubnet:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithStartIPInTheRangeOutsideTheSubnet"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with start IP
+              in the range outside the subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with start IP in the range
+                outside the subnet
+                2. Verify IPPool creation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            # start ip in range outside the subnet
+                            begin: 192.168.5.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithEndIPInTheRangeOutsideTheSubnet:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithEndIPInTheRangeOutsideTheSubnet"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with end IP in the range
+              outside the subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with end IP in the range
+                outside the subnet
+                2. Verify IPPool creation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          # end ip in range outside the subnet
+                          - end: 192.168.7.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithSingleIPInTheRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithSingleIPInTheRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with single IP in the range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with single IP in the range
+                2. Verify IPPool gets created with single IP in the range'
+    ExpectedResult: 'IPPool should get created with specified details'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.2 # single ip in range
+                            begin: 192.168.1.2
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.2
+                      begin: 192.168.1.2
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+CreateIPPoolWithCompleteSubnetPartOfTheRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithCompleteSubnetPartOfTheRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with complete subnet
+              part of the range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with complete subnet part of the range
+                2. Verify IPPool gets created with complete subnet part
+                of the range'
+    ExpectedResult: 'IPPool should get created with specified details'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          # complete subnet part of the range
+                          - end: 192.168.1.254
+                            begin: 192.168.1.1
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.254
+                      begin: 192.168.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+CreateIPPoolWithUnicastIPAddressesInTheRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithUnicastIPAddressesInTheRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with unicast IP addresses
+              in the range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with unicast IP addresses in the range
+                2. Verify IPPool gets created with unicast IP addresses
+                in the range'
+    ExpectedResult: 'IPPool should get created with specified details'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          # unicast IP address in the range
+                          - end: 192.168.1.25
+                            begin: 192.168.1.1
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.25
+                      begin: 192.168.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+CreateIPPoolWithThreeNameServersInSubnet:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithThreeNameServersInSubnet"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with 3 DNS servers in subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with 3 DNS name servers
+                2. Verify IPPool creation is successful'
+    ExpectedResult: 'IPPool should be created successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPoolWithThreeNameServersInSubnet
+            - - ReadIPPool
+        ExitSequence:
+            - - DeleteIPPool
+
+        CreateIPPoolWithThreeNameServersInSubnet:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.4
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+                          - 192.1.1.2
+                          - 192.1.1.3
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]contain_once':
+                - servers:
+                    - 192.1.1.1
+                    - 192.1.1.2
+                    - 192.1.1.3
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+AddSubnetToIPPoolWithIncorrectValue:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'AddSubnetToIPPoolWithIncorrectValue'
+    Version: "2"
+    Summary: 'To verify if subnet gets added to IPPool with incorrect value'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to add subnet to IPPool with incorrect value
+                3. Verify IPPool updation is failing with
+                correct error message'
+    ExpectedResult: 'IPPool updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'subnets[?]not_contains':
+                - cidr: 292.168.2.0/24
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "IPPool created through automation"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.2.10
+                    begin: 192.168.2.2
+                  - end: 192.168.2.20
+                    begin: 192.168.2.11
+                cidr: 292.168.2.0/24 # incorrect subnet
+                gateway_ip: 192.168.2.255
+                servers:
+                  - 192.1.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+ExpandOrShrinkSubnetFromIPPool:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'ExpandOrShrinkSubnetFromIPPool'
+    Version: "2"
+    Summary: 'To verify if subnet gets expanded or shrinked from IPPool'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to expand subnet of IPPool
+                3. Try to shrink subnet of IPPool
+                4. Verify subnet is expanded and shrinked successfully'
+    ExpectedResult: 'Subnet expand or shrink should be successfull'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ExpandSubnet"]
+            - ["VerifyIPPoolAfterExpand"]
+            - ["ShrinkSubnet"]
+            - ["VerifyIPPoolAfterShrink"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ExpandSubnet:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.0.0/23
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        VerifyIPPoolAfterExpand:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                  cidr: 192.168.0.0/23
+
+        ShrinkSubnet:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        VerifyIPPoolAfterShrink:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                  cidr: 192.168.1.0/24
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithThreeNameServersInSubnet:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithThreeNameServersInSubnet"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with 3 DNS servers in subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P1"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update IPPool with 3 DNS name servers
+                3. Verify IPPool updation is successful'
+    ExpectedResult: 'IPPool should be updated successfully'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPool
+            - - ReadIPPool
+            - - UpdateIPPoolWithThreeNameServersInSubnet
+            - - VerifyIPPoolUpdated
+        ExitSequence:
+            - - DeleteIPPool
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPoolWithThreeNameServersInSubnet:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.5
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+                  - 192.1.1.2
+                  - 192.1.1.3
+
+        VerifyIPPoolUpdated:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': 'Auto-IPPool-1'
+              'summary[?]equal_to': 'Updated summary'
+              'subnets[?]contain_once':
+                - servers:
+                    - 192.1.1.1
+                    - 192.1.1.2
+                    - 192.1.1.3
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+
+#####################################################################
+#                 P2 Test Cases                                     |
+#####################################################################
+
+GetDetailsOfIPPoolWithIncorrectIPPoolId:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "GetDetailsOfIPPoolWithIncorrectIPPoolId"
+    Version: "2"
+    Summary: "Get IPPool details with incorrect IPPool Id"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create one IPPool
+                2. Get details of all IPPool with incorrect IPPool Id
+                3. IPPool read operation should fail with correct error message'
+    ExpectedResult: 'In Step-3 IPPool read operation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetIPPoolId"]
+            - ["ReadIPPool"]
+
+        SetIPPoolId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    map_object: true
+                    id_: 'incorrect_id'
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            ExpectedResult:
+                status_code: NOT_FOUND
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+CreateIPPoolWithBlankName:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithBlankName"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with empty name"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with blank name
+                2. Verify IPPool creation is successful'
+    ExpectedResult: 'IPPool creation should success'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: ''
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': 'nsxmanager.[1].ippool.[1]->ippool_id'
+              'summary[?]equal_to': "IPPool created through automation"
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+CreateIPPoolWithMulticastIPAddressesInTheRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithMulticastIPAddressesInTheRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with multicast IP addresses in the range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with multicast IP addresses in the range
+                2. Verify IPPool creation is failing with correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 224.0.0.1 # multicast ip
+                            begin: 224.0.0.1
+                          - end: 224.0.0.5
+                            begin: 224.0.0.2
+                        cidr: 224.0.0.1/24
+                        gateway_ip: 224.0.0.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithBroadcastIPAddressesInTheRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithBroadcastIPAddressesInTheRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with broadcast IP addresses in the range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with broadcast IP addresses in the range
+                2. Verify IPPool creation is failing with correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.255 # broadcast ip
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithGatewayDNSsameAsNetworkAddress:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithGatewayDNSsameAsNetworkAddress"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with gateway/dns server value same as network address"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with gateway/dns server having value same as network address
+                2. Verify IPPool creation is failing with correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPoolWithGatewayIPsame"]
+            - ["CreateIPPoolWithDnsIPsame"]
+        CreateIPPoolWithGatewayIPsame:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.4
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.0 # same as network address
+                        servers:
+                          - 192.168.1.1
+
+        CreateIPPoolWithDnsIPsame:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.4
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.0 # same as network address
+
+CreateIPPoolWithRangeValueSameAsNetworkAddress:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithRangeValueSameAsNetworkAddress"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with range start/end value
+              same as network address"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with range start/end value
+                   having value same as network address
+                2. Verify IPPool creation is failing with correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPoolWithRangeStartValueSame
+            - - CreateIPPoolWithRangeEndValueSame
+
+        CreateIPPoolWithRangeStartValueSame:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.4
+                            begin: 192.168.1.0  # same as network address
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+        CreateIPPoolWithRangeEndValueSame:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.0  # same as network address
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithoutAllocationRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithoutAllocationRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets created without allocation range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool without allocation range in payload
+                2. Verify IPPool creation is failing with correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPoolWithoutAllocationRange
+
+        CreateIPPoolWithoutAllocationRange:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithoutCidrAttribute:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithoutCidrAttribute"
+    Version: "2"
+    Summary: "To verify if IPPool gets created without CIDR attribute"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool without CIDR attribute in payload
+                2. Verify IPPool creation is failing with correct error message'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPoolWithoutCidrAttribute
+
+        CreateIPPoolWithoutCidrAttribute:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.5
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.168.1.1
+
+CreateIPPoolWithMoreThanThreeNameServersInSubnet:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithMoreThanThreeNameServersInSubnet"
+    Version: "2"
+    Summary: "To verify if IPPool gets created with more than 3 DNS servers in subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Try to create IPPool with more than 3 DNS name servers
+                2. Verify IPPool creation is failing'
+    ExpectedResult: 'IPPool creation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPoolWithMoreThanThreeNameServersInSubnet
+
+        CreateIPPoolWithMoreThanThreeNameServersInSubnet:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            ippool:
+                '[1]':
+                    name: 'autogenerate'
+                    summary: "IPPool created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.4
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+                          - 192.1.1.2
+                          - 192.1.1.3
+                          - 192.1.1.4
+
+UpdateIPPoolWithIncorrectIPPoolId:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithIncorrectIPPoolId"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with incorrect IPPool Id"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool by specifying incorrect IPPool Id'
+    ExpectedResult: 'IPPool updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetIPPoolId"]
+            - ["UpdateIPPool"]
+
+        SetIPPoolId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    map_object: true
+                    id_: 'incorrect_id'
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: NOT_FOUND
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+
+UpdateIPPoolWithBlankName:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithBlankName"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with empty name"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool with empty name
+                3. Verify IPPool updation is successful'
+    ExpectedResult: 'IPPool updation should successful'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    name: 'IPPool-1'
+                    summary: "IPPool ONE created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                          - end: 192.168.1.20
+                            begin: 192.168.1.11
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': 'IPPool-1'
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            name: ' '
+            summary: "Updated summary"
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]equal_to': 'nsxmanager.[1].ippool.[1]->ippool_id'
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithIncorrectSubnet:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithIncorrectSubnet"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with incorrect subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool with incorrect subnet
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with appropriate error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "IPPool created through automation"
+            subnets:
+              - allocation_ranges:
+                  - end: 392.168.1.10
+                    begin: 392.168.1.2
+                  - end: 392.168.1.20
+                    begin: 392.168.1.11
+                cidr: 392.168.1.0/24 #incorrect subnet
+                gateway_ip: 392.168.1.255
+                servers:
+                  - 392.1.1.199
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'subnets[?]not_contains':
+                - cidr: 392.268.1.0/24
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithIncorrectGateway:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithIncorrectGateway"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with incorrect gateway"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool with incorrect gateway
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with appropriate error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 492.268.1.255 # incorrect gateway
+                servers:
+                  - 192.1.1.1
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'subnets[?]not_contains':
+                - gateway_ip: 492.268.1.255
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithGatewayOutsideSubnetIPv4:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithGatewayOutsideSubnetIPv4"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with gateway outside subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool with gateway not part of subnet
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with appropriate error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPool
+            - - ReadIPPool
+            - - UpdateIPPool
+            - - ReadIPPoolAfterUpdate
+        ExitSequence:
+            - - DeleteIPPool
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.7.255 # gateway not part of subnet
+                servers:
+                  - 192.1.1.1
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'subnets[?]not_contains':
+                - gateway_ip: 192.168.7.255
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithIncorrectDNSNameServer:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithIncorrectDNSNameServer"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with incorrect DNS name server"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool with incorrect DNS name server
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with appropriate error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 492.256.1.1 # incorrect dns name server
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'subnets[?]not_contains':
+                - servers:
+                    - 492.256.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithGatewayDNSsameAsNetworkAddress:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithGatewayDNSsameAsNetworkAddress"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with gateway/dns server value same as network address"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool with Gateway IP/DNS server IP same as network address
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with appropriate error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPoolWithGateway"]
+            - ["UpdateIPPoolWithDNS"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPoolWithGateway:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.0 # same as network address
+                servers:
+                  - 192.1.1.1
+
+        UpdateIPPoolWithDNS:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.168.1.0 # same as network address
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'subnets[?]not_contains':
+                - gateway_ip: 192.168.1.0
+                - servers:
+                    - 192.168.1.0
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithRangeSameAsNetworkAddress:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithRangeSameAsNetworkAddress"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with range start/end
+              value same as network address"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool with range start/end value
+                   same as network address
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with appropriate error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPool
+            - - ReadIPPool
+            - - UpdateIPPoolWithStartValueSame
+            - - UpdateIPPoolWithEndValueSame
+            - - ReadIPPoolAfterUpdate
+        ExitSequence:
+            - - DeleteIPPool
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPoolWithStartValueSame:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.0  # same as network address
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        UpdateIPPoolWithEndValueSame:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.0  # same as network address
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.168.1.1
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'subnets[?]not_contains':
+                - allocation_ranges:
+                  - end: 192.168.1.0
+                    begin: 192.168.1.0
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithIncorrectRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithIncorrectRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with incorrect range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update created IPPool with incorrect range
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with appropriate error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+            - ["ReadIPPoolAfterUpdate"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 292.168.1.10 # incorrect range
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        ReadIPPoolAfterUpdate:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'subnets[?]not_contains':
+                - allocation_ranges:
+                    - end: 292.168.1.10
+                      begin: 192.168.1.2
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithoutAllocationRange:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithoutAllocationRange"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated without allocation range"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update IPPool without allocation range in payload
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPool
+            - - ReadIPPool
+            - - UpdateIPPoolWithoutAllocationRange
+        ExitSequence:
+            - - DeleteIPPool
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPoolWithoutAllocationRange:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithoutCidrAttribute:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithoutCidrAttribute"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated without CIDR attribute"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update IPPool without CIDR attribute in payload
+                2. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPool
+            - - ReadIPPool
+            - - UpdateIPPoolWithoutCidrAttribute
+        ExitSequence:
+            - - DeleteIPPool
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPoolWithoutCidrAttribute:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.5
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+UpdateIPPoolWithMoreThanThreeNameServersInSubnet:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "UpdateIPPoolWithMoreThanThreeNameServersInSubnet"
+    Version: "2"
+    Summary: "To verify if IPPool gets updated with more than 3 DNS servers in subnet"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to update IPPool with more than 3 DNS name servers
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - - CreateIPPool
+            - - ReadIPPool
+            - - UpdateIPPoolWithMoreThanThreeNameServersInSubnet
+        ExitSequence:
+            - - DeleteIPPool
+
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+
+        UpdateIPPoolWithMoreThanThreeNameServersInSubnet:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "Updated summary"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.5
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+                  - 192.1.1.2
+                  - 192.1.1.3
+                  - 192.1.1.4
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+AddRangeToIPPoolWithIncorrectValues:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: 'AddRangeToIPPoolWithIncorrectValues'
+    Version: "2"
+    Summary: 'To verify if IPPool gets updated with incorrect values for range'
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to add range in the subnet of newly created IPPool
+                with incorrect values
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with appropriate error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["AddRangeIPPool"]
+            - ["ReadIPPoolAfterAddRange"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'subnets[?]contain_once':
+                - allocation_ranges:
+                    - end: 192.168.1.10
+                      begin: 192.168.1.2
+                    - end: 192.168.1.20
+                      begin: 192.168.1.11
+
+        AddRangeIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            summary: "IPPool created through automation"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 192.168.1.20
+                    begin: 192.168.1.11
+                  - end: 292.168.1.30 # incorrect range
+                    begin: 292.168.1.21
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        ReadIPPoolAfterAddRange:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'subnets[?]not_contains':
+                - allocation_ranges:
+                    - end: 292.168.1.30
+                      begin: 292.168.1.21
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+ExpandRangeFromIPPoolWithIncorrectValue:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "ExpandRangeFromIPPoolWithIncorrectValue"
+    Version: "2"
+    Summary: "To verify if IPPool range gets expanded from subnet
+    with incorrect values"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                2. Try to expand range from the subnet with incorrect value
+                3. Verify IPPool updation is failing with correct error message'
+    ExpectedResult: 'IPPool updation should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,idas_dev,cat'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ExpandIPPool"]
+            - ["VerifyIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool: *CREATE_IPPOOL
+
+        VerifyIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool created through automation"
+              'subnets[?]not_contains':
+                - allocation_ranges:
+                  - end: 192.168.1.40
+                    begin: 192.168.1.11
+
+        ExpandIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            reconfigure: true
+            ExpectedResult:
+                status_code: BAD_REQUEST
+            name: "Auto-IPPool-1"
+            subnets:
+              - allocation_ranges:
+                  - end: 192.168.1.10
+                    begin: 192.168.1.2
+                  - end: 392.168.1.40 # incorrect range
+                    begin: 192.168.1.11
+                cidr: 192.168.1.0/24
+                gateway_ip: 192.168.1.255
+                servers:
+                  - 192.1.1.1
+
+        DeleteIPPool: *DELETE_ALL_IPPOOLS
+
+DeleteIPPoolWithIncorrectIPPoolId:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "DeleteIPPoolWithIncorrectIPPoolId"
+    Version: "2"
+    Summary: "To verify if IPPool gets deleted with incorrect IPPool Id"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool
+                3. Try to delete IPPool with incorrect IPPool Id
+                4. Verify IPPool deletion is failing with correct error message'
+    ExpectedResult: 'IPPool deletion should fail with correct error message'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["SetIPPoolId"]
+            - ["DeleteIPPool"]
+
+        SetIPPoolId:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ippool:
+                '[1]':
+                    map_object: true
+                    id_: 'incorrect_id'
+
+        DeleteIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            ExpectedResult:
+                status_code: NOT_FOUND
+            deleteippool: "nsxmanager.[1].ippool.[1]"
+
+CreateIPPoolWithOtherCredentials:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "CreateIPPoolWithOtherCredentials"
+    Version: "2"
+    Summary: "Verify CRUD operations success with credentials other than admin"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "IPAM"
+    Priority: "P3"
+    Developer: "kchougule"
+    Procedure: '1. Create IPPool with credentials of user other than admin
+                2. Read IPPool with credentials of user other than admin
+                3. Update IPPool with credentials of user other than admin
+                4. Delete IPPool with credentials of user other than admin'
+    ExpectedResult: 'CRUD operations should be successfull'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateIPPool"]
+            - ["ReadIPPool"]
+            - ["UpdateIPPool"]
+        ExitSequence:
+            - ["DeleteIPPool"]
+        CreateIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            runtime_params:
+                username: "nadmin"
+                password: "Nicira123chap"
+            ippool:
+                '[1]':
+                    name: 'AUTO-IPPool-1'
+                    summary: "IPPool ONE created through automation"
+                    subnets:
+                      - allocation_ranges:
+                          - end: 192.168.1.10
+                            begin: 192.168.1.2
+                        cidr: 192.168.1.0/24
+                        gateway_ip: 192.168.1.255
+                        servers:
+                          - 192.1.1.1
+
+        ReadIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            runtime_params:
+                username: "nsxadmin"
+                password: "Nicira123chap"
+            read:
+              'name[?]defined': ''
+              'summary[?]equal_to': "IPPool ONE created through automation"
+
+        UpdateIPPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].ippool.[1]"
+            runtime_params:
+                username: "nsxadmin"
+                password: "Nicira123chap"
+            reconfigure:
+                name: "Auto-IPPool-1"
+                summary: "Updated summary"
+
+        DeleteIPPool:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            runtime_params:
+                username: "nsxadmin"
+                password: "Nicira123chap"
+            deleteippool: "nsxmanager.[1].ippool.[-1]"

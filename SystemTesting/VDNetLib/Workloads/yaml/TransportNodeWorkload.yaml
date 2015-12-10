@@ -1,0 +1,286 @@
+---
+admin_status_enabled:
+  description: Admin status for the transport node
+  format: string
+  sample_value: true
+  allowed_values:
+     - true
+     - false
+  derived_components:
+     - transportnode
+  method: GetPythonBoolean
+  type: parameter
+cluster_id:
+  description: mob id of cluster
+  format: vdnet index
+  sample_value: 'vc.[2].datacenter.[1].cluster.[1]'
+  derived_components:
+     - transportnodecluster
+  method: ProcessParameters
+  type: parameter
+credential:
+  description: specifies credential details for the transport node
+  format:
+     mgmtaddress: vdnet index
+     type: string
+  sample_value:
+     mgmtaddress: host.[1]
+     type: MgmtAddrCredential
+  derived_components:
+     - transportnode
+  method: ProcessParameters
+  type: parameter
+domain_type:
+  description: domain type
+  format: string
+  sample_value: vsphere
+  derived_components:
+     - transportnodecluster
+  method: ProcessParameters
+  type: parameter
+integration_bridge_id:
+  description: integration bridge id of the transport node
+  format: string
+  sample_value: br-int
+  derived_components:
+     - transportnode
+  method: ProcessParameters
+  type: parameter
+reconfigure:
+  description: Reconfigures transportzone pool. E.g. stretching an existing VDN transportzone
+  format: string
+  sample_value: true
+  derived_components:
+     - transportnode
+     - transportnodecluster
+  method: UpdateComponent
+  params:
+    - name
+    - cluster
+    - zone_end_points
+    - cluster_id
+    - vc_id
+    - domain_type
+    - metadata
+  preprocess: PreProcessHashRefTypeAPI
+  type: action
+transport_connectors:
+  description: link to transport zone to be used for binding to a transport node
+  format:
+     - transport_zone_uuid: vdnet index
+       ip_address: ip address
+       type: string
+  sample_value:
+     - transport_zone_uuid: 'nvpcontroller.[1].transportzone.[1]'
+       ip_address: 'host.[2].vmnic.[1]'
+       type: 'STTConnector'
+  method: ProcessParameters
+  type: parameter
+  derived_components:
+     - transportnode
+vc_id:
+  description: 'UUID of VC '
+  method: ProcessParameters
+  type: parameter
+  format: vdnet index
+  sample_value: 'vc.[1]'
+  derived_components:
+     - transportnode
+
+transport_zone_endpoint:
+  description: link to transport zone to be used for binding to a transport node
+  format:
+       - transport_zone_id: 'vdnet index'
+         vteps:
+             - ip: 'ref: ip'
+               name: 'ref: name'
+         hostswitchid: 'vdnet index'
+  sample_value:
+       - transport_zone_id: 'nsxmanager.[1].transportzone.[1]'
+         vteps:
+             - ip: esx.[1].vtep.[1]
+               name: esx.[1].vtep.[1]
+         hostswitchid: esx.[1].nsxvswitch.[1]
+  derived_components:
+     - transportnode
+  method: PreProcessNestedParameters
+  type: parameter
+
+name:
+  description: Name of the any component
+  format: string
+  sample_value: host2
+  derived_components:
+     - transportnode
+     - transportnodecluster
+  method: ProcessParameters
+  type: parameter
+
+host_switches:
+  derived_components:
+    - transportnode
+  description: Hypervisor switches
+  format: array
+  method: PreProcessNestedParameters
+  type: parameter
+
+ip:
+  derived_components:
+    - transportnode
+  description: IP address spec
+  format:
+     - is_primary_address: string
+       ip_address: string
+  method: PreProcessNestedParameters
+  type: parameter
+
+uplinks:
+  derived_components:
+    - transportnode
+  description: array of pnic spec
+  format:
+    - link_speed: 'ref: link_speed'
+      device_id: 'ref: adapter_id'
+  method: PreProcessNestedParameters
+  type: parameter
+
+get_tunnels:
+  derived_components:
+    - transportnode
+  description: Get tunnels of the given transport node.
+  method: get_tunnels
+  format:
+    name: "ref: name"
+    status: "ref: status"
+  preprocess: PreProcessVerificationAndParameters
+  type: verification
+  params:
+    - node_id
+    - execution_type
+    - get_tunnels
+  sample_value:
+    - name: tunnel1
+      status: UP
+
+adapter_id:
+  description: adapter id/interface name
+  format: vdnet index
+  sample_value: 'esx.[x].vmnic.[1]'
+  derived_components:
+     - transportnode
+  method: GetComponentAttribute
+  type: parameter
+
+vteps:
+  derived_components:
+    - transportnode
+  description: Hypervisor vteps
+  format: array
+  method: PreProcessNestedParameters
+  type: parameter
+
+host_switch_profile_ids:
+  derived_components:
+    - transportnode
+  description: Host switch profile ids
+  format: array
+  method: PreProcessNestedParameters
+  type: parameter
+
+is_primary_address:
+  derived_components:
+    - transportnode
+  description: IP address spec
+  format: string
+  type: parameter
+
+value:
+  derived_components:
+    - transportnode
+  description: value to pass with the key
+  format: string
+  type: parameter
+  method: GetComponentAttribute
+
+key:
+  derived_components:
+    - transportnode
+  description: key name
+  format: string
+  type: parameter
+
+pinned_pnic:
+  derived_components:
+    - transportnode
+  description: IP address spec
+  format: string
+  type: parameter
+
+get_aggregation_status: &get_aggregation_status
+  derived_components:
+    - transportnode
+  description: Get the status for a given transportNode as reported by aggregation-service.
+  method: get_aggregation_status
+  format:
+    status: "ref: status"
+    uuid: "ref: node_uuid"
+    control_connection_status: "ref: control_connection_status"
+    pnic_status: "ref: pnic_status"
+    mgmt_connection_status: "ref: mgmt_connection_status"
+    tunnel_status: "ref: tunnel_status"
+  preprocess: PreProcessVerification
+  type: verification
+  params:
+    - execution_type
+    - get_aggregation_status
+  sample_value:
+    status: UP
+    uuid: foo
+    control_connection_status:
+      status: UP
+      up_count: 2
+      down_count: 0
+    pnic_status:
+      status: UP
+      up_count: 3
+      down_count: 0
+    mgmt_connection_status: UP
+    tunnel_status:
+      status: UP
+      bfd_diagnostic:
+        concatenated_path_down_count: 0
+        administratively_down_count: 0
+        no_diagnostic_count: 1
+        path_down_count: 0
+        reverse_concatenated_path_down_count: 0
+        control_detection_time_expired_count: 0
+        echo_function_failed_count: 0
+        forwarding_plane_reset_count: 0
+      bfd_status:
+        admin_down_count: 0
+        up_count: 2
+        down_count: 0
+        init_count: 0
+      up_count: 1
+      down_count: 0
+
+get_aggregation_remote_status:
+  <<: *get_aggregation_status
+  description: Get status summary of all remote transport nodes of the given transport node.
+  method: get_aggregation_remote_status
+  format:
+    node_id: "ref: node_id"
+    status: "ref: status"
+  params:
+    - execution_type
+    - get_aggregation_remote_status
+  sample_value:
+    - node_id: foo
+      status: UP
+
+link_speed:
+  derived_components:
+    - transportnode
+  description: IP address spec
+  format: string
+  type: parameter

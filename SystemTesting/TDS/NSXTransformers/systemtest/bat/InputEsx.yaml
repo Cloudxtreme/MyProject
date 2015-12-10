@@ -1,0 +1,87 @@
+!include Builds13.yaml
+
+'testbed':
+
+   'network':
+       '[1]':
+            name: 'network-esx'
+
+   'esx':
+      '[1-11]':  # last host is dedicated for Edge
+         <<: *esxbuild
+         installtype: 'linkedclone'
+         vmnic:
+            '[1]':
+               network: network.[1]
+               driver: 'e1000e'
+         configure_package:
+            <<: *esxpkgs
+
+   'nsxmanager':
+      '[1]':
+          <<: *nsxmgrbuild
+          'username' : 'admin'
+          'password' : 'default'
+
+   'nsxcontroller':
+      '[1-3]':
+          <<: *nsxctrlbuild
+          'username' : 'admin'
+          'password' : 'default'
+
+#   'nsxedge':
+#      '[1-2]':
+#          <<: *edgebuild
+#          username: 'admin'
+#          password: 'C@shc0w12345'
+#          #Supported values are: compact/large/xlarge
+#          edgetype: 'compact'
+#          # esx host ip
+#          esx: 'esx.[11]'  # XXX(dbadiani): Adjust this to use the right
+#                          # ESX as per your topology.
+#          management_network: 'VM Network'
+#          internal_network: 'VM Network'
+#          uplink_network: 'VM Network'
+#          installtype: 'nested'
+
+   'vm':
+        '[-1]':
+            # 1/30/2015 8:52:45 AM
+            # RHEL-srv-5.6.0.9-32
+            # RHEL-srv-5.9.0.3-64
+            # RHEL-srv-6.6.0.2-64
+            template: 'rhel53-srv-32'
+
+'options':
+    # TODO AND OPTIONS -
+    # 1) experiment with "cachetestbed : 0 | 1" for tescase execution performance by
+    #    not redeploying for multiple testcase series
+    #    --testbed save and --reuse typically for 1 or 2 testcases
+    #    cachetestbed : 0
+    #
+    # 2) if workloads is borderline and timing out, increase local timeout then this
+    #    global time
+    #    'maxWorkloadTimeout': 36000  # global for all workloads
+    #
+    # 3) NSF mount for toolchain has had delays.  Use local toolchain when this happens.
+    #    export USE_LOCAL_TOOLCHAIN=1
+
+    noTools: 1
+    dontupgstafsdk: 0
+
+    snapshotDir: '/tmp-vdnet/vdnet-esx'
+    collectLogs : 0
+    <<: *testrunid-esx
+    <<: *nsxsdkbuild
+    racetrack: 'avalanche-bat@racetrack-dev.eng.vmware.com'
+
+    src: '10.146.100.224:/home/jworsnup/nsx-qe/vdnet/automation'
+
+    podspec:  /mts/home4/netfvt/wdc-ucs-guest
+    vmrepos :  10.144.136.251:/wdc-protected-02
+    sharedstorage: 10.144.136.251:/wdc-fvt-1/wdc-vdnetSharedStorage/
+    mirrors:
+        toolchain: '10.144.136.251:/wdc-fvt-1/toolchain/'
+
+# //++/++//////////////////////////////
+# last line is empty no spaces, nada, so yaml files join happens correctly

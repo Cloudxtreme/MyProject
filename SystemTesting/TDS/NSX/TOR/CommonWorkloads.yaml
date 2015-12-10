@@ -1,0 +1,2401 @@
+WORKLOADS:
+    TDSCommonFieldsCase: &TDS_COMMON_FIELDS_P0_CASE
+        Product: "NSX"
+        Component: "SampleComponent"
+        Category: "TOR"
+        TestName:  "SampleCaseName"
+        Version: "2"
+        Tags: "tor"
+        QCPath: "ESX"
+        ExpectedResult: "PASS"
+        Status: "Execution Ready"
+        AutomationLevel: "Not Automated"
+        FullyAutomatable: "Y"
+        TestcaseLevel: "Functional"
+        TestcaseType: "Functional"
+        Priority: "P0"
+        Developer: "SampleDeveloper"
+        Partnerfacing: "N"
+
+    TDSCommonFieldsCase: &TDS_COMMON_FIELDS_P1_CASE
+       <<: *TDS_COMMON_FIELDS_P0_CASE
+       Priority: "P1"
+
+    TDSCommonFieldsCase: &TDS_COMMON_FIELDS_P2_CASE
+       <<: *TDS_COMMON_FIELDS_P0_CASE
+       Priority: "P2"
+
+    TDSCommonFieldsCase: &TDS_COMMON_FIELDS_P3_CASE
+       <<: *TDS_COMMON_FIELDS_P0_CASE
+       Priority: "P3"
+
+    IpPool: &IP_POOL
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       ippool:
+          '[1]': &IP_POOL_1
+              name:  "AutoGenerate"
+              gateway:    "XX.XX.XX.XX"
+              prefixlength:  "XX"
+              ipranges:   ['XX.XX.XX.XX-XX.XX.XX.XX']
+
+    OneController: &ONE_CONTROLLER
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       vxlancontroller:
+          '[1]': &CONTROLLER_1
+              name:         "AutoGenerate"
+              ippool:       "vsm.[1].ippool.[1]"
+              resourcepool: "vc.[1].datacenter.[1].cluster.[1]"
+              host:         "esx.[1]"
+
+    CreateNetworkScope: &CREATE_NETWORK_SCOPE
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       networkscope:
+         '[1]':
+            name:    "AutoGenerate"
+            clusters: "vc.[1].datacenter.[1].cluster.[2-3]"
+
+    OneController: &CONTROLLER_2
+       <<: *ONE_CONTROLLER
+       vxlancontroler:
+          '[2]':
+              <<: *CONTROLLER_1
+
+    OneController: &CONTROLLER_3
+       <<: *ONE_CONTROLLER
+       vxlancontroler:
+          '[3]':
+              <<: *CONTROLLER_1
+
+    ThreeControllers: &THREE_CONTROLLERS
+       <<: *ONE_CONTROLLER
+       vxlancontroler:
+          '[1-3]':
+             <<: *CONTROLLER_1
+
+    SegmentidRange: &SEGMENTID_RANGE
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       segmentidrange:
+          '[1]': &SEGMENT_ID_RANGE_1
+              name:  "AutoGenerate"
+              begin: "5001-10001"
+              end:   "99000"
+
+    MulticastRange: &MULTICAST_RANGE
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       multicastiprange:
+          '[1]': &MULTICAST_RANGE_1
+              name:  "AutoGenerate"
+              begin: "239.0.0.101"
+              end:   "239.254.254.254"
+
+    Vdl2VlanC: &VDL2_VLAN_C
+        "18"
+    Vdl2VlanD: &VDL2_VLAN_D
+        "19"
+
+    InstallTORGatewayService4.2.3: &INSTALL_TOR_GATEWAY_SERVICE_4_2_3
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       configure_package: # this workload will move to user spec later
+          operation: install
+          resource:
+            - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-datapath-dkms_2.3.1.41279_all.deb
+            - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-common_2.3.1.41279_amd64.deb
+            - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-switch_2.3.1.41279_amd64.deb
+            - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/python-openvswitch_2.3.1.41279_all.deb
+            - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-vtep_2.3.1.41279_amd64.deb
+
+    InstallLatestTORGatewayServiceWithBFD: &INSTALL_LATEST_TOR_GATEWAY_WITH_BFD
+        Type: Gateway
+        TestGateway: torgateway.[-1]
+        configure_package: # this workload will move to user spec later
+            operation: install
+            resource:
+              - http://apt.nicira.eng.vmware.com/builds/openvswitch-vtep-2.3.90-build43393/precise_amd64/openvswitch-datapath-dkms_2.3.90.43393_all.deb
+              - http://apt.nicira.eng.vmware.com/builds/openvswitch-vtep-2.3.90-build43393/precise_amd64/openvswitch-common_2.3.90.43393_amd64.deb
+              - http://apt.nicira.eng.vmware.com/builds/openvswitch-vtep-2.3.90-build43393/precise_amd64/openvswitch-switch_2.3.90.43393_amd64.deb
+              - http://apt.nicira.eng.vmware.com/builds/openvswitch-vtep-2.3.90-build43393/precise_amd64/python-openvswitch_2.3.90.43393_all.deb
+              - http://apt.nicira.eng.vmware.com/builds/openvswitch-vtep-2.3.90-build43393/precise_amd64/openvswitch-vtep_2.3.90.43393_amd64.deb
+
+    UninstallTORGatewayService: &UNINSTALL_TOR_GATEWAY_SERVICE
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       configure_package:
+          operation: uninstall
+          resource:
+            - openvswitch-datapath-dkms
+            - openvswitch-vtep
+            - openvswitch-switch
+            - openvswitch-common
+            - python-openvswitch
+
+    EnableGlobalBfd: &ENABLE_GLOBAL_BFD
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       bfd:
+         '[1]':
+             'bfd_enabled': 'true'
+             'probe_interval': 100
+
+    SetGlobalBfdKeepalive: &SET_GLOBAL_BFD_NEW_KEEPALIVE
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       bfd:
+         '[1]':
+             'bfd_enabled': 'true'
+             'probe_interval': 150
+
+    DisableGlobalBfd: &DISABLE_GLOBAL_BFD
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       bfd:
+         '[1]':
+             'bfd_enabled': 'false'
+
+    VerifyGlobalBfdEnabled: &VERIFY_GLOBAL_BFD_ENABLED
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       get_global_bfd:
+          'bfd_enabled[?]equal_to': 'true'
+
+    VerifyGlobalBfdDisabled: &VERIFY_GLOBAL_BFD_DISABLED
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       get_global_bfd:
+          'bfd_enabled[?]equal_to': 'false'
+
+    VerifyGlobalBfdKeepalive: &VERIFY_GLOBAL_BFD_NEW_KEEPALIVE
+       Type:  "NSX"
+       TestNSX: "vsm.[1]"
+       get_global_bfd:
+          'bfd_enabled[?]equal_to': 'true'
+          'probe_interval[?]equal_to': 150
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyTorEmulatorBfdStatus: &VERIFY_1_TOR_GATEWAY_EMULATOR_BFD_STATUS
+       Type: Gateway
+       TestGateway: torgateway.[1]
+       get_tor_emulator_bfd_params:
+          'bfd_enabled_unique_count[?]equal_to': 1
+          'bfd_state_up_unique_count[?]equal_to': 1
+          'bfd_remote_state_up_unique_count[?]equal_to': 1
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    # create a full meshed connection with PTEP cluster
+    VerifyTorEmulatorBfdStatus: &VERIFY_2_TOR_GATEWAYS_EMULATOR_BFD_STATUS_ENABLED
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       get_tor_emulator_bfd_params:
+          'bfd_enabled_unique_count[?]equal_to': 6
+          'bfd_state_up_unique_count[?]equal_to': 6
+          'bfd_remote_state_up_unique_count[?]equal_to': 6
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    # create a full meshed connection with PTEP cluster
+    VerifyTorEmulatorBfdStatus: &VERIFY_2_TOR_GATEWAYS_EMULATOR_BFD_STATUS_WHEN_2_PTEPS_REMOVED
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       get_tor_emulator_bfd_params:
+          'bfd_enabled_unique_count[?]equal_to': 2
+          'bfd_state_up_unique_count[?]equal_to': 2
+          'bfd_remote_state_up_unique_count[?]equal_to': 2
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    # create a full meshed connection with PTEP cluster
+    VerifyTorEmulatorBfdStatus: &VERIFY_2_TOR_GATEWAYS_EMULATOR_BFD_STATUS_DISABLED
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       get_tor_emulator_bfd_params:
+          'bfd_enabled_unique_count[?]equal_to': 0
+          'bfd_state_up_unique_count[?]equal_to': 0
+          'bfd_remote_state_up_unique_count[?]equal_to': 0
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    # create a full meshed connection with PTEP cluster
+    VerifyTorEmulatorBfdStatus: &VERIFY_TOR_GATEWAY_1_EMULATOR_BFD_STATUS_WHEN_TUNNEL_BLOCKED
+       Type: Gateway
+       TestGateway: torgateway.[1]
+       get_tor_emulator_bfd_params:
+          'bfd_enabled_unique_count[?]equal_to': 6
+          'bfd_state_up_unique_count[?]equal_to': 0
+          'bfd_remote_state_up_unique_count[?]equal_to': 0
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    # create a full meshed connection with PTEP cluster
+    VerifyTorEmulatorBfdStatus: &VERIFY_TOR_GATEWAY_2_EMULATOR_BFD_STATUS_WHEN_TUNNEL_BLOCKED
+       Type: Gateway
+       TestGateway: torgateway.[2]
+       get_tor_emulator_bfd_params:
+          'bfd_enabled_unique_count[?]equal_to': 6
+          'bfd_state_up_unique_count[?]equal_to': 0
+          'bfd_remote_state_up_unique_count[?]equal_to': 0
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    Create1TORSwitch: &CREATE_1_TOR_SWITCH
+       Type: Gateway
+       TestGateway: torgateway.[1]
+       torswitch:
+          '[1]':
+              name: 'autogenerate'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    Create2TORSwitches: &CREATE_2_TOR_SWITCHES
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       torswitch:
+          '[1]':
+              name: 'autogenerate'
+
+    TORSwitchVlan: &TOR_SWITCH_VLAN_1
+        "10"
+    TORSwitchVlan: &TOR_SWITCH_VLAN_2
+        "20"
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    Add2PhysicalPcPortsToTORSwitch1: &ADD_2_PHYSICAL_PC_PORTS_TO_TOR_SWITCH_1
+       Type: Switch
+       TestSwitch: torgateway.[-1].torswitch.[1]
+       torport:
+          '[1]':
+              phy_port_name: 'p1'
+              # phy_port_name: 'torgateway.[x].pif.[3]->name'
+              # temporary comment out 'vlan' since it is not supported
+              # in tor simulator yet
+              # vlan: *TOR_SWITCH_VLAN_1
+              attachment_type: "internal"
+          '[2]':
+              phy_port_name: 'p2'
+              # phy_port_name: 'torgateway.[x].pif.[4]->name'
+              # vlan: *TOR_SWITCH_VLAN_2
+              attachment_type: "internal"
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    Add2PhysicalPcPortsToTORSwitch1NoVLAN: &ADD_2_PHYSICAL_PC_PORTS_TO_TOR_SWITCH_1_NO_VLAN
+       Type: Switch
+       TestSwitch: torgateway.[-1].torswitch.[1]
+       torport:
+          '[1]':
+              phy_port_name: 'torgateway.[x].pif.[3]->name'
+          '[2]':
+              phy_port_name: 'torgateway.[x].pif.[4]->name'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    Configure1VtepIP: &CONFIGURE_1_VTEP_IP
+       # torgateway.vnic will get a vlan related ip(VTEP), like 172.21.X.X
+       Type: NetAdapter
+       TestAdapter: 'torgateway.[-1].vnic.[1]'
+       IPv4: dhcp
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    Configure2VtepsIP: &CONFIGURE_2_VTEPS_IP
+       # torgateway.vnic will get a vlan related ip(VTEP), like 172.21.X.X
+       Type: NetAdapter
+       TestAdapter: 'torgateway.[-1].vnic.[1-2]'
+       IPv4: dhcp
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    CreatePhysical2PcPortsOnTORGateway: &CREATE_PHYSICAL_2_PC_PORTS_ON_TOR_GATEWAY
+       Type: Gateway
+       TestGateway: 'torgateway.[-1]'
+       vnic:
+           '[11]': &CREATE_1_PHYSICAL_PC_PORT
+               driver: "vmxnet3"
+               portgroup: "esx.[x=torgateway_index+1].portgroup.[2]"
+               connected: 1
+               startconnected: 1
+           '[12]':
+               <<: *CREATE_1_PHYSICAL_PC_PORT
+               portgroup: "esx.[x=torgateway_index+1].portgroup.[3]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreatePhysical4PcPortsOnTORGateway: &CREATE_PHYSICAL_4_PC_PORTS_ON_TOR_GATEWAY
+       Type: Gateway
+       TestGateway: 'torgateway.[-1]'
+       vnic:
+           '[11]':
+               <<: *CREATE_1_PHYSICAL_PC_PORT
+           '[12]':
+               <<: *CREATE_1_PHYSICAL_PC_PORT
+               portgroup: "esx.[x=torgateway_index+1].portgroup.[3]"
+           '[13]':
+               <<: *CREATE_1_PHYSICAL_PC_PORT
+           '[14]':
+               <<: *CREATE_1_PHYSICAL_PC_PORT
+               portgroup: "esx.[x=torgateway_index+1].portgroup.[3]"
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    Configure2PhysicalPcPortsIP: &CONFIGURE_2_PHYSICAL_PC_PORTS_IP
+       # torgateway.vnic will get a ip address like 192.168.X.X
+       Type: NetAdapter
+       TestAdapter: 'torgateway.[-1].vnic.[11-12]'
+       IPv4: auto
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    Configure4PhysicalPcPortsIP: &CONFIGURE_4_PHYSICAL_PC_PORTS_IP
+       # torgateway.vnic will get a ip address like 192.168.X.X
+       Type: NetAdapter
+       TestAdapter: 'torgateway.[-1].vnic.[11-14]'
+       IPv4: auto
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    Bind1VtepWithTORSwitch: &BIND_1_VTEP_WITH_TOR_SWITCH
+       Type: Gateway
+       TestGateway: torgateway.[1]
+       bind_pnic:
+          name: "eth1"
+          switch_name: "torgateway.[1].torswitch.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    Bind2VtepsWithTORSwitch: &BIND_2_VTEPS_WITH_TOR_SWITCHES
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       bind_pnic:
+          name: "eth1"
+          switch_name: "torgateway.[x].torswitch.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    StartVtepSimulator1: &START_VTEP_SIMULATOR_1
+       Type: Gateway
+       TestGateway: torgateway.[1]
+       start_service:
+          service_name: "ovs-vtep"
+          tor_entries:
+             - node_id: "torgateway.[1].torswitch.[1]->name"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    StartVtepSimulator2: &START_VTEP_SIMULATOR_2
+       Type: Gateway
+       TestGateway: torgateway.[2]
+       start_service:
+          service_name: "ovs-vtep"
+          tor_entries:
+             - node_id: "torgateway.[2].torswitch.[1]->name"
+
+    TORGatewaySetController: &TOR_GATEWAY_SET_CONTROLLER
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       set_nsx_controller:
+          controller_ip: "vsm.[1].vxlancontroller.[1]->ip"
+          port: '6640'
+
+    TORGatewaySetInvalidController: &TOR_GATEWAY_SET_INVALID_CONTROLLER
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       set_nsx_controller:
+          controller_ip: "1.1.1.1"
+          port: '6640'
+
+    TORGatewayRemoveController: &TOR_GATEWAY_REMOVE_CONTROLLER
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       remove_nsx_controller:
+          status: 'true'
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    StopVtepSimulator1: &STOP_VTEP_SIMULATOR_1
+       Type: Gateway
+       TestGateway: torgateway.[1]
+       stop_service:
+          service_name: "ovs-vtep"
+          tor_entries:
+             - node_id: "torgateway.[1].torswitch.[1]->name"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    StopVtepSimulator2: &STOP_VTEP_SIMULATOR_2
+       Type: Gateway
+       TestGateway: torgateway.[2]
+       stop_service:
+          service_name: "ovs-vtep"
+          tor_entries:
+             - node_id: "torgateway.[2].torswitch.[1]->name"
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    DeleteTORPortsOnSwitch1: &DELETE_TOR_PORTS_ON_SWITCH_1
+       Type: Switch
+       TestSwitch: torgateway.[1].torswitch.[1]
+       deletetorport: torgateway.[1].torswitch.[1].torport.[1-2]
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    DeleteTORPortsOn2Switches: &DELETE_TOR_PORTS_ON_2_SWITCHES
+       Type: Switch
+       TestSwitch: torgateway.[-1].torswitch.[1]
+       deletetorport: torgateway.[x=torgateway_index].torswitch.[1].torport.[1-2]
+
+    DeleteTORSwitches: &DELETE_TOR_SWITCHES
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       deletetorswitch: torgateway.[x].torswitch.[-1]
+
+    CreateVirtualwires: &CREATE_MULTICAST_VIRTUALWIRE
+      Type: "TransportZone"
+      TestTransportZone: "vsm.[1].networkscope.[1]"
+      VirtualWire:
+         "[3]":
+            name: "AutoGenerate"
+            tenantid: "AutoGenerate"
+            controlplanemode: "MULTICAST_MODE"
+
+    CreateVirtualwires: &CREATE_VIRTUALWIRES
+      Type: "TransportZone"
+      TestTransportZone: "vsm.[1].networkscope.[1]"
+      VirtualWire:
+         "[1]":
+            name: "AutoGenerate"
+            tenantid: "AutoGenerate"
+            controlplanemode: "UNICAST_MODE"
+         "[2]":
+            name: "AutoGenerate"
+            tenantid: "AutoGenerate"
+            controlplanemode: "HYBRID_MODE"
+         "[3]":
+            name: "AutoGenerate"
+            tenantid: "AutoGenerate"
+            controlplanemode: "MULTICAST_MODE"
+
+    PlaceVMsOnVirtualWire1: &PLACE_VMS_ON_VIRTUAL_WIRE_1
+      Type: "VM"
+      TestVM: "vm.[1],vm.[4],vm.[7],vm.[10]"
+      vnic:
+         '[1]': &ATTACH_VM_TO_VIRTUAL_WIRE
+            driver: "vmxnet3"
+            portgroup: "vsm.[1].networkscope.[1].virtualwire.[1]"
+            connected: 1
+            startconnected: 1
+            allowguestcontrol: 1
+
+    PlaceVMsOnVirtualWire2: &PLACE_VMS_ON_VIRTUAL_WIRE_2
+      Type: "VM"
+      TestVM: "vm.[2],vm.[5],vm.[8],vm.[11]"
+      vnic:
+         '[1]':
+            <<: *ATTACH_VM_TO_VIRTUAL_WIRE
+            portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+
+    PlaceVMsOnVirtualWire3: &PLACE_VMS_ON_VIRTUAL_WIRE_3
+      Type: "VM"
+      TestVM: "vm.[3],vm.[6],vm.[9],vm.[12]"
+      vnic:
+         '[1]':
+            <<: *ATTACH_VM_TO_VIRTUAL_WIRE
+            portgroup: "vsm.[1].networkscope.[1].virtualwire.[3]"
+
+    PoweronVM: &POWER_ON_VM1
+      Type: "VM"
+      TestVM: "vm.[1]"
+      vmstate: "poweron"
+    PoweronVM: &POWER_ON_VM2
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[2]"
+    PoweronVM: &POWER_ON_VM3
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[3]"
+    PoweronVM: &POWER_ON_VM4
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[4]"
+    PoweronVM: &POWER_ON_VM5
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[5]"
+    PoweronVM: &POWER_ON_VM6
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[6]"
+    PoweronVM: &POWER_ON_VM7
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[7]"
+    PoweronVM: &POWER_ON_VM8
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[8]"
+    PoweronVM: &POWER_ON_VM9
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[9]"
+    PoweronVM: &POWER_ON_VM10
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[10]"
+    PoweronVM: &POWER_ON_VM11
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[11]"
+    PoweronVM: &POWER_ON_VM12
+      <<: *POWER_ON_VM1
+      TestVM: "vm.[12]"
+
+    PoweroffVMs: &POWER_OFF_VMS
+       Type: "VM"
+       TestVM: "vm.[-1]"
+       vmstate: "poweroff"
+
+    DeleteVMVnic1: &DELETE_VM1_VNIC1
+       Type:  "VM"
+       TestVM:  "vm.[1]"
+       deletevnic: "vm.[x].vnic.[1]"
+    DeleteVMVnic1: &DELETE_VM2_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[2]"
+    DeleteVMVnic1: &DELETE_VM3_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[3]"
+    DeleteVMVnic1: &DELETE_VM4_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[4]"
+    DeleteVMVnic1: &DELETE_VM5_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[5]"
+    DeleteVMVnic1: &DELETE_VM6_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[6]"
+    DeleteVMVnic1: &DELETE_VM7_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[7]"
+    DeleteVMVnic1: &DELETE_VM8_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[8]"
+    DeleteVMVnic1: &DELETE_VM9_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[9]"
+    DeleteVMVnic1: &DELETE_VM10_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[10]"
+    DeleteVMVnic1: &DELETE_VM11_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[11]"
+    DeleteVMVnic1: &DELETE_VM12_VNIC1
+       <<: *DELETE_VM1_VNIC1
+       TestVM:  "vm.[12]"
+
+    DeleteAllVirtualWires: &DELETE_ALL_VIRTUALWIRES
+       Type: "TransportZone"
+       TestTransportZone: "vsm.[1].networkscope.[-1]"
+       deletevirtualwire: "vsm.[1].networkscope.[-1].virtualwire.[-1]"
+       sleepbetweenworkloads: "20"
+
+    AddToPTEPCluster: &ADD_3_PTEPS_TO_CLUSTER
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        ptep:
+            '[1]':
+                'ptep_cluster':
+                    -
+                        'id': 'esx.[4]'
+                    -
+                        'id': 'esx.[5]'
+                    -
+                        'id': 'esx.[6]'
+
+    AddToPTEPCluster: &ADD_1_PTEP_TO_CLUSTER
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        ptep:
+            '[1]':
+                'ptep_cluster':
+                    -
+                        'id': 'esx.[4]'
+
+    VerifyPTEPCluster: &VERIFY_3_PTEPS_IN_CLUSTER
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_ptep_cluster[?]contain_once' :
+            table:
+                - id: 'esx.[4]->MORId'
+                - id: 'esx.[5]->MORId'
+                - id: 'esx.[6]->MORId'
+
+    VerifyPTEPCluster: &VERIFY_1_PTEP_IN_CLUSTER
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_ptep_cluster[?]contain_once' :
+            table:
+                - id: 'esx.[4]->MORId'
+
+    VerifyPTEPCluster: &VERIFY_REMOVED_PTEP_NOT_IN_CLUSTER
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_ptep_cluster[?]not_contains' :
+            table:
+                - id: 'esx.[5]->MORId'
+                - id: 'esx.[6]->MORId'
+
+    RemoveFromPTEPCluster: &REMOVE_FROM_PTEP_CLUSTER
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        ptep:
+            '[1]':
+                'ptep_cluster': {}
+
+    RemoveFromPTEPCluster: &REMOVE_1_PTEP_FROM_PTEP_CLUSTER
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        ptep:
+            '[1]':
+                'ptep_cluster': {}
+
+    RemoveFromPTEPCluster: &REMOVE_2_PTEP_FROM_PTEP_CLUSTER
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        ptep:
+            '[1]':
+                'ptep_cluster':
+                    -
+                        'id': 'esx.[4]'
+
+    VerifyPTEPCluster: &VERIFY_NO_PTEP_IN_CLUSTER
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_ptep_cluster[?]not_contains' :
+            table:
+                - id: 'esx.[4]->MORId'
+                - id: 'esx.[5]->MORId'
+                - id: 'esx.[6]->MORId'
+
+    EnableFirewallOnHost: &ENABLE_FIREWALL_ON_HOST_4
+        Type:            'Host'
+        TestHost:        'esx.[4]'
+        reconfigurefirewall:  'true'
+        ruleset:         'netCP'
+
+    DisableFirewallOnHosts: &DISABLE_FIREWALL_ON_HOST_4
+        <<: *ENABLE_FIREWALL_ON_HOST_4
+        reconfigurefirewall:  'false'
+
+    EnableFirewallOnHost: &ENABLE_FIREWALL_ON_HOST_5
+        <<: *ENABLE_FIREWALL_ON_HOST_4
+        TestHost:        'esx.[5]'
+
+    DisableFirewallOnHosts: &DISABLE_FIREWALL_ON_HOST_5
+        <<: *ENABLE_FIREWALL_ON_HOST_4
+        reconfigurefirewall:  'false'
+        TestHost:        'esx.[5]'
+
+    EnableFirewallOnHost: &ENABLE_FIREWALL_ON_HOST_6
+        <<: *ENABLE_FIREWALL_ON_HOST_4
+        TestHost:        'esx.[6]'
+
+    DisableFirewallOnHosts: &DISABLE_FIREWALL_ON_HOST_6
+        <<: *ENABLE_FIREWALL_ON_HOST_4
+        reconfigurefirewall:  'false'
+        TestHost:        'esx.[6]'
+
+    BlockConnectionBetweenControllerAndPteps: &BLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_4
+        Type:           'Host'
+        TestHost:       'host.[4]'
+        Firewall:       "setallowedall"
+        Servicename:    "netCP"
+        Flag:           "false"
+
+    UnblockConnectionBetweenControllerAndPteps: &UNBLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_4
+        <<: *BLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_4
+        Flag:           "true"
+
+    BlockConnectionBetweenControllerAndPteps: &BLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_5
+        <<: *BLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_4
+        TestHost:       'host.[5]'
+
+    UnblockConnectionBetweenControllerAndPteps: &UNBLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_5
+        <<: *BLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_4
+        TestHost:       'host.[5]'
+        Flag:           "true"
+
+    BlockConnectionBetweenControllerAndPteps: &BLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_6
+        <<: *BLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_4
+        TestHost:       'host.[6]'
+
+    UnblockConnectionBetweenControllerAndPteps: &UNBLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_6
+        <<: *BLOCK_CONNECTION_BETWEEN_CONTROLLER_AND_PTEP_4
+        TestHost:       'host.[6]'
+        Flag:           "true"
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    CreateTOROnVSM: &CREATE_1_TOR_ON_VSM
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        tor:
+            '[1]':
+                'name': 'torgateway1'
+                'certificate': 'torgateway.[1]'
+                'description': 'this is tor instance 1'
+                'bfd_enabled': 'true'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTOROnVSM: &CREATE_2_TOR_ON_VSM
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        tor:
+            '[1]':
+                'name': 'torgateway1'
+                'certificate': 'torgateway.[1]'
+                'description': 'this is tor instance 1'
+                'bfd_enabled': 'true'
+            '[2]':
+                'name': 'torgateway2'
+                'certificate': 'torgateway.[2]'
+                'description': 'this is tor instance 2'
+                'bfd_enabled': 'true'
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    RegenerateCertificate: &REGENERATE_CERTIFICATE
+       Type: Gateway
+       TestGateway: torgateway.[-1]
+       regenerate_certificate:
+          status: 'true'
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    UpdateTOR1NameOnVSM: &UPDATE_TOR_1_NAME
+        Type: "Tor"
+        TestTOR: "vsm.[1].tor.[1]"
+        reconfigure: "true"
+        name: 'new-torgateway1'
+        certificate: 'torgateway.[1]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    UpdateTOR2NameOnVSM: &UPDATE_TOR_2_NAME
+        Type: "Tor"
+        TestTOR: "vsm.[1].tor.[2]"
+        reconfigure: "true"
+        name: 'new-torgateway2'
+        certificate: 'torgateway.[2]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    UpdateTOROnVSM: &UPDATE_2_TOR_NAME
+            - ['UpdateTOR1NameOnVSM']
+            - ['UpdateTOR2NameOnVSM']
+
+    InvalidCertification: &INVALID_CERT_1
+        '-----BEGIN CERTIFICATE-----\\nINVALID_CERT1==\\n-----END CERTIFICATE-----'
+
+    InvalidCertification: &INVALID_CERT_2
+        '-----BEGIN CERTIFICATE-----\\nINVALID_CERT2==\\n-----END CERTIFICATE-----'
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    UpdateTOR1WrongCertOnVSM: &UPDATE_TOR_1_CERT_WITH_WRONG_VALUE
+        Type: "Tor"
+        TestTOR: "vsm.[1].tor.[1]"
+        reconfigure: "true"
+        certificate: *INVALID_CERT_1
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    UpdateTOR2WrongCertOnVSM: &UPDATE_TOR_2_CERT_WITH_WRONG_VALUE
+        Type: "Tor"
+        TestTOR: "vsm.[1].tor.[2]"
+        reconfigure: "true"
+        certificate: *INVALID_CERT_2
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    UpdateTOROnVSM: &UPDATE_2_TOR_CERT_WITH_WRONG_VALUE
+            - ['UpdateTOR1WrongCertOnVSM']
+            - ['UpdateTOR2WrongCertOnVSM']
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    UpdateTOR1CorrectCertOnVSM: &UPDATE_TOR_1_CERT_WITH_CORRECT_VALUE
+        Type: "Tor"
+        TestTOR: "vsm.[1].tor.[1]"
+        reconfigure: "true"
+        certificate: 'torgateway.[1]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    UpdateTOR2CorrectCertOnVSM: &UPDATE_TOR_2_CERT_WITH_CORRECT_VALUE
+        Type: "Tor"
+        TestTOR: "vsm.[1].tor.[2]"
+        reconfigure: "true"
+        certificate: 'torgateway.[2]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    UpdateTOROnVSM: &UPDATE_2_TOR_CERT_WITH_CORRECT_VALUE
+            - ['UpdateTOR1CorrectCertOnVSM']
+            - ['UpdateTOR2CorrectCertOnVSM']
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    EnableTOR1BfdOnVSM: &ENABLE_BFD_ON_TOR_1
+        Type: "Tor"
+        TestTOR: "vsm.[1].tor.[1]"
+        reconfigure: "true"
+        certificate: 'torgateway.[1]'
+        bfd_enabled: 'true'
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    DisableTOR1BfdOnVSM: &DISABLE_BFD_ON_TOR_1
+        Type: "Tor"
+        TestTOR: "vsm.[1].tor.[1]"
+        reconfigure: "true"
+        certificate: 'torgateway.[1]'
+        bfd_enabled: 'false'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    EnableTOR2BfdOnVSM: &ENABLE_BFD_ON_TOR_2
+        Type: "Tor"
+        TestTOR: "vsm.[1].tor.[2]"
+        reconfigure: "true"
+        certificate: 'torgateway.[2]'
+        bfd_enabled: 'true'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    DisableTOR2BfdOnVSM: &DISABLE_BFD_ON_TOR_2
+        Type: "Tor"
+        TestTOR: "vsm.[1].tor.[2]"
+        reconfigure: "true"
+        certificate: 'torgateway.[2]'
+        bfd_enabled: 'false'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    UpdateTOROnVSM: &ENABLE_BFD_ON_TOR_1_2
+            - ['EnableTOR1BfdOnVSM']
+            - ['EnableTOR2BfdOnVSM']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    UpdateTOROnVSM: &DISABLE_BFD_ON_TOR_1_2
+            - ['DisableTOR1BfdOnVSM']
+            - ['DisableTOR2BfdOnVSM']
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    CreateTORBinding: &CREATE_2_TOR_BINDINGS
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        tor_binding:
+            '[1]':
+                tor_id: 'vsm.[1].tor.[1]->id'
+                tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[1].torswitch.[1].torport.[1]->name'
+                vlan: *TOR_SWITCH_VLAN_1
+            '[2]':
+                tor_id: 'vsm.[1].tor.[1]->id'
+                tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[1].torswitch.[1].torport.[2]->name'
+                vlan: *TOR_SWITCH_VLAN_2
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORBinding: &CREATE_4_TOR_BINDINGS
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        tor_binding:
+            '[1]':
+                tor_id: 'vsm.[1].tor.[1]->id'
+                tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[1].torswitch.[1].torport.[1]->name'
+                vlan: *TOR_SWITCH_VLAN_1
+            '[2]':
+                tor_id: 'vsm.[1].tor.[1]->id'
+                tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[1].torswitch.[1].torport.[2]->name'
+                vlan: *TOR_SWITCH_VLAN_2
+            '[5]':
+                tor_id: 'vsm.[1].tor.[2]->id'
+                tor_switch_name: 'torgateway.[2].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[2].torswitch.[1].torport.[1]->name'
+                vlan: *TOR_SWITCH_VLAN_1
+            '[6]':
+                tor_id: 'vsm.[1].tor.[2]->id'
+                tor_switch_name: 'torgateway.[2].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[2].torswitch.[1].torport.[2]->name'
+                vlan: *TOR_SWITCH_VLAN_2
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORBinding: &CREATE_4_TOR_BINDINGS_TOR_PORTS_SAME_VLAN
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        tor_binding:
+            '[1]':
+                tor_id: 'vsm.[1].tor.[1]->id'
+                tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[1].torswitch.[1].torport.[1]->name'
+                vlan: *TOR_SWITCH_VLAN_1
+            '[2]':
+                tor_id: 'vsm.[1].tor.[1]->id'
+                tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[1].torswitch.[1].torport.[2]->name'
+                vlan: *TOR_SWITCH_VLAN_1
+            '[5]':
+                tor_id: 'vsm.[1].tor.[2]->id'
+                tor_switch_name: 'torgateway.[2].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[2].torswitch.[1].torport.[1]->name'
+                vlan: *TOR_SWITCH_VLAN_1
+            '[6]':
+                tor_id: 'vsm.[1].tor.[2]->id'
+                tor_switch_name: 'torgateway.[2].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[2].torswitch.[1].torport.[2]->name'
+                vlan: *TOR_SWITCH_VLAN_1
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORBinding: &CREATE_4_TOR_BINDINGS_WITH_MISMATCH_VLAN
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        ExpectedResult: 'Fail'
+        tor_binding:
+            '[1]':
+                tor_id: 'vsm.[1].tor.[1]->id'
+                tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[1].torswitch.[1].torport.[1]->name'
+                vlan: 500
+            '[2]':
+                tor_id: 'vsm.[1].tor.[1]->id'
+                tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[1].torswitch.[1].torport.[2]->name'
+                vlan: 500
+            '[5]':
+                tor_id: 'vsm.[1].tor.[2]->id'
+                tor_switch_name: 'torgateway.[2].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[2].torswitch.[1].torport.[1]->name'
+                vlan: 500
+            '[6]':
+                tor_id: 'vsm.[1].tor.[2]->id'
+                tor_switch_name: 'torgateway.[2].torswitch.[1]->name'
+                tor_port_name: 'torgateway.[2].torswitch.[1].torport.[2]->name'
+                vlan: 500
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    CreateTORAttachmentToVirtualWire: &CREATE_1_TOR_ATTACHMENT_TO_VWIRE_1
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        port_attach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[1]'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    CreateTORAttachmentToVirtualWire: &CREATE_1_TOR_ATTACHMENT_TO_VWIRE_2
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        port_attach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[2]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentBinding1ToVirtualWire1: &CREATE_TOR_ATTACHMENT_BINDING1_TO_VWIRE_1
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        port_attach:
+            'bindings':
+               'binding': 'vsm.[1].tor_binding.[1]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentBinding5ToVirtualWire1: &CREATE_TOR_ATTACHMENT_BINDING5_TO_VWIRE_1
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        port_attach:
+            'bindings':
+               'binding': 'vsm.[1].tor_binding.[5]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentToVirtualWire: &CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1
+            - ['CreateTORAttachmentBinding1ToVirtualWire1']
+            - ['CreateTORAttachmentBinding5ToVirtualWire1']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentToVirtualWire: &CREATE_TOR_ATTACHMENTS_TO_VWIRE_1_FAILED_WHEN_TOR_BINDINGS_IN_SAME_SWITCH_BUT_WITH_DIFFERENT_VLAN
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        ExpectedResult: 'Fail'
+        port_attach:
+            'bindings':
+                'binding':
+                    - 'vsm.[1].tor_binding.[1]'
+                    - 'vsm.[1].tor_binding.[2]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentToVirtualWire: &CREATE_TOR_ATTACHMENTS_TO_VWIRE_1_SUCCESS_WHEN_TOR_BINDINGS_IN_DIFFERENT_SWITCH_AND_WITH_DIFFERENT_VLAN
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        port_attach:
+            'bindings':
+                'binding':
+                    - 'vsm.[1].tor_binding.[1]'
+                    - 'vsm.[1].tor_binding.[4]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentBinding2ToVirtualWire2: &CREATE_TOR_ATTACHMENT_BINDING2_TO_VWIRE_2
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        port_attach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[2]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentBinding6ToVirtualWire2: &CREATE_TOR_ATTACHMENT_BINDING6_TO_VWIRE_2
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        port_attach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[6]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentToVirtualWire: &CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2
+            - ['CreateTORAttachmentBinding2ToVirtualWire2']
+            - ['CreateTORAttachmentBinding6ToVirtualWire2']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentToVirtualWire: &CREATE_TOR_ATTACHMENTS_TO_VWIRE_2_FAILED_WHEN_TOR_BINDINGS_IN_SAME_SWITCH_BUT_WITH_DIFFERENT_VLAN
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        ExpectedResult: 'Fail'
+        port_attach:
+            'bindings':
+                'binding':
+                    - 'vsm.[1].tor_binding.[3]'
+                    - 'vsm.[1].tor_binding.[4]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentToVirtualWire: &CREATE_TOR_ATTACHMENTS_TO_VWIRE_2_SUCCESS_WHEN_TOR_BINDINGS_IN_DIFFERENT_SWITCH_AND_WITH_DIFFERENT_VLAN
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        port_attach:
+            'bindings':
+                'binding':
+                    - 'vsm.[1].tor_binding.[2]'
+                    - 'vsm.[1].tor_binding.[3]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentToVirtualWire: &CREATE_TOR_ATTACHMENTS_TO_VWIRE_2_FAILED_WHEN_SAME_VLAN_AS_VWIRE_1
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        ExpectedResult: 'Fail'
+        port_attach:
+            'bindings':
+                'binding':
+                    - 'vsm.[1].tor_binding.[2]'
+                    - 'vsm.[1].tor_binding.[4]'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    CreateTORAttachmentToVirtualWireFail: &CREATE_1_TOR_ATTACHMENT_TO_VWIRE_1_FAIL
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        ExpectedResult: 'Fail'
+        port_attach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[1]'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    CreateTORAttachmentToVirtualWireFail: &CREATE_1_TOR_ATTACHMENT_TO_VWIRE_2_FAIL
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        ExpectedResult: 'Fail'
+        port_attach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[2]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentToVirtualWireFail: &CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_1_FAIL
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        ExpectedResult: 'Fail'
+        port_attach:
+            'bindings':
+                'binding':
+                    - 'vsm.[1].tor_binding.[1]'
+                    - 'vsm.[1].tor_binding.[5]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentToVirtualWireFail: &CREATE_2_TOR_ATTACHMENTS_TO_VWIRE_2_FAIL
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        ExpectedResult: 'Fail'
+        port_attach:
+            'bindings':
+                'binding':
+                    - 'vsm.[1].tor_binding.[2]'
+                    - 'vsm.[1].tor_binding.[6]'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    CreateTORAttachmentToMulticastVirtualWireFail: &CREATE_1_TOR_ATTACHMENT_TO_MULTICAST_VWIRE_FAIL
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[3]"
+        ExpectedResult: 'Fail'
+        port_attach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[1]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CreateTORAttachmentToMulticastVirtualWireFail: &CREATE_TOR_ATTACHMENT_TO_MULTICAST_VWIRE_FAIL
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[3]"
+        ExpectedResult: 'Fail'
+        port_attach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[1]'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    DeleteTORAttachment: &DELETE_VWIRE1_1_TOR_ATTACHMENT
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        port_detach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[1]'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    DeleteTORAttachment: &DELETE_VWIRE2_1_TOR_ATTACHMENT
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        port_detach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[2]'
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    DeleteTORAttachmentBinding1: &DELETE_VWIRE1_TOR_ATTACHMENT_BINDING1
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        port_detach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[1]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    DeleteTORAttachmentBinding5: &DELETE_VWIRE1_TOR_ATTACHMENT_BINDING5
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        port_detach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[5]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    DeleteTORAttachment: &DELETE_VWIRE1_2_TOR_ATTACHMENTS
+            - ['DeleteTORAttachmentBinding1']
+            - ['DeleteTORAttachmentBinding5']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    DeleteTORAttachment: &DELETE_VWIRE1_TOR_ATTACHMENTS_WITH_DIFFERENT_VLANS_BUT_MULTIPLE_SWITCHES
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[1]"
+        port_detach:
+            'bindings':
+                'binding':
+                    - 'vsm.[1].tor_binding.[1]'
+                    - 'vsm.[1].tor_binding.[4]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    DeleteTORAttachmentBinding2: &DELETE_VWIRE2_TOR_ATTACHMENT_BINDING2
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        port_detach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[2]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    DeleteTORAttachmentBinding6: &DELETE_VWIRE2_TOR_ATTACHMENT_BINDING6
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        port_detach:
+            'bindings':
+                'binding': 'vsm.[1].tor_binding.[6]'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    DeleteTORAttachment: &DELETE_VWIRE2_2_TOR_ATTACHMENTS
+            - ['DeleteTORAttachmentBinding2']
+            - ['DeleteTORAttachmentBinding6']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    DeleteTORAttachment: &DELETE_VWIRE2_TOR_ATTACHMENTS_WITH_DIFFERENT_VLANS_BUT_MULTIPLE_SWITCHES
+        Type: "Switch"
+        TestSwitch: "vsm.[1].networkscope.[1].virtualwire.[2]"
+        port_detach:
+            'bindings':
+                'binding':
+                    - 'vsm.[1].tor_binding.[2]'
+                    - 'vsm.[1].tor_binding.[3]'
+
+    DeleteTORBinding: &DELETE_TOR_BINDINGS
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        delete_tor_binding: "vsm.[1].tor_binding.[-1]"
+
+    DeleteTORBinding: &DELETE_TOR_BINDINGS_IN_EXIT_SEQ
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        ExpectedResult: 'ignore'
+        delete_tor_binding: "vsm.[1].tor_binding.[-1]"
+
+    DeleteTORBinding: &DELETE_TOR_BINDINGS_FAIL
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        ExpectedResult: 'Fail'
+        delete_tor_binding: "vsm.[1].tor_binding.[-1]"
+
+    DeleteTOR: &DELETE_TOR_ON_VSM
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        delete_tor: "vsm.[1].tor.[-1]"
+
+    # FUNCTIONAL_TOPOLOGY_1_2 used
+    VerifyTOR: &VERIFY_NO_TOR_INSTANCE
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_instance[?]not_contains' :
+            table:
+                - name: 'torgateway1'
+                - name: 'torgateway2'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyTOR: &VERIFY_1_TOR_INSTANCE_NOT_CONNECTED
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_instance[?]contain_once' :
+            table:
+                - id: 'vsm.[1].tor.[1]'
+                  status: 'down'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyTOR: &VERIFY_1_TOR_INSTANCE_CONNECTED
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_instance[?]contain_once' :
+            table:
+                - id: 'vsm.[1].tor.[1]'
+                  status: 'up'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTOR: &VERIFY_2_TOR_INSTANCES_NOT_CONNECTED
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_instance[?]contain_once' :
+            table:
+                - id: 'vsm.[1].tor.[1]'
+                  status: 'down'
+                - id: 'vsm.[1].tor.[2]'
+                  status: 'down'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTOR: &VERIFY_2_TOR_INSTANCES_CONNECTED
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_instance[?]contain_once' :
+            table:
+                - id: 'vsm.[1].tor.[1]'
+                  status: 'up'
+                - id: 'vsm.[1].tor.[2]'
+                  status: 'up'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTOR: &VERIFY_2_TOR_INSTANCES_BFD_ENABLED
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_instance[?]contain_once' :
+            table:
+                - id: 'vsm.[1].tor.[1]'
+                  bfd_enabled: 'true'
+                - id: 'vsm.[1].tor.[2]'
+                  bfd_enabled: 'true'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTOR: &VERIFY_2_TOR_INSTANCES_BFD_DISABLED
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_instance[?]contain_once' :
+            table:
+                - id: 'vsm.[1].tor.[1]'
+                  bfd_enabled: 'false'
+                - id: 'vsm.[1].tor.[2]'
+                  bfd_enabled: 'false'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTOR: &VERIFY_2_TOR_NAME_UPDATED
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_instance[?]contain_once' :
+            table:
+                - id: 'vsm.[1].tor.[1]'
+                  name: 'new-torgateway1'
+                - id: 'vsm.[1].tor.[2]'
+                  name: 'new-torgateway2'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTOR: &VERIFY_2_TOR_INSTANCES_BFD_1_ENABLED_1_DISABLED
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_instance[?]contain_once' :
+            table:
+                - id: 'vsm.[1].tor.[1]'
+                  bfd_enabled: 'false'
+                - id: 'vsm.[1].tor.[2]'
+                  bfd_enabled: 'true'
+
+    # FUNCTIONAL_TOPOLOGY_1_2 used
+    VerifyTORBinding: &VERIFY_NO_TOR_BINDING
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_binding[?]not_contains' :
+            table:
+                - tor_id: 'vsm.[1].tor.[1]->id'
+                  tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                  tor_port_name: 'torgateway.[1].torswitch.[1].torport.[1]->name'
+                  vlan: *TOR_SWITCH_VLAN_1
+                - tor_id: 'vsm.[1].tor.[1]->id'
+                  tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                  tor_port_name: 'torgateway.[1].torswitch.[1].torport.[2]->name'
+                  vlan: *TOR_SWITCH_VLAN_2
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyTORBinding: &VERIFY_2_TOR_BINDINGS
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_binding[?]contain_once' :
+            table:
+                - tor_id: 'vsm.[1].tor.[1]->id'
+                  tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                  tor_port_name: 'torgateway.[1].torswitch.[1].torport.[1]->name'
+                  vlan: *TOR_SWITCH_VLAN_1
+                - tor_id: 'vsm.[1].tor.[1]->id'
+                  tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                  tor_port_name: 'torgateway.[1].torswitch.[1].torport.[2]->name'
+                  vlan: *TOR_SWITCH_VLAN_2
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTORBinding: &VERIFY_4_TOR_BINDINGS
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        'get_tor_binding[?]contain_once' :
+            table:
+                - tor_id: 'vsm.[1].tor.[1]->id'
+                  tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                  tor_port_name: 'torgateway.[1].torswitch.[1].torport.[1]->name'
+                  vlan: *TOR_SWITCH_VLAN_1
+                - tor_id: 'vsm.[1].tor.[1]->id'
+                  tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+                  tor_port_name: 'torgateway.[1].torswitch.[1].torport.[2]->name'
+                  vlan: *TOR_SWITCH_VLAN_2
+                - tor_id: 'vsm.[1].tor.[2]->id'
+                  tor_switch_name: 'torgateway.[2].torswitch.[1]->name'
+                  tor_port_name: 'torgateway.[2].torswitch.[1].torport.[1]->name'
+                  vlan: *TOR_SWITCH_VLAN_1
+                - tor_id: 'vsm.[1].tor.[2]->id'
+                  tor_switch_name: 'torgateway.[2].torswitch.[1]->name'
+                  tor_port_name: 'torgateway.[2].torswitch.[1].torport.[2]->name'
+                  vlan: *TOR_SWITCH_VLAN_2
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    SetupTORSimulator: &SETUP_TOR_SIMUATOR_1_GATEWAY
+            - ['InstallLatestTORGatewayServiceWithBFD']
+            - ['RegenerateCertificate']
+            - ['Create1TORSwitch']
+            - ['Add2PhysicalPcPortsToTORSwitch1']
+            - ['Bind1VtepWithTORSwitch']
+            - ['StartVtepSimulator1']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    SetupTORSimulator: &SETUP_TOR_SIMUATOR_2_GATEWAYS
+            - ['InstallLatestTORGatewayServiceWithBFD']
+            - ['RegenerateCertificate']
+            - ['Create2TORSwitches']
+            - ['Add2PhysicalPcPortsToTORSwitch1']
+            - ['Bind2VtepsWithTORSwitch']
+            - ['StartVtepSimulator1']
+            - ['StartVtepSimulator2']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    SetupTORSimulator: &SETUP_TOR_SIMUATOR_2_GATEWAYS_WITH_PORTS_NO_VLAN
+            - ['InstallLatestTORGatewayServiceWithBFD']
+            - ['RegenerateCertificate']
+            - ['Create2TORSwitches']
+            - ['Add2PhysicalPcPortsToTORSwitch1NoVLAN']
+            - ['Bind2VtepsWithTORSwitch']
+            - ['StartVtepSimulator1']
+            - ['StartVtepSimulator2']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    SetupTORSimulator: &SETUP_TOR_SIMUATOR_2_GATEWAYS_NOT_SUPPORT_BFD
+            - ['InstallTORGatewayService4.2.3']
+            - ['RegenerateCertificate']
+            - ['Create2TORSwitches']
+            - ['Add2PhysicalPcPortsToTORSwitch1']
+            - ['Bind2VtepsWithTORSwitch']
+            - ['StartVtepSimulator1']
+            - ['StartVtepSimulator2']
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    CleanupTORSimulator: &CLEANUP_TOR_SIMUATOR_1_GATEWAY
+            - ['TORGatewayRemoveController']
+            - ['StopVtepSimulator1']
+            - ['DeleteTORPortsOnSwitch1']
+            - ['DeleteTORSwitches']
+            - ['UninstallTORGatewayService']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CleanupTORSimulator: &CLEANUP_TOR_SIMUATOR_2_GATEWAYS
+            - ['TORGatewayRemoveController']
+            - ['StopVtepSimulator1']
+            - ['StopVtepSimulator2']
+            - ['DeleteTORPortsOn2Switches']
+            - ['DeleteTORSwitches']
+            - ['UninstallTORGatewayService']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CleanupTORSimulator: &CLEANUP_TOR_SIMUATOR_2_GATEWAYS_WITHOUT_DELETE_TOR_PORTS
+            - ['TORGatewayRemoveController']
+            - ['StopVtepSimulator1']
+            - ['StopVtepSimulator2']
+            - ['DeleteTORSwitches']
+            - ['UninstallTORGatewayService']
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    VerifyTOR1Switches: &VERIFY_TOR1_TOR_SWITCHES
+        Type: "Tor"
+        TestTor: "vsm.[1].tor.[1]"
+        'get_tor_switch[?]contain_once' :
+            table:
+                - tor_switch_name: 'torgateway.[1].torswitch.[1]->name'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTOR2Switches: &VERIFY_TOR2_TOR_SWITCHES
+        Type: "Tor"
+        TestTor: "vsm.[1].tor.[2]"
+        'get_tor_switch[?]contain_once' :
+            table:
+                - tor_switch_name: 'torgateway.[2].torswitch.[1]->name'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyTORSwitches: &VERIFY_1_TOR_SWITCHNAMES
+            - ['VerifyTOR1Switches']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTORSwitches: &VERIFY_2_TOR_SWITCHNAMES
+            - ['VerifyTOR1Switches']
+            - ['VerifyTOR2Switches']
+
+    # FUNCTIONAL_TOPOLOGY_1&2 used
+    VerifyTOR1Switch1PortNames: &VERIFY_TOR1_SWITCH1_PORTNAMES
+        Type: "Tor"
+        TestTor: "vsm.[1].tor.[1]"
+        switch_name: 'torgateway.[1].torswitch.[1]->name'
+        'get_tor_switch_port[?]contain_once':
+            table:
+                - tor_port_name: 'torgateway.[1].torswitch.[1].torport.[1]->name'
+                - tor_port_name: 'torgateway.[1].torswitch.[1].torport.[2]->name'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTOR2Switch1PortNames: &VERIFY_TOR2_SWITCH1_PORTNAMES
+        Type: "Tor"
+        TestTor: "vsm.[1].tor.[2]"
+        switch_name: 'torgateway.[2].torswitch.[1]->name'
+        'get_tor_switch_port[?]contain_once':
+            table:
+                - tor_port_name: 'torgateway.[2].torswitch.[1].torport.[1]->name'
+                - tor_port_name: 'torgateway.[2].torswitch.[1].torport.[2]->name'
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyTORSwitchPortNames: &VERIFY_1_TOR_2_SWITCH_PORTNAMES
+            - ['VerifyTOR1Switch1PortNames']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyTORSwitchPortNames: &VERIFY_2_TOR_4_SWITCH_PORTNAMES
+            - ['VerifyTOR1Switch1PortNames']
+            - ['VerifyTOR2Switch1PortNames']
+
+    SetVXLANIPVM1: &SET_VXLAN_IP_VM1
+        Type:        "NetAdapter"
+        Testadapter: "vm.[1].vnic.[1]"
+        ipv4:        '192.168.1.11'
+        netmask:     "255.255.255.0"
+
+    SetVXLANIPVM4: &SET_VXLAN_IP_VM4
+        <<: *SET_VXLAN_IP_VM1
+        Testadapter: "vm.[4].vnic.[1]"
+        ipv4:        '192.168.1.14'
+
+    SetVXLANIPVM7: &SET_VXLAN_IP_VM7
+        <<: *SET_VXLAN_IP_VM1
+        Testadapter: "vm.[7].vnic.[1]"
+        ipv4:        '192.168.1.17'
+
+    SetVXLANIPVM2: &SET_VXLAN_IP_VM2
+        Type:        "NetAdapter"
+        Testadapter: "vm.[2].vnic.[1]"
+        ipv4:        '192.168.2.12'
+        netmask:     "255.255.255.0"
+
+    SetVXLANIPVM5: &SET_VXLAN_IP_VM5
+        <<: *SET_VXLAN_IP_VM1
+        Testadapter: "vm.[5].vnic.[1]"
+        ipv4:        '192.168.2.15'
+
+    SetVXLANIPVM8: &SET_VXLAN_IP_VM8
+        <<: *SET_VXLAN_IP_VM1
+        Testadapter: "vm.[8].vnic.[1]"
+        ipv4:        '192.168.2.18'
+
+    SetVXLANIPVM3: &SET_VXLAN_IP_VM3
+        Type:        "NetAdapter"
+        Testadapter: "vm.[3].vnic.[1]"
+        ipv4:        '192.168.3.13'
+        netmask:     "255.255.255.0"
+
+    SetVXLANIPVM6: &SET_VXLAN_IP_VM6
+        <<: *SET_VXLAN_IP_VM1
+        Testadapter: "vm.[6].vnic.[1]"
+        ipv4:        '192.168.3.16'
+
+    SetVXLANIPVM9: &SET_VXLAN_IP_VM9
+        <<: *SET_VXLAN_IP_VM1
+        Testadapter: "vm.[9].vnic.[1]"
+        ipv4:        '192.168.3.19'
+
+    CreateDVPG: &CREATE_DVPG
+        Type: "VC"
+        TestVC: "vc.[1]"
+        dvportgroup:
+           '[1]':
+              vds: 'vc.[1].vds.[1]'
+
+    DeployEdge: &DEPLOY_EDGE
+        Type: "NSX"
+        TestNSX: "vsm.[1]"
+        vse:
+           '[1]':
+                name:           "AutoGenerate"
+                resourcepool:   "vc.[1].datacenter.[1].cluster.[2]"
+                datacenter:     "vc.[1].datacenter.[1]"
+                host:           "host.[2]"
+                portgroup:      "vc.[1].dvportgroup.[1]"
+                primaryaddress: "10.10.10.40"
+                subnetmask:     "255.255.255.0"
+
+    CreateVXLANLIF1: &CREATE_VXLAN_LIF1
+        Type:     "VM"
+        TestVM:   "vsm.[1].vse.[1]"
+        lif:
+            '[1]': &LIF_1
+                name:       "AutoGenerate"
+                portgroup:  "vsm.[1].networkscope.[1].virtualwire.[1]"
+                type:       "internal"
+                connected:  1
+                addressgroup: &ADDRESS_GROUP
+                   addresstype: "primary"
+                   ipv4address: "192.168.1.1"
+                   netmask:     "255.255.255.0"
+
+
+    CreateVXLANLIF2: &CREATE_VXLAN_LIF2
+        Type:     "VM"
+        TestVM:   "vsm.[1].vse.[1]"
+        lif:
+            '[2]':
+                <<: *LIF_1
+                portgroup:  "vsm.[1].networkscope.[1].virtualwire.[2]"
+                addressgroup:
+                   <<: *ADDRESS_GROUP
+                   ipv4address: "192.168.2.1"
+
+    CreateVXLANLIF3: &CREATE_VXLAN_LIF3
+        Type:     "VM"
+        TestVM:   "vsm.[1].vse.[1]"
+        lif:
+            '[3]':
+                <<: *LIF_1
+                portgroup:  "vsm.[1].networkscope.[1].virtualwire.[3]"
+                addressgroup:
+                   <<: *ADDRESS_GROUP
+                   ipv4address: "192.168.3.1"
+
+    AddVirtualWire2RouteVM147: &ADD_VIRTUAL_WIRE_2_ROUTE_VM_147
+        Type:          "NetAdapter"
+        Testadapter:   "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1]"
+        netmask:       "255.255.255.0"
+        route:         "add"
+        network:       "192.168.2.0"
+        gateway:       "192.168.1.1"
+
+    AddVirtualWire3RouteVM147: &ADD_VIRTUAL_WIRE_3_ROUTE_VM_147
+        <<: *ADD_VIRTUAL_WIRE_2_ROUTE_VM_147
+        Testadapter:   "vm.[1].vnic.[1],vm.[4].vnic.[1],vm.[7].vnic.[1]"
+        network:       "192.168.3.0"
+
+    AddVirtualWire1RouteVM258: &ADD_VIRTUAL_WIRE_1_ROUTE_VM_258
+        <<: *ADD_VIRTUAL_WIRE_2_ROUTE_VM_147
+        Testadapter:   "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1]"
+        network:       "192.168.1.0"
+        gateway:       "192.168.2.1"
+
+    AddVirtualWire3RouteVM258: &ADD_VIRTUAL_WIRE_3_ROUTE_VM_258
+        <<: *ADD_VIRTUAL_WIRE_2_ROUTE_VM_147
+        Testadapter:   "vm.[2].vnic.[1],vm.[5].vnic.[1],vm.[8].vnic.[1]"
+        network:       "192.168.3.0"
+        gateway:       "192.168.2.1"
+
+    AddVirtualWire1RouteVM369: &ADD_VIRTUAL_WIRE_1_ROUTE_VM_369
+        <<: *ADD_VIRTUAL_WIRE_2_ROUTE_VM_147
+        Testadapter:   "vm.[3].vnic.[1],vm.[6].vnic.[1],vm.[9].vnic.[1]"
+        network:       "192.168.1.0"
+        gateway:       "192.168.3.1"
+
+    AddVirtualWire2RouteVM369: &ADD_VIRTUAL_WIRE_2_ROUTE_VM_369
+        <<: *ADD_VIRTUAL_WIRE_2_ROUTE_VM_147
+        Testadapter:   "vm.[3].vnic.[1],vm.[6].vnic.[1],vm.[9].vnic.[1]"
+        network:       "192.168.2.0"
+        gateway:       "192.168.3.1"
+
+    DeleteEdge: &DELETE_DEGE
+        Type:      "NSX"
+        TestNSX:   "vsm.[1]"
+        deletevse: "vsm.[1].vse.[1]"
+
+    VerifyVirtualWire1ArpEntryOnController: &VERIFY_VWIRE1_ARP_ENTRY_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyArpEntryOnController[?]contain_once":
+            - ip:   "vm.[1].vnic.[1]"
+              mac:  "vm.[1].vnic.[1]"
+            - ip:   "vm.[4].vnic.[1]"
+              mac:  "vm.[4].vnic.[1]"
+            - ip:   "vm.[7].vnic.[1]"
+              mac:  "vm.[7].vnic.[1]"
+            - ip:   "vm.[10].vnic.[1]"
+              mac:  "vm.[10].vnic.[1]"
+
+    VerifyVirtualWire2ArpEntryOnController: &VERIFY_VWIRE2_ARP_ENTRY_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyArpEntryOnController[?]contain_once":
+            - ip:   "vm.[2].vnic.[1]"
+              mac:  "vm.[2].vnic.[1]"
+            - ip:   "vm.[5].vnic.[1]"
+              mac:  "vm.[5].vnic.[1]"
+            - ip:   "vm.[8].vnic.[1]"
+              mac:  "vm.[8].vnic.[1]"
+            - ip:   "vm.[11].vnic.[1]"
+              mac:  "vm.[11].vnic.[1]"
+
+    VerifyVirtualWire3ArpEntryOnController: &VERIFY_VWIRE3_ARP_ENTRY_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[3]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyArpEntryOnController[?]contain_once":
+            - ip:   "vm.[3].vnic.[1]"
+              mac:  "vm.[3].vnic.[1]"
+            - ip:   "vm.[6].vnic.[1]"
+              mac:  "vm.[6].vnic.[1]"
+            - ip:   "vm.[9].vnic.[1]"
+              mac:  "vm.[9].vnic.[1]"
+            - ip:   "vm.[12].vnic.[1]"
+              mac:  "vm.[12].vnic.[1]"
+
+    VerifyVirtualWire1MacEntryOnController: &VERIFY_VWIRE1_MAC_ENTRY_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyMacEntryOnController[?]contain_once":
+            - mac:  "vm.[1].vnic.[1]"
+            - mac:  "vm.[4].vnic.[1]"
+            - mac:  "vm.[7].vnic.[1]"
+            - mac:  "vm.[10].vnic.[1]"
+
+    VerifyVirtualWire2MacEntryOnController: &VERIFY_VWIRE2_MAC_ENTRY_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyMacEntryOnController[?]contain_once":
+            - mac:  "vm.[2].vnic.[1]"
+            - mac:  "vm.[5].vnic.[1]"
+            - mac:  "vm.[8].vnic.[1]"
+            - mac:  "vm.[11].vnic.[1]"
+
+    VerifyVirtualWire3MacEntryOnController: &VERIFY_VWIRE3_MAC_ENTRY_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[3]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyMacEntryOnController[?]contain_once":
+            - mac:  "vm.[3].vnic.[1]"
+            - mac:  "vm.[6].vnic.[1]"
+            - mac:  "vm.[9].vnic.[1]"
+            - mac:  "vm.[12].vnic.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire1ArpEntryOnController: &VERIFY_VWIRE1_TOR_PORTS_ARP_ENTRY_NOT_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyArpEntryOnController[?]not_contains":
+            - ip:   "torgateway.[1].pif.[3]"
+              mac:  "torgateway.[1].pif.[3]"
+            - ip:   "torgateway.[2].pif.[3]"
+              mac:  "torgateway.[2].pif.[3]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire2ArpEntryOnController: &VERIFY_VWIRE2_TOR_PORTS_ARP_ENTRY_NOT_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyArpEntryOnController[?]not_contains":
+            - ip:   "torgateway.[1].pif.[4]"
+              mac:  "torgateway.[1].pif.[4]"
+            - ip:   "torgateway.[2].pif.[4]"
+              mac:  "torgateway.[2].pif.[4]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire1MacEntryNotOnController: &VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_NOT_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyMacEntryOnController[?]not_contains":
+            - mac:  "torgateway.[1].pif.[3]"
+            - mac:  "torgateway.[2].pif.[3]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire2MacEntryNotOnController: &VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_NOT_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyMacEntryOnController[?]not_contains":
+            - mac:  "torgateway.[1].pif.[4]"
+            - mac:  "torgateway.[2].pif.[4]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire1MacEntryOnController: &VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyMacEntryOnController[?]contain_once":
+            - mac:  "torgateway.[1].pif.[3]"
+            - mac:  "torgateway.[2].pif.[3]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire2MacEntryOnController: &VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyMacEntryOnController[?]contain_once":
+            - mac:  "torgateway.[1].pif.[4]"
+            - mac:  "torgateway.[2].pif.[4]"
+
+    VerifyVirtualWire1VtepTableOnControllers: &VERIFY_VWIRE1_VTEP_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyVtepTableOnController[?]contain_once":
+            - vtepip:  "esx.[4]"
+              cluster: "vc.[1].datacenter.[1].cluster.[2]"
+            - vtepip:  "esx.[5]"
+              cluster: "vc.[1].datacenter.[1].cluster.[3]"
+            - vtepip:  "esx.[6]"
+              cluster: "vc.[1].datacenter.[1].cluster.[3]"
+
+    VerifyVirtualWire2VtepTableOnControllers: &VERIFY_VWIRE2_VTEP_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyVtepTableOnController[?]contain_once":
+            - vtepip:  "esx.[4]"
+              cluster: "vc.[1].datacenter.[1].cluster.[2]"
+            - vtepip:  "esx.[5]"
+              cluster: "vc.[1].datacenter.[1].cluster.[3]"
+            - vtepip:  "esx.[6]"
+              cluster: "vc.[1].datacenter.[1].cluster.[3]"
+
+    VerifyVirtualWire3VtepTableOnControllers: &VERIFY_VWIRE3_VTEP_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[3]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyVtepTableOnController[?]contain_once":
+            - vtepip:  "esx.[4]"
+              cluster: "vc.[1].datacenter.[1].cluster.[2]"
+            - vtepip:  "esx.[5]"
+              cluster: "vc.[1].datacenter.[1].cluster.[3]"
+            - vtepip:  "esx.[6]"
+              cluster: "vc.[1].datacenter.[1].cluster.[3]"
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyVirtualWire1VtepTableOnControllers: &VERIFY_VWIRE1_1_TOR_VTEP_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyVtepTableOnController[?]contain_once":
+            - vtepip:  "torgateway.[1].pif.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyVirtualWire2VtepTableOnControllers: &VERIFY_VWIRE2_1_TOR_VTEP_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyVtepTableOnController[?]contain_once":
+            - vtepip:  "torgateway.[1].pif.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire1VtepTableOnControllers: &VERIFY_VWIRE1_4_TOR_VTEPS_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyVtepTableOnController[?]contain_once":
+            - vtepip:  "torgateway.[1].pif.[1]"
+            - vtepip:  "torgateway.[2].pif.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire2VtepTableOnControllers: &VERIFY_VWIRE2_4_TOR_VTEPS_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        noofretries:  "3"
+        "VerifyVtepTableOnController[?]contain_once":
+            - vtepip:  "torgateway.[1].pif.[1]"
+            - vtepip:  "torgateway.[2].pif.[1]"
+
+    VerifyVirtualWire1ConnectionTableOnControllers: &VERIFY_VWIRE1_CONNECTION_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        "VerifyConnectionTableOnController[?]contain_once":
+            - hostip:  "esx.[4]"
+            - hostip:  "esx.[5]"
+            - hostip:  "esx.[6]"
+
+    VerifyVirtualWire2ConnectionTableOnControllers: &VERIFY_VWIRE2_CONNECTION_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        "VerifyConnectionTableOnController[?]contain_once":
+            - hostip:  "esx.[4]"
+            - hostip:  "esx.[5]"
+            - hostip:  "esx.[6]"
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyVirtualWire1ConnectionTableOnControllers: &VERIFY_VWIRE1_1_TOR_CONNECTION_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        "VerifyConnectionTableOnController[?]contain_once":
+            - hostip:  "torgateway.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyVirtualWire2ConnectionTableOnControllers: &VERIFY_VWIRE2_1_TOR_CONNECTION_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        "VerifyConnectionTableOnController[?]contain_once":
+            - hostip:  "torgateway.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire1ConnectionTableOnControllers: &VERIFY_VWIRE1_2_TOR_CONNECTION_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        "VerifyConnectionTableOnController[?]contain_once":
+            - hostip:  "torgateway.[1]"
+            - hostip:  "torgateway.[2]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire2ConnectionTableOnControllers: &VERIFY_VWIRE2_2_TOR_CONNECTION_TABLE_ON_CONTROLLER
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        controllers:  "vsm.[1].vxlancontroller.[-1]"
+        "VerifyConnectionTableOnController[?]contain_once":
+            - hostip:  "torgateway.[1]"
+            - hostip:  "torgateway.[2]"
+
+    CheckVirtualWire1ArpEntryOnHost: &VERIFY_VWIRE1_ARP_ENTRY_ON_HOST_4
+        Type:        "Switch"
+        testswitch:  "vsm.[1].networkscope.[1].virtualwire.[1]"
+        host:        "esx.[4]"
+        'VerifyArpEntryOnHost[?]contain_once':
+            - ip:   "vm.[4].vnic.[1]"
+              mac:  "vm.[4].vnic.[1]"
+            - ip:   "vm.[7].vnic.[1]"
+              mac:  "vm.[7].vnic.[1]"
+
+    CheckVirtualWire2ArpEntryOnHost: &VERIFY_VWIRE2_ARP_ENTRY_ON_HOST_5
+        Type:        "Switch"
+        testswitch:  "vsm.[1].networkscope.[1].virtualwire.[2]"
+        host:        "esx.[5]"
+        'VerifyArpEntryOnHost[?]contain_once':
+            - ip:   "vm.[2].vnic.[1]"
+              mac:  "vm.[2].vnic.[1]"
+            - ip:   "vm.[8].vnic.[1]"
+              mac:  "vm.[8].vnic.[1]"
+
+    CheckVirtualWire3ArpEntryOnHost: &VERIFY_VWIRE2_ARP_ENTRY_ON_HOST_6
+        Type:        "Switch"
+        testswitch:  "vsm.[1].networkscope.[1].virtualwire.[3]"
+        host:        "esx.[6]"
+        'VerifyArpEntryOnHost[?]contain_once':
+            - ip:   "vm.[3].vnic.[1]"
+              mac:  "vm.[3].vnic.[1]"
+            - ip:   "vm.[6].vnic.[1]"
+              mac:  "vm.[6].vnic.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CheckVirtualWire1ArpEntryNotOnHost: &VERIFY_VWIRE1_TOR_PORTS_ARP_ENTRY_NOT_ON_HOST_4
+        Type:        "Switch"
+        testswitch:  "vsm.[1].networkscope.[1].virtualwire.[1]"
+        host:        "esx.[4]"
+        'VerifyArpEntryOnHost[?]not_contains':
+            - ip:   "torgateway.[1].pif.[3]"
+              mac:  "torgateway.[1].pif.[3]"
+            - ip:   "torgateway.[2].pif.[3]"
+              mac:  "torgateway.[2].pif.[3]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CheckVirtualWire2ArpEntryNotOnHost: &VERIFY_VWIRE2_TOR_PORTS_ARP_ENTRY_NOT_ON_HOST_5
+        Type:        "Switch"
+        testswitch:  "vsm.[1].networkscope.[1].virtualwire.[2]"
+        host:        "esx.[5]"
+        "VerifyArpEntryOnController[?]not_contains":
+            - ip:   "torgateway.[1].pif.[4]"
+              mac:  "torgateway.[1].pif.[4]"
+            - ip:   "torgateway.[2].pif.[4]"
+              mac:  "torgateway.[2].pif.[4]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CheckVirtualWire2ArpEntryNotOnHost: &VERIFY_VWIRE2_TOR_PORTS_ARP_ENTRY_NOT_ON_HOST_6
+        Type:        "Switch"
+        testswitch:  "vsm.[1].networkscope.[1].virtualwire.[2]"
+        host:        "esx.[6]"
+        "VerifyArpEntryOnController[?]not_contains":
+            - ip:   "torgateway.[1].pif.[4]"
+              mac:  "torgateway.[1].pif.[4]"
+            - ip:   "torgateway.[2].pif.[4]"
+              mac:  "torgateway.[2].pif.[4]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CheckVirtualWire1MacEntryNotOnHost: &VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_NOT_ON_HOST_4
+        Type:        "Switch"
+        testswitch:  "vsm.[1].networkscope.[1].virtualwire.[1]"
+        host:        "esx.[4]"
+        'VerifyMacEntryOnHost[?]not_contains':
+            - mac:  "torgateway.[1].pif.[3]"
+            - mac:  "torgateway.[2].pif.[3]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CheckVirtualWire2MacEntryNotOnHost: &VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_NOT_ON_HOST_5
+        Type:        "Switch"
+        testswitch:  "vsm.[1].networkscope.[1].virtualwire.[2]"
+        host:        "esx.[5]"
+        'VerifyMacEntryOnHost[?]not_contains':
+            - mac:  "torgateway.[1].pif.[4]"
+            - mac:  "torgateway.[2].pif.[4]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CheckVirtualWire1MacEntryOnHost: &VERIFY_VWIRE1_TOR_PORTS_MAC_ENTRY_ON_HOST_4
+        Type:        "Switch"
+        testswitch:  "vsm.[1].networkscope.[1].virtualwire.[1]"
+        host:        "esx.[4]"
+        'VerifyMacEntryOnHost[?]contain_once':
+            - mac:  "torgateway.[1].pif.[3]"
+            - mac:  "torgateway.[2].pif.[3]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    CheckVirtualWire2MacEntryOnHost: &VERIFY_VWIRE2_TOR_PORTS_MAC_ENTRY_ON_HOST_5
+        Type:        "Switch"
+        testswitch:  "vsm.[1].networkscope.[1].virtualwire.[2]"
+        host:        "esx.[5]"
+        'VerifyMacEntryOnHost[?]contain_once':
+            - mac:  "torgateway.[1].pif.[4]"
+            - mac:  "torgateway.[2].pif.[4]"
+
+    VerifyVirtualWire1VtepTableOnHost4: &VERIFY_VWIRE1_VTEP_TABLE_ON_HOST_4
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        host:         "esx.[4]"
+        noofretries:  "3"
+        "VerifyVtepTableOnHost[?]contain_once":
+            - vtepip:  "esx.[5]"
+              cluster: "vc.[1].datacenter.[1].cluster.[3]"
+            - vtepip:  "esx.[6]"
+              cluster: "vc.[1].datacenter.[1].cluster.[3]"
+
+    VerifyVirtualWire2VtepTableOnHost5: &VERIFY_VWIRE2_VTEP_TABLE_ON_HOST_5
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        host:         "esx.[5]"
+        noofretries:  "3"
+        "VerifyVtepTableOnHost[?]contain_once":
+            - vtepip:  "host.[4]"
+              cluster: "vc.[1].datacenter.[1].cluster.[2]"
+            - vtepip:  "host.[6]"
+              cluster: "vc.[1].datacenter.[1].cluster.[3]"
+
+    VerifyVirtualWire3VtepTableOnHost6: &VERIFY_VWIRE3_VTEP_TABLE_ON_HOST_6
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[3]"
+        host:         "esx.[6]"
+        noofretries:  "3"
+        "VerifyVtepTableOnHost[?]contain_once":
+            - vtepip:  "esx.[4]"
+              cluster: "vc.[1].datacenter.[1].cluster.[2]"
+            - vtepip:  "esx.[5]"
+              cluster: "vc.[1].datacenter.[1].cluster.[3]"
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyVirtualWire1VtepTableOnHost: &VERIFY_VWIRE1_1_TOR_VTEP_TABLE_ON_HOST_4
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        host:         "esx.[4]"
+        noofretries:  "3"
+        "VerifyVtepTableOnController[?]contain_once":
+            - vtepip:  "torgateway.[1].pif.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_1 used
+    VerifyVirtualWire2VtepTableOnHost: &VERIFY_VWIRE2_1_TOR_VTEP_TABLE_ON_HOST_5
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        host:         "esx.[5]"
+        noofretries:  "3"
+        "VerifyVtepTableOnController[?]contain_once":
+            - vtepip:  "torgateway.[1].pif.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire1TorVtepTableOnHost: &VERIFY_VWIRE1_4_TOR_VTEPS_TABLE_ON_HOST_4
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[1]"
+        host:         "esx.[4]"
+        noofretries:  "3"
+        "VerifyVtepTableOnHost[?]contain_once":
+            - vtepip:  "torgateway.[1].pif.[1]"
+            - vtepip:  "torgateway.[2].pif.[1]"
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    VerifyVirtualWire2TorVtepTableOnHost: &VERIFY_VWIRE2_4_TOR_VTEPS_TABLE_ON_HOST_5
+        Type:         "Switch"
+        testswitch:   "vsm.[1].networkscope.[1].virtualwire.[2]"
+        host:         "esx.[5]"
+        noofretries:  "3"
+        "VerifyVtepTableOnHost[?]contain_once":
+            - vtepip:  "torgateway.[1].pif.[1]"
+            - vtepip:  "torgateway.[2].pif.[1]"
+
+    ScapyInterval: &SCAPY_INTERVAL
+        '300'
+
+    UdpTrafficBandwidth: &UDP_TRAFFIC_BANDWIDTH
+        '10M'
+
+    RebootPTEP: &REBOOT_PTEP_4
+       Type:      "Host"
+       TestHost:  "esx.[4]"
+       reboot:    "yes"
+
+    RebootPTEP: &REBOOT_PTEP_5
+       Type:      "Host"
+       TestHost:  "esx.[5]"
+       reboot:    "yes"
+
+    RebootPTEP: &REBOOT_PTEP_6
+       Type:      "Host"
+       TestHost:  "esx.[6]"
+       reboot:    "yes"
+
+    DeleteController: &DELETE_ALL_CONTROLLERS
+      Type:    'NSX'
+      TestNSX: "vsm.[1]"
+      deletevxlancontroller: "vsm.[1].vxlancontroller.[-1]"
+
+    DeleteController: &DELETE_CONTROLLER_1
+      Type:    'NSX'
+      TestNSX: "vsm.[1]"
+      deletevxlancontroller: "vsm.[1].vxlancontroller.[1]"
+
+    DeleteController: &DELETE_CONTROLLER_2
+      Type:    'NSX'
+      TestNSX: "vsm.[1]"
+      deletevxlancontroller: "vsm.[1].vxlancontroller.[2]"
+
+    DeleteController: &DELETE_CONTROLLER_3
+      Type:    'NSX'
+      TestNSX: "vsm.[1]"
+      deletevxlancontroller: "vsm.[1].vxlancontroller.[3]"
+
+    RebootController: &REBOOT_CONTROLLER_1
+      Type:       "VM"
+      TestVM:     "vsm.[1].vxlancontroller.[1]"
+      vmstate:    "poweroff,poweron"
+
+    RebootController: &REBOOT_CONTROLLER_2
+      Type:       "VM"
+      TestVM:     "vsm.[1].vxlancontroller.[2]"
+      vmstate:    "poweroff,poweron"
+
+    RebootController: &REBOOT_CONTROLLER_3
+      Type:       "VM"
+      TestVM:     "vsm.[1].vxlancontroller.[3]"
+      vmstate:    "poweroff,poweron"
+
+    ShutdownController: &SHUTDOWN_CONTROLLER_1
+      Type:       "VM"
+      TestVM:     "vsm.[1].vxlancontroller.[1]"
+      vmstate:    "poweroff"
+
+    ShutdownController: &SHUTDOWN_CONTROLLER_2
+      Type:       "VM"
+      TestVM:     "vsm.[1].vxlancontroller.[2]"
+      vmstate:    "poweroff"
+
+    ShutdownController: &SHUTDOWN_CONTROLLER_3
+      Type:       "VM"
+      TestVM:     "vsm.[1].vxlancontroller.[3]"
+      vmstate:    "poweroff"
+
+    PoweronController: &POWERON_CONTROLLER_1
+      Type:       "VM"
+      TestVM:     "vsm.[1].vxlancontroller.[1]"
+      vmstate:    "poweroff"
+
+    PoweronController: &POWERON_CONTROLLER_2
+      Type:       "VM"
+      TestVM:     "vsm.[1].vxlancontroller.[2]"
+      vmstate:    "poweroff"
+
+    PoweronController: &POWERON_CONTROLLER_3
+      Type:       "VM"
+      TestVM:     "vsm.[1].vxlancontroller.[3]"
+      vmstate:    "poweroff"
+
+    # Need to figure out the BFD protocol port later
+    BfdProtocolPort: &BFD_PROTOCOL_PORT
+        8000
+
+    BlockBfdTunnelFromTor1Switch1ToPteps:
+      Type: Gateway
+      TestGateway: torgateway.[1]
+      network_partitioning: &BLOCK_BFD_TUNNEL
+        operation: 'set'
+        ip_address: 'torgateway.[1].pif.[1]->IPv4'
+        protocol: tcp
+        port: *BFD_PROTOCOL_PORT
+
+    BlockBfdTunnelFromTor1Switch2ToPteps:
+      Type: Gateway
+      TestGateway: torgateway.[1]
+      network_partitioning:
+        <<: *BLOCK_BFD_TUNNEL
+        ip_address: 'torgateway.[1].pif.[2]->IPv4'
+
+    BlockBfdTunnelFromTor2Switch1ToPteps:
+      Type: Gateway
+      TestGateway: torgateway.[2]
+      network_partitioning:
+        <<: *BLOCK_BFD_TUNNEL
+        ip_address: 'torgateway.[2].pif.[1]->IPv4'
+
+    BlockBfdTunnelFromTor2Switch2ToPteps:
+      Type: Gateway
+      TestGateway: torgateway.[2]
+      network_partitioning:
+        <<: *BLOCK_BFD_TUNNEL
+        ip_address: 'torgateway.[2].pif.[2]->IPv4'
+
+    UnblockBfdTunnelFromTor1Switch1ToPteps:
+      Type: Gateway
+      TestGateway: torgateway.[1]
+      network_partitioning: &UNBLOCK_BFD_TUNNEL
+        operation: 'unset'
+        ip_address: 'torgateway.[1].pif.[1]->IPv4'
+        protocol: tcp
+        port: *BFD_PROTOCOL_PORT
+
+    UnblockBfdTunnelFromTor1Switch2ToPteps:
+      Type: Gateway
+      TestGateway: torgateway.[1]
+      network_partitioning:
+        <<: *UNBLOCK_BFD_TUNNEL
+        ip_address: 'torgateway.[1].pif.[2]->IPv4'
+
+    UnblockBfdTunnelFromTor2Switch1ToPteps:
+      Type: Gateway
+      TestGateway: torgateway.[2]
+      network_partitioning:
+        <<: *UNBLOCK_BFD_TUNNEL
+        ip_address: 'torgateway.[2].pif.[1]->IPv4'
+
+    UnblockBfdTunnelFromTor2Switch2ToPteps:
+      Type: Gateway
+      TestGateway: torgateway.[2]
+      network_partitioning:
+        <<: *UNBLOCK_BFD_TUNNEL
+        ip_address: 'torgateway.[2].pif.[2]->IPv4'
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    BlockTorGateway1BfdTunnelToPteps: &BLOCK_TOR_GATEWAY_1_BFD_TUNNEL_TO_PTEPS
+            - ['BlockBfdTunnelFromTor1Switch1ToPteps']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    BlockTorGateway2BfdTunnelToPteps: &BLOCK_TOR_GATEWAY_2_BFD_TUNNEL_TO_PTEPS
+            - ['BlockBfdTunnelFromTor2Switch1ToPteps']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    UnblockTorGateway1BfdTunnelToPteps: &UNBLOCK_TOR_GATEWAY_1_BFD_TUNNEL_TO_PTEPS
+            - ['UnblockBfdTunnelFromTor1Switch1ToPteps']
+
+    # FUNCTIONAL_TOPOLOGY_2 used
+    UnblockTorGateway2BfdTunnelToPteps: &UNBLOCK_TOR_GATEWAY_2_BFD_TUNNEL_TO_PTEPS
+            - ['UnblockBfdTunnelFromTor2Switch1ToPteps']
+
+    RebootVSM: &REBOOT_VSM
+        Type:     "NSX"
+        TestNSX:  "vsm.[1]"
+        vmstate:  "restart"
+
+    SetVwire1MacAddressChangeSecurityPolicyAccept: &SET_VWIRE_1_MAC_CHANGE_POLICY_ACCEPT
+        Type:           'Switch'
+        TestSwitch:     'vc.[1].vds.[1-2]'
+        virtualwire:    "vsm.[1].networkscope.[1].virtualwire.[1]"
+        policytype:     "macChanges"
+        securitypolicy: 'Enable'
+
+    SetVwire1ForgedTransmitChangeSecurityPolicyAccept: &SET_VWIRE_1_FORGED_TRANSMIT_POLIY_ACCEPT
+        Type:           'Switch'
+        TestSwitch:     'vc.[1].vds.[1-2]'
+        virtualwire:    "vsm.[1].networkscope.[1].virtualwire.[1]"
+        policytype:     "forgedTransmits"
+        securitypolicy: 'Enable'
+
+    ReadTorGateway1Switch1Port1MacAddress: &READ_TORGATEWAY1_SWITCH1_PORT1_MAC_ADDRESS
+        Type: 'NetAdapter'
+        TestAdapter:   "torgateway.[1].pif.[3]"
+        PersistData: "Yes"
+        read_adapter_info:
+           'macaddress[?]defined': ''
+
+    ReadTorGateway1Switch1Port2MacAddress: &READ_TORGATEWAY1_SWITCH1_PORT2_MAC_ADDRESS
+        <<: *READ_TORGATEWAY1_SWITCH1_PORT1_MAC_ADDRESS
+        TestAdapter:   "torgateway.[1].pif.[4]"
+
+    ReadTorGateway2Switch1Port1MacAddress: &READ_TORGATEWAY2_SWITCH1_PORT1_MAC_ADDRESS
+        <<: *READ_TORGATEWAY1_SWITCH1_PORT1_MAC_ADDRESS
+        TestAdapter:   "torgateway.[2].pif.[3]"
+
+    ChangeTorGateway1Switch1Port1ToSwitch1Port2MacAddress: &CHANGE_TORGATEWAY1_SWITCH1_PORT1_TO_SWITCH1_PORT2_MAC_ADDRESS
+      Type:          "NetAdapter"
+      TestAdapter:   "torgateway.[1].pif.[3]"
+      setmacaddr:    torgateway.[1].pif.[4]->read_adapter_info->macaddress
+
+    ChangeTorGateway1Switch2Port1ToSwitch1Port1MacAddress: &CHANGE_TORGATEWAY1_SWITCH2_PORT1_TO_SWITCH1_PORT1_MAC_ADDRESS
+      Type:          "NetAdapter"
+      TestAdapter:   "torgateway.[1].pif.[4]"
+      setmacaddr:    torgateway.[1].pif.[3]->read_adapter_info->macaddress
+
+    ChangeTorGateway1Switch1Port1ToGateway2Switch1Port1MacAddress: &CHANGE_TORGATEWAY1_SWITCH1_PORT1_TO_GATEWAY2_SWITCH1_PORT1_MAC_ADDRESS
+      Type:          "NetAdapter"
+      TestAdapter:   "torgateway.[1].pif.[3]"
+      setmacaddr:    torgateway.[2].pif.[3]->read_adapter_info->macaddress
+
+    RestoreTorGateway1Switch1Port1MacAddress: &RESTORE_TORGATEWAY1_SWITCH1_PORT1_MAC_ADDRESS
+      Type:          "NetAdapter"
+      TestAdapter:   "torgateway.[1].pif.[3]"
+      setmacaddr:    torgateway.[1].pif.[3]->read_adapter_info->macaddress
+
+    ClearArpEntryForVirtualWire1OnAllHosts: &CLEAR_ARP_ENTRY_FOR_VWIRE1_ON_ALL_HOSTS
+      Type:        "Switch"
+      testswitch:  "vsm.[1].networkscope.[1].virtualwire.[1]"
+      clearvwireentryonhost: 'arp'
+      hosts:       'esx.[4-7]'
+
+    ClearMacEntryForVirtualWire1OnAllHosts: &CLEAR_MAC_ENTRY_FOR_VWIRE1_ON_ALL_HOSTS
+      Type:        "Switch"
+      testswitch:  "vsm.[1].networkscope.[1].virtualwire.[1]"
+      clearvwireentryonhost: 'mac'
+      hosts:       'esx.[4-7]'
+
+    ClearArpEntryForVirtualWire2OnAllHosts: &CLEAR_ARP_ENTRY_FOR_VWIRE2_ON_ALL_HOSTS
+      Type:        "Switch"
+      testswitch:  "vsm.[1].networkscope.[1].virtualwire.[2]"
+      clearvwireentryonhost: 'arp'
+      hosts:       'esx.[4-7]'
+
+    ClearMacEntryForVirtualWire2OnAllHosts: &CLEAR_MAC_ENTRY_FOR_VWIRE2_ON_ALL_HOSTS
+      Type:        "Switch"
+      testswitch:  "vsm.[1].networkscope.[1].virtualwire.[2]"
+      clearvwireentryonhost: 'mac'
+      hosts:       'esx.[4-7]'
+
+    AddvmknicToHost: &ADD_VMKNIC_TO_HOST_4
+      Type:       "Host"
+      TestHost:   "esx.[4]"
+      vmknic:
+         '[1]':
+            portgroup:    "vsm.[1].networkscope.[1].virtualwire.[1]"
+            ipv4address:  '172.255.1.4'
+            netmask:      "255.255.255.0"
+            configurevmotion: "enable"
+
+    AddvmknicToHost: &ADD_VMKNIC_TO_HOST_5
+      Type:       "Host"
+      TestHost:   "esx.[5]"
+      vmknic:
+         '[1]':
+            portgroup:    "vsm.[1].networkscope.[1].virtualwire.[1]"
+            ipv4address:  '172.255.1.5'
+            netmask:      "255.255.255.0"
+            configurevmotion: "enable"
+
+    AddvmknicToHost: &ADD_VMKNIC_TO_HOST_6
+      Type:       "Host"
+      TestHost:   "esx.[6]"
+      vmknic:
+         '[1]':
+            portgroup:    "vsm.[1].networkscope.[1].virtualwire.[1]"
+            ipv4address:  '172.255.1.6'
+            netmask:      "255.255.255.0"
+            configurevmotion: "enable"
+
+    AddvmknicToHost: &ADD_VMKNIC_TO_HOST_7
+      Type:       "Host"
+      TestHost:   "esx.[7]"
+      vmknic:
+         '[1]':
+            portgroup:    "vsm.[1].networkscope.[1].virtualwire.[1]"
+            ipv4address:  '172.255.1.7'
+            netmask:      "255.255.255.0"
+            configurevmotion: "enable"
+
+    vMotionVM: &VMOTION_VM1_TO_HOST_5
+      Type:        "VM"
+      TestVM:      "vm.[1]"
+      Iterations:  "1"
+      vmotion:     "roundtrip"
+      dsthost:     "esx.[5]"
+
+    vMotionVM: &VMOTION_VM4_TO_HOST_6
+      Type:        "VM"
+      TestVM:      "vm.[4]"
+      Iterations:  "1"
+      vmotion:     "roundtrip"
+      dsthost:     "esx.[6]"
+
+    vMotionVM: &VMOTION_VM7_TO_HOST_7
+      Type:        "VM"
+      TestVM:      "vm.[7]"
+      Iterations:  "1"
+      vmotion:     "roundtrip"
+      dsthost:     "esx.[7]"
+
+    vMotionVM: &VMOTION_VM10_TO_HOST_4
+      Type:        "VM"
+      TestVM:      "vm.[10]"
+      Iterations:  "1"
+      vmotion:     "roundtrip"
+      dsthost:     "esx.[4]"
+
+    NetperfTestVirtualWire1: &NETPERF_TEST_VIRTUAL_WIRE_1
+      Type:            "Traffic"
+      toolName:        "iperf"
+      L4Protocol:      "tcp"
+      TestAdapter:     "vm.[1].vnic.[1],vm.[4].vnic.[1]"
+      SupportAdapter:  "vm.[7].vnic.[1],vm.[10].vnic.[1]"
+      TestDuration:    "30"
+
+    NetperfTestVirtualWire2: &NETPERF_TEST_VIRTUAL_WIRE_2
+      Type:            "Traffic"
+      toolName:        "iperf"
+      L4Protocol:      "udp"
+      udpbandwidth:    *UDP_TRAFFIC_BANDWIDTH
+      TestAdapter:     "vm.[2].vnic.[1],vm.[5].vnic.[1]"
+      SupportAdapter:  "vm.[8].vnic.[1],vm.[11].vnic.[1]"
+      TestDuration:    "30"
+
+    NetperfTestVirtualWire3: &NETPERF_TEST_VIRTUAL_WIRE_3
+      Type:            "Traffic"
+      toolName:        "iperf"
+      L4Protocol:      "tcp"
+      TestAdapter:     "vm.[3].vnic.[1],vm.[6].vnic.[1]"
+      SupportAdapter:  "vm.[9].vnic.[1],vm.[12].vnic.[1]"
+      TestDuration:    "30"

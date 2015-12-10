@@ -1,0 +1,222 @@
+VerifyTier1DownlinkIpChange:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "Edge"
+    TestName: "LR BAT Test case to Verify Tier1 Downlink Ip Change"
+    Summary: "LR BAT Test case to Verify Tier1 Downlink Ip Change"
+    Version: "2"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: TBD
+    Priority: "P0"
+    Developer: "prodge"
+    QCPath: "/NSXTransformers/L3/LrBatTestCases"
+    Procedure: '
+                1. Discover the host nodes
+                2. Create Transport Zone
+                3. Create the uplink profile
+                4. Create the transportnodes
+                5. Create the Fabric Profile ID
+                6. Discover the Edge-node id
+                7. Create a Edge Cluster with EdgeNode added to it
+                5. Create Logical Switches for Tier0
+                6. Create Logical Ports for uplink and downlink
+                8. Create Tier0 logical router
+                9. Create Downlink logical router port
+                10. Create uplink logical router port
+                11. Create logical switch for Tier1
+                12. Create logical port for tier1
+                13. Create Tier1 Logical router
+                14. Create Downlink for Tier1
+                15. Create router link port on tier0
+                16. Create router link port on Tier1
+                16. add static routes
+                17. Advertise Route on Tier0 SR
+                18. Change Downlink Ip Of tier1 router
+                20. Verify Routes on DR
+                21. Clean up'
+
+    Duration: '5'
+    Tags: 'cat-01'
+    Partnerfacing: "N"
+    TestbedSpec: *PLR_TLR_TESTBED
+
+
+    WORKLOADS:
+        Sequence:
+             - ['DiscoverHostnodes']
+             - ['CreateTransportZone']
+             - ['CreateUplinkProfile']
+             - ['CreateTransportNodes']
+             - ["CreateFabricProfile"]
+             - ["DiscoverEdgeNodeId"]
+             - ["CreateEdgeClusterWithEdgeNode"]
+             - ["CreateLogicalSwitchForTIER0"]
+             - ["CreateLogicalPortForUplinkForTIER0"]
+             - ["CreateLogicalPortForDownlinkForTIER0"]
+             - ["CreateTIER0LogicalRouterForEdge"]
+             - ["CreateDownlinkLogicalRouterPortForEdge"]
+             - ["CreateUplinkLogicalRouterPortForEdge"]
+             - ["CreateLogicalSwitchForTIER1"]
+             - ["CreateLogicalPortForTIER1"]
+             - ["CreateTIER1LogicalRouterForEdge"]
+             - ["CreateDownlinkTier1LogicalRouterPort"]
+             - ["CreateRouterLinkPortOnTIER0Router"]
+             - ["CreateRouterLinkPortOnTIER1Router"]
+             - ["UpdateStaticRoutes"]
+             - ["AdvertiseRouteonTier1"]
+             - ["UpdateTier1DownlinkLogicalRouterPortForEdge"]
+             - ["AdvertiseRouteonTier2"]
+             - ["VerifyShowIpRouteOnSRs"]
+             - ["VerifyRoutesOnESXsForTier0", "VerifyRoutesOnESXsForTier1"]
+
+        ExitSequence:
+             - ["DeleteRouterLinkPortOnTIER1Router"]
+             - ["DeleteRouterLinkPortOnTIER0Router"]
+             - ["DeleteDownlinkTier1LogicalRouterPort"]
+             - ["DeleteTIER1LogicalRouterForEdge"]
+             - ["DeleteLogicalPortForTier1"]
+             - ["DeleteLogicalSwitchForTier1"]
+             - ["CleanUp"]
+             - ['DeleteTransportNode1']
+             - ['DeleteTransportNode2']
+             - ['DeleteUplinkProfile']
+             - ['DeleteTransportZone']
+
+        CleanUp: *CLEANUP_PLR_TLR_TESTBED
+        DiscoverHostnodes: *PLRTLR_DISCOVER_HOST_NODES
+        CreateTransportZone: *PLRTLR_CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *PLRTLR_CREATE_UPLINK_PROFILE_01--ESX
+        CreateTransportNodes: *PLRTLR_CREATE_TRANSPORT_NODE_01--ESX
+
+        DeleteTransportZone: *PLRTLR_DELETE_TRANSPORT_ZONE_01--ESX
+
+        DeleteUplinkProfile: *PLRTLR_DELETE_UPLINK_PROFILE_01--ESX
+
+        DeleteTransportNode1: *PLRTLR_DELETE_TRANSPORT_NODE_01--ESX
+
+        DeleteTransportNode2: *PLRTLR_DELETE_TRANSPORT_NODE_02--ESX
+
+        CreateFabricProfile: *PLRTLR_CREATE_FABRIC_PROFILE
+
+        DiscoverEdgeNodeId: *PLRTLR_DISCOVER_EDGE_NODE_ID
+
+        CreateEdgeClusterWithEdgeNode: *PLRTLR_CREATE_EDGE_CLUSTER
+
+        CreateLogicalSwitchForTIER0: *PLRTLR_CREATE_LOGICAL_SWITCH_FOR_TIER0
+
+        CreateLogicalPortForUplinkForTIER0: *PLRTLR_CREATE_LP_FOR_UPLINK_TIER0
+
+        CreateLogicalPortForDownlinkForTIER0: *PLRTLR_CREATE_LP_FOR_DOWNLINK_TIER0
+
+        CreateTIER0LogicalRouterForEdge: *PLRTLR_CREATE_TIER0_LR
+
+        CreateDownlinkLogicalRouterPortForEdge: *PLRTLR_CREATE_DOWNLINK_LRP_FOR_TIER0
+
+        CreateUplinkLogicalRouterPortForEdge: *PLRTLR_CREATE_UPLINK_LRP_FOR_TIER0
+
+        CreateLogicalSwitchForTIER1: *PLRTLR_CREATE_LS_FOR_TIER1
+
+        CreateLogicalPortForTIER1: *PLRTLR_CREATE_LP_FOR_TIER1
+
+        CreateTIER1LogicalRouterForEdge: *PLRTLR_CREATE_TIER1_LR
+
+        CreateDownlinkTier1LogicalRouterPort: *PLRTLR_CREATE_DOWNLINK_FOR_TIER1_LR
+
+        CreateRouterLinkPortOnTIER0Router: *PLRTLR_CREATE_ROUTER_LINK_PORT_ON_TIER0
+
+        CreateRouterLinkPortOnTIER1Router: *PLRTLR_CREATE_ROUTER_LINK_PORT_ON_TIER1
+
+        UpdateStaticRoutes: *PLRTLR_UPDATE_STATIC_ROUTES
+
+        AdvertiseRouteonTier1:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[2]"
+            routeadvertisements:
+                '[1]':
+                    enableadvertisement: 'true'
+                    advertise_routes:
+                        - name: 'Route Adverisement for Tier1'
+                          summary: 'Route Adverisement for Tier1'
+                          network:
+                              - '192.168.70.0/24'
+
+        UpdateTier1DownlinkLogicalRouterPortForEdge:
+            Type: "Port"
+            reconfigure: true
+            TestPort: "nsxmanager.[1].logicalrouterport.[5]"
+            logical_router_id: "nsxmanager.[1].logicalrouter.[2]"
+            name: 'TIER0-LRPort-2-Downlinkport'
+            summary: "LRPort Downlink Port1 created through automation"
+            linked_switch_port_id: nsxmanager.[1].logicalport.[4]->id
+            resource_type: "LogicalRouterDownLinkPort"
+            subnets:
+                - prefixlen: 24
+                  ip_addresses:
+                     - '192.168.90.1'
+
+        VerifyRoutesOnESXsForTier1:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[2]'
+            sleepbetweenworkloads: "25"
+            endpoints: "esx.[1-2]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[2]->logical_router_id
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: '192.168.90.0'
+                      mask: '255.255.255.0'
+                      next_hop: '0.0.0.0'
+                      dr_flags: 'UCI'
+                      origin: 'MANUAL'
+
+        VerifyRoutesOnESXsForTier0:
+            Type: 'Router'
+            TestRouter: 'nsxmanager.[1].logicalrouter.[1]'
+            sleepbetweenworkloads: "25"
+            endpoints: "esx.[1-2]"
+            logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+            execution_type: 'cli'
+            'get_route_table[?]contain_once':
+                table:
+                    - destination: '192.168.90.0'
+                      mask: '255.255.255.0'
+                      next_hop: '100.64.1.0'
+                      dr_flags: 'UG'
+                      origin: 'AUTO'
+
+        AdvertiseRouteonTier2:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[2]"
+            sleepbetweenworkloads: "10"
+            routeadvertisements:
+                '[1]':
+                    enableadvertisement: 'true'
+                    advertise_routes:
+                        - name: 'Route Adverisement for Tier1'
+                          summary: 'Route Adverisement for Tier1'
+                          network:
+                              - '192.168.90.0/24'
+
+        VerifyShowIpRouteOnSRs:
+            Type: Gateway
+            TestGateway: 'nsxedge.[1-2]'
+            sleepbetweenworkloads: "20"
+            execution_type: 'cli'
+            get_ip_route:
+                'table[?]contain_once':
+                    - code: 'S'
+                      network: '192.168.90.0/24'
+                      nexthop: '169.0.0.1'
+                      via: 'via'
+
+        DeleteRouterLinkPortOnTIER1Router: *PLRTLR_DELETE_ROUTER_LINK_PORT_ON_TIER1
+        DeleteRouterLinkPortOnTIER0Router: *PLRTLR_DELETE_ROUTER_LINK_PORT_ON_TIER0
+        DeleteDownlinkTier1LogicalRouterPort: *PLRTLR_DELETE_DOWNLINK_TIER1_LRP
+        DeleteTIER1LogicalRouterForEdge: *PLRTLR_DELETE_TIER1_LR
+        DeleteLogicalSwitchForTier1: *PLRTLR_DELETE_LS_FOR_TIER1
+        DeleteLogicalPortForTier1: *PLRTLR_DELETE_LP_FOR_TIER1

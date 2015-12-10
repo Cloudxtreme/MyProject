@@ -1,0 +1,188 @@
+---
+controlplanemode:
+  description: Specifies the control plane mode for virtual wire
+  format: string
+  type: parameter
+  allowed_values:
+     - MULTICAST_MODE
+     - HYBRID_MODE
+     - UNICAST_MODE
+  sample_value: MULTICAST_MODE
+  derived_component:
+     - transportzone
+     - networkscope
+deletevirtualwire: &DELETE_VIRTUAL_WIRE
+  description: Delete virtualwire obj from test session
+  method: DeleteComponent
+  postprocess: RemoveSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  type: action
+  format: vdnet index
+  sample_value: 'vsm.[1].networkscope.[1].virtualwire.[1]'
+  derived_component:
+     - transportzone
+     - networkscope
+reconfigure:
+  description: Reconfigures transportzone pool. E.g. stretching an existing VDN transportzone
+  format: string
+  sample_value: true
+  method: UpdateComponent
+  derived_component:
+     - transportzone
+     - networkscope
+  params:
+    - name
+    - cluster
+    - transport_zone_type
+    - metadata
+    - switch_name
+    - execution_type
+    - reconfigure
+  preprocess: PreProcessHashRefTypeAPI
+  type: action
+tags:
+  description: Get the corresponding host Obj
+  type: parameter
+  sample_value:
+     - Tag:
+          tag: 'TAG1234567891234567891234567891234567890'
+          scope: 'TAG12345678912345678'
+  format:
+     - Tag:
+          tag: string
+          scope: string
+  derived_component:
+     - transportzone
+transportzonetype: &TRANSPORTZONETYPE
+  description: 'type of tunnelling to be used e.g. vlan, overlay'
+  format: string
+  method: ProcessParameters
+  type: parameter
+  sample_value: overlay
+  derived_component:
+     - transportzone
+  allowed_values:
+     - stt
+     - gre
+     - vxlan
+     - overlay
+     - vlan
+
+transportzoneaction:
+  description: Perform various actions on the transportzone
+  format: string
+  method: ExecuteAction
+  params:
+    - transportzoneaction
+    - clusters
+  preprocess: PreProcessHashTypeAPI
+  type: action
+  sample_value: expand
+  derived_component:
+     - networkscope
+  allowed_values:
+     - expand
+     - shrink
+     - repair
+     - merge
+     - replace
+     - migrateControlPlaneMode
+virtualwire: &VIRTUAL_WIRE
+  description: Creates virtualwires on the transportzone in VSM
+  linkedworkload: SwitchWorkload
+  method: CreateVirtualWire
+  params:
+    - virtualwire
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+  derived_component:
+     - transportzone
+     - networkscope
+
+transport_zone_type: *TRANSPORTZONETYPE
+
+get_transport_nodes:
+  derived_components:
+     - transportzone
+  description: Verify current transportzone contains specific transport nodes
+  format:
+    table:
+        - node_id: transport nodes tuple
+  method: get_transport_nodes
+  params:
+    - execution_type
+    - get_transport_nodes
+  preprocess: PreProcessVerification
+  sample_value:
+    table:
+        - node_id: nsxmanager.[1].transportnode.[1]
+  type: verification
+
+get_transport_zones:
+  derived_components:
+    - nsxmanager
+  description: Get all the list of transport zones created for verification
+  method: query
+  params:
+    - get_transport_zones
+  preprocess: PreProcessVerification
+  type: verification
+  format:
+    result_count: 2
+    results:
+      - id: 4230FABC-BBE4-C3B4-0013-BE238AD09F8E
+      - id: 42309790-C82A-8C0C-92EF-A25B202A91A5
+
+globallogicalswitch:
+  description: Creates global logical switches on the global transportzone in VSM
+  linkedworkload: SwitchWorkload
+  method: CreateVirtualWire
+  params:
+    - virtualwire
+  postprocess: StoreSubComponentObjects
+  preprocess: PreProcessNSXSubComponent
+  type: component
+  derived_component:
+     - transportzone
+     - networkscope
+  format:
+      '[1-2]':
+          controlplanemode: UNICAST_MODE
+          name: AutoGenerate
+          # TODO: Check about this
+          tenantid: AutoGenerate
+
+locallogicalswitch: *VIRTUAL_WIRE
+deletegloballogicalswitch:
+  description: Delete global virtualwire obj from test session
+  method: DeleteComponent
+  postprocess: RemoveReplicatedSubComponentObjects
+  preprocess: ConstructArrayOfObjects
+  type: action
+  format: vdnet index
+  sample_value: 'vsm.[1].globalnetworkscope.[1].globalvirtualwire.[1]'
+  derived_component:
+     - globaltransportzone
+     - globalnetworkscope
+
+get_aggregation_status:
+  derived_components:
+    - transportzone
+  description: Get high-level TZ summary showing number of up/degraded/down TN
+  method: get_aggregation_status
+  format:
+    down_count: "ref: down_count"
+    up_count: "ref: up_count"
+    unknown_count: "ref: unknown_count"
+    degraded_count: "ref: degraded_count"
+  preprocess: PreProcessVerification
+  type: verification
+  params:
+    - execution_type
+    - get_aggregation_status
+  sample_value:
+    down_count: 0
+    up_count: 2
+    unknown_count: 0
+    degraded_count: 0

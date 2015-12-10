@@ -1,0 +1,259 @@
+# Depends on anchors in ../../WORKAROUNDS.yaml. Requires that file to be included.
+
+################################################
+#   Topology with 2 HVs and no Edge            #
+#                                              #
+#                                              #
+#                                              #
+#                                              #
+#                                              #
+#                                              #
+#                                              #
+#  HV1---VM1---LP1---LS1---LP3---LRP1---+      #
+#                                       |      #
+#                                       |-PLR1 #
+#                                       |      #
+#  HV2---VM2---LP2---LS2---LP4---LRP2---+      #
+#                                              #
+#                                              #
+#                                              #
+################################################
+
+
+TopoL3_2Hosts_NoEdge: &TopoL3_2Hosts_NoEdge
+
+    VerifyTunnelPortsStateOnKVM-1:
+        Type: "Host"
+        TestHost: "kvm.[1]"
+        execution_type: 'cli'
+        'get_tunnel_ports_remote_ip[?]contain_once':
+            table:
+                - remote_ip: "kvm.[2].vtep.[1]->ip_address"
+                  forwarding_state: "true"
+
+    VerifyTunnelPortsStateOnKVM-2:
+        Type: "Host"
+        TestHost: "kvm.[2]"
+        execution_type: 'cli'
+        'get_tunnel_ports_remote_ip[?]contain_once':
+            table:
+                - remote_ip: "kvm.[1].vtep.[1]->ip_address"
+                  forwarding_state: "true"
+
+    VerifyL2Setup--ESX:
+        - - PingFromESX1Vtep1ToESX2Vtep1
+    VerifyL2Setup--KVM:
+        - - PingFromKVM1Vtep1ToKVM2Vtep1
+        - - VerifyTunnelPortsStateOnKVM-1
+        - - VerifyTunnelPortsStateOnKVM-2
+
+    VerifyL3Setup--ESX:
+        - - L3SRDRVerifications--ESX
+    VerifyL3Setup--KVM:
+        - - L3SRDRVerifications--KVM
+
+    SetManagerOnHosts--ESX:
+        - - SetManagerOnESX-1
+          - SetManagerOnESX-2
+    SetManagerOnHosts--KVM:
+        - - SetManagerOnKVM-1
+          - SetManagerOnKVM-2
+    DiscoverHostNodes--ESX:
+        - - DiscoverHostNode1FromESX1
+          - DiscoverHostNode2FromESX2
+    DiscoverHostNodes--KVM:
+        - - DiscoverHostNode1FromKVM1
+          - DiscoverHostNode2FromKVM2
+    CreateTransportNodes--ESX:
+        - - CreateTN-1_HOSTNODE-1_TZ-1_VMNIC-1
+          - CreateTN-2_HOSTNODE-2_TZ-1_VMNIC-1
+    CreateTransportNodes--KVM:
+        - - CreateTN-1_HOSTNODE-1_TZ-1_ETH-1
+          - CreateTN-2_HOSTNODE-2_TZ-1_ETH-1
+
+    DiscoverVteps--ESX:
+        - - DiscoverESX1Vtep1FromDevice-vmk10
+        - - DiscoverESX2Vtep1FromDevice-vmk10
+    DiscoverVteps--KVM:
+        - - DiscoverKVM1Vtep1FromDevice-nsx-vtep0.0
+        - - DiscoverKVM2Vtep1FromDevice-nsx-vtep0.0
+    RemoveManagerOnHosts--ESX:
+        - - RemoveManagerOnESX-1
+          - RemoveManagerOnESX-2
+    RemoveManagerOnHosts--KVM:
+        - - RemoveManagerOnKVM-1
+          - RemoveManagerOnKVM-2
+    UndiscoverHostNodes:
+        - - UndiscoverHostNode-1
+          - UndiscoverHostNode-2
+    VMSetup--ESX:
+        - - AddVM1Vnic1ToLS1
+        - - AddVM2Vnic1ToLS2
+        - - DiscoverLport1FromVM1Vnic1
+          - DiscoverLport2FromVM2Vnic1
+        - - ConfigureVM1Vnic1IP-192.168.1.10
+          - ConfigureVM2Vnic1IP-192.168.2.10
+    VMSetup--KVM:
+        - - AddVM1Vif1ToKVM1Bridge1
+        - - AddVM2Vif1ToKVM2Bridge1
+        - - CreateLP1OnLS1ForVM1Vif1
+          - CreateLP2OnLS2ForVM2Vif1
+        - - ConfigureVM1Vif1IP-192.168.1.10
+          - ConfigureVM2Vif1IP-192.168.2.10
+    VMCleanup--ESX:
+        - - DeleteVnic-1_VM-1
+        - - DeleteVnic-1_VM-2
+        - - UndiscoverLSP-1-2
+    VMCleanup--KVM:
+        - - DeleteVif-1_VM-1
+        - - DeleteVif-1_VM-2
+        - - DeleteLSP-1-2
+    L2Setup--ESX:
+        - - SetManagerOnHosts--ESX
+        - - DiscoverHostNodes--ESX
+        - - CreateTransportZone1
+        - - CreateUplinkProfile
+        - - CreateTransportNodes--ESX
+        - - DiscoverVteps--ESX
+        - - CreateLS1
+        - - CreateLS1Port
+        - - CreateLS2
+        - - CreateLS2Port
+        - - VMSetup--ESX
+    L2Setup--KVM:
+        - - SetManagerOnHosts--KVM
+        - - DiscoverHostNodes--KVM
+        - - CreateTransportZone1
+        - - CreateUplinkProfile
+        - - CreateTransportNodes--KVM
+        - - DiscoverVteps--KVM
+        - - CreateLS1
+        - - CreateLS1Port
+        - - CreateLS2
+        - - CreateLS2Port
+        - - VMSetup--KVM
+
+    L3Setup--ESX:
+        - - CreateLR1
+        - - CreateLR1P1
+          - CreateLR1P2
+        - - AddRouteVM1ToVM2--ESX
+          - AddRouteVM2ToVM1--ESX
+    L3Setup--KVM:
+        - - CreateLR1
+        - - CreateLR1P1
+          - CreateLR1P2
+        - - AddRouteVM1ToVM2--KVM
+          - AddRouteVM2ToVM1--KVM
+
+    L2Cleanup--ESX:
+        - - VMCleanup--ESX
+        # Workaround for bugzilla #1346002
+        # These should be deleted in parallel
+        # FIXME: Be more specific than cleaning up all ports.
+        - - CleanupLogicalPort
+        - - DeleteLS1
+          - DeleteLS2
+        - - DeleteTN-1
+          - DeleteTN-2
+        - - CleanupUplinkProfile
+        - - RemoveManagerOnHosts--ESX
+        - - UndiscoverHostNodes
+        - - CleanupTransportZone
+    L2Cleanup--KVM:
+        - - VMCleanup--KVM
+        # Workaround for bugzilla #1346002
+        # These should be deleted in parallel
+        # FIXME: Be more specific in the cleanup.
+        - - CleanupLogicalPort
+        - - DeleteLS1
+          - DeleteLS2
+        - - DeleteTN-1
+        - - DeleteTN-2
+        - - CleanupUplinkProfile
+        - - RemoveManagerOnHosts--KVM
+        - - UndiscoverHostNodes
+        - - CleanupTransportZone
+    L3Cleanup--ESX:
+        - - DeleteLR1P1
+        - - DeleteLR1P2
+        - - DeleteLR1
+    L3Cleanup--KVM:
+        - - DeleteLR1P1
+        - - DeleteLR1P2
+        - - DeleteLR1
+
+    #TODO(Krishna): Add DR/SR verifications on EDGEESX
+    L3SRDRVerifications--ESX:
+        - - VerifyLRsOnHVs--ESX
+        - - VerifyLRPortsOnHVs--ESX
+
+    L3SRDRVerifications--KVM:
+        - - VerifyLRsOnHVs--KVM
+        - - VerifyLRPortsOnHVs--KVM
+
+    VerifyLRsOnHVs--ESX:
+        Type: Host
+        TestHost: esx.[1-2]
+        execution_type: cli
+        sleepbetweenworkloads: *L3DpStabilizedSleep
+        noofretries: *L3DpStabilizedRetries
+        get_logical_routers[?]contain_once:
+            table:
+                - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+
+    VerifyLRPortsOnHVs--ESX:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: esx.[1-2]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        sleepbetweenworkloads: *L3DpStabilizedSleep
+        noofretries: *L3DpStabilizedRetries
+        get_logical_router_ports[?]contain_once:
+            table:
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[1]->lr_port_id
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[2]->lr_port_id
+
+    VerifyLRsOnHVs--KVM:
+        Type: Host
+        TestHost: kvm.[1-2]
+        execution_type: cli
+        sleepbetweenworkloads: *L3DpStabilizedSleep
+        noofretries: *L3DpStabilizedRetries
+        get_logical_routers[?]contain_once:
+            table:
+                - lr_uuid: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+
+    VerifyLRPortsOnHVs--KVM:
+        Type: Router
+        TestRouter: nsxmanager.[1].logicalrouter.[1]
+        endpoints: kvm.[1-2]
+        logical_router_id: nsxmanager.[1].logicalrouter.[1]->logical_router_id
+        execution_type: cli
+        sleepbetweenworkloads: *L3DpStabilizedSleep
+        noofretries: *L3DpStabilizedRetries
+        get_logical_router_ports[?]contain_once:
+            table:
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[1]->lr_port_id
+                - lrport_uuid: nsxmanager.[1].logicalrouterport.[2]->lr_port_id
+
+    TopoSetup--ESX:
+        - - L2Setup--ESX
+        - - L3Setup--ESX
+        - - VerifyL2Setup--ESX
+        - - VerifyL3Setup--ESX
+
+    TopoSetup--KVM:
+        - - L2Setup--KVM
+        - - L3Setup--KVM
+        - - VerifyL2Setup--KVM
+        - - VerifyL3Setup--KVM
+
+    TopoCleanup--ESX:
+        - - L3Cleanup--ESX
+        - - L2Cleanup--ESX
+
+    TopoCleanup--KVM:
+        - - L3Cleanup--KVM
+        - - L2Cleanup--KVM

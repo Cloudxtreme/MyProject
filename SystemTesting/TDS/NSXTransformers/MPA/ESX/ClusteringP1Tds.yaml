@@ -1,0 +1,418 @@
+!include ../../ManagementPlane/Clustering/L2Workloads.yaml
+!include ../../ManagementPlane/Clustering/MPCommonWorkloads.yaml
+!include ../../ManagementPlane/Clustering/MPVerticalWorkloads.yaml
+!include MPACommon.yaml
+!include TestbedSpec.yaml
+
+MPAReconnect:
+    <<: *MPACommonTestParams
+    Priority: p1
+    Summary: 'MPA is able to reconnect after all brokers are down'
+    Version: 2
+    TestName: 'MPA Clustering Reconnect'
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+
+        Sequence:
+             - ['SetServiceId_MP1', 'SetServiceId_MP2', 'SetServiceId_MP3']
+             - ['StopService_MP1', 'StopService_MP2', 'StopService_MP3']
+             - ['Sleep']
+             - ['SyslogWriteIndex_Host1', 'SyslogWriteIndex_Host2', 'SyslogWriteIndex_Host3']
+             - ['StartService_MP1']
+             - ['SyslogCheckForReconnect_Host1', 'SyslogCheckForReconnect_Host2', 'SyslogCheckForReconnect_Host3']
+             - ['StartService_MP2', 'StartService_MP3']
+
+        Sleep:
+            Type: Host
+            TestHost: 'esx.[1]'
+            sleepbetweenworkloads: 300
+
+        SyslogWriteIndex_Host1: &SWI_H1_MPARECONNECT
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'MPAReconnect'
+
+        SyslogWriteIndex_Host2:
+            <<: *SWI_H1_MPARECONNECT
+            TestHost: 'esx.[2]'
+
+        SyslogWriteIndex_Host3:
+            <<: *SWI_H1_MPARECONNECT
+            TestHost: 'esx.[3]'
+
+        SyslogCheckForReconnect_Host1: &SCFR_H1_MPARECONNECT
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'MPAReconnect'
+                grep_string: 'MPA connection fully established'
+                max_wait: 600
+
+        SyslogCheckForReconnect_Host2:
+            <<: *SCFR_H1_MPARECONNECT
+            TestHost: 'esx.[2]'
+
+        SyslogCheckForReconnect_Host3:
+            <<: *SCFR_H1_MPARECONNECT
+            TestHost: 'esx.[3]'
+
+MPAReconnectToPreferredBroker:
+    <<: *MPACommonTestParams
+    Priority: p1
+    Summary: MPA is able to reconnect after a broker is down to a proper preferred broker
+    Version: 2
+    TestName: MPA Reconnect Preferred Broker
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+
+        Sequence:
+             - ['SaveConfigDetails']
+             - ['SetServiceId_MP1']
+             - ['StopService_MP1']
+             - ['Sleep']
+             - ['SyslogWriteIndex']
+             - ['StartService_MP1']
+             - ['SyslogCheckForReconnect']
+             #- ['CheckThreeClientsConnected']
+             #- ['CheckPreferredBroker']
+
+        Sleep:
+            Type: Host
+            TestHost: 'esx.[1]'
+            sleepbetweenworkloads: 300
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'MPAReconnectToPreferredBroker'
+
+        SyslogCheckForReconnect:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'MPAReconnectToPreferredBroker'
+                grep_string: 'MPA connection fully established'
+                max_wait: 600
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'MPAReconnect'
+
+        SyslogCheckForReconnect:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'MPAReconnect'
+                grep_string: 'MPA connection fully established'
+                max_wait: 600
+
+VerifyCompareFiles:
+    <<: *MPACommonTestParams
+    Priority: p1
+    Summary: Verify that we are able to save and compare a file
+    TestName: Verify Compare Files
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+
+        Sequence:
+             - ['SaveConfigDetails']
+             - ['CheckConfigSame']
+
+VerifyConfigUpdate:
+    <<: *MPACommonTestParams
+    Priority: p1
+    Summary: Verify that a change in the cluster alters the config file
+    Version: 2
+    TestName: Verify Config Update
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+        <<: *MPClusteringConfigurationWorkloads
+        <<: *MPClusteringL2Workloads
+        <<: *MPClusteringVerificationWorkloads
+
+        Sequence:
+             - ['SaveConfigDetails']
+             - ['SetServiceId_MP1']
+             - ['StopService_MP1']
+             - ['Sleep']
+             - ['CheckConfigDifferent']
+             - ['StartService_MP1']
+
+        Sleep:
+            Type: Host
+            TestHost: 'esx.[1]'
+            sleepbetweenworkloads: 300
+
+BrokerRPC:
+    <<: *MPACommonTestParams
+    Priority: p1
+    Summary: RPC from MP using the testrpc endpoint
+    Version: 2
+    TestName: Broker RPC
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient']
+             - ['SyslogWriteIndex']
+             - ['ConnectXMLRPCServer']
+             - ['VerticalRegistration']
+             - ['TestRPC']
+             - ['VerticalCloseConnection']
+             - ['KillSampleClient']
+             - ['SyslogCheckForMessage']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeBrokerRPC'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SmokeBrokerRPC'
+                grep_string: 'Msg Received in client queue. message type: com.vmware.nsx.customer.MpRpcRequest'
+                max_wait: 120
+
+NonPreferredBrokerRPC:
+    <<: *MPACommonTestParams
+    Priority: p1
+    Summary: RPC from non-preferred MP using the testrpc endpoint
+    Version: 2
+    TestName: Broker RPC from Non-Master
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient']
+             - ['SyslogWriteIndex']
+             - ['ConnectXMLRPCServer']
+             - ['VerticalRegistration']
+             - ['TestRPC_NonPreferred']
+             - ['VerticalCloseConnection']
+             - ['KillSampleClient']
+             - ['SyslogCheckForMessage']
+             #- ['CheckPreferredBroker']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SmokeBrokerRPC'
+
+        SyslogCheckForMessage:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SmokeBrokerRPC'
+                grep_string: 'Msg Received in client queue. message type: com.vmware.nsx.customer.MpRpcRequest'
+                max_wait: 120
+
+MultiBrokerRPC_1MsgPer:
+    <<: *MPACommonTestParams
+    Priority: p1
+    Summary: RPC from multiple MPs using the testrpc endpoint (1 per MPA)
+    Version: 2
+    TestName: Vertical Messaging - Broker Requests - 1 per MPA
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex_Host1', 'SyslogWriteIndex_Host2', 'SyslogWriteIndex_Host3']
+             - ['KillSampleClient_Host1', 'KillSampleClient_Host2', 'KillSampleClient_Host3']
+             - ['ConnectXMLRPCServer_Host1', 'ConnectXMLRPCServer_Host2', 'ConnectXMLRPCServer_Host3']
+             - ['VerticalRegistration_Host1', 'VerticalRegistration_Host2', 'VerticalRegistration_Host3']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['VerticalCloseConnection_Host1', 'VerticalCloseConnection_Host2', 'VerticalCloseConnection_Host3']
+             - ['KillSampleClient_Host1', 'KillSampleClient_Host2', 'KillSampleClient_Host3']
+             - ['SyslogCheckForMessage_Host1', 'SyslogCheckForMessage_Host2', 'SyslogCheckForMessage_Host3']
+
+        SyslogWriteIndex_Host1: &SWI_H1_MULTIBROKERRPC_1MSGPER
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'MultiBrokerRPC_1MsgPer'
+
+        SyslogWriteIndex_Host2:
+            <<: *SWI_H1_MULTIBROKERRPC_1MSGPER
+            TestHost: 'esx.[2]'
+
+        SyslogWriteIndex_Host3:
+            <<: *SWI_H1_MULTIBROKERRPC_1MSGPER
+            TestHost: 'esx.[3]'
+
+        SyslogCheckForMessage_Host1: &SCFM_H1_MULTIBROKERRPC_1MSGPER
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'MultiBrokerRPC_1MsgPer'
+                grep_string: 'Msg Received in client queue. message type: com.vmware.nsx.customer.MpRpcRequest'
+                max_wait: 120
+
+        SyslogCheckForMessage_Host2:
+            <<: *SCFM_H1_MULTIBROKERRPC_1MSGPER
+            TestHost: 'esx.[2]'
+
+        SyslogCheckForMessage_Host3:
+            <<: *SCFM_H1_MULTIBROKERRPC_1MSGPER
+            TestHost: 'esx.[3]'
+
+MultiBrokerRPC_10MsgPer:
+    <<: *MPACommonTestParams
+    Priority: p1
+    Summary: RPC from multiple MPs using the testrpc endpoint (1 per MPA)
+    Version: 2
+    TestName: Vertical Messaging - Broker Requests - 10 per MPA
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['KillSampleClient_Host1', 'KillSampleClient_Host2', 'KillSampleClient_Host3']
+             - ['ConnectXMLRPCServer_Host1', 'ConnectXMLRPCServer_Host2', 'ConnectXMLRPCServer_Host3']
+             - ['VerticalRegistration_Host1', 'VerticalRegistration_Host2', 'VerticalRegistration_Host3']
+             - ['SyslogWriteIndex_Host1_1', 'SyslogWriteIndex_Host2_1', 'SyslogWriteIndex_Host3_1']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['TestRPC_Host1', 'TestRPC_Host2', 'TestRPC_Host3']
+             - ['SyslogWriteIndex_Host1_2', 'SyslogWriteIndex_Host2_2', 'SyslogWriteIndex_Host3_2']
+             - ['SyslogCheckForMessages_Host1', 'SyslogCheckForMessages_Host2', 'SyslogCheckForMessages_Host3']
+             - ['VerticalCloseConnection_Host1', 'VerticalCloseConnection_Host2', 'VerticalCloseConnection_Host3']
+             - ['KillSampleClient_Host1', 'KillSampleClient_Host2', 'KillSampleClient_Host3']
+
+        SyslogWriteIndex_Host1_1: &SWI_H1_MULTIBROKERRPC_10MSGPER_1
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'MultiBrokerRPC_10MsgPer'
+
+        SyslogWriteIndex_Host2_1:
+            <<: *SWI_H1_MULTIBROKERRPC_10MSGPER_1
+            TestHost: 'esx.[2]'
+
+        SyslogWriteIndex_Host3_1:
+            <<: *SWI_H1_MULTIBROKERRPC_10MSGPER_1
+            TestHost: 'esx.[3]'
+
+        SyslogWriteIndex_Host1_2: &SWI_H1_MULTIBROKERRPC_10MSGPER_2
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'MultiBrokerRPC_10MsgPer_Fin'
+
+        SyslogWriteIndex_Host2_2:
+            <<: *SWI_H1_MULTIBROKERRPC_10MSGPER_2
+            TestHost: 'esx.[2]'
+
+        SyslogWriteIndex_Host3_2:
+            <<: *SWI_H1_MULTIBROKERRPC_10MSGPER_2
+            TestHost: 'esx.[3]'
+
+        SyslogCheckForMessages_Host1: &SCFM_H1_MULTIBROKERRPC_10MSGPER_1
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'MultiBrokerRPC_10MsgPer'
+                grep_string: 'MultiBrokerRPC_10MsgPer_Fin'
+                pattern: 'Msg Received in client queue. message type: com.vmware.nsx.customer.MpRpcRequest'
+                count: 10
+                max_wait: 120
+
+        SyslogCheckForMessages_Host2:
+            <<: *SCFM_H1_MULTIBROKERRPC_10MSGPER_1
+            TestHost: 'esx.[2]'
+
+        SyslogCheckForMessages_Host3:
+            <<: *SCFM_H1_MULTIBROKERRPC_10MSGPER_1
+            TestHost: 'esx.[3]'
+
+SampleClientRPCBrokerResponse:
+    <<: *MPACommonTestParams
+    Summary: 'Sample Client Verifies Response to RPC Message'
+    TestName: 'Sample Client Verifies Broker RPC Response'
+    TestbedSpec: *MPA_ESX_CLUSTER_01
+
+    WORKLOADS:
+        <<: *MPACommonWorkloads
+
+        Sequence:
+             - ['SyslogWriteIndex']
+             - ['RPC']
+             - ['RPCSent']
+             - ['SyslogCheckForReceive']
+
+        SyslogWriteIndex:
+            Type: Host
+            TestHost: 'esx.[1]'
+            syslog_append:
+                execution_type: 'cmd'
+                syslog_message: 'SampleClientRPCBrokerResponse'
+
+        SyslogCheckForReceive:
+            Type: Host
+            TestHost: 'esx.[1]'
+            query_file:
+                execution_type: 'cmd'
+                file_name: '/var/log/syslog.log'
+                grep_after: 'SampleClientRPCBrokerResponse'
+                grep_string: 'Client Rpc replies with: test client rpc response'
+                max_wait: 40

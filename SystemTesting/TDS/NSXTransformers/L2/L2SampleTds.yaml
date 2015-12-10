@@ -1,0 +1,850 @@
+L2ESXBasic:
+    Product: NSX Transformers
+    Category: L2
+    Component: LCP-ESX
+    Summary: This test case verifies that connectivity works between 2 ESX VMs
+    Tags: nsx, avalanche, lcp, ccp
+    ExpectedResult: PASS
+    Status: Execution Ready
+    AutomationLevel: Automated
+    FullyAutomatable: Y
+    TestcaseLevel: Functional
+    TestcaseType: Functional
+    Version: 2
+    TestName: L2ESXBasic
+    Partnerfacing: N
+    TestbedSpec: *L2_ESX_TOPOLOGY_02
+
+    WORKLOADS:
+        Sequence:
+            - ['Create3NodeMPAnd3NodeCCPCluster']
+            - ['Verify3NodeMPAnd3NodeCCPCluster']
+            - ['RegisterHosts']
+            - ['DiscoverHostnodes']
+            - ['CreateTransportZone']
+            - ['CreateUplinkProfile']
+            - ['CreateTransportNodes']
+            - ['CreateIPDiscoveryProfile']
+            - ['DiscoverVteps']
+            - ['ConfigureVTEPIP']
+            - ['CreateLogicalSwitch']
+            - ['VifAttachment']
+            - ['VerifyLSReplicationModeOnHost']
+            - ['VerifyLSConnTableOnController1']
+            - ['DiscoverLogicalPorts']
+            - ['ConfigureVnicIP']
+            - ['VerifyLSMacEntryOnControllers',
+               'VerifyLSVtepEntryOnControllers',
+               'VerifyLSVtepEntryOnHost1',
+               'VerifyLSVtepEntryOnHost2']
+            - ['ArpPingVM1', 'ArpPingVM2',
+               'VerifyLSArpEntryOnControllers']
+            # XXX(Jialiang): Temporarily remove arp verification
+            # on host side due to PR1420327.
+            #  'VerifyLSArpEntryOnHost2']
+            - ['Traffic', 'VerifyLSMacEntryOnHost1',
+               'VerifyLSMacEntryOnHost2']
+            - ['CombinedTraffic']
+            - ['MulticastTraffic']
+        ExitSequence:
+            - ['DeleteVnic1', 'DeleteVnic2']
+            - ['UndiscoverLogicalPorts']
+            - ['DeleteLogicalSwitch']
+            - ['DeleteTransportNode']
+            - ['DeleteUplinkProfile']
+            - ['DeleteTransportZone']
+            - ['UnregisterHosts']
+            - ['DeleteAllIPDiscoveryProfiles']
+
+        RegisterHosts:
+            Type: Host
+            TestHost: 'esx.[1-2]'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+
+        UnregisterHosts:
+            Type: Host
+            TestHost: 'esx.[1-2]'
+            remove_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+
+        DiscoverLogicalPorts:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            noofretries: *L2LogicalPortDiscoveryRetries
+            logicalport:
+                '[1-2]':
+                    discover: 'true'
+                    attachment:
+                       attachment_type : VIF
+                       id_: 'vm.[x=logicalport_index].vnic.[1]->uuid'
+
+        UndiscoverLogicalPorts:
+            TestNSX: nsxmanager.[1]
+            Type: NSX
+            deletelogicalport: nsxmanager.[1].logicalport.[1-2]
+            skipmethod: 1
+
+        DiscoverHostnodes:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            hostnode:
+                '[1-2]':
+                    discover: 'true'
+                    ip_addresses: 'esx.[x=hostnode_index]'
+
+        ConfigureVTEP1IP:
+            Type: NetAdapter
+            TestAdapter: esx.[1].vtep.[1]
+            IPv4: auto
+
+        ConfigureVTEP2IP:
+            Type: NetAdapter
+            TestAdapter: esx.[2].vtep.[1]
+            IPv4: auto
+
+        DiscoverVteps:
+            Type: Host
+            TestHost: 'esx.[1-2]'
+            vtep:
+                '[1]':
+                    execution_type: cli
+                    discover: 'true'
+                    name: 'vmk10'
+
+        ConfigureVTEPIP:
+            Type: NetAdapter
+            TestAdapter: esx.[1-2].vtep.[1]
+            IPv4: auto
+
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01--ESX
+        CreateTransportNodes: *CREATE_TRANSPORT_NODE_01--ESX
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE
+        DeleteAllIPDiscoveryProfiles: *DELETE_ALL_IPDISCOVERY_PROFILES
+        VifAttachment: *VIF_ATTACHMENT_01--ESX
+        DeleteLogicalSwitch: *DELETE_LOGICAL_SWITCH_01
+        DeleteTransportZone: *DELETE_TRANSPORT_ZONE_01
+        DeleteTransportNode: *DELETE_TRANSPORT_NODE_01
+        DeleteUplinkProfile: *DELETE_UPLINK_PROFILE_01
+        Cleanup3NodesCCPAnd3NodesMPCluster: *CLEANUP_3_NODES_CCP_AND_3_NODES_MP_CLUSTER
+
+        ConfigureVnicIP:
+            Type: NetAdapter
+            TestAdapter: vm.[1-2].vnic.[1]
+            IPv4: auto
+
+        VerifyLSReplicationModeOnHost:
+            Type: "Host"
+            TestHost: "esx.[1-2]"
+            execution_type: 'cli'
+            noofretries: "3"
+            'get_logical_switch[?]contain_once':
+               table:
+                   - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                     replication_mode: 'mtep'
+
+        VerifyLSConnTableOnController1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            endpoints: 'nsxcontroller.[-1]'
+            execution_type: 'cli'
+            switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+            noofretries: *NUM_RETRIES_QUERY_CONTROLLER
+            get_connection_table[?]contain_once:
+               table:
+                 - adapter_ip: "esx.[1]->mgmt_ip"
+                 - adapter_ip: "esx.[2]->mgmt_ip"
+
+        Traffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[2].vnic.[1]"
+            SupportAdapter: "vm.[1].vnic.[1]"
+            TestDuration  : "10"
+            NoofInbound   : "1"
+            NoofOutbound  : "1"
+
+        CombinedTraffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4, ipv6"
+            L4Protocol    : "tcp, udp"
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+            NoofOutbound  : "1"
+            NoofInbound   : "1"
+            TestDuration  : "10"
+            MinExpResult  : "1"
+
+        MulticastTraffic:
+            Type          : 'Traffic'
+            RoutingScheme : "Multicast"
+            L3Protocol    : 'ipv4, ipv6'
+            TestAdapter   : "vm.[1].vnic.[1]"
+            SupportAdapter: "vm.[2].vnic.[1]"
+            TestDuration  : "10"
+
+        DeleteVtep1:
+            Type: Host
+            TestHost: 'esx.[1]'
+            deletevtep: 'esx.[1].vtep.[1]'
+
+        DeleteVtep2:
+            Type: Host
+            TestHost: 'esx.[2]'
+            deletevtep: 'esx.[2].vtep.[1]'
+
+        DeleteVnic1:
+            Type: VM
+            TestVM: 'vm.[1]'
+            deletevnic: 'vm.[1].vnic.[1]'
+
+        DeleteVnic2:
+            Type: VM
+            TestVM: 'vm.[2]'
+            deletevnic: 'vm.[2].vnic.[1]'
+
+        VerifyLSMacEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_RETRIES_QUERY_CONTROLLER
+            'get_mac_table[?]contain_once' :
+                table:
+                    - adapter_mac: "vm.[1].vnic.[1]"
+                      adapter_ip: "esx.[1].vtep.[1]"
+                    - adapter_mac: "vm.[2].vnic.[1]"
+                      adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLSVtepEntryOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_RETRIES_QUERY_CONTROLLER
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[1].vtep.[1]"
+                    - adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLSVtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[1]'
+            noofretries: "3"
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLSVtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[2]'
+            noofretries: "3"
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "esx.[1].vtep.[1]"
+
+        ArpPingVM1:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[1].vnic.[1]'
+            SupportAdapter: 'vm.[2].vnic.[1]'
+            NoofOutbound    : "1"
+            TestDuration    : '30'
+            connectivitytest: '0'
+
+        ArpPingVM2:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter:    'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[1].vnic.[1]'
+            NoofOutbound    : "1"
+            TestDuration    : '30'
+            connectivitytest: '0'
+            sleepbetweenworkloads:  "30"
+
+        VerifyLSArpEntryOnControllers:
+            Type: Switch
+            execution_type: 'cli'
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            noofretries: *NUM_RETRIES_QUERY_CONTROLLER
+            sleepbetweenworkloads:  "30"
+            'get_arp_table[?]contain_once':
+                table:
+                    - adapter_ip:  "vm.[1].vnic.[1]"
+                      adapter_mac: "vm.[1].vnic.[1]"
+                    - adapter_ip:  "vm.[2].vnic.[1]"
+                      adapter_mac: "vm.[2].vnic.[1]"
+
+        VerifyLSArpEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[2]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_arp_table[?]contain_once':
+                table:
+                    - adapter_ip: "vm.[1].vnic.[1]"
+                      adapter_mac: "vm.[1].vnic.[1]"
+
+        VerifyLSMacEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[1]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[2].vnic.[1]"
+                      adapter_ip: "esx.[2].vtep.[1]"
+
+        VerifyLSMacEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'esx.[2]'
+            noofretries: "3"
+            sleepbetweenworkloads:  "30"
+            'get_mac_table[?]contain_once':
+                table:
+                    - adapter_mac: "vm.[1].vnic.[1]"
+                      adapter_ip: "esx.[1].vtep.[1]"
+
+L2KVMBasic:
+    Category: L2
+    Component: LCP-KVM
+    Summary: This test case verifies connectivity between 2 KVM VMs.
+    Tags: nsx, avalanche
+    Version: 2
+    Product: NSXTransformers
+    TestName: L2KVMBasic
+    TestbedSpec: *L2_KVM_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+             - ['Create3NodeMPAnd3NodeCCPCluster']
+             - ['Verify3NodeMPAnd3NodeCCPCluster']
+             - ['RegisterHosts']
+             - ['DiscoverHostnodes']
+             - ['CreateTransportZone']
+             - ['CreateUplinkProfile']
+             - ['CreateTransportNodes']
+             - ['DiscoverIntegrationBridge']
+             - ['CreateIPDiscoveryProfile']
+             - ['DiscoverVteps']
+             - ['ConfigureVTEPsIp']
+             - ['VerifyVTEPConnectivity']
+             - ['CreateLogicalSwitch']
+             - ['CreateVIFs']
+             - ['AttachVIFtoLogicalSwitch1']
+             - ['VerifyLSwitchConnectionTableOnController']
+             - ['VerifyLSInfoOnHosts']
+             - ['ConfigureVIFIPs']
+             - ['VerifyMacEntriesOnHost1', 'VerifyMacEntriesOnHost2']
+             - ['VerifyLS1VtepEntryOnHost1', 'VerifyLS1VtepEntryOnHost2']
+             - ['VerifyMacEntriesOnControllers',
+                'VerifyLS1VtepEntriesOnControllers']
+            # Product disables the BFD by default and there is a feature
+            # request that is being developed in product that will allow us to
+            # enable it via MP. Until the MP part is checked in, we will keep
+            # it disabled.
+#             - ['VerifyTunnelPortsStateOnHost1','VerifyTunnelPortsStateOnHost2']
+             # Following workload needs to be enabled after #1342638 is
+             # resolved
+#             - ['ArpPingVM1']
+             - ['Traffic']
+             - ['CombinedTraffic',
+                'VerifyLSArpEntryOnControllers', 'VerifyLSArpEntryOnHost1',
+                'VerifyLSArpEntryOnHost2']
+
+        ExitSequence:
+             - ['DeleteLogicalPort']
+             - ['DeleteLogicalSwitch']
+             - ['DeleteTransportNode']
+             - ['DeleteUplinkProfile']
+             - ['DeleteTransportZone']
+             # XXX(salmanm): Tunnel ports exist even after VIF deletion
+             # Bugzilla: #1325403
+             - ['DeleteVIFs']
+             - ['UnregisterHosts']
+             - ['DeleteAllIPDiscoveryProfiles']
+             # WORKAROUND (salmanm) - PR1434458
+             # Remove CCP cleanup to fix CAT failure
+             # - ['Cleanup3NodesCCPAnd3NodesMPCluster']
+
+        CombinedTraffic:
+            Type          : "Traffic"
+            ToolName      : "netperf"
+            L3Protocol    : "ipv4, ipv6"
+            L4Protocol    : "tcp, udp"
+            TestAdapter   : "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[2].vif.[1]"
+            sendmessagesize: *NETPERF_SENDMSG_SIZE
+            NoofOutbound  : "1"
+            NoofInbound   : "1"
+            TestDuration  : "10"
+            MinExpResult  : "1"
+
+        RegisterHosts:
+            Type: Host
+            TestHost: 'kvm.[1-2]'
+            set_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+                execution_type: 'cli'
+
+        UnregisterHosts:
+            Type: Host
+            TestHost: 'kvm.[1-2]'
+            remove_nsx_manager:
+                manager_ip: 'nsxmanager.[1]'
+                manager_thumbprint: 'nsxmanager.[1]'
+
+        DiscoverHostnodes:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            hostnode:
+                '[1-2]':
+                    discover: 'true'
+                    ip_addresses: 'kvm.[x=hostnode_index]'
+
+        DiscoverIntegrationBridge:
+            Type: Host
+            TestHost: 'kvm.[1-2]'
+            bridge:
+                '[1]':
+                    name: nsx-managed
+                    switch_fail_mode: secure
+                    external_id:
+                        bridge-id: nsx-managed
+                    discover: true
+
+        DiscoverVteps:
+            Type: Host
+            TestHost: 'kvm.[1-2]'
+            vtep:
+                '[1]':
+                    discover: 'true'
+                    # Name of the VTEP is of form nsx-vtepX.Y where X is the
+                    # index of the VTEP interface and Y is the index of the
+                    # transport bridge on the host.
+                    name: 'nsx-vtep0.0'
+
+        ConfigureVTEPsIp:
+            Type: NetAdapter
+            TestAdapter: kvm.[1-2].vtep.[1]
+            IPv4: auto
+
+        VerifyVTEPConnectivity:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "kvm.[2].vtep.[1]"
+            SupportAdapter: "kvm.[1].vtep.[1]"
+            TestDuration  : "5"
+
+        CreateVIFs:
+            Type: VM
+            TestVM: 'vm.[1-2]'
+            vif:
+                '[1]':
+                    backing: 'kvm.[x=vm_index].bridge.[1]'
+
+        RegisterHost:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+
+        VerifyLSInfoOnHosts:
+            Type: "Host"
+            TestHost: "kvm.[1-2]"
+            execution_type: 'cli'
+            'get_logical_switch[?]contain_once':
+               table:
+                   - switch_vni: "nsxmanager.[1].logicalswitch.[1]"
+                     replication_mode: 'mtep'
+                     controller_status: 'up'
+
+        VerifyLSwitchConnectionTableOnController:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            # Let the handshake between hosts and CCP complete.
+            sleepbetweenworkloads: 15
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            noofretries: *NUM_RETRIES_QUERY_CONTROLLER
+            get_connection_table[?]contain_once:
+                table:
+                    - adapter_ip: "kvm.[1]->mgmt_ip"
+                    - adapter_ip: "kvm.[2]->mgmt_ip"
+
+        ConfigureVIFIPs:
+            Type: NetAdapter
+            TestAdapter: 'vm.[1-2].vif.[1]'
+            IPv4: auto
+
+        ArpPingVM1:
+            Type: "Traffic"
+            toolName: "ArpPing"
+            TestAdapter: "vm.[1].vif.[1]"
+            SupportAdapter: "vm.[2].vif.[1]"
+            TestDuration: "2"
+            connectivitytest: "0"
+            verification  : 'Verification_0'
+
+        Verification_0:
+            PktCapVerification:
+                target:       'kvm.[1].pif.[1]'
+                pktcapfilter: 'count 100,dst port 7471'
+                verificationtype: 'pktcap'
+                vni:      "nsxmanager.[1].logicalswitch.[1]"
+                pktcount: '2'
+                innerpkttype: 'broadcast'
+                innerl3protocol: 'arp'
+
+        Traffic:
+            Type          : "Traffic"
+            ToolName      : "ping"
+            TestAdapter   : "vm.[2].vif.[1]"
+            SupportAdapter: "vm.[1].vif.[1]"
+            TestDuration  : "10"
+
+        VerifyMacEntriesOnControllers:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            noofretries: *NUM_RETRIES_QUERY_CONTROLLER
+            get_mac_table[?]contain_once:
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                      adapter_mac: "vm.[1].vif.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                      adapter_mac: "vm.[2].vif.[1]"
+
+        VerifyMacEntriesOnHost1:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            get_mac_table[?]contain_once:
+                table:
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+                      adapter_mac: "vm.[2].vif.[1]"
+
+        VerifyMacEntriesOnHost2:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            execution_type: 'cli'
+            get_mac_table[?]contain_once:
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                      adapter_mac: "vm.[1].vif.[1]"
+
+        VerifyLS1VtepEntriesOnControllers:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            noofretries: *NUM_RETRIES_QUERY_CONTROLLER
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyLS1VtepEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            'get_vtep_table[?]contain_once':
+                table:
+                    - adapter_ip: "kvm.[1].vtep.[1]"
+                    - adapter_ip: "kvm.[2].vtep.[1]"
+
+        VerifyTunnelPortsStateOnHost1:
+            Type: "Host"
+            TestHost: "kvm.[1]"
+            execution_type: 'cli'
+            'get_tunnel_ports_remote_ip[?]contain_once':
+                table:
+                    - remote_ip: "kvm.[2].vtep.[1]->ip_address"
+                      forwarding_state: "true"
+
+        VerifyTunnelPortsStateOnHost2:
+            Type: "Host"
+            TestHost: "kvm.[2]"
+            execution_type: 'cli'
+            'get_tunnel_ports_remote_ip[?]contain_once':
+                table:
+                    - remote_ip: "kvm.[1].vtep.[1]->ip_address"
+                      forwarding_state: "true"
+
+        VerifyLSArpEntryOnControllers:
+            Type: Switch
+            execution_type: 'cli'
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'nsxcontroller.[-1]'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            noofretries: *NUM_RETRIES_QUERY_CONTROLLER
+            'get_arp_table[?]contain_once':
+                table:
+                    - adapter_ip:  "vm.[1].vif.[1]"
+                      adapter_mac: "vm.[1].vif.[1]"
+                    - adapter_ip:  "vm.[2].vif.[1]"
+                      adapter_mac: "vm.[2].vif.[1]"
+
+        VerifyLSArpEntryOnHost1:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[1]'
+            'get_arp_table[?]contain_once':
+                table:
+                    - adapter_ip: "vm.[2].vif.[1]"
+                      adapter_mac: "vm.[2].vif.[1]"
+
+        VerifyLSArpEntryOnHost2:
+            Type: "Switch"
+            TestSwitch: "nsxmanager.[1].logicalswitch.[1]"
+            execution_type: 'cli'
+            switch_vni: 'nsxmanager.[1].logicalswitch.[1]'
+            endpoints: 'kvm.[2]'
+            'get_arp_table[?]contain_once':
+                table:
+                    - adapter_ip: "vm.[1].vif.[1]"
+                      adapter_mac: "vm.[1].vif.[1]"
+
+        Create3NodeMPAnd3NodeCCPCluster: *CREATE_3_NODE_MP_AND_3_NODE_CCP_CLUSTER
+        Verify3NodeMPAnd3NodeCCPCluster: *VERIFY_3_NODE_MP_AND_3_NODE_MP_CLUSTER
+        CreateTransportZone: *CREATE_TRANSPORT_ZONE_01
+        CreateTransportNodes: *CREATE_TRANSPORT_NODE_01--KVM
+        CreateLogicalSwitch: *CREATE_LOGICAL_SWITCH_01
+        CreateUplinkProfile: *CREATE_UPLINK_PROFILE_01--KVM
+        AttachVIFtoLogicalSwitch1: *VIF_ATTACHMENT_01--KVM
+        CreateIPDiscoveryProfile: *CREATE_IP_DISCOVERY_PROFILE
+        DeleteAllIPDiscoveryProfiles: *DELETE_ALL_IPDISCOVERY_PROFILES
+        DeleteLogicalSwitch: *DELETE_LOGICAL_SWITCH_01
+        DeleteTransportZone: *DELETE_TRANSPORT_ZONE_01
+        DeleteTransportNode: *DELETE_TRANSPORT_NODE_01
+        DeleteUplinkProfile: *DELETE_UPLINK_PROFILE_01
+        Cleanup3NodesCCPAnd3NodesMPCluster: *CLEANUP_3_NODES_CCP_AND_3_NODES_MP_CLUSTER
+
+        DeleteVIFs:
+            Type: VM
+            TestVM: 'vm.[1-2]'
+            deletevif: 'vm.[x=vm_index].vif.[1]'
+
+        DeleteLogicalPort:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            deletelogicalport: 'nsxmanager.[1].logicalport.[-1]'
+            query_params:
+                detach: 'true'
+
+        DeleteVM1:
+            Type: Root
+            TestNode: 'root.[1]'
+            deletevm: 'vm.[1]'
+
+        DeleteVM2:
+            Type: Root
+            TestNode: 'root.[1]'
+            deletevm: 'vm.[2]'
+
+        UnregisterHost:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            deletehostnode: 'nsxmanager.[1].hostnode.[-1]'
+
+L2UIBasic:
+    Category: L2
+    Component: LCP-ESX
+    Summary: Test case for creation of logical switch through UI
+    Tags: nsx,avalanche
+    Version: 2
+    TestName: L2UIBasic
+    TestbedSpec: *L2_UI_TESTBEDSPEC
+
+    WORKLOADS:
+        Sequence:
+             - ['InitializeBrowserSession']
+             - ['CreateTransportZone']
+             - ['UpdateTransportZone']
+             - ['CreateLogicalSwitch']
+             - ['UpdateLogicalSwitch']
+             - ['CreateLogicalPort']
+             - ['UpdateLogicalPort']
+             - ['DeleteLogicalPort']
+             - ['CreateQoSProfile']
+             - ['DeleteQoSProfile']
+             - ['DeleteLogicalSwitch']
+             - ['DeleteTransportZone']
+        ExitSequence:
+             - ['QuitBrowserSession']
+
+        InitializeBrowserSession:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            uidriver:
+                '[1]':
+                    nsxmanager_url: 'nsxmanager.[1]->base_url'
+                    username: 'admin'
+                    password: 'vmware'
+                    browser_name: 'chrome'
+                    client_id: 'client-id'
+
+        QuitBrowserSession:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            quituidriver: "nsxmanager.[1].uidriver.[1]"
+
+        CreateLogicalSwitch:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            logicalswitch:
+                '[1]':
+                    name: 'ls-demo-ui'
+                    summary: 'ls created through ui automation'
+                    transport_zone_id: 'nsxmanager.[1].transportzone.[1]'
+                    admin_state: Up
+                    replication_mode: MTEP
+                    vlan: '4'
+
+        UpdateLogicalSwitch:
+            Type: Switch
+            TestSwitch: 'nsxmanager.[1].logicalswitch.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            reconfigure:
+                admin_state: Down
+
+        DeleteLogicalSwitch:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            deletelogicalswitch: "nsxmanager.[1].logicalswitch.[1]"
+
+        CreateLogicalPort:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            logicalport:
+                '[1]':
+                    name: 'lp-demo-ui'
+                    summary: 'lp created through ui automation'
+                    switch_name: 'nsxmanager.[1].logicalswitch.[1]'
+                    admin_state: Up
+                    attachment:
+                       attachment_type : vif
+                       id_: 'uuid'
+
+        UpdateLogicalPort:
+            Type: Port
+            TestPort: 'nsxmanager.[1].logicalport.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            reconfigure:
+               admin_state: Down
+
+        DeleteLogicalPort:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1].logicalport.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            deletelogicalport: "nsxmanager.[1].logicalport.[1]"
+
+        CreateQoSProfile:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            qos_profile:
+                '[1]':
+                    name: 'qos_demo'
+                    summary: 'qos demo'
+                    resource_type: 'qos'
+                    dscp:
+                        priority: 4
+                        mode: 'Trusted'
+                    burst_size: 4
+                    class_of_service: 4
+                    peak_bandwidth: 4
+                    average_bandwidth: 4
+
+        DeleteQoSProfile:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            deleteqos_profile: "nsxmanager.[1].qos_profile.[1]"
+
+        CreateTransportZone:
+            Type: NSX
+            TestNSX: nsxmanager.[1]
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            transportzone:
+                '[1]':
+                    name: 'tz_demo'
+                    transport_zone_type: 'VLAN' # or OVERLAY, both case-senstive
+                    summary: 'tz created through ui automation'
+                    switch_name: 'nsxvswitch'
+
+        UpdateTransportZone:
+            Type: TransportZone
+            TestTransportZone: 'nsxmanager.[1].transportzone.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            reconfigure:
+               summary: 'tz created through ui automation updated'
+
+        DeleteTransportZone:
+            Type: NSX
+            TestNSX: 'nsxmanager.[1]'
+            sleepbetweenworkloads: 10
+            execution_type: 'ui'
+            deletetransportzone: "nsxmanager.[1].transportzone.[1]"

@@ -1,0 +1,148 @@
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/VMWorkload.yaml' %}
+{% include 'TDS/NSXTransformers/L3/DHCPRelay/CommonWorkloads.yaml' %}
+
+CreateServiceProfileNegative:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "Create DHCP Relay Service Profile Negative"
+    Version: "2"
+    Summary: "Verify that a DHCP Relay Service Profile is not created"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Procedure: '1. Create a service profile with invalid parameters
+                2. Verify service profile does not get created'
+    ExpectedResult: 'Service Profile should not be created'
+    Duration: '5'
+    Tags: 'nsx,avalanche'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        <<: *CommonWorkloads
+        Sequence:
+            - ["CreateDHCPRelayServiceProfile1"]
+            - ["CreateDHCPRelayServiceProfile2"]
+        CreateDHCPRelayServiceProfile1:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            dhcprelay_profile:
+                '[1]':
+                    resource_type: 'DhcpRelayProfile'
+                    ipaddresses: []
+            ExpectedResult:
+                status_code: "BAD_REQUEST"
+        CreateDHCPRelayServiceProfile2:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            dhcprelay_profile:
+                '[1]':
+                    resource_type: 'DhcpRelayProfile'
+                    ipaddresses: ['abcd', '12345', '192.168.1.1.1']
+            ExpectedResult:
+                status_code: "BAD_REQUEST"
+
+UpdateServiceProfile:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "Update DHCP Relay Service Profile"
+    Version: "2"
+    Summary: "Verify that a DHCP Relay Service Profile is updated"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Procedure: '1. Create a service profile
+                2. Update Service profile
+                3. Verify service profile gets updated'
+    ExpectedResult: 'Service Profile gets updated successfully'
+    Duration: '5'
+    Tags: 'nsx,avalanche'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        <<: *CommonWorkloads
+        Sequence:
+            - ["CreateDHCPRelayServiceProfile1"]
+            - ["UpdateDHCPRelayServiceProfile"]
+            - ["ReadDHCPRelayServiceProfile"]
+        ExitSequence:
+            - ["DeleteDHCPRelayServiceProfile"]
+        UpdateDHCPRelayServiceProfile:
+            Type: "Service"
+            TestService: "nsxmanager.[1].dhcprelay_profile.[1]"
+            reconfigure: true
+            resource_type: 'DhcpRelayProfile'
+            ipaddresses:
+              - '192.168.1.3'
+              - '192.168.2.3'
+        ReadDHCPRelayServiceProfile:
+            Type: "Service"
+            TestService: "nsxmanager.[1].dhcprelay_profile.[1]"
+            read:
+               'resource_type[?]equal_to': 'DhcpRelayProfile'
+               'ipaddresses[?]equal_to':
+                   - '192.168.1.3'
+                   - '192.168.2.3'
+
+LRportServiceProfileDependency:
+    Product: "NSXTransformers"
+    Category: "L3"
+    Component: "DHCP Relay"
+    TestName: "Test dependency between LR Port and service profile"
+    Version: "2"
+    Summary: "Verify that service profile cannot be deleted before deleting the
+              binding between LR Port"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P0"
+    Developer: "mbindal"
+    Procedure: "1. Create DHCP Relay service profile
+                2. Create LR
+                3. Create LR port on the LR
+                4. Bind the LR port to the DHCP Relay service profile
+                5. Remove the DHCP Relay service profile
+                6. Verify DHCP Relay service profile cannot be removed"
+    ExpectedResult: 'Service profile cannot be deleted'
+    Duration: '5'
+    Tags: 'nsx,avalanche'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None`
+    WORKLOADS:
+        <<: *CommonWorkloads
+        Sequence:
+            - ["CreateDHCPRelayServiceProfile1"]
+            - ["CreateDHCPRelayService1"]
+            - ["CreateTLR1"]
+            - ["CreateLRPort"]
+            - ["CreateService1BindingLRPort1"]
+            - ["DeleteDHCPRelayServiceProfileError"]
+            - ["DeleteLRPort1DHCPRelayServiceBinding"]
+            - ["DeleteDHCPRelayService"]
+            - ["DeleteDHCPRelayServiceProfile"]
+        ExitSequence:
+            - ["DeleteLogicalRouterPort"]
+            - ["DeleteLogicalRouter"]

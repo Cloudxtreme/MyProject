@@ -1,0 +1,3339 @@
+#####################################################################
+#                 P0 Test Cases                                     |
+#####################################################################
+
+ClientGetsRebootedWithinRMQClientHeartbeatTimeout:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ClientGetsRebootedWithinRMQClientHeartbeatTimeout'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Client Gets Rebooted Within RMQClient Heartbeat Timeout'
+    Procedure: '1. Connect RMQ client [MPA or CCP or Edge]
+                2. Reboot RMQ client [HV]
+                3. Client should connect back and use existing RMQ queues'
+    ExpectedResult: 'Client should connect back to RMQ server after it comes up and re-use the RMQ queues'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'satveerg'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *HostWorkloads
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['RebootMPA']
+             - ['VerifyClientListAfterClientReboot']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        VerifyClientListAfterClientReboot:
+            <<: *VERIFY_CLIENT_LIST
+            sleepbetweenworkloads: 120
+
+MultipleClientsOfSameTypeConnectingToOneRMQServer:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'MultipleClientsOfSameTypeConnectingToOneRMQServer'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Multiple clients of same type should be able to connect to same message RMQ server'
+    Procedure: ' 1. Create a single node cluster
+                 2. Connect multiple RMQ clients of same type
+                 3. Make sure all clients are able to communicate with RMQ server successfully'
+    ExpectedResult: 'Multiple clients should be able to connect to same RMQ server'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'satveerg'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+MultipleClientsOfDifferentTypeConnectingToOneRMQServer:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'MultipleClientsOfDifferentTypeConnectingToOneRMQServer'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Multiple clients of different types should be able to connect to same message RMQ server'
+    Procedure: '1. Create a single node cluster
+                2. Connect multiple RMQ clients of different type
+                3. Make sure all clients are able to communicate with RMQ server successfully'
+    ExpectedResult: 'Multiple clients should be able to connect to same RMQ server'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'satveerg'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+MultipleVerticalsOfSameRMQClientConnectingToOneRMQServer:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'MultipleVerticalsOfSameRMQClientConnectingToOneRMQServer'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Multiple Verticals Of Same RMQClient Connecting To One RMQServer'
+    Procedure: '  1. Multiple verticals of same client Connecting To One RMQServer'
+    ExpectedResult: '1. After step 1 - All verticals should be able to communicate to RMQ Server'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'satveerg'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *VMWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['AddVm']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+        ExitSequence:
+             - ['DeleteVm']
+
+#####################################################################
+#                 P1 Test Cases                                     |
+#####################################################################
+
+GetListOfClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetListOfClients'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Get list of clients connected to RMQ server'
+    Procedure: '1. Connect few RMQ clients of different types [MPA,CCP,edge]
+                2. Get list of clients should return all clients'
+    ExpectedResult: 'API should list all RMQ clients'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'satveerg'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+
+GetListOfClientsByClientType:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetListOfClientsByClientType'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Get list of clients based on specified client-type'
+    Procedure: '1. Connect few RMQ clients of different types [MPA,CCP,edge]
+                2. Get lists of clients using client type'
+    ExpectedResult: 'All clients of the specified type should be listed'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'satveerg'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['GetClientByTypeHv']
+             - ['GetClientByTypeCCP']
+
+GetPingStatusOfClient:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetPingStatusOfClient'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Get ping status of the client'
+    Procedure: '1. Connect few RMQ clients of different types [MPA,CCP,edge]
+                2. Get ping status of the client'
+    ExpectedResult: 'Ping client should return success'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'satveerg'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+GetClientDetails:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetClientDetails'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Get client details'
+    Procedure: '1. Connect few RMQ clients of different types [MPA,CCP,edge]
+                2. Get client details'
+    ExpectedResult: 'Client details should get retrieved'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'satveerg'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['GetClientsById']
+
+MPNodeRebootInaSingleNodeCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'MPNodeRebootInaSingleNodeCluster'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should be able to connect to RMQ server after node reboot'
+    Procedure: '  1. Connect clients to MP node
+                2. Reboot MP Node'
+    ExpectedResult: 'After step 2 - Client should connect back after MP node comes up'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'satveerg'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *ApplianceWorkloads
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['RebootMPNode1']
+             - ['MapNSXManager1ToCluster']
+             - ['WaitForClusterStatusStableOnNode1']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+VerticalGetsRebooted:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerticalGetsRebooted'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'RMQ server functionality when vertical [inventory agent] get rebooted'
+    Procedure: '1. Connect RMQ client [MPA or CCP or Edge]
+                2. Reboot vertical [Inventory agent]
+                3. Communication between RMQ clients and server should not be affected due to this.
+                4. Vertical should connect back after it comes up'
+    ExpectedResult: 'Communication between RMQ clients and server should not affect due to this.'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'satveerg'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *HostWorkloads
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['RebootDA']
+             - ['VerifyClientListAfterRebootDA']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        VerifyClientListAfterRebootDA:
+            <<: *VERIFY_CLIENT_LIST
+            sleepbetweenworkloads: 60
+
+VerticalGoesDown:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerticalGoesDown'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'RMQ server functionality when vertical [inventory agent] get rebooted'
+    Procedure: '1. Connect RMQ client [MPA or CCP or Edge]
+                2. Shutdown vertical [Inventory agent]
+                3. Start vertical [Inventory agent]
+                4. Communication between RMQ clients and server should not be affected due to this.
+                5. Vertical should connect back after it comes up'
+    ExpectedResult: 'Communication between RMQ clients and server should not affect due to this.'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *HostWorkloads
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['StopDA']
+             - ['StartDA']
+             - ['VerifyClientListAfterStartingDA']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        VerifyClientListAfterStartingDA:
+            <<: *VERIFY_CLIENT_LIST
+            sleepbetweenworkloads: 60
+
+VerticalGetsRebootedContinuously:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerticalGetsRebootedContinuously'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'RMQ server functionality when vertical [inventory agent] get rebooted'
+    Procedure: '1. Connect RMQ client [MPA or CCP or Edge]
+                2. Reboot vertical [Inventory agent] multiple times
+                3. Communication between RMQ clients and server should not be affected due to this.
+                4. Vertical should connect back after it comes up'
+    ExpectedResult: 'Communication between RMQ clients and server should not affect due to this.'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *HostWorkloads
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['RebootDA']
+             - ['RebootDA']
+             - ['RebootDA']
+             - ['RebootDA']
+             - ['RebootDA']
+             - ['VerifyClientListAfterRebootDA']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        VerifyClientListAfterRebootDA:
+            <<: *VERIFY_CLIENT_LIST
+            sleepbetweenworkloads: 60
+
+VerticalCrash:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerticalCrash'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'RMQ server functionality when vertical [inventory agent] get rebooted'
+    Procedure: '1. Connect RMQ client [MPA or CCP or Edge]
+                2. Crash vertical [Inventory agent]
+                3. Communication between RMQ clients and server should not be affected due to this.
+                4. Vertical should connect back after it comes up'
+    ExpectedResult: 'Communication between RMQ clients and server should not affect due to this.'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *HostWorkloads
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['KillDA']
+             - ['StartDA']
+             - ['VerifyClientListAfterDACrash']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        StartDA:
+            Type: Host
+            TestHost: 'esx.[1]'
+            expectedResult: ignore
+            configure_service_state:
+                state: 'start'
+                service_name: 'nsx-da'
+                execution_type: 'cli'
+
+        VerifyClientListAfterDACrash:
+            <<: *VERIFY_CLIENT_LIST
+            sleepbetweenworkloads: 60
+
+NoVerticalUp:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'NoVerticalUp'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'RMQ server functionality when vertical [inventory agent] get rebooted'
+    Procedure: '1. Connect RMQ client [MPA or CCP or Edge]
+                2. Shutdown vertical [Inventory agent]
+                3. Communication between RMQ clients and server should not be affected due to this.
+                4. Start vertical [Inventory agent]
+                5. Vertical should connect back after it comes up'
+    ExpectedResult: 'Communication between RMQ clients and server should not affect due to this.'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *HostWorkloads
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['StopDA']
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['StartDA']
+
+RMQServerGetsRebootedInSingleNodeCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RMQServerGetsRebootedInSingleNodeCluster'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should be able to connect back after RMQ server comes up'
+    Procedure: '1. Connect RMQ client [MPA or CCP or Edge]
+                2. Reboot RMQ server using rabbitmqctl CLI command
+                3. Client should connect back after RMQ server comes up
+                4. Get list of rmq clients
+                5. Get client status'
+    ExpectedResult: 'Clients should be able to connect to RMQ server after node comes up'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *ApplianceWorkloads
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['SetServiceId']
+             - ['RestartRabbitmqService']
+             - ['VerifyClientListAfterRMQServerRestart']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        VerifyClientListAfterRMQServerRestart:
+            <<: *VERIFY_CLIENT_LIST
+            sleepbetweenworkloads: 60
+
+RMQServerGoesDownInSingleNodeCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RMQServerGoesDownInSingleNodeCluster'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should be able to connect back after RMQ server comes up'
+    Procedure: '1. Connect RMQ client [MPA or CCP or Edge]
+                2. Stop RMQ server using rabbitmqctl CLI command and start it after some time
+                3. Client should connect back after RMQ server comes up
+                4. Get list of rmq clients
+                5. Get client status'
+    ExpectedResult: 'Clients should be able to connect to RMQ server after node comes up'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *ApplianceWorkloads
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['SetServiceId']
+             - ['StopRabbitmqService']
+             - ['StartRabbitmqService']
+             - ['VerifyClientListAfterRMQServerRestart']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        VerifyClientListAfterRMQServerRestart:
+            <<: *VERIFY_CLIENT_LIST
+            sleepbetweenworkloads: 60
+
+GetClientDetailsUsingIncorrectClientId:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetClientDetailsUsingIncorrectClientId'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Get client details should return valid error message for invalid client-id'
+    Procedure: '1. Get client details for invalid client-id'
+    ExpectedResult: 'Get client details should return valid error message for invalid client-id'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['SetClientId']
+             - ['GetClientsDetailsUsingIncorrectId']
+
+GetListOfClientsByUnsupportedClientType:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetListOfClientsByUnsupportedClientType'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Get list of clients based on specified un-supported client-type'
+    Procedure: '1. Get lists of clients based on un-supported query parameter'
+    ExpectedResult: 'Get client details should return valid error message for unsupported client type'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['GetClientByUnsupportedType']
+
+MultipleVerticalsOfDifferentRMQClientConnectingToOneRMQServer:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'MultipleVerticalsOfDifferentRMQClientConnectingToOneRMQServer'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Multiple verticals from different clients should be able to connect to same message RMQ server'
+    Procedure: '1. Create a single node cluster
+                2. Connect multiple verticals from different RMQ clients connecting to RMQ server
+                3. Make sure all verticals are able to communicate with RMQ server successfully'
+    ExpectedResult: 'Multiple verticals should be able to connect to same RMQ server'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *VMWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['AddVm']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+        ExitSequence:
+             - ['DeleteVm']
+
+GetHeartbeatStatusOfClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetHeartbeatStatusOfClients'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Get heart beat status of the client'
+    Procedure: '1. Connect few RMQ clients of different types [MPA,CCP,edge]
+                2. Get RMQ client heart beat status of different client types'
+    ExpectedResult: 'Heartbeat status of clients should be UP.'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+
+MPNodeGetsRebootedInMultiNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'MPNodeGetsRebootedInMultiNodeMPCluster'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should be able to connect to other RMQ server'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Reboot one MP node
+                4. Client should connect to another MP nodes[RMQ servers]
+                5. Get list of rmq clients
+                6. Get client status
+                7. RMQ should re-distribute RMQ clients after MP node comes up
+                8. Get list of rmq clients
+                9. Get client status'
+    ExpectedResult: 'Clients should be able to connect to other RMQ server'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Restart_MP_Node3']
+             - ['VerifyDistributedClientCountOnMPNode1AndMPNode2']
+             - ['MapNSXManager1ToCluster']
+             - ['WaitForClusterStatusStableOnNode3']
+             - ['VerifyDistributedClientCount']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        WaitForClusterStatusStableOnNode3:
+             <<: *WAIT_FOR_STABLE_STATE_ON_NODE_3
+             sleepbetweenworkloads: 120
+
+MPNodeGoesDownInMultiNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'MPNodeGoesDownInMultiNodeMPCluster'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should be able to connect to other RMQ server'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Bring down one MP node
+                4. Client should connect to another MP nodes[RMQ servers]
+                5. Get list of rmq clients
+                6. Get client status
+                7. Bring up MP node
+                8. RMQ should re-distribute RMQ clients after MP node comes up
+                9. Get list of rmq clients
+                10. Get client status'
+    ExpectedResult: 'Clients should be able to connect to other RMQ server'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Poweroff_MP_Node3']
+             - ['VerifyDistributedClientCountOnMPNode1AndMPNode2']
+             - ['Poweron_MP_Node3']
+             - ['MapNSXManager1ToCluster']
+             - ['WaitForClusterStatusStableOnNode3']
+             - ['VerifyDistributedClientCount']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        VerifyDistributedClientCountOnMPNode1AndMPNode2:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT_ON_NODE1_NODE2
+             sleepbetweenworkloads: 60
+
+        WaitForClusterStatusStableOnNode3:
+             <<: *WAIT_FOR_STABLE_STATE_ON_NODE_3
+             sleepbetweenworkloads: 120
+
+MPNodeGetsRebootedContinuouslyInMultiNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'MPNodeGetsRebootedContinuouslyInMultiNodeMPCluster'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should be able to connect to other RMQ server'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Reboot one MP node
+                4. Client should connect to another MP nodes[RMQ servers]
+                5. Get list of rmq clients
+                6. Get client status
+                7. RMQ should re-distribute RMQ clients after MP node comes up
+                8. Get list of rmq clients
+                9. Get client status'
+    ExpectedResult: 'Clients should be able to connect to other RMQ server'
+    Duration: '800'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Restart_MP_Node3']
+             - ['VerifyDistributedClientCountOnMPNode1AndMPNode2']
+             - ['Restart_MP_Node3_Again']
+             - ['VerifyDistributedClientCountOnMPNode1AndMPNode2']
+             - ['Restart_MP_Node3_Again']
+             - ['VerifyDistributedClientCountOnMPNode1AndMPNode2']
+             - ['MapNSXManager1ToCluster']
+             - ['WaitForClusterStatusStableOnNode3']
+             - ['VerifyDistributedClientCount']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        Restart_MP_Node3_Again:
+             <<: *RESTART_MP_NODE_3
+             sleepbetweenworkloads: 90
+
+        WaitForClusterStatusStableOnNode3:
+             <<: *WAIT_FOR_STABLE_STATE_ON_NODE_3
+             sleepbetweenworkloads: 120
+
+MPNodeGoesDownInSingleNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'MPNodeGoesDownInSingleNodeMPCluster'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should be able to connect back to RMQ server'
+    Procedure: '1. Create a single node MP cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Bring down MP node and power it on
+                4. Client should connect back to another MP node[RMQ servers]
+                5. Get list of rmq clients
+                6. Get client status'
+    ExpectedResult: 'Clients should be able to connect back to RMQ server'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Poweroff_MP_Node1']
+             - ['Poweron_MP_Node1']
+             - ['MapNSXManager1ToCluster']
+             - ['WaitForClusterStatusStableOnNode1']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+MPNodeCrashInMultiNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'MPNodeCrashInMultiNodeMPCluster'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should be able to connect to other RMQ server'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Crash one MP node
+                4. Client should connect to another MP nodes[RMQ servers]
+                5. Get list of rmq clients
+                6. Get client status
+                7. Bring up MP node
+                8. RMQ should re-distribute RMQ clients after MP node comes up
+                9. Get list of rmq clients
+                10. Get client status'
+    ExpectedResult: 'Clients should be able to connect to other RMQ server'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Crash_MP_Node3']
+             - ['VerifyDistributedClientCountOnMPNode1AndMPNode2']
+             - ['Poweron_MP_Node3']
+             - ['MapNSXManager1ToCluster']
+             - ['WaitForClusterStatusStableOnNode3']
+             - ['VerifyDistributedClientCount']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        VerifyDistributedClientCountOnMPNode1AndMPNode2:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT_ON_NODE1_NODE2
+             sleepbetweenworkloads: 60
+
+        WaitForClusterStatusStableOnNode3:
+             <<: *WAIT_FOR_STABLE_STATE_ON_NODE_3
+             sleepbetweenworkloads: 120
+
+RMQServerGetsRebootedInMultiNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RMQServerGetsRebootedInMultiNodeMPCluster'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should be able to connect to other RMQ server'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Reboot RMQ Server on one MP node
+                4. Client should connect to another MP nodes[RMQ servers]
+                5. Get list of rmq clients
+                6. Get client status
+                7. RMQ should re-distribute RMQ clients after RMQ server comes up
+                8. Get list of rmq clients
+                9. Get client status'
+    ExpectedResult: 'Clients should be able to connect to other RMQ server'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['SetServiceId']
+             - ['RestartRabbitmqServiceOnMPNode3']
+             - ['VerifyDistributedClientCountOnMPNode1AndMPNode2']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        RestartRabbitmqServiceOnMPNode3:
+             <<: *RESTART_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        VerifyDistributedClientCountOnMPNode1AndMPNode2:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT_ON_NODE1_NODE2
+             sleepbetweenworkloads: 5
+
+RMQServerGoesDownInMultiNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RMQServerGoesDownInMultiNodeMPCluster'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should be able to connect to other RMQ server'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Bring down RMQ Server on one MP node
+                4. Client should connect to another MP nodes[RMQ servers]
+                5. Get list of rmq clients
+                6. Get client status
+                7. Bring up RMQ server
+                8. RMQ should re-distribute RMQ clients after RMQ server comes up
+                9. Get list of rmq clients
+                10. Get client status'
+    ExpectedResult: 'Clients should be able to connect to other RMQ server'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['SetServiceId']
+             - ['StopRabbitmqServiceOnMPNode3']
+             - ['VerifyDistributedClientCountOnMPNode1AndMPNode2']
+             - ['StartRabbitmqServiceOnMPNode3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        StopRabbitmqServiceOnMPNode3:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode3:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        VerifyDistributedClientCountOnMPNode1AndMPNode2:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT_ON_NODE1_NODE2
+             sleepbetweenworkloads: 5
+
+ConcurrentFailuresOfRMQServerInMultiNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ConcurrentFailuresOfRMQServerInMultiNodeMPCluster'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Node/client should not crash'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Bring down all RMQ Servers concurrently
+                4. Bring up RMQ servers
+                5. Get list of rmq clients
+                6. Get client status'
+    ExpectedResult: 'RMQ clients should not crash'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['SetServiceId']
+             - ['StopRabbitmqServiceOnMPNode1', 'StopRabbitmqServiceOnMPNode2', 'StopRabbitmqServiceOnMPNode3']
+             - ['StartRabbitmqServiceOnMPNode1', 'StartRabbitmqServiceOnMPNode2', 'StartRabbitmqServiceOnMPNode3']
+             - ['VerifyClientList']
+             - ['VerifyDistributedClientCount']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        StopRabbitmqServiceOnMPNode1:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StopRabbitmqServiceOnMPNode2:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StopRabbitmqServiceOnMPNode3:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode1:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode2:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode3:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+ProtonServiceGoesDownInMultiNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ProtonServiceGoesDownInMultiNodeMPCluster'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Other MP node should be able to handle messages'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Bring down Proton service on one MP node
+                4. Other MP node in a cluster should take over
+                5. RMQ server should forward messages to other MP node'
+    ExpectedResult: 'RMQ server should forward messages to other MP node'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['SetServiceId']
+             - ['StopProtonServiceOnMPNode3']
+             - ['StartProtonServiceOnMPNode3']
+             - ['MapNSXManager1ToCluster']
+             - ['WaitForClusterStatusStableOnNode3']
+             - ['VerifyDistributedClientCount']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+
+        StopProtonServiceOnMPNode3:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode3:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT
+
+        WaitForClusterStatusStableOnNode3:
+             <<: *WAIT_FOR_STABLE_STATE_ON_NODE_3
+             sleepbetweenworkloads: 60
+
+ProtonServiceOnAllNodesGoesDownInMultiNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ProtonServiceOnAllNodesGoesDownInMultiNodeMPCluster'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'RMQ server & client should not crash'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Bring down Proton service on all MP nodes'
+    ExpectedResult: 'RMQ server & client should not crash'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['SetServiceId']
+             - ['StopProtonServiceOnMPNode3']
+             - ['StopProtonServiceOnMPNode2']
+             - ['StopProtonServiceOnMPNode1']
+             - ['StartProtonServiceOnMPNode1']
+             - ['StartProtonServiceOnMPNode2']
+             - ['StartProtonServiceOnMPNode3']
+             - ['WaitForStableClusterState']
+             - ['VerifyDistributedClientCount']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+
+        StopProtonServiceOnMPNode1:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StopProtonServiceOnMPNode2:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StopProtonServiceOnMPNode3:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode1:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode2:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode3:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+ClientGetsRebootedContinuously:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ClientGetsRebootedContinuously'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Client gets rebooted continuously'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. RMQ client gets rebooted continuously.
+                4. Make sure RMQ servers in a cluster didnt crash
+                5. Client should connect back when it comes up'
+    ExpectedResult: 'Clients should be able to connect back to RMQ server when it comes up'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Reboot_CCP_Node1']
+             - ['Reboot_CCP_Node1_Again']
+             - ['Reboot_CCP_Node1_Again']
+             - ['VerifyDistributedClientCount']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+
+        Reboot_CCP_Node1_Again:
+             <<: *REBOOT_CCP_NODE_1
+             sleepbetweenworkloads: 60
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT
+             noofretries: 3
+             sleepbetweenretry: 60
+
+ClientGoesDownAndComesUpAfterHeartbeatTimeout:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ClientGoesDownAndComesUpAfterHeartbeatTimeout'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Client should connect back with new RMQ queues'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Shutdown RMQ client [HV] and bring up after hearbeat gets timed out
+                4. Client should connect back with new RMQ queues'
+    ExpectedResult: 'Client should connect back with new RMQ queues'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Poweroff_CCP_Node1']
+             - ['Poweron_CCP_Node1']
+             - ['VerifyDistributedClientCount']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+
+        Poweron_CCP_Node1:
+             <<: *POWERON_CCP_NODE_1
+             sleepbetweenworkloads: 120
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT
+             noofretries: 3
+             sleepbetweenretry: 60
+
+ClientCrashInMultiNodeMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ClientCrashInMultiNodeMPCluster'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Client should connect back with new RMQ queues'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Crash one client and start it after some time
+                4. Client should connect back with new RMQ queues'
+    ExpectedResult: 'Client should connect back with new RMQ queues'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Crash_CCP_Node1']
+             - ['Poweron_CCP_Node1']
+             - ['VerifyDistributedClientCount']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+
+        Poweron_CCP_Node1:
+             <<: *POWERON_CCP_NODE_1
+             sleepbetweenworkloads: 10
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT
+             noofretries: 3
+             sleepbetweenretry: 60
+
+ClusterGoesDown:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ClusterGoesDown'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should connect back when cluster comes up'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Bring down cluster
+                4. Bring up cluster
+                5. Verify clients connect back when cluster comes up'
+    ExpectedResult: 'Clients should connect back when cluster comes up'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Poweroff_MP_Node3']
+             - ['Poweroff_MP_Node2']
+             - ['Poweroff_MP_Node1']
+             - ['Poweron_MP_Node1']
+             - ['Poweron_MP_Node2']
+             - ['Poweron_MP_Node3']
+             - ['WaitForStableClusterState']
+             - ['VerifyDistributedClientCount']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT
+             noofretries: 3
+             sleepbetweenretry: 60
+
+ClusterCrash:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ClusterCrash'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should connect back when cluster comes up'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Crash all cluster nodes
+                4. Bring up cluster
+                5. Verify clients connect back when cluster comes up'
+    ExpectedResult: 'Clients should connect back when cluster comes up'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Crash_MP_Node3']
+             - ['Crash_MP_Node2']
+             - ['Crash_MP_Node1']
+             - ['Poweron_MP_Node1']
+             - ['Poweron_MP_Node2']
+             - ['Poweron_MP_Node3']
+             - ['WaitForStableClusterState']
+             - ['VerifyDistributedClientCount']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT
+             noofretries: 3
+             sleepbetweenretry: 60
+
+ClusterGetsRebooted:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ClusterGetsRebooted'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Clients should connect back when cluster comes up'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Reboot all cluster nodes
+                4. Verify clients connect back when cluster comes up'
+    ExpectedResult: 'Clients should connect back when cluster comes up'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Restart_MP_Node1', 'Restart_MP_Node2', 'Restart_MP_Node3']
+             - ['WaitForStableClusterState']
+             - ['VerifyDistributedClientCount']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT
+             noofretries: 3
+             sleepbetweenretry: 60
+
+ConcurrentFailuresOfClusterNodes:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'ConcurrentFailuresOfClusterNodes'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'RMQ server and clients should not crash'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients [MPA or CCP or Edge]
+                3. Reboot two cluster nodes
+                4. Verify clients are connected with RMQ server'
+    ExpectedResult: 'Clients should be connected with RMQ server'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['Poweroff_MP_Node3', 'Poweroff_MP_Node2']
+             - ['Poweron_MP_Node2']
+             - ['Poweron_MP_Node3']
+             - ['SetServiceId']
+             - ['StopProtonService']
+             - ['StartProtonService']
+             - ['WaitForStableClusterState']
+             - ['VerifyDistributedClientCount']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+
+        StopProtonService:
+             <<: *STOP_PROTON_SERVICE
+             sleepbetweenworkloads: 150
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT
+             noofretries: 2
+             sleepbetweenretry: 60
+
+AddNewMPNodeToCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'AddNewMPNodeToCluster'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify clients are getting redistributed after adding MP node'
+    Procedure: '1. Connect few RMQ clients of different types [MPA,CCP,edge]
+                2. Verify clients are connected properly
+                3. Add new MP node to MP cluster
+                4. Verify clients are getting redistributed on two MP nodes'
+    ExpectedResult: 'Clients should get redistributed after adding new MP node'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        <<: *DeploymentWorkloads
+        Sequence:
+             - ["MapNSXManager1ToCluster"]
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ["DeployNSXManager2"]
+             - ["AddMPNode2ToCluster"]
+             - ["MapNSXManager2ToCluster"]
+             - ["WaitForClusterStatusStableOnNode1"]
+             - ["WaitForClusterStatusStableOnNode2"]
+             - ['VerifyDistributedClientCount']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+        ExitSequence:
+             - ["SetServiceId"]
+             - ["StopProtonServiceOnMPNode2"]
+             - ["RemoveMP_Node2"]
+             - ["Poweroff_MP_Node2"]
+             - ["DeleteNSXManager2"]
+             - ["WaitForClusterStatusStableOnNode1"]
+
+        AddMPNode2ToCluster:
+             <<: *ADD_MP_NODE_2_TO_CLUSTER
+             sleepbetweenworkloads: 120
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT_ON_NODE1_NODE2
+             noofretries: 2
+             sleepbetweenretry: 60
+             sleepbetweenworkloads: 150
+
+        StopProtonServiceOnMPNode2:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+RemoveMPNodeFromCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RemoveMPNodeFromCluster'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify clients are getting redistributed after adding MP node'
+    Procedure: '1. Connect few RMQ clients of different types [MPA,CCP,edge]
+                2. Verify clients are connected properly
+                3. Remove one MP node from MP cluster
+                4. Verify clients are getting connected back to last MP node in cluster'
+    ExpectedResult: 'Clients should get connected back to last MP node in cluster'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        <<: *DeploymentWorkloads
+        Sequence:
+             - ["MapNSXManager1ToCluster"]
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ["DeployNSXManager2"]
+             - ["AddMPNode2ToCluster"]
+             - ["MapNSXManager2ToCluster"]
+             - ["WaitForClusterStatusStableOnNode1"]
+             - ["WaitForClusterStatusStableOnNode2"]
+             - ['VerifyDistributedClientCount']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ["SetServiceId"]
+             - ["StopProtonServiceOnMPNode2"]
+             - ["RemoveMP_Node2"]
+             - ["WaitForClusterStatusStableOnNode1"]
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+        ExitSequence:
+             - ["Poweroff_MP_Node2"]
+             - ["DeleteNSXManager2"]
+
+        AddMPNode2ToCluster:
+             <<: *ADD_MP_NODE_2_TO_CLUSTER
+             sleepbetweenworkloads: 120
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT_ON_NODE1_NODE2
+             noofretries: 2
+             sleepbetweenretry: 60
+             sleepbetweenworkloads: 150
+
+        StopProtonServiceOnMPNode2:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+IntermittentConnectivityBetweenClientAndRMQServer:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'IntermittentConnectivityBetweenClientAndRMQServer'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify client remains connected with RMQ server even after network connection flip flop'
+    Procedure: '1. Connect few RMQ clients of different types [MPA,CCP,edge]
+                2. Verify clients are connected properly
+                3. Block and unblock network connection between client and RMQ server multiple times
+                4. Verify clients are connected properly even after network connection flip flop'
+    ExpectedResult: 'Clients should remain connected to RMQ server even after network connection flip flop'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,single_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *1MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        <<: *DeploymentWorkloads
+        Sequence:
+             - ["MapNSXManager1ToCluster"]
+             - ['GetClients']
+             - ['VerifyClientList']
+             - ['PingClient_1']
+             - ['PingClient_2']
+             - ['PingClient_3']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+             - ['BlockNSXController1TrafficFromNSXManager1']
+             - ['UnblockNSXController1TrafficFromNSXManager1']
+             - ['BlockNSXController1TrafficFromNSXManager1']
+             - ['UnblockNSXController1TrafficFromNSXManager1']
+             - ['BlockNSXController1TrafficFromNSXManager1']
+             - ['UnblockNSXController1TrafficFromNSXManager1']
+             - ['PingClient1AfterNetworkFlipFlop']
+             - ['PingClient2AfterNetworkFlipFlop']
+             - ['PingClient3AfterNetworkFlipFlop']
+             - ['VerifyHeartbeatStatusOfClient1']
+             - ['VerifyHeartbeatStatusOfClient2']
+             - ['VerifyHeartbeatStatusOfClient3']
+
+        BlockNSXController1TrafficFromNSXManager1:
+             <<: *BLOCK_NSXCONTROLLER1_TRAFFIC_FROM_NSXMANAGER1
+             sleepbetweenworkloads: 60
+
+        UnblockNSXController1TrafficFromNSXManager1:
+             <<: *UNBLOCK_NSXCONTROLLER1_TRAFFIC_FROM_NSXMANAGER1
+             sleepbetweenworkloads: 120
+
+        PingClient1AfterNetworkFlipFlop:
+             <<: *PING_CLIENT_1
+             noofretries: 3
+             sleepbetweenretry: 60
+
+        PingClient2AfterNetworkFlipFlop:
+             <<: *PING_CLIENT_2
+             noofretries: 3
+             sleepbetweenretry: 60
+
+        PingClient3AfterNetworkFlipFlop:
+             <<: *PING_CLIENT_3
+             noofretries: 3
+             sleepbetweenretry: 60
+
+#####################################################################
+#                 Messaging Test-cases with Edge as a client        #
+#####################################################################
+
+PingEdgeClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'PingEdgeClients'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify edge clients respond to RMQ server response'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two ESX, one CCP and two Edge nodes as client
+                3. Ping edge clients from one of the NSXManager
+                4. Verify edge clients are responding to ping request'
+    ExpectedResult: 'Ping edge client should return success'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_edge_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2EDGE_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - - GetClientsIncludingEdge
+             - - VerifyClientListWithEdgeClients
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+
+GetHeartbeatStatusOfEdgeClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetHeartbeatStatusOfEdgeClients'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify edge clients show hearbeat status as UP'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two ESX, one CCP and two Edge nodes as client
+                3. Verify heartbeat status of edge clients'
+    ExpectedResult: 'Edge clients should show hearbeat status as UP'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_edge_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2EDGE_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - - GetClientsIncludingEdge
+             - - VerifyClientListWithEdgeClients
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+
+GetListOfEdgeClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetListOfEdgeClients'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify all edge clients get listed'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two ESX, one CCP and two Edge nodes as client
+                3. Verify list of edge clients'
+    ExpectedResult: 'All the edge clients should be listed'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_edge_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2EDGE_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - - GetClientsIncludingEdge
+             - - GetClientByTypeEdge
+
+RebootEdgeClient:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RebootEdgeClient'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after rebooting edge client, it responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two ESX, one CCP and two Edge nodes as client
+                3. Verify heartbeat and ping status of all clients
+                4. Reboot one of the edge client
+                5. Verify rebooted edge client responding to RMQ server'
+    ExpectedResult: 'Edge clients should show hearbeat status as UP and respond to ping request after reboot also'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_edge_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2EDGE_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClientsIncludingEdge
+             - - VerifyClientListWithEdgeClients
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - Restart_EDGE_Node1
+             - - VerifyClientListWithEdgeClientsAfterReboot
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+
+        VerifyClientListWithEdgeClientsAfterReboot:
+             <<: *VERIFY_CLIENT_LIST_WITH_EDGE_CLIENTS
+             sleepbetweenworkloads: 120
+
+VerifyEdgeClientBehaviorAfterRestartingProtonServiceOnOneNSXManager:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyEdgeClientBehaviorAfterRestartingProtonServiceOnOneNSXManager'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after restarting proton service on one node, edge client responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two ESX, one CCP and two Edge nodes as client
+                3. Verify heartbeat and ping status of all clients
+                4. Restart proton service on one NSXManager
+                5. Verify edge client responding to RMQ server'
+    ExpectedResult: 'Edge clients should show hearbeat status as UP and respond to ping request'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_edge_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2EDGE_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClientsIncludingEdge
+             - - VerifyClientListWithEdgeClients
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - SetServiceId
+             - - StopProtonServiceOnMPNode3
+             - - StartProtonServiceOnMPNode3
+             - - MapNSXManager1ToCluster
+             - - WaitForClusterStatusStableOnNode3
+             - - VerifyClientListWithEdgeClients
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+
+        VerifyClientListWithEdgeClientsAfterReboot:
+             <<: *VERIFY_CLIENT_LIST_WITH_EDGE_CLIENTS
+             sleepbetweenworkloads: 120
+
+        StopProtonServiceOnMPNode3:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode3:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+VerifyEdgeClientBehaviorAfterStoppingRabbitmqServiceOnOneNSXManager:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyEdgeClientBehaviorAfterStoppingRabbitmqServiceOnOneNSXManager'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after restarting rabbitmq service on one node, edge client responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two ESX, one CCP and two Edge nodes as client
+                3. Verify heartbeat and ping status of all clients
+                4. Stop Rabbitmq service on one NSXManager
+                5. Verify edge client responding to RMQ server
+                6. Start Rabbitmq service on NSXManager'
+    ExpectedResult: 'Edge clients should show hearbeat status as UP and respond to ping request'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_edge_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2EDGE_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClientsIncludingEdge
+             - - VerifyClientListWithEdgeClients
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - SetServiceId
+             - - StopRabbitmqServiceOnMPNode3
+             - - VerifyDistributedClientCountWithEdgeClientsOnMPNode1AndMPNode2
+             - - StartRabbitmqServiceOnMPNode3
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+
+        StopRabbitmqServiceOnMPNode3:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode3:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        VerifyDistributedClientCountWithEdgeClientsOnMPNode1AndMPNode2:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT_WITH_EDGE_CLIENTS_ON_NODE1_NODE2
+             sleepbetweenworkloads: 60
+
+VerifyEdgeClientBehaviorAfterRestartingProtonServiceFromAllNSXManagers:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyEdgeClientBehaviorAfterRestartingProtonServiceFromAllNSXManagers'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after restarting proton service on all NSXManagers, edge client responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two ESX, one CCP and two Edge nodes as client
+                3. Verify heartbeat and ping status of all clients
+                4. Restart proton service on all NSXManagers
+                5. Verify edge client responding to RMQ server'
+    ExpectedResult: 'Edge clients should show hearbeat status as UP and respond to ping request'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_edge_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2EDGE_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClientsIncludingEdge
+             - - VerifyClientListWithEdgeClients
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - SetServiceId
+             - - StopProtonServiceOnMPNode3
+             - - StopProtonServiceOnMPNode2
+             - - StopProtonServiceOnMPNode1
+             - - StartProtonServiceOnMPNode1
+             - - StartProtonServiceOnMPNode2
+             - - StartProtonServiceOnMPNode3
+             - - MapNSXManager1ToCluster
+             - - WaitForClusterStatusStableOnNode1
+             - - WaitForClusterStatusStableOnNode2
+             - - WaitForClusterStatusStableOnNode3
+             - - VerifyClientListWithEdgeClientsAfterProtonRestart
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+
+        StopProtonServiceOnMPNode1:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StopProtonServiceOnMPNode2:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StopProtonServiceOnMPNode3:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode1:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode2:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode3:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        VerifyClientListWithEdgeClientsAfterProtonRestart:
+             <<: *VERIFY_CLIENT_LIST_WITH_EDGE_CLIENTS
+             sleepbetweenworkloads: 120
+
+VerifyEdgeClientBehaviorAfterRestartingRabbitmqServiceFromAllNSXManagers:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyEdgeClientBehaviorAfterRestartingRabbitmqServiceFromAllNSXManagers'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after restarting Rabbitmq service on all NSXManagers, edge client responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two ESX, one CCP and two Edge nodes as client
+                3. Verify heartbeat and ping status of all clients
+                4. Restart Rabbitmq service on all NSXManagers
+                5. Verify edge client responding to RMQ server'
+    ExpectedResult: 'Edge clients should show hearbeat status as UP and respond to ping request'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_edge_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2EDGE_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClientsIncludingEdge
+             - - VerifyClientListWithEdgeClients
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - SetServiceId
+             - - StopRabbitmqServiceOnMPNode1
+               - StopRabbitmqServiceOnMPNode2
+               - StopRabbitmqServiceOnMPNode3
+             - - StartRabbitmqServiceOnMPNode1
+               - StartRabbitmqServiceOnMPNode2
+               - StartRabbitmqServiceOnMPNode3
+             - - VerifyClientListWithEdgeClientsAfterRabbitmqRestart
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+
+        StopRabbitmqServiceOnMPNode1:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StopRabbitmqServiceOnMPNode2:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StopRabbitmqServiceOnMPNode3:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode1:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode2:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode3:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        VerifyClientListWithEdgeClientsAfterRabbitmqRestart:
+             <<: *VERIFY_CLIENT_LIST_WITH_EDGE_CLIENTS
+             sleepbetweenworkloads: 120
+
+VerifyEdgeClientBehaviorAfterRestartingMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyEdgeClientBehaviorAfterRestartingMPCluster'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after restarting all NSXManagers, edge client responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two ESX, one CCP and two Edge nodes as client
+                3. Verify heartbeat and ping status of all clients
+                4. Restart MP cluster
+                5. After MP cluster restart, verify edge client responding to RMQ server'
+    ExpectedResult: 'Edge clients should show hearbeat status as UP and respond to ping request'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_edge_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2EDGE_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClientsIncludingEdge
+             - - VerifyClientListWithEdgeClients
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - Poweroff_MP_Node3
+             - - Poweroff_MP_Node2
+             - - Poweroff_MP_Node1
+             - - Poweron_MP_Node1
+             - - Poweron_MP_Node2
+             - - Poweron_MP_Node3
+             - - MapNSXManager1ToCluster
+             - - WaitForClusterStatusStableOnNode1
+             - - WaitForClusterStatusStableOnNode2
+             - - WaitForClusterStatusStableOnNode3
+             - - VerifyDistributedClientCountWithEdgeClients
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+
+        VerifyDistributedClientCountWithEdgeClients:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT_WITH_EDGE_CLIENTS
+             noofretries: 3
+             sleepbetweenretry: 60
+             sleepbetweenworkloads: 120
+
+#####################################################################
+#                 Messaging Test-cases with KVM as a client         #
+#####################################################################
+
+PingKVMClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'PingKVMClients'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify KVM clients respond to RMQ server response'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP as client
+                3. Ping KVM clients from one of the NSXManager
+                4. Verify KVM clients are responding to ping request'
+    ExpectedResult: 'Ping KVM client should return success'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+
+GetHeartbeatStatusOfKVMClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetHeartbeatStatusOfKVMClients'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify KVM clients show hearbeat status as UP'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP as client
+                3. Verify heartbeat status of KVM clients'
+    ExpectedResult: 'KVM clients should show hearbeat status as UP'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+
+GetListOfKVMClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'GetListOfKVMClients'
+    Priority: 'P0'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify all KVM clients are listed'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP
+                3. Verify list of KVM clients'
+    ExpectedResult: 'All the KVM clients should be listed'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        Sequence:
+             - - GetClients
+             - - GetClientByTypeHv
+
+RebootMPAOnKVMClient:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RebootMPAOnKVMClient'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after rebooting MPA on KVM client, it responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP as client
+                3. Verify heartbeat and ping status of all clients
+                4. Reboot MPA on one of the KVM client
+                5. Verify KVM clients responding to RMQ server'
+    ExpectedResult: 'KVM clients should show hearbeat status as UP and respond to ping request after reboot also'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *HostWorkloads
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - RebootMPAOnKVM
+             - - VerifyClientAfterMPAReboot
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+
+        VerifyClientAfterMPAReboot:
+             <<: *VERIFY_CLIENT_LIST
+             sleepbetweenworkloads: 120
+
+RebootDAOnKVMClient:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RebootDAOnKVMClient'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after rebooting DA on KVM client, it responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP as client
+                3. Verify heartbeat and ping status of all clients
+                4. Reboot DA on one of the KVM client
+                5. Verify KVM clients responding to RMQ server'
+    ExpectedResult: 'KVM clients should show hearbeat status as UP and respond to ping request after reboot also'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *HostWorkloads
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - RebootDAOnKVM
+             - - VerifyClientAfterDAReboot
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+
+        VerifyClientAfterDAReboot:
+             <<: *VERIFY_CLIENT_LIST
+             sleepbetweenworkloads: 120
+
+PingKVMClientWhenDAUnavailable:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'PingKVMClientWhenDAUnavailable'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify KVM client responds to RMQ server when DA is unavailable'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP as client
+                3. Stop DA on one of the KVM client
+                4. Verify heartbeat and ping status of all clients
+                5. Start DA on the KVM client'
+    ExpectedResult: 'KVM clients should show hearbeat status as UP and respond to ping request even when DA is unavailable'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *HostWorkloads
+        Sequence:
+             - - StopDAOnKVM
+             - - GetClients
+             - - VerifyClientList
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - StartDAOnKVM
+
+VerifyKVMClientBehaviorAfterRestartingProtonServiceOnOneNSXManager:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyKVMClientBehaviorAfterRestartingProtonServiceOnOneNSXManager'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after restarting proton service on one node, KVM client responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP as client
+                3. Verify heartbeat and ping status of all clients
+                4. Restart proton service on one NSXManager
+                5. Verify KVM client responding to RMQ server'
+    ExpectedResult: 'KVM clients should show hearbeat status as UP and respond to ping request'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - SetServiceId
+             - - StopProtonServiceOnMPNode3
+             - - StartProtonServiceOnMPNode3
+             - - MapNSXManager1ToCluster
+             - - WaitForClusterStatusStableOnNode3
+             - - VerifyClientListAfterProtonRestart
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+
+        VerifyClientListAfterProtonRestart:
+             <<: *VERIFY_CLIENT_LIST
+             sleepbetweenworkloads: 120
+
+        StopProtonServiceOnMPNode3:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode3:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+VerifyKVMClientBehaviorAfterStoppingRabbitmqServiceOnOneNSXManager:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyKVMClientBehaviorAfterStoppingRabbitmqServiceOnOneNSXManager'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after restarting rabbitmq service on one node, KVM client responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP as client
+                3. Verify heartbeat and ping status of all clients
+                4. Stop Rabbitmq service on one NSXManager
+                5. Verify KVM client responding to RMQ server
+                6. Start Rabbitmq service on NSXManager'
+    ExpectedResult: 'KVM clients should show hearbeat status as UP and respond to ping request'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - SetServiceId
+             - - StopRabbitmqServiceOnMPNode3
+             - - VerifyDistributedClientCountOnMPNode1AndMPNode2
+             - - StartRabbitmqServiceOnMPNode3
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+
+        StopRabbitmqServiceOnMPNode3:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode3:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        VerifyDistributedClientCountOnMPNode1AndMPNode2:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT_ON_NODE1_NODE2
+             sleepbetweenworkloads: 60
+
+VerifyKVMClientBehaviorAfterRestartingProtonServiceFromAllNSXManagers:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyKVMClientBehaviorAfterRestartingProtonServiceFromAllNSXManagers'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after restarting proton service on all NSXManagers, KVM client responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP as client
+                3. Verify heartbeat and ping status of all clients
+                4. Restart proton service on all NSXManagers
+                5. Verify KVM client responding to RMQ server'
+    ExpectedResult: 'KVM clients should show hearbeat status as UP and respond to ping request'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - SetServiceId
+             - - StopProtonServiceOnMPNode3
+             - - StopProtonServiceOnMPNode2
+             - - StopProtonServiceOnMPNode1
+             - - StartProtonServiceOnMPNode1
+             - - StartProtonServiceOnMPNode2
+             - - StartProtonServiceOnMPNode3
+             - - MapNSXManager1ToCluster
+             - - WaitForClusterStatusStableOnNode1
+             - - WaitForClusterStatusStableOnNode2
+             - - WaitForClusterStatusStableOnNode3
+             - - VerifyClientListAfterProtonRestart
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+
+        StopProtonServiceOnMPNode1:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StopProtonServiceOnMPNode2:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StopProtonServiceOnMPNode3:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode1:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode2:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode3:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        VerifyClientListAfterProtonRestart:
+             <<: *VERIFY_CLIENT_LIST
+             sleepbetweenworkloads: 120
+
+VerifyKVMClientBehaviorAfterRestartingRabbitmqServiceFromAllNSXManagers:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyKVMClientBehaviorAfterRestartingRabbitmqServiceFromAllNSXManagers'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after restarting Rabbitmq service on all NSXManagers, KVM client responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP as client
+                3. Verify heartbeat and ping status of all clients
+                4. Restart Rabbitmq service on all NSXManagers
+                5. Verify KVM client responding to RMQ server'
+    ExpectedResult: 'KVM clients should show hearbeat status as UP and respond to ping request'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - SetServiceId
+             - - StopRabbitmqServiceOnMPNode1
+               - StopRabbitmqServiceOnMPNode2
+               - StopRabbitmqServiceOnMPNode3
+             - - StartRabbitmqServiceOnMPNode1
+               - StartRabbitmqServiceOnMPNode2
+               - StartRabbitmqServiceOnMPNode3
+             - - VerifyClientListAfterRabbitmqRestart
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+
+        StopRabbitmqServiceOnMPNode1:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StopRabbitmqServiceOnMPNode2:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StopRabbitmqServiceOnMPNode3:
+             <<: *STOP_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode1:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode2:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StartRabbitmqServiceOnMPNode3:
+             <<: *START_RABBITMQ_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        VerifyClientListAfterRabbitmqRestart:
+             <<: *VERIFY_CLIENT_LIST
+             sleepbetweenworkloads: 120
+
+VerifyKVMClientBehaviorAfterRestartingMPCluster:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyKVMClientBehaviorAfterRestartingMPCluster'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify after restarting all NSXManagers, KVM client responds to RMQ server'
+    Procedure: '1. Create a three node MP cluster
+                2. Connect two KVM and one CCP as client
+                3. Verify heartbeat and ping status of all clients
+                4. Restart MP cluster
+                5. After MP cluster restart, verify KVM client responding to RMQ server'
+    ExpectedResult: 'KVM clients should show hearbeat status as UP and respond to ping request'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging,messaging_kvm_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - Reboot_MP_Node3_CLI
+               - Reboot_MP_Node2_CLI
+               - Reboot_MP_Node1_CLI
+             - - MapNSXManager1ToCluster
+             - - WaitForClusterStatusStableOnNode1
+             - - WaitForClusterStatusStableOnNode2
+             - - WaitForClusterStatusStableOnNode3
+             - - VerifyDistributedClientCount
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+
+        VerifyDistributedClientCount:
+             <<: *VERIFY_DISTRIBUTED_CLIENT_COUNT
+             noofretries: 3
+             sleepbetweenretry: 60
+             sleepbetweenworkloads: 120
+
+RemoveESXMessagingClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RemoveESXMessagingClients'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify ESX messaging client count reduces after de-registration'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients one CCP and two ESX
+                3. Verify all clients are reachable
+                4. De-register two ESX clients which were registered with NSXManager
+                5. Verify messaging client count is reduced by two'
+    ExpectedResult: 'Messaging client count should reduce after de-registating ESX clients'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        <<: *HostWorkloads
+
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - RemoveNSXManagerFromHost1
+             - - RemoveNSXManagerFromHost2
+             - - ReverifyClientList
+             - - VerifyHypervisorClientCount
+             - - SetNSXManagerOnHost1
+             - - SetNSXManagerOnHost2
+             - - GetClients
+             - - VerifyClientList
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+
+        ReverifyClientList:
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+            get_clients_list:
+                'result_count[?]equal_to': '1'
+
+        VerifyHypervisorClientCount:
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+            client_type: 'cvn-hv'
+            get_clients_by_type:
+                'result_count[?]equal_to': '0'
+
+        SetNSXManagerOnHost1:
+            <<: *SET_NSXMANAGER_ON_HOST1--ESX
+
+        SetNSXManagerOnHost2:
+            <<: *SET_NSXMANAGER_ON_HOST2--ESX
+
+        RemoveNSXManagerFromHost1:
+            <<: *REMOVE_NSXMANAGER_FROM_HOST1--ESX
+
+        RemoveNSXManagerFromHost2:
+            <<: *REMOVE_NSXMANAGER_FROM_HOST2--ESX
+
+RemoveCCPMessagingClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RemoveCCPMessagingClients'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify CCP messaging client count reduces after de-registration'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients one CCP and two ESX
+                3. Verify all clients are reachable
+                4. De-register CCP client which was registered with NSXManager
+                5. Verify messaging client count is reduced by one'
+    ExpectedResult: 'Messaging client count should reduce after de-registating CCP client'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2ESX
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        <<: *HostWorkloads
+
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - CleanupCCPNode1ForReuse
+             - - ReverifyClientList
+             - - VerifyCCPClientCount
+             - - RegisterController1
+             - - GetClients
+             - - VerifyClientList
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+
+        ReverifyClientList:
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+            get_clients_list:
+                'result_count[?]equal_to': '2'
+
+        VerifyCCPClientCount:
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+            client_type: 'cvn-ccp'
+            get_clients_by_type:
+                'result_count[?]equal_to': '0'
+
+RemoveKVMMessagingClients:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'RemoveESXMessagingClients'
+    Priority: 'P2'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify ESX messaging client count reduces after de-registration'
+    Procedure: '1. Create a 3 node cluster
+                2. Connect RMQ clients one CCP and two KVM
+                3. Verify all clients are reachable
+                4. De-register two KVM clients which were registered with NSXManager
+                5. Verify messaging client count is reduced by two'
+    ExpectedResult: 'Messaging client count should reduce after de-registating KVM clients'
+    Duration: '600'
+    Tags: 'nsxmanager,messaging,multiple_mp_cat'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_1CCP_2KVM
+
+    WORKLOADS:
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        <<: *HostWorkloads
+
+        Sequence:
+             - - GetClients
+             - - VerifyClientList
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - RemoveNSXManagerFromHost1
+             - - RemoveNSXManagerFromHost2
+             - - ReverifyClientList
+             - - VerifyHypervisorClientCount
+             - - SetNSXManagerOnHost1
+             - - SetNSXManagerOnHost2
+             - - GetClients
+             - - VerifyClientList
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+
+        ReverifyClientList:
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+            get_clients_list:
+                'result_count[?]equal_to': '1'
+
+        VerifyHypervisorClientCount:
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+            client_type: 'cvn-hv'
+            get_clients_by_type:
+                'result_count[?]equal_to': '0'
+
+        SetNSXManagerOnHost1:
+            <<: *SET_NSXMANAGER_ON_HOST1--KVM
+
+        SetNSXManagerOnHost2:
+            <<: *SET_NSXMANAGER_ON_HOST2--KVM
+
+        RemoveNSXManagerFromHost1:
+            <<: *REMOVE_NSXMANAGER_FROM_HOST1--KVM
+
+        RemoveNSXManagerFromHost2:
+            <<: *REMOVE_NSXMANAGER_FROM_HOST2--KVM

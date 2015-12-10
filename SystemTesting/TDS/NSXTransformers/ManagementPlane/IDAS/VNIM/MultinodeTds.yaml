@@ -1,0 +1,103 @@
+#####################################################################
+# Title : Avalanche VNIM Multinode TDS                                        |
+#####################################################################
+
+
+#####################################################################
+#                 P2 Test Cases                                     |
+#####################################################################
+
+MultiNode_VNIPool_PUT_API:
+    Product: "NSXTransformers"
+    Category: "ManagementPlatform"
+    Component: "IDAS"
+    TestName: "MultiNode_VNIPool_PUT_API"
+    Version: "2"
+    Summary: "To verify updated VNIPool data gets replicated to other nodes in cluster"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    QCPath: "VNIM"
+    Priority: "P2"
+    Developer: "kchougule"
+    Procedure: '1. Get details of VNIPool on all Nodes
+                2. Update VNIPool on any Node
+                3. Verify updated VNIPool data is replicated successfully
+                on all the NSXManager cluster nodes'
+    ExpectedResult: 'Updated VNIPool data should be available on all the NSXManager cluster nodes'
+    Duration: '5'
+    Tags: 'nsxmanager,management,idas,cat'
+    Partnerfacing: "N"
+    TestbedSpec: *NSXMANAGER_3_NODE_CLUSTER_SETUP
+    WORKLOADS:
+        Sequence:
+            - ["GetVNIPoolId"]
+            - ["VerifyVNIPoolOnClusterNode1"]
+            - ["VerifyVNIPoolOnClusterNode2"]
+            - ["VerifyVNIPoolOnClusterNode3"]
+            - ["UpdateVNIPoolOnClusterNode2"]
+            - ["VerifyUpdatedVNIPoolOnClusterNode1"]
+            - ["VerifyUpdatedVNIPoolOnClusterNode2"]
+            - ["VerifyUpdatedVNIPoolOnClusterNode3"]
+        ExitSequence:
+            - ["ResetVNIPool"]
+
+        GetVNIPoolId: *GET_VNIPOOL_ID
+
+        VerifyVNIPoolOnClusterNode1: *VNIPOOL_VERIFICATION_NODE1
+
+        VerifyVNIPoolOnClusterNode2: *VNIPOOL_VERIFICATION_NODE2
+
+        VerifyVNIPoolOnClusterNode3: *VNIPOOL_VERIFICATION_NODE3
+
+        UpdateVNIPoolOnClusterNode2:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[2].vnipool.[1]"
+            reconfigure: true
+            name: 'DefaultVniPool'
+            summary: "Default VNI Pool Updated summary"
+            ranges:
+                - begin: 100000
+                  end: 160000
+
+        VerifyUpdatedVNIPoolOnClusterNode1:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'DefaultVniPool'
+               'summary[?]equal_to': "Default VNI Pool Updated summary"
+               'ranges[?]contain_once':
+                 - begin: 100000
+                   end: 160000
+
+        VerifyUpdatedVNIPoolOnClusterNode2:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'DefaultVniPool'
+               'summary[?]equal_to': "Default VNI Pool Updated summary"
+               'ranges[?]contain_once':
+                 - begin: 100000
+                   end: 160000
+
+        VerifyUpdatedVNIPoolOnClusterNode3:
+            Type: "GroupingObject"
+            TestGroupingObject: "nsxmanager.[1].vnipool.[1]"
+            read:
+               'name[?]equal_to': 'DefaultVniPool'
+               'summary[?]equal_to': "Default VNI Pool Updated summary"
+               'ranges[?]contain_once':
+                 - begin: 100000
+                   end: 160000
+
+        ResetVNIPool:
+            Type: "GroupingObject"
+            Testgroupingobject: "nsxmanager.[1].vnipool.[1]"
+            reconfigure: true
+            summary: "Default VNI Pool"
+            ranges:
+                - begin: 5000
+                  end: 65535

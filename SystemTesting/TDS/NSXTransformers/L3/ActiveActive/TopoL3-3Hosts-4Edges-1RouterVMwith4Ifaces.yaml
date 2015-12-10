@@ -1,0 +1,374 @@
+######################################################################################
+# ECMP (router vm) Topology Diagram: (3 Hosts (HVs), 4 Edges (SRs), 1 Router VM)
+# 1. Topology with 4 Tier 0 (PLR) Uplinks.
+#
+#                            (uplink ls)
+#                     +- LP201 --- LS1 ---------+
+#     +---- VM1   ----+- LP202 --- LS2 -------+ |
+#     | (router vm)   +- LP203 --- LS3 -----+ | |
+#     |               +- LP204 --- LS4 ---+ | | |
+#     |               +- LP205 ----+      | | | |
+#     |                            |      | | | |
+#     |                           LS10    | | | |
+#     |                            |      | | | |
+# HV1-|                            |      | | | |
+#     +---- VM2   ----+- LP1000 ---+      | | | |
+#                                         | | | +-| LSP1 ---  LRP1 (SR1) --- +
+#                                         | | +---| LSP2 ---  LRP2 (SR2) --- |---+
+#                                         | +-----| LSP3 ---- LRP3 (SR3) --- |   |
+#                                         +-------| LSP4 ---- LRP4 (SR4) --- |   |
+#                                                                            |   + - LR1
+#                                                                            |      (PLR)
+# HV2-|- VM3 -|--- LP300 ---|--- LS101 --- LSP101 ---- LRP101 ---------------+
+#                           (downlink ls)                                    |
+#                                                                            |
+# HV3-|- VM4 -|--- LP400 ---|--- LS102 --- LSP102 ---- LRP102 ---------------+
+#                           (downlink ls)                                    |
+#                                                                            |
+# HV2 -|- VM5 -|--- LP500 ---|--- LS301 --- LSP301 --- LRP201 ---+--- LR2 ---+
+#                                                                |   (TLR)
+#                                                                |
+# HV3 -|- VM6 -|--- LP600 ---|--- LS301 --- LSP301 --- LRP201 ---+
+#
+# 2. Topology with 8 Tier 0 (PLR) Uplinks i.e. 8 Edge nodes.
+#
+#                            (uplink ls)
+#                     +- LP201 --- LS1 ---------+
+#     +---- VM1   ----+- LP202 --- LS2 -------+ |
+#     | (router vm)   +- LP203 --- LS3 -----+ | |
+#     |               +- LP204 --- LS4 ---+ | | |
+#     |               +- LP206 --- LS5 -+ | | | |
+#     |               +- LP207 --- LS6+ | | | | |
+#     |               +- LP208 - LS7+ | | | | | |
+#     |               +- LP209 LS8+ | | | | | | |
+#     |               +- LP205 -+ | | | | | | | |
+#     |                         | | | | | | | | |
+#     |                      LS10 | | | | | | | |
+#     |                         | | | | | | | | |
+# HV1-|                         | | | | | | | | |
+#     +---- VM2   -+- LP1000 ---+ | | | | | | | |
+#                                 | | | | | | | +-| LSP1 ---  LRP1 (SR1) --- +
+#                                 | | | | | | +---| LSP2 ---  LRP2 (SR2) --- |---+
+#                                 | | | | | +-----| LSP3 ---- LRP3 (SR3) --- |   |
+#                                 | | | | +-------| LSP4 ---- LRP4 (SR4) --- |   |
+#                                 | | | +---------| LSP5 ---- LRP5 (SR5) --- |   |
+#                                 | | +-----------| LSP6 ---- LRP6 (SR6) --- |   |
+#                                 | +-------------| LSP7 ---- LRP7 (SR7) --- |   |
+#                                 +---------------| LSP8 ---- LRP8 (SR8) --- |   |
+#                                                                            |   + - LR1
+#                                                                            |      (PLR)
+# HV2-|- VM3 -|--- LP300 ---|--- LS101 --- LSP101 ---- LRP101 ---------------+
+#                           (downlink ls)                                    |
+#                                                                            |
+# HV3-|- VM4 -|--- LP400 ---|--- LS102 --- LSP102 ---- LRP102 ---------------+
+#                           (downlink ls)                                    |
+#                                                                            |
+# HV2 -|- VM5 -|--- LP500 ---|--- LS301 --- LSP301 --- LRP201 ---+--- LR2 ---+
+#                                                                |   (TLR)
+#                                                                |
+# HV3 -|- VM6 -|--- LP600 ---|--- LS301 --- LSP301 --- LRP201 ---+
+#
+#####################################################################################
+
+TopoL3-3Hosts-4Edges-1RouterVM4Ifaces: &TopoL3-3Hosts-4Edges-1RouterVM4Ifaces
+# Common Topo file for both ESX/KVM. All differences are specified under
+# ALIASES--ESX and ALIASES--KVM.
+
+    L2Setup--ESX:
+        # Host preparation steps
+        - - 'SetManagerOn3Hosts--ESX'
+        - - 'Discover3Hostnodes--ESX'
+        - - 'CreateTransportZone1'
+        - - 'CreateUPROF-1_MTU-1600'
+        - - 'Create3TransportNodes_TZ-1--ESX'
+        - - 'CommonL2-L3AttachmentSetup--ESXKVM'
+
+    L2Setup--EDGEESX:
+        - - 'SetManagerOnESX-1'
+        - - 'SetManagerOnESX-100'
+        - - 'DiscoverHostNode1FromESX1'
+        - - 'DiscoverHostNode4FromESX100'
+        - - 'CreateTN-1_HOSTNODE-1_TZ-1_VMNIC-1'
+        - - 'CreateTN-4_HOSTNODE-4_TZ-1_VMNIC-1'
+        - - 'DiscoverESX1Vtep1FromDevice-vmk10'
+        - - 'DiscoverESX100Vtep1FromDevice-vmk10'
+
+    CommonL2-L3AttachmentSetup--ESXKVM:
+        # Prepare logical switchs for router uplinkports/downlinkports
+        - - 'CreateUplinkLS-LS1-LS2-LS3-L4'
+        - - 'CreateLS-LS10'
+        - - 'CreateDownlinkLS-LS101-LS102'  # XXX(dbadiani): Tier 0 (PLR) Dowlink LS
+        - - 'CreateDownlinkLS-LS301-LS302'  # XXX(dbadiani): Tier 1 (TLR) Downlink LS
+        - - 'CreateLSP-1-2-3-4_LS1-2-3-4'
+        - - 'CreateLSP-101_LS101-102_LS102'  # XXX(dbadiani): Tier 0 (PLR) Dowlink LSP
+        - - 'CreateLSP-301_LS301-302_LS302'  # XXX(dbadiani): Tier 1 (TLR) Dowlink LSP
+
+    VerifyL2Setup--ESX:
+        - - 'DiscoverVteps--ESX'
+        - - 'VtepConnectivity--ESX--EDGEESX'
+
+    VtepConnectivity--ESX--EDGEESX:
+        - - 'PingFromESX2Vtep1ToESX3Vtep1'
+        - - 'PingFromESX1Vtep1ToESX2Vtep1'
+        - - 'PingFromESX1Vtep1ToESX3Vtep1'
+
+    DiscoverVteps--ESX:
+        - - 'DiscoverESX1Vtep1FromDevice-vmk10'
+        - - 'DiscoverESX2Vtep1FromDevice-vmk10'
+        - - 'DiscoverESX3Vtep1FromDevice-vmk10'
+
+    L2Setup--KVM:
+        # Host preparation steps
+        - - 'SetManagerOnKVM-2'
+        - - 'SetManagerOnKVM-3'
+        - - 'DiscoverHostNode2FromKVM2'
+        - - 'DiscoverHostNode3FromKVM3'
+        - - 'CreateTransportZone1'
+        - - 'CreateUPROF-1_MTU-1600'
+        - - 'L2Setup--EDGEESX'
+        - - 'CreateTN-2_HOSTNODE-2_TZ-1_ETH-1'
+        - - 'CreateTN-3_HOSTNODE-3_TZ-1_ETH-1'
+        - - 'DiscoverKVM2Vtep1FromDevice-nsx-vtep0.0'
+        - - 'DiscoverKVM3Vtep1FromDevice-nsx-vtep0.0'
+        - - 'CommonL2-L3AttachmentSetup--ESXKVM'
+
+    VerifyL2Setup--KVM:
+         - - 'PingFromKVM2Vtep1ToKVM3Vtep1'
+         - - 'PingFromESX1Vtep1ToKVM2Vtep1'
+         - - 'PingFromESX1Vtep1ToKVM3Vtep1'
+
+    L2SetupMaxUplinks--ESX:
+        - - 'L2Setup--ESX'
+        - - 'CommonL2SetupMaxUplinks--ESXKVM'
+
+    CommonL2SetupMaxUplinks--ESXKVM:
+        - - 'CreateUplinkLS-LS5-LS6-LS7-LS8'
+        - - 'CreateLSP-5-6-7-8_LS5-6-7-8'
+
+    L2SetupMaxUplinks--KVM:
+        - - 'L2Setup--KVM'
+        - - 'CommonL2SetupMaxUplinks--ESXKVM'
+
+    L2SwitchCleanup:
+        - - 'CleanupLSP-101_LS101-102_LS102'
+        - - 'CleanupLSP-301_LS301-302_LS302'
+        - - 'CleanupLSP-1-2-3-4_LS1-2-3-4'
+        - - 'CleanupLS-LS10'
+        - - 'CleanupDownlinkLS-LS101-LS102'
+        - - 'CleanupDownlinkLS-LS301-LS302'
+        - - 'CleanupUplinkLS-LS1-LS2-LS3-LS4'
+
+    L2CleanupExceptSwitch--ESX:
+        - - 'CommonL2CleanupExceptSwitch--ESXKVM'
+        - - 'RemoveManagerOn3Hosts--ESX'
+        - - 'Undiscover3HostNodes'
+
+    CommonL2CleanupExceptSwitch--ESXKVM:
+        - - 'CleanupTransportNode'
+        - - 'CleanupUplinkProfile'
+        - - 'CleanupTransportZone'
+
+    L2CleanupExceptSwitch--KVM:
+        - - 'CommonL2CleanupExceptSwitch--ESXKVM'
+        - - 'RemoveManagerOnKVM-2'
+          - 'RemoveManagerOnKVM-3'
+        - - 'UndiscoverHostNode-2'
+          - 'UndiscoverHostNode-3'
+        - - 'L2Cleanup--EDGEESX'
+
+    L2Cleanup--EDGEESX:
+        - - 'RemoveManagerOnESX-1'
+        - - 'RemoveManagerOnESX-100'
+        - - 'UndiscoverHostNode-1'
+        - - 'UndiscoverHostNode-4'
+
+    L2Cleanup--KVM:
+        - - 'L2SwitchCleanup'
+        - - 'L2CleanupExceptSwitch--KVM'
+
+    L2Cleanup--ESX:
+        - - 'L2SwitchCleanup'
+        - - 'L2CleanupExceptSwitch--ESX'
+
+    L2CleanupMaxUplinks--ESX:
+        - - 'CommonL2CleanupMaxUplinks--ESXKVM'
+        - - 'L2CleanupExceptSwitch--ESX'
+
+    CommonL2CleanupMaxUplinks--ESXKVM:
+        - - 'L2SwitchCleanup'
+        - - 'CleanupLSP-5-6-7-8_LS5-6-7-8'
+        - - 'CleanupUplinkLS-LS5-LS6-LS7-LS8'
+
+    L2CleanupMaxUplinks--KVM:
+        - - 'CommonL2CleanupMaxUplinks--ESXKVM'
+        - - 'L2CleanupExceptSwitch--KVM'
+
+    EdgeSetup4Uplinks:
+        - - 'Register4EdgeNodes'
+        - - 'Discover4EdgeNodeIds'
+        - - 'CreateFabricProfile'
+        - - 'CreateEdgeClusterWith4Nodes'
+
+    EdgeSetupMaxUplinks:
+        - - 'Register8EdgeNodes'
+        - - 'Discover8EdgeNodeIds'
+        - - 'CreateFabricProfile'
+        - - 'CreateEdgeClusterWith8Nodes'
+
+    PLRSetup:
+        - - 'Create_PLR_01'
+        - - 'Create4ULRPs-RP1-RP2-RP3-RP4_PLR1'
+        - - 'Create2RPs-101-102_PLR1'
+
+    PLRSetupMaxUplinks:
+        - - 'Create_PLR_01'
+        - - 'Create8ULRPs-RP1-RP2-RP3-RP4-RP5-RP6-RP7-RP8_PLR1'
+        - - 'Create2RPs-101-102_PLR1'
+
+    TLRSetup:
+        - - 'Create_TLR_01'
+        - - 'Create_LinkPort_PLR_01_TLR_01'
+        - - 'Create_LinkPort_TLR_01_PLR_01'
+        - - 'Create2RPs-301-302_TLR1'
+        # Advertise Tier 1 (TLR) Router Networks
+        - - 'Advertise_Routes_TLR_01'
+
+    L3Setup:
+        # Create Edge nodes and Edge cluster
+        - - 'EdgeSetup4Uplinks'
+        # Prepare Tier 0 (PLR) Router
+        - - 'PLRSetup'
+        # Prepare Tier 1 (TLR) Router
+        - - 'TLRSetup'
+        # Workaround for Bug 1406989
+        #- - 'DiscoverEdge1-4Vnics'
+
+    L3SetupMaxUplinks:
+        # Create Edge nodes and Edge cluster
+        - - 'EdgeSetupMaxUplinks'
+        # Prepare Tier 0 (PLR) Router
+        - - 'PLRSetupMaxUplinks'
+        # Prepare Tier 1 (TLR) Router
+        - - 'TLRSetup'
+        # Workaround for Bug 1406989
+        #- - 'DiscoverEdge1-8Vnics'
+
+    L3Cleanup:
+        - - 'CleanupLRPort'
+        - - 'CleanupLRUplinkPort'
+        - - 'CleanupLRLinkPort'
+        - - 'CleanupLR'
+        - - 'CleanupEdgeCluster'
+        - - 'CleanupFabricProfile'
+        - - 'CleanupEdgeNode'
+        # Workaround for Bug 1406989
+        #- - 'ReconnectEdge1-4Vnics2-3ToVMNetwork'
+
+    L3CleanupMaxUplinks:
+        - - 'L3Cleanup'
+        # Workaround for Bug 1406989
+        #- - 'ReconnectEdge5-8Vnics2-3ToVMNetwork'
+
+    VMSetup--ESX:
+        - - 'UplinkVMConfig--EDGEESX'
+        - - 'AddVM3Vnic1ToLS101'
+        - - 'DiscoverLP300FromVM3Vnic1'
+        - - 'AddVM4Vnic1ToLS102'
+        - - 'DiscoverLP400FromVM4Vnic1'
+        - - 'AddVM5Vnic1ToLS301'
+        - - 'DiscoverLP500FromVM5Vnic1'
+        - - 'AddVM6Vnic1ToLS302'
+        - - 'DiscoverLP600FromVM6Vnic1'
+        - - 'ConfigureVM3Vnic1IP-192.168.1.10'
+        - - 'ConfigureVM4Vnic1IP-192.168.2.10'
+        - - 'ConfigureVM5Vnic1IP-192.168.10.10'
+        - - 'ConfigureVM6Vnic1IP-192.168.20.10'
+        - - 'AddRouteVM3ToVM1VM2--ESX'
+        - - 'AddRouteVM4ToVM1VM2--ESX'
+        - - 'AddRouteVM5ToVM1VM2--ESX'
+        - - 'AddRouteVM6ToVM1VM2--ESX'
+
+    VMSetupMaxUplinks--ESX:
+        - - 'VMSetup--ESX'
+        - - 'CommonVMSetupMaxUplinks--ESXKVM'
+
+    CommonVMSetupMaxUplinks--ESXKVM:
+        - - 'AddVM1Vnic6To9LS5ToLS8'
+        - - 'DiscoverLP206To2LP09FromVM1Vnic6To9'
+        - - 'ConfigureVM1UplinkVnicIPsMaxUplinks'
+
+    VMSetupMaxUplinks--KVM:
+        - - 'VMSetup--KVM'
+        - - 'CommonVMSetupMaxUplinks--ESXKVM'
+
+    VMCleanup--ESX:
+        - - 'UplinkVMCleanup--EDGEESX'
+        - - 'DeleteVnic1_VM3'
+        - - 'UndiscoverLP300FromVM3Vnic1'
+        - - 'DeleteVnic1_VM4'
+        - - 'UndiscoverLP400FromVM4Vnic1'
+        - - 'DeleteVnic1_VM5'
+        - - 'UndiscoverLP500FromVM5Vnic1'
+        - - 'DeleteVnic1_VM6'
+        - - 'UndiscoverLP600FromVM6Vnic1'
+
+    UplinkVMConfig--EDGEESX:
+        - - 'AddVM1Vnic1To4LS1ToLS4_Vnic5ToLS10'
+        - - 'DiscoverLP201To2LP05FromVM1Vnic1To4_LP205FromVM1Vnic5'
+        - - 'AddVM2Vnic1ToLS10'
+        - - 'DiscoverLP1000FromVM2Vnic1'
+        - - 'ConfigureVM1UplinkVnicIPs'
+        - - 'ConfigureVM1Vnic5IP-192.168.100.100'
+        - - 'ConfigureVM2Vnic1IP-192.168.100.10'
+        - - 'AddRouteVM1ToVM3VM4--ESX'
+        - - 'AddRouteVM1ToVM5VM6--ESX'
+        - - 'AddRouteVM2ToVM3VM4--ESX'
+        - - 'AddRouteVM2ToVM5VM6--ESX'
+
+    VMSetup--KVM:
+        - - 'UplinkVMConfig--EDGEESX'
+        - - 'AddVM3Vif1ToKVM2Bridge1'
+        - - 'AddVM4Vif1ToKVM3Bridge1'
+        - - 'AddVM5Vif1ToKVM2Bridge1'
+        - - 'AddVM6Vif1ToKVM3Bridge1'
+        - - 'CreateLP300OnLS101ForVM3Vif1'
+        - - 'CreateLP400OnLS102ForVM4Vif1'
+        - - 'CreateLP500OnLS301ForVM5Vif1'
+        - - 'CreateLP600OnLS302ForVM6Vif1'
+        - - 'ConfigureVM3Vif1IP-192.168.1.10'
+        - - 'ConfigureVM4Vif1IP-192.168.2.10'
+        - - 'ConfigureVM5Vif1IP-192.168.10.10'
+        - - 'ConfigureVM6Vif1IP-192.168.20.10'
+        - - 'AddRouteVM3ToVM1VM2--KVM'
+        - - 'AddRouteVM4ToVM1VM2--KVM'
+        - - 'AddRouteVM5ToVM1VM2--KVM'
+        - - 'AddRouteVM6ToVM1VM2--KVM'
+
+    UplinkVMCleanup--EDGEESX:
+        - - 'DeleteVnic1-Vnic5_VM1'
+        - - 'UndiscoverLP201To205FromVM1Vnic1_LP205FromVM1Vnic2'
+        - - 'DeleteVnic1_VM2'
+        - - 'UndiscoverLP1000FromVM2Vnic1'
+
+    VMCleanup--KVM:
+        - - 'UplinkVMCleanup--EDGEESX'
+        - - 'DeleteVif-1_VM-3'
+        - - 'DeleteLSP-300'
+        - - 'DeleteVif-1_VM-4'
+        - - 'DeleteLSP-400'
+        - - 'DeleteVif-1_VM-5'
+        - - 'DeleteLSP-500'
+        - - 'DeleteVif-1_VM-6'
+        - - 'DeleteLSP-600'
+
+    VMCleanupMaxUplinks--ESX:
+        - - 'VMCleanup--ESX'
+        - - 'CommonVMCleanupMaxUplinks--ESXKVM'
+
+    CommonVMCleanupMaxUplinks--ESXKVM:
+        - - 'DeleteVnic6-Vnic9_VM1'
+        - - 'UndiscoverLP206To209FromVM1Vnic6to9'
+
+    VMCleanupMaxUplinks--KVM:
+        - - 'VMCleanup--KVM'
+        - - 'CommonVMCleanupMaxUplinks--ESXKVM'

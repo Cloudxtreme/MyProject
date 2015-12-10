@@ -1,0 +1,136 @@
+
+commit-id: 4cf7f8c680ae245231266b80ed38590e9a58ec2c
+
+https://sites.google.com/a/vmware.com/nsbu-engineering/releases/avalanche/rtqa?pli=1
+
+https://buildweb.eng.vmware.com/ob/2232818/
+
+NIMBUS vSphere Center
+PrmB  https://10.24.227.161:9443
+prmb-nsbu-private
+WDC   https://10.144.136.174:9443
+wdc-ucs-guest
+
+win7ent: 10.33.74.103
+
+10.144.138.8    WDC MC #1 esx
+10.144.138.58   WDC MC #2 kvm
+
+vdnet updates
+git pull --rebase
+
+Execution Doc:  http://goo.gl/tLZ7xz
+Reporting:
+Test summary s/s:  goo.gl/IzGHI8
+2x in HPQX
+
+http://nsbu-jenkins.nicira.eng.vmware.com/
+
+cp bat.zip /dbc/pa-dbc1102/jworsnup/nsx-qe/vdnet/automation/TDS/NSXTransformers/systemtest/bat_archive
+
+
+====================================================================================================
+=  ESX
+====================================================================================================
+
+1/7/2015 2:18:15 PM 'testrunid': 'rtqa1010-esx'
+
+NIMBUS_CONFIG_FILE=~netfvt/master-config.json \
+NIMBUS=wdc-ucs-guest  /mts/git/bin/nimbus-ctl kill \
+ jworsnup-vdnet-*-rtqa10c10-esx
+
+export VDNET_WORKLOAD_THREADS=1
+
+===  ESX LOCAL TENANTS  ===
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TenantsLocalValidateNetwork.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetwork/$(date +%Y%02m%02d-%02k%02M%02S) --testbed save
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TenantsLocalClientServerTraffic.Traffic --logs=/tmp-vdnet/vdnet/TenantsLocalClientServerTraffic/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TenantsLocalBUMTraffic.Traffic --logs=/tmp-vdnet/vdnet/TenantsLocalBUMTraffic/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+# CROSSHAIRS ./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TenantsLocalIPV6Traffic.Traffic  --logs=/tmp-vdnet/vdnet/TenantsLocalIPV6Traffic/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+# SPIRENT BROKE ./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TenantsLocalSpirentTraffic.Traffic --logs=/tmp-vdnet/vdnet/TenantsLocalSpirentTraffic/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+===  ESX LOCAL TENANTS JUMBO  ===
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TenantsLocalValidateNetworkJumbo.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetworkJumbo/$(date +%Y%02m%02d-%02k%02M%02S) --testbed save
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TenantsLocalValidateNetworkJumbo.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetworkJumbo/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TenantsLocalClientServerTrafficJumbo.Traffic --logs=/tmp-vdnet/vdnet/TenantsLocalClientServerTrafficJumbo/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+
+===  ESX TLRPLR  ===
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TlrPlrValidateNetwork.Validate --logs=/tmp-vdnet/vdnet/TlrPlrValidateNetwork/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TlrPlrClientServerTraffic.Traffic --logs=/tmp-vdnet/vdnet/TlrPlrClientServerTraffic/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+# CROSSHAIRS ./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.esx.TlrPlrIPV6Traffic.Traffic  --logs=/tmp-vdnet/vdnet/TlrPlrIPV6Traffic/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+export NIMBUS_ENV_FILE=/mts/home4/netfvt/prmb-nsbu-private
+bash ../../automation/scripts/nimbus-nsxnetwork --action delete --name bat_network
+
+
+====================================================================================================
+=  ESX  ONECLOUD
+====================================================================================================
+
+export ONECLOUD=1
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx_1c.yaml  -t NSXTransformers.systemtest.bat.esx.TenantsLocalValidateNetwork.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetwork_1c/$(date +%Y%02m%02d-%02k%02M%02S) --testbed save
+
+export ONECLOUD_REUSE=1
+
+====================================================================================================
+=  KVM
+====================================================================================================
+
+1/7/2015 2:17:11 PM 'testrunid': 'rtqa10c10-kvm'
+
+NIMBUS_CONFIG_FILE=~netfvt/master-config.json \
+NIMBUS=wdc-ucs-guest  /mts/git/bin/nimbus-ctl kill \
+ jworsnup-vdnet-*-rtqa10c10-kvm
+
+
+export VDNET_WORKLOAD_THREADS=1
+
+===  KVM LOCAL TENANTS  ===
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputKvm.yaml  -t NSXTransformers.systemtest.bat.kvm.TenantsLocalValidateNetwork.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetwork/$(date +%Y%02m%02d-%02k%02M%02S) --testbed save
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputKvm.yaml  -t NSXTransformers.systemtest.bat.kvm.TenantsLocalValidateNetwork.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetwork/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputKvm.yaml  -t NSXTransformers.systemtest.bat.kvm.TenantsLocalClientServerTraffic.Traffic --logs=/tmp-vdnet/vdnet/TenantsLocalClientServerTraffic/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+===  KVM LOCAL TENANTS JUMBO  ===
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputKvm.yaml  -t NSXTransformers.systemtest.bat.kvm.TenantsLocalValidateNetworkJumbo.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetworkJumbo/$(date +%Y%02m%02d-%02k%02M%02S) --testbed save
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputKvm.yaml  -t NSXTransformers.systemtest.bat.kvm.TenantsLocalValidateNetworkJumbo.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetworkJumbo/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputKvm.yaml  -t NSXTransformers.systemtest.bat.kvm.TenantsLocalClientServerTrafficJumbo.Traffic --logs=/tmp-vdnet/vdnet/TenantsLocalClientServerTrafficJumbo/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.kvm.TenantsLocalBUMTraffic.Traffic --logs=/tmp-vdnet/vdnet/TenantsLocalBUMTraffic/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+# SPIRENT BROKE ./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputEsx.yaml  -t NSXTransformers.systemtest.bat.kvm.TenantsLocalSpirentTraffic.Traffic --logs=/tmp-vdnet/vdnet/TenantsLocalSpirentTraffic/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+# CROSSHAIRS:   ./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputKvm.yaml  -t NSXTransformers.systemtest.bat.kvm.TenantsLocalIPV6Traffic.Traffic --logs=/tmp-vdnet/vdnet/TenantsLocalIPV6Traffic/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+
+===  KVM TLRPLR  ===
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputKvm.yaml  -t NSXTransformers.systemtest.bat.kvm.TlrPlrValidateNetwork.Validate --logs=/tmp-vdnet/vdnet/TlrPlrValidateNetwork/$(date +%Y%02m%02d-%02k%02M%02S) --testbed reuse
+
+
+====================================================================================================
+=  HYBRID
+====================================================================================================
+
+12/3/2014 12:05:55 PM 'testrunid': 'rtqa09c2-kvm-b'
+12/3/2014 12:04:51 PM bug: 1367702: KVM Logical Router "Destination Host Unreachable" for single hop network
+
+
+NIMBUS_CONFIG_FILE=~netfvt/master-config.json \
+NIMBUS=wdc-ucs-guest  /mts/git/bin/nimbus-ctl kill \
+ jworsnup-vdnet-*-rtqa10c8-hyb
+
+./vdnet -c ../TDS/NSXTransformers/systemtest/bat/InputHyb.yaml  -t NSXTransformers.systemtest.bat.hyb.TenantsLocalValidateNetwork.Validate --logs=/tmp-vdnet/vdnet/TenantsLocalValidateNetwork/$(date +%Y%02m%02d-%02k%02M%02S) --testbed save

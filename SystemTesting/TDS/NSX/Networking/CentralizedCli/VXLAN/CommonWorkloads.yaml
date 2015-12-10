@@ -1,0 +1,119 @@
+WORKLOADS:
+
+   CreateVirtualWire: &CREATE_VIRTUALWIRES_NETWORKSCOPE1
+      Type: "TransportZone"
+      TestTransportZone: "vsm.[1].networkscope.[1]"
+      VirtualWire:
+         '[1]':
+            name: "AutoGenerate"
+            tenantid: "AutoGenerate"
+            controlplanemode: "MULTICAST_MODE"
+         '[2]':
+            name: "AutoGenerate"
+            tenantid: "AutoGenerate"
+            controlplanemode: "UNICAST_MODE"
+         '[3]':
+            name: "AutoGenerate"
+            tenantid: "AutoGenerate"
+            controlplanemode: "HYBRID_MODE"
+
+   PowerOnVM1: &POWERON_VM1
+      Type    : "VM"
+      TestVM  : "vm.[1]"
+      vmstate : "poweron"
+
+   PowerOnVM2: &POWERON_VM2
+      Type    : "VM"
+      TestVM  : "vm.[2]"
+      vmstate : "poweron"
+
+   PowerOffALLVM: &POWEROFF_ALL_VM
+      Type    : "VM"
+      TestVM  : "vm.[-1]"
+      vmstate : "poweroff"
+
+   DeleteVM1Vnic1InExitSeq: &DELETE_VM1_VNIC1
+      Type: VM
+      TestVM: vm.[1]
+      deletevnic: vm.[1].vnic.[1]
+      expectedResult: ignore
+
+   DeleteVM2Vnic1InExitSeq: &DELETE_VM2_VNIC1
+      Type: VM
+      TestVM: vm.[2]
+      deletevnic: vm.[2].vnic.[1]
+      expectedResult: ignore
+
+   DeleteAllVirtualWiresInExitSeq: &DELETE_ALL_VIRTUALWIRES
+      Type: TransportZone
+      TestTransportZone: vsm.[1].networkscope.[-1]
+      deletevirtualwire: vsm.[1].networkscope.[-1].virtualwire.[-1]
+      sleepbetweenworkloads: 20
+      expectedResult: ignore
+
+   PlaceVMsOnVirtualWire2: &PLACE_VMS_ON_VIRTUALWIRE2
+      Type: "VM"
+      TestVM: "vm.[1-2]"
+      vnic:
+         '[1]':
+            driver: "vmxnet3"
+            portgroup: "vsm.[1].networkscope.[1].virtualwire.[2]"
+            connected: 1
+            startconnected: 1
+            allowguestcontrol: 1
+
+   TrafficUnicastVirtualWire1: &TRAFFIC_UNICAST_VIRTUALWIRE1
+      Type           : "Traffic"
+      toolname       : "iperf"
+      L4Protocol     : "tcp,udp"
+      L3Protocol     : "ipv4"
+      TestAdapter    : "vm.[1].vnic.[1]"
+      SupportAdapter : "vm.[2].vnic.[1]"
+      TestDuration   : "10"
+
+   TrafficMulticastVirtualWire1: &TRAFFIC_MULTICAST_VIRTUALWIRE1
+      Type           : "Traffic"
+      RoutingScheme  : "Multicast"
+      L3Protocol     : "ipv4"
+      udpbandwidth   : "10M"
+      TestAdapter    : "vm.[1].vnic.[1]"
+      SupportAdapter : "vm.[2].vnic.[1]"
+      TestDuration   : "10"
+
+   TrafficBroadcastVirtualWire1: &TRAFFIC_BROADCAST_VIRTUALWIRE1
+      Type           : "Traffic"
+      toolname       : "ping"
+      Routingscheme  : "broadcast"
+      TestAdapter    : "vm.[1].vnic.[1]"
+      SupportAdapter : "vm.[2].vnic.[1]"
+
+   ArpingVM1ToVM2: &ARPING_VM1_TO_VM2
+      Type           : "Traffic"
+      toolname       : "arpping"
+      TestAdapter    : "vm.[1].vnic.[1]"
+      SupportAdapter : "vm.[2].vnic.[1]"
+      TestDuration   : "10"
+      connectivitytest: "0"
+
+   ArpingVM2ToVM1: &ARPING_VM2_TO_VM1
+      Type           : "Traffic"
+      toolname       : "arpping"
+      TestAdapter    : "vm.[2].vnic.[1]"
+      SupportAdapter : "vm.[1].vnic.[1]"
+      TestDuration   : "10"
+      connectivitytest: "0"
+
+   VXLANSetup: &VXLAN_SETUP
+      - ['CreateVirtualWire']
+      - ['PlaceVMsOnVirtualWire2']
+      - ['PowerOnVM1']
+      - ['PowerOnVM2']
+      - ['TrafficUnicastVirtualWire1']
+      - ['TrafficMulticastVirtualWire1']
+      - ['TrafficBroadcastVirtualWire1']
+
+   VXLANCleanup: &VXLAN_CLEANUP
+      - ['PowerOffALLVM']
+      - ['DeleteVM1Vnic1InExitSeq']
+      - ['DeleteVM2Vnic1InExitSeq']
+      - ['DeleteAllVirtualWiresInExitSeq']

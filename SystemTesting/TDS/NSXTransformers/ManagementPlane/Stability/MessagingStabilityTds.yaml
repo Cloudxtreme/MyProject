@@ -1,0 +1,287 @@
+!include ../Messaging/CommonWorkloads.yaml
+!include ../Messaging/TestbedSpec.yaml
+
+MessagingStabilityTest_1:
+    Product: 'NSXTransformers'
+    Component: 'Messaging'
+    Category: 'ManagementPlatform'
+    TestName: 'VerifyEdgeClientBehaviorAfterRestartingProtonServiceOnOneNSXManager'
+    Priority: 'P1'
+    Testcaselevel: 'Functional'
+    Testcasetype: 'Functional'
+    Summary: 'Verify messaging functionality remains stable after this test'
+    Procedure: '1. Create setup with three NSXManager, three NSXController,
+                   two ESX host and two NSXEdge nodes
+                2. Verify heartbeat status of all these clients and
+                   also verify these clients are repsonding to ping request
+                3. Restart MP cluster
+                4. Verify heartbeat status of all these clients and also
+                   verify these clients are repsonding to ping request
+                5. Restart nsx-mpa, nsxa, and nsx-da services on both the
+                   ESX hosts
+                6. Verify heartbeat status of all these clients and also verify
+                   these clients are repsonding to ping request
+                7. Restart controller service from all three NSXController nodes
+                8. Verify heartbeat status of all these clients and also verify
+                   these clients are repsonding to ping request
+                9. Restart both the edge VMs
+                10. Verify heartbeat status of all these clients and also verify
+                    these clients are repsonding to ping request
+                11. Repeat above procedure 500 times'
+    ExpectedResult: 'Messaging functionality should remain stable after this test'
+    Duration: '300'
+    Tags: 'nsxmanager,messaging'
+    AutomationLevel: 'Automated'
+    Developer: 'dgargote'
+    FullyAutomatable: 'Y'
+    Status: 'Execution Ready'
+    PartnerFacing: 'N'
+    Version: "2"
+    TestbedSpec: *3MP_3CCP_2EDGE_4ESX
+
+    WORKLOADS:
+        Iterations: 500
+        <<: *MessagingWorkloads
+        <<: *ApplianceWorkloads
+        <<: *HostWorkloads
+
+        Sequence:
+             - - GetClients
+             - - VerifyClientCount
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - PingClient_6
+             - - PingClient_7
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - VerifyHeartbeatStatusOfClient6
+             - - VerifyHeartbeatStatusOfClient7
+             - - SetServiceId
+             - - StopProtonServiceOnMPNode3
+             - - StopProtonServiceOnMPNode2
+             - - StopProtonServiceOnMPNode1
+             - - StartProtonServiceOnMPNode1
+             - - StartProtonServiceOnMPNode2
+             - - StartProtonServiceOnMPNode3
+             - - MapNSXManager1ToCluster
+             - - WaitForClusterStatusStableOnNode1
+             - - WaitForClusterStatusStableOnNode2
+             - - WaitForClusterStatusStableOnNode3
+             - - VerifyClientCountWithDelay
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - PingClient_6
+             - - PingClient_7
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - VerifyHeartbeatStatusOfClient6
+             - - VerifyHeartbeatStatusOfClient7
+             - - RestartMPAOnESX1
+             - - RestartMPAOnESX2
+             - - RestartDAOnESX1
+             - - RestartDAOnESX2
+             - - RestartNSXAOnESX1
+             - - RestartNSXAOnESX2
+             - - VerifyClientCountWithDelay
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - PingClient_6
+             - - PingClient_7
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - VerifyHeartbeatStatusOfClient6
+             - - VerifyHeartbeatStatusOfClient7
+             - - StopController1
+             - - StopController2
+             - - StopController3
+             - - StartController1
+             - - StartController2
+             - - StartController3
+             - - VerifyClientCountWithDelay
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - PingClient_6
+             - - PingClient_7
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - VerifyHeartbeatStatusOfClient6
+             - - VerifyHeartbeatStatusOfClient7
+             - - RestartEdgeNode1
+             - - RestartEdgeNode2
+             - - VerifyClientCountWithDelay
+             - - PingClient_1
+             - - PingClient_2
+             - - PingClient_3
+             - - PingClient_4
+             - - PingClient_5
+             - - PingClient_6
+             - - PingClient_7
+             - - VerifyHeartbeatStatusOfClient1
+             - - VerifyHeartbeatStatusOfClient2
+             - - VerifyHeartbeatStatusOfClient3
+             - - VerifyHeartbeatStatusOfClient4
+             - - VerifyHeartbeatStatusOfClient5
+             - - VerifyHeartbeatStatusOfClient6
+             - - VerifyHeartbeatStatusOfClient7
+
+        GetClients:
+            Type: 'NSX'
+            TestNSX: 'nsxmanager.[1]'
+            messagingclient:
+                '[1-7]':
+                    result_object: 'results'
+
+        VerifyClientCount: &VERIFY_CLIENT_COUNT
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[1]'
+            get_clients_list:
+                'result_count[?]equal_to': '7'
+
+        VerifyClientCountWithDelay:
+            <<: *VERIFY_CLIENT_COUNT
+            sleepbetweenworkloads: 120
+
+        PingClient_6: &PING_CLIENT_6
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[6]'
+            noofretries: 3
+            sleepbetweenretry: 60
+            ping_client:
+                'client_status[?]equal_to': 'true'
+
+        PingClient_7: &PING_CLIENT_7
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[7]'
+            noofretries: 3
+            sleepbetweenretry: 60
+            ping_client:
+                'client_status[?]equal_to': 'true'
+
+        VerifyHeartbeatStatusOfClient6: &VERIFY_HEARTBEAT_STATUS_OF_CLIENT_6
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[6]'
+            noofretries: 3
+            sleepbetweenretry: 60
+            heartbeat_status:
+                'client_status[?]equal_to': 'UP'
+
+        VerifyHeartbeatStatusOfClient7: &VERIFY_HEARTBEAT_STATUS_OF_CLIENT_7
+            Type: 'Messaging'
+            TestMessaging: 'nsxmanager.[1].messagingclient.[7]'
+            noofretries: 3
+            sleepbetweenretry: 60
+            heartbeat_status:
+                'client_status[?]equal_to': 'UP'
+
+        StopProtonServiceOnMPNode1:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StopProtonServiceOnMPNode2:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StopProtonServiceOnMPNode3:
+             <<: *STOP_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode1:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[1].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode2:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[2].nsxservice.[1]"
+
+        StartProtonServiceOnMPNode3:
+             <<: *START_PROTON_SERVICE
+             TestService: "nsxmanager.[3].nsxservice.[1]"
+
+        RestartMPAOnESX1: &RESTART_MPA_ON_ESX1
+            Type: Host
+            TestHost: 'esx.[1]'
+            sleepbetweenworkloads: 120
+            configure_service_state:
+                state: 'restart'
+                service_name: 'nsx-mpa'
+                execution_type: 'cli'
+
+        RestartMPAOnESX2:
+            <<: *RESTART_MPA_ON_ESX1
+            TestHost: 'esx.[2]'
+
+        RestartDAOnESX1: &RESTART_DA_ON_ESX1
+            Type: Host
+            TestHost: 'esx.[1]'
+            sleepbetweenworkloads: 120
+            configure_service_state:
+                state: 'restart'
+                service_name: 'nsx-da'
+                execution_type: 'cli'
+
+        RestartDAOnESX2:
+            <<: *RESTART_DA_ON_ESX1
+            TestHost: 'esx.[2]'
+
+        RestartNSXAOnESX1: &RESTART_NSXA_ON_ESX1
+            Type: Host
+            TestHost: 'esx.[1]'
+            sleepbetweenworkloads: 120
+            configure_service_state:
+                state: 'restart'
+                service_name: 'nsxa'
+                execution_type: 'cli'
+
+        RestartNSXAOnESX2:
+            <<: *RESTART_NSXA_ON_ESX1
+            TestHost: 'esx.[2]'
+
+        StopController2: &STOP_CONTROLLER_2
+            <<: *STOP_CONTROLLER_1
+            TestController: 'nsxcontroller.[2]'
+
+        StopController3: &STOP_CONTROLLER_3
+            <<: *STOP_CONTROLLER_1
+            TestController: 'nsxcontroller.[3]'
+
+        StartController2: &START_CONTROLLER_2
+            <<: *START_CONTROLLER_1
+            TestController: 'nsxcontroller.[2]'
+
+        StartController3: &START_CONTROLLER_3
+            <<: *START_CONTROLLER_1
+            TestController: 'nsxcontroller.[3]'
+
+        RestartEdgeNode1:
+            Type: VM
+            TestVM: "nsxedge.[1]"
+            vmstate: reboot
+
+        RestartEdgeNode2:
+            Type: VM
+            TestVM: "nsxedge.[2]"
+            vmstate: reboot

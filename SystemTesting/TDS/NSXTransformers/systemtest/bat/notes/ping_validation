@@ -1,0 +1,132 @@
+BAT testbed validation with ping
+
+/dbc/pa-dbc1102/jworsnup/nsx-qe/vdnet/automation/TDS/NSXTransformers/systemtest/bat/TdsTenantsLocalValidateNetworkEsxTds.yaml
+/tmp/vdnet/20141123-183600
+http://racetrack-dev.eng.vmware.com/result.php?id=560159
+
+Debian
+ route add default gw [ip address]
+ route add 20.1.1.0
+
+arping -c 2  -s 20.1.1.10  20.1.5.12 -I eth1
+
+JUBMO
+ ip link set dev eth0 mtu 1350
+# ping jumbo no DF, no data fragmentation
+ping -M do -c 3 -s 8850 10.146.106.108
+
+
+esx.1 ip address: 10.146.107.92
+esx.2 ip address: 10.146.108.40
+esx.3 ip address: 10.146.104.34
+esx.4 ip address: 10.146.109.24
+esx.5 ip address: 10.146.111.85
+esx.6 ip address: 10.146.101.207
+esx.7 ip address: 10.146.108.136
+esx.8 ip address: 10.146.110.162
+esx.9 ip address: 10.146.103.255
+esx.10 ip address: 10.146.103.94
+esx.11 ip address: 10.146.111.16
+nsxcontroller.1 ip address: 10.146.101.165
+nsxmanager.1 ip address: 10.146.101.103
+
+grep 'IP address:' testcase.log
+
+alias vm1='ssh  root@10.146.111.234       '
+alias vm2='ssh  root@10.146.108.140       '
+alias vm3='ssh  root@10.146.106.108       '
+alias vm4='ssh  root@10.146.104.64        '
+alias vm5='ssh  root@10.146.104.137       '
+alias vm6='ssh  root@10.146.104.162       '
+alias vm7='ssh  root@10.146.103.222       '
+alias vm8='ssh  root@10.146.103.240       '
+alias vm9='ssh  root@10.146.110.60        '
+alias vm10='ssh root@10.146.109.116       '
+alias vm11='ssh root@10.146.107.247       '
+alias vm12='ssh root@10.146.106.20        '
+alias vm13='ssh root@10.146.107.40        '
+alias vm14='ssh root@10.146.105.37        '
+alias vm15='ssh root@10.146.105.225       '
+alias vm16='ssh root@10.146.105.82        '
+
+
+
+
+ESX source VM - target VM
+
+ 01  1.1 2.1 3.1 == 2.10 3.10 !4.10 !6.10 !10.10 no PLR
+ 02  1.1 2.1 3.1 == 3.10
+ 04  5.1 ==  5.11 5.12 6.10 7.10 8.10
+ 06  5.1 == 6.10 7.10
+ 07  6.1 == 6.11 7.10 8.10
+ 10  8.1 == 8.11 8.12
+
+Redhat
+route delete default gw 10.146.96.1 eth0
+route add default gw 20.1.7.1 eth1
+route delete -net 20.1.5.0 netmask 255.255.255.0 gw 20.1.7.1 eth1
+
+route add -net 100.0.0.0 netmask 255.0.0.0 gw 20.1.9.1 dev eth1
+
+========================================
+KVM
+========================================
+
+esx.1 ip address: 10.146.106.148
+kvm.1 ip address: 10.146.100.219
+kvm.2 ip address: 10.146.111.233
+kvm.3 ip address: 10.146.105.117
+kvm.4 ip address: 10.146.108.251
+kvm.5 ip address: 10.146.109.86
+kvm.6 ip address: 10.146.102.1
+kvm.7 ip address: 10.146.100.131
+kvm.8 ip address: 10.146.105.74
+kvm.9 ip address: 10.146.110.201
+kvm.10 ip address: 10.146.103.180
+nsxcontroller.1 ip address: 10.146.100.191
+nsxmanager.1 ip address: 10.146.104.99
+
+
+grep 'IP address:' testcase.log
+
+alias vm1='ssh  root@10.146.101.201   '
+alias vm2='ssh  root@10.146.104.43    '
+alias vm3='ssh  root@10.146.110.41    '
+alias vm4='ssh  root@10.146.102.184   '
+alias vm5='ssh  root@10.146.104.51    '
+alias vm6='ssh  root@10.146.105.249   '
+alias vm7='ssh  root@10.146.105.51    '
+alias vm8='ssh  root@10.146.108.57    '
+alias vm9='ssh  root@10.146.104.217   '
+alias vm10='ssh root@10.146.100.154   '
+alias vm11='ssh root@10.146.111.204   '
+alias vm12='ssh root@10.146.102.151   '
+alias vm13='ssh root@10.146.108.240  '
+alias vm14='ssh root@10.146.110.13   '
+alias vm15='ssh root@10.146.107.89   '
+alias vm16='ssh root@10.146.102.27   '
+
+
+
+
+
+source VM - target VM
+default ping
+ping -M do -c 3 -s 1450 10.146.106.108  # 1500 will fail, needing 50 bytes more for vtep header
+ 01  1.1 2.1 3.1 == 2.10 3.10
+ 02  1.1 2.1 3.1 == 1.10 3.10
+ 04  5.1 6.1 7.1 8.1 == 5.11 5.12 6.10 7.10
+ 06  5.1 6.1 7.1 == 6.10 7.10 8.10
+ 07  5.1 6.1 7.1 8.1 == 6.11 7.10 8.10
+ 10  5.1 6.1 7.1 8.1 == 8.11 8.12
+
+jumbo ping
+ping -M do -c 3 -s 8850 10.146.106.108
+
+ 01  1.1 2.1 3.1 == 2.10 3.10
+ 02  1.1 2.1 3.1 == 1.10 3.10
+ 04  5.1 6.1 7.1 8.1 == 5.11 5.12 6.10 7.10
+ 06  5.1 6.1 7.1 == 6.10 7.10 8.10
+ 07  5.1 6.1 7.1 8.1 == 6.11 7.10 8.10
+ 10  5.1 6.1 7.1 8.1 == 8.11 8.12
+

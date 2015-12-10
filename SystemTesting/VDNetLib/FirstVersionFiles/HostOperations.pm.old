@@ -1,0 +1,3726 @@
+########################################################################
+#       Copyright (C) 2009 VMware, Inc.                                #
+#       All Rights Reserved                                            #
+########################################################################
+
+package VDNetLib::HostOperations;
+
+########################################################################
+#                                                                      #
+# VDNetLib::HostOperations Module                                      #
+#                                                                      #
+# Methods provided (exported) by the Module:                           #
+#      1. HostStress                - Stress test with enable/disable  #
+#                                     option                           #
+#      2. StandbyVM                 - Place VM in standby mode         #
+#      3. HibernateVM               - Place VM in Hibernation          #
+#      4. RebootVM                  - Reboot the host                  #
+#      5. ShutdownVM                - Shutdown the host                #
+#      6. RunUW                     - API for running user world apps  #
+#      7. RunVSWIF                  - API for vswif ops                #
+#      8. GetvSwitchNames           - API for obtaining all vSwitch    #
+#                                     names                            #
+#      9. GetPortGroupNames         - API for obtaining all PortGroup  #
+#                                     names                            #
+#     10. GetVMNames                - API for obtaining all VM names   #
+#     11. GetVMID                   - API for obtaining VM ID          #
+#     12. GetVMXPath                - API for obtaining VMX File path  #
+#     13. GetVMXVesrion             - API for obtaining VMX File Vrsion#
+#     14. GetGuestInfo              - API for obtaining Guest Info     #
+#     15. CreatevSwitch             - API for creating a vSwitch       #
+#     16. DeletevSwitch             - API for deleting a vSwitch       #
+#     17. GetvSwitchFromPGroup      - API for obtaining vSwitch to     #
+#                                     which a port group belongs       #
+#     18. GetPGroupFromVnicMac      - API for obtaining PortGroup      #
+#                                     belonging to VNIC Mac address    #
+#     19. CreatePortGroup           - API for creating a port group on #
+#                                     vSwitch                          #
+#     20. DeletePortGroup           - API to delete a port group       #
+#     21. GetvSwitchFromPGroup      - API to get vSwitch from portgroup#
+#     22. GetvSwitchPorts           - API to get vsi nodes for vswitch #
+#     23. GetVSINodeStatFromMAC     - API to get node corresponding to #
+#                                     the MAC address of vnic          #
+#                                                                      #
+#      Each of the above item is defined as a class method.            #
+#                                                                      #
+#      Date: 05-June-2009                                              #
+#      Revision Date: 05-June-2009                                     #
+#      Revision Date: 02-July-2009                                     #
+#      Revision Number: 1.0                                            #
+#                                                                      #
+# Results:                                                             #
+#      0 = Success                                                     #
+#      1 = Failure                                                     #
+#                                                                      #
+# Side effects:                                                        #
+#         None                                                         #
+########################################################################
+
+###################################
+# Load modules                    #
+###################################
+BEGIN {
+    use strict;
+    use warnings;
+    use VDNetLib::VsishStress;
+    use VDNetLib::STAFHelper;
+    use VDNetLib::Utilities;
+    use VDNetLib::VDErrorno qw(VDSetLastError VDGetLastError FAILURE SUCCESS);
+};
+
+######################################################
+# Methods to be exported by default are listed below #
+######################################################
+BEGIN {
+    use Exporter();
+    our ($VERSION, @ISA, @EXPORT, @EXPORT_OK,);
+    @ISA = qw(Exporter);
+    @EXPORT_OK = qw(
+          &RunUW
+          &GetVMID
+          &RunVSWIF
+          &HtandbyOS
+          &RebootVM
+          &HostStress
+          &GetVMNames
+          &GetVMXPath
+          &ShutdownVM
+          &HibernateVM
+          &GetGuestInfo
+          &CreatevSwitch
+          &DeletevSwitch
+          &GetVMXVesrion
+          &DeletePortGroup
+          &GetvSwitchNames
+          &CreatePortGroup
+          &GetvPortGroupNames
+          &GetvSwitchFromPGroup
+          &GetPGroupFromVnicMac
+    );
+};
+
+# Keep this flag disabled by setting it to 0. To be used
+# only for debugging purposes
+$debug = 0;
+$NETDVSPATH = "/usr/lib/vmware/bin";
+
+##############################################################
+# Constructor of HostOperations  class Accepts IP address of #
+# ESX machine as input while creating an object of the class.#
+##############################################################
+sub new {
+
+    shift;
+
+    # Filling up anonymous hash contents
+    my $self = {
+        ## IP address of ESX machine
+        _HOSTIP => shift,
+
+        ## Obtain Staf handle of the process from VDNetLib::STAFHelper module
+        _STAFHelper => VDNetLib::STAFHelper->new(),
+
+    };
+
+    bless($self);
+
+    # variable Definitions
+    $self->{_OS}  = ""; # OS of the Host IP provided
+    $self->{_Env} = ""; # Architecture of the Host IP provided
+    $self->{Host} = ""; # Host type for the IP supplied.(ESX for ESX
+                        # and VMKernel for visor.
+
+    $self->{VMIDS}        = ""; # List of VMID's
+    $self->{PGNames}      = ""; # List of PortGroup Names
+    $self->{VMNames}      = ""; # List of VMNames
+    $self->{vSwitchNames} = ""; # List of vSwitch Names
+
+    if ( defined $self->{_HOSTIP} ) {
+        # Check for return value of VDNetLib::STAFHelper module constructor
+        if (ref($self->{_STAFHelper}) ne "VDNetLib::STAFHelper") {
+            print STDERR "Invalid STAF handle obtained".
+                         " in constructor\n" if $debug;
+            VDSetLastError(VDGetLastError());
+            return FAILURE;
+        }
+
+
+        # Set host parameters such as OS, architecture, type etc.
+        my $res = $self->{_STAFHelper}->SetHostParms($self->{_HOSTIP});
+        if ($res eq "FAILURE") {
+           print STDERR "Failed to set Host parameters\n";
+           VDSetLastError(VDGetLastError());
+           return FAILURE;
+        }
+
+        # Getting OS (linux or windows) and Architecture
+        # of the Processor (32bit or 64bit)
+        $self->{_Env} = $self->{_STAFHelper}->{_ARCH};
+        $self->{_OS}  = $self->{_STAFHelper}->{_OS};
+
+        if ($self->{_OS} =~ m/Unknown OS/i) {
+            print STDERR "Unknown os, not supported\n";
+            VDSetLastError("EOSNOTSUP");
+            return FAILURE;
+        }
+
+        # Setting the Host Type
+        # The SetHostParms method from STAFHelper module
+        # internally calls GetArch and GetOS methods. The
+        # GetOS method return ESX if the host is ESX. The
+        # Following steps will just seperate the Host type
+        # and OS.
+        if ($self->{_OS} =~ m/ESX/i) {
+            $self->{_OS} = "Linux";
+            $self->{Host} = "ESX";
+        }
+        print " $self->{_Env} $self->{_OS} \n" if $debug;
+
+    } else {
+        print STDERR "Please supply host ip while creating".
+                     "object of HostOperation\n";
+        VDSetLastError("EFAIL");
+        return FAILURE;
+    }
+
+    return $self;
+}
+
+
+###########################################################
+# Method Name: RunVSWIF                                   #
+#                                                         #
+# Objective: API to do all the tasks related to vSWIF     #
+#                                                         #
+# Operation: The API is developed using the underlying    #
+#            command esxcfg-vswif to carryout vSwif tasks #
+#            such as adding a vSwif/deleting, assigning IP#
+#            etc.                                         #
+#                                                         #
+# input arguments: TBD                                    #
+#                                                         #
+# Output: TBD   (if promiscous state is disabled)         #
+#         TBD   (if promiscous state is enabled)          #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub RunVSWIF {
+    my $self = shift;
+    my $OperationName = shift;
+    my @args = @_;
+    my $command;
+    my $res;
+    my $res1;
+    my $data;
+    my $vswifname;
+    my $vswifnames;
+
+    if ($self->{Host} eq "ESX") {
+
+        # Holds all the possible configuration options
+        # Two options enableAll and disableAll have been left out
+        # as disableAll may result in loss of connectivity
+        my @tests = qw(add delete list disable enable unset exists);
+
+
+        if (not grep(/\b$OperationName\b/, @tests)) {
+            print STDERR "Invalid function on vSwif. Only Following".
+                         " functions are supported\n";
+            print STDERR "RunVSWIF functions:\n","\t","@tests","\n";
+            VDSetLastError("EINVALID");
+            return FAILURE;
+        }
+
+        # build the command to check if vswif support exists
+        $command = "esxcfg-vswif -h";
+        $command = "start shell command $command wait".
+                   " returnstderr returnstdout";
+        ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                        "Process",
+                                                        "$command");
+
+        if (($res eq "SUCCESS" and $data =~ m/esxcfg-vswif: not found/i)
+            or $res eq "FAILURE") {
+            print STDERR "vSwif operation is not supported on ESXi/visor\n";
+            VDSetLastError("EFAIL");
+            return FAILURE;
+        }
+
+
+        ###############################################################
+        # Option definition for add: vswifname, portgroup name and    #
+        # ipoption are the valid parameters.                          #
+        # Ex:                                                         #
+        #    RunVSWIF("add", "vswif1","happy","DHCP") or              #
+        #    RunVSWIF("add", "vswif1","happy","10.112.173.200"        #
+        #              ,"255.255.254.0")                              #
+        #    In the above mentioned example vswif1 is vswif name and  #
+        #    happy is portgroup name and then follows ipoption and    #
+        #    subnet mask. The ip can be either DHCP in which case the #
+        #    subnet mask is not required.                             #
+        ###############################################################
+        if ($OperationName eq "add") {
+            $vswifname     = "'$args[0]'" if defined $args[0];
+            my $portgroup  = "'$args[1]'" if defined $args[1];
+            my $ipoption   = "$args[2]" if defined $args[2];
+            my $subnetmask = "$args[3]" if defined $args[3];
+
+
+            # Check if ipoption is DHCP. If DHCP, the IP address
+            # is assigned automatically otherwise verify for correct
+            # format of IP address.
+            if (defined $ipoption and not $ipoption =~ m/DHCP/i) {
+               $res = VDNetLib::Utilities::IsValidIP($ipoption);
+               $res1 = VDNetLib::Utilities::IsValidIP($subnetmask);
+
+               # Verify if IP and Subnetmask have correct format.
+               # This may fail if subnet mask is in the form of
+               # prefix for ipv6 case.
+               print "RESULT = $res  and RESULT1 = $res1 \n" if $debug;
+               if ($res eq "FAILURE" and $res1 eq "FAILURE") {
+                   print STDERR "Invalid IP and subnet mask parameter passed\n";
+                   VDSetLastError("EINVALID");
+                   return FAILURE;
+               }
+            }
+
+            # Verify if the supplied portgroup name already exists.
+            my $portgroups = $self->GetPortGroupNames();
+            if ($portgroups !~ m/$portgroup/) {
+               print STDERR "The supplied portgroup does not  exist\n
+                             Please supply correct Portgroup name\n";
+               VDSetLastError("EINVALID");
+               return FAILURE;
+            }
+
+            # build the command for creating a vswif.The DHCP or IP option
+            # and portgroup names are mandatory to create a vswif
+            if (defined $vswifname && $vswifname =~ m/vswif[0-9]+/i) {
+               if (defined $portgroup && $portgroup ne "") {
+
+                  # Check  if $ipoption is DHCP. Most of the times
+                  # it is observed that DHCP option fails if either
+                  # DHCP server is not there or it is too slow to
+                  # respond. However, with ip and subnet option
+                  # the command always succeeds, unless the vswif
+                  # name is not same while creation.
+                  if (defined $ipoption && $ipoption =~ m/DHCP/i) {
+                      $command = "esxcfg-vswif -a -i DHCP";
+                      $command .= " -p $portgroup $vswifname";
+                      print "Add vswif Command is $command\n" if $debug;
+                  } elsif (defined $ipoption && defined $subnetmask) {
+                      $command = "esxcfg-vswif -a -i $ipoption -n $subnetmask";
+                      $command .= " -p $portgroup $vswifname";
+                      print "Add vswif Command is $command\n" if $debug;
+                  } elsif (defined $ipoption && $ipoption =~ m/[0-9a-z:]+/i) {
+                      if (defined $subnetmask && $subnetmask =~ m/[0-9]+/) {
+                         $command = "esxcfg-vswif -a -i $ipoption";
+                         $command .= " -n $subnet -p $portgroup $vswifname";
+                         print "Add vswif Command is $command\n" if $debug;
+                      } else {
+                          print STDERR "Subnetmask is not supplied or".
+                                       " wrong subnetmask\n";
+                          VDSetLastError("EINVALID");
+                          return FAILURE;
+                      }
+                  } else {
+                      print STDERR "Please provide ip option as DHCP or".
+                                   " IP address to be assigned to $vswifname".
+                                   " along with subnetmask\n";
+                      VDSetLastError("EINVALID");
+                      return FAILURE;
+                  }
+               } else {
+                   print STDERR "Please provide valid portgroup name to be".
+                                " used for adding a vSwif\n";
+                   VDSetLastError("EINVALID");
+                   return FAILURE;
+               }
+            } else {
+               print STDERR "missing or improper vSwif name\n";
+               VDSetLastError("EINVALID");
+               return FAILURE;
+            }
+
+            # build the command to run with STAFHelpers runStafCmd method
+            $command = "start shell command $command wait".
+                       " returnstderr returnstdout";
+            ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                            "Process",
+                                                            "$command");
+
+            # check if output of vswif creation is success/failure
+            if ($res eq "FAILURE") {
+                print STDERR "$command failed on $host\n";
+                VDSetLastError(VDGetLastError());
+                return FAILURE;
+            }
+
+            if ($data =~ m/Error/i || $data =~ m/Interface removed/i) {
+                print STDERR "Error in creation of vSwif $vswifname: $data \n";
+                VDSetLastError("EFAIL");
+                return FAILURE;
+            } elsif ($data =~ m/Nothing to flush/i &&
+                $data =~ m/Generated New MAC address,.* for $vswifname/i) {
+                print STDOUT "Successfully added a vSwif".
+                             " to $portgroup\n" if $debug;
+                return SUCCESS;
+            } elsif ($data eq "") {
+                print STDERR "STAF returned empty results\n";
+                VDSetLastError("EFAIL");
+                return FAILURE;
+            } elsif ($data =~ m/Vswif with that name already exists/i) {
+                print STDOUT "Vswif with name $vswifname already exists\n";
+                return SUCCESS;
+            }
+            return SUCCESS;
+        }
+
+
+        ################################################################
+        # Option definition for delete: vswifname is the only required #
+        # parameter                                                    #
+        # Ex:                                                          #
+        #    RunVSWIF("delete", "vswif1")                              #
+        #    In the above example the delete is the operation name and #
+        #    vswif1 is the name of the vswif to be deleted             #
+        ################################################################
+        if ($OperationName eq "delete") {
+            $vswifname = "$args[0]" if defined $args[0];
+
+            # Do not allow the delete operation on vswif0
+            if ($vswifname =~ m/vswif0/i) {
+               print STDERR "Deleting of $vswifname is not allowed\n";
+               VDSetLastError("EINVALID");
+               return FAILURE;
+            }
+
+            # build the command for deleting the vswif name if it
+            # already exists and else throw error for passing invalid
+            # vswif name
+            $vswifnames = $self->RunVSWIF("list");
+            if (defined $vswifname && $vswifnames =~ m/$vswifname/i) {
+                $command = "esxcfg-vswif -d $vswifname";
+            } else {
+                print STDERR "missing or improper vSwif name\n";
+                VDSetLastError("EINVALID");
+                return FAILURE;
+            }
+
+            # wrap the command with sufficient parameters to be able to run
+            # with runStafCmd.
+            $command = "start shell command $command".
+                       " wait returnstderr returnstdout";
+		      ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                            "Process",
+                                                            "$command");
+
+            # verify the result for success or failure condition
+		      if ($res eq "Failure" or $data =~ m/Error/i) {
+		         print STDERR "Error trying to perform delete operation,".
+                            " No such vswif: $vswifname\n";
+		         VDSetLastError("EFAIL");
+		         return FAILURE;
+		      } elsif ($res eq "FAILURE" or $data =~ m/Nothing to flush/i) {
+		         print STDOUT "Successfully deleted a vSwif $vswifname\n"
+                            if $debug;
+		         return SUCCESS;
+		      }
+        }
+
+
+        ################################################################
+        # Option definition for list: no input arguments are required  #
+        # other than operation name                                    #
+        #                                                              #
+        # Ex:                                                          #
+        #    RunVSWIF("list")                                          #
+        #    The list option lists all the vswif names.                #
+        ################################################################
+        if ($OperationName eq "list") {
+
+            $command = "esxcfg-vswif -l";
+            $command = "start shell command $command wait".
+                       " returnstderr returnstdout";
+
+            ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                            "Process",
+                                                            "$command");
+
+            if ($res ne "FAILURE" and $data =~ m/vswif/i) {
+                print "\n\nFollowing is the output of vSwif".
+                          " list command: $data\n" if $debug;
+                my @t = split(/\n/, $data);
+                my $size = @t;
+
+                # collect the vswif names alone for generating
+                # vswif name string.
+                $vswifnames = "";
+                for (my $i = 1;$i < $size;$i ++) {
+                    my @vswifarray = split(/\s+/,$t[$i]);
+                    $vswifnames .= "$vswifarray[0] ";
+                }
+
+                return $vswifnames;
+            } else {
+                print STDERR "Failed to list vswif information\n";
+                VDSetLastError("EFAIL");
+                return FAILURE;
+            }
+        }
+
+
+        ################################################################
+        # Option definition for enable:                                #
+        #    only vswif name is required with operation name           #
+        # Ex:                                                          #
+        #    RunVSWIF("enable", "vswif1")                              #
+        ################################################################
+        if ($OperationName eq "enable") {
+
+            $vswifname  = "$args[0]" if defined $args[0];
+
+            # Build the command if vswif already exists or else throw an error
+            # for invalid vswif name
+            $vswifnames = $self->RunVSWIF("list");
+            if (defined $vswifname && $vswifnames =~ m/$vswifname/i) {
+                $command = "esxcfg-vswif -e $vswifname";
+            } else {
+                print STDERR "missing or improper vSwif name\n";
+                VDSetLastError("EINVALID");
+                return FAILURE;
+            }
+
+            $command = "start shell command $command wait".
+                       " returnstderr returnstdout";
+            ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                            "Process",
+                                                            "$command");
+
+            if ($res ne "FAILURE" and $data eq "") {
+                print STDOUT "Successfully enabled the vswif $vswifname\n"
+                             if $debug;
+                return SUCCESS;
+            } else {
+                print STDERR "Failed to enable vswif $vswifname\n";
+                VDSetLastError("EFAIL");
+                return FAILURE;
+            }
+        }
+
+
+        ################################################################
+        # Option definition for disable: only vswif name is required   #
+        # with operation name                                          #
+        # Ex:                                                          #
+        #    RunVSWIF("disable", "vswif1")                             #
+        ################################################################
+        if ($OperationName eq "disable") {
+
+            $vswifname  = "$args[0]" if defined $args[0];
+
+            # Do not allow the disable operation on vswif0
+            if ($vswifname =~ m/vswif0/i) {
+               print STDERR "Deleting of $vswifname is not allowed\n";
+               VDSetLastError("EINVALID");
+               return FAILURE;
+            }
+
+            # Get all vswif names and then build the command for disabling the
+            # vswif if it already exists else throw an error for invalid vswif
+            # name.
+            $vswifnames = $self->RunVSWIF("list");
+            if (defined $vswifname && $vswifnames =~ m/$vswifname/i) {
+                $command = "esxcfg-vswif -s $vswifname";
+            } else {
+                print STDERR "missing or improper vSwif name\n";
+                VDSetLastError("EINVALID");
+                return FAILURE;
+            }
+
+            $command = "start shell command $command wait".
+                       " returnstderr returnstdout";
+            ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                             "Process",
+                                                             "$command");
+
+            if ($res ne "FAILURE" and  $data =~ m/Nothing to flush/i) {
+               print STDOUT "Successfully disabled the vswif $vswifname\n"
+                             if $debug;
+               return SUCCESS;
+            } else {
+               print STDERR "Failed to disable vswif $vswifname\n";
+               VDSetLastError("EFAIL");
+               return FAILURE;
+            }
+        }
+
+
+
+        ################################################################
+        # Option definition for disable: vswif name and ip to be unset #
+        # is required with operation name                              #
+        # Unset parameter:    v4 for ipv4                              #
+        #                     DHCPV6 for IPV6 with DHCP                #
+        #                     AUTOCONF for Auto Configuration          #
+        #                     X:X:X::/X for IPV6 with Subnetmask where #
+        #                     X refers to octates                      #
+        # Ex:                                                          #
+        #    RunVSWIF("unset", "V4","vswif1")                          #
+        #    In the above example "unset" is the operation to be perfo-#
+        #    rmed on vswif. The next parameter should be one of the    #
+        #    following:                                                #
+        #       "V4"       ==> for unsetting IPV4 address of vswif1    #
+        #       "DHCPv6"   ==> for unsetting IPV6 with DHCP            #
+        #       "AUTOCONF" ==> for autoconfiguration                   #
+        #       "X:X:X::/X ==. for IPV6 addresses with subnetmask      #
+        ################################################################
+        if ($OperationName eq "unset") {
+
+            $vswifname     = "$args[0]" if defined $args[0];
+            my $unsetop    = "'$args[1]'" if defined $args[1];
+            my $ipv6mask   = "'$args[2]'" if defined $args[2];
+
+
+            # Do not allow the unset operation on vswif0
+            if ($vswifname =~ m/vswif0/i) {
+               print STDERR "Deleting of $vswifname is not allowed\n";
+               VDSetLastError("EINVALID");
+               return FAILURE;
+            }
+
+            # Get all vswif names and then build the command for unsetting the
+            # vswif if it already exists else throw an error for invalid vswif
+            # name.
+            $vswifnames = $self->RunVSWIF("list");
+            if (not defined $vswifname || (defined $vswifname &&
+                $vswifnames !~ m/$vswifname/)) {
+                print STDERR "missing or improper vSwif name\n";
+                VDSetLastError("EINVALID");
+                return FAILURE;
+            }
+
+            # Build the command
+            if (defined $unsetop) {
+                if (lc($unsetop) =~ m/v4/i) {
+                    $command = "esxcfg-vswif -U V4 $vswifname";
+                } elsif (lc($unsetop) =~ m/dhcpv6/i) {
+                    $command = "esxcfg-vswif -U DHCPV6 $vswifname";
+                } elsif (lc($unsetop) =~ m/autoconf/i) {
+                    $command = "esxcfg-vswif -U AUTOCONF $vswifname";
+                } elsif (lc($unsetop) =~ m/[0-9a-f:]+/i) {
+                    if (defined $ipv6mask && $ipv6mask =~ m/[0-9]+/) {
+                        $command = "esxcfg-vswif -U $unsetop/$ipv6mask";
+                    }
+                } else {
+                    print STDERR "invalied unset option\n";
+                    VDSetLastError("EINVALID");
+                    return FAILURE;
+                }
+            } else {
+                print STDERR "invalied unset option\n";
+                VDSetLastError("EINVALID");
+                return FAILURE;
+            }
+
+            # wrap the command to run with runStafCmd method of StafHelepr
+            # module
+            $command = "start shell command $command wait".
+                       " returnstderr returnstdout";
+            ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                             "Process",
+                                                             "$command");
+
+            # Check for success or failure of the command
+            if ($res ne "FAILURE" and ($data =~ m/Setting IP config/i or
+                $data =~ m/Nothing to flush/i)) {
+                print STDOUT "Successfully unset the IP on $vswifname\n"
+                             if $debug;
+                return SUCCESS;
+            } else {
+                print STDERR "Failed to unset IP on vswif $vswifname\n";
+                VDSetLastError("EFAIL");
+                return FAILURE;
+            }
+        }
+
+        #################################################################
+        # Option definition for list: no input arguments are required   #
+        # other than operation                                          #
+        # name.                                                         #
+        # Ex:                                                           #
+        #    RunVSWIF("exists")                                         #
+        #################################################################
+        if ($OperationName eq "exists") {
+
+            $vswifname = "'$args[0]'" if defined $args[0];
+
+            # list all the vswifs and check if given vswif exists
+            $vswifnames = $self-RunVSWIF("list");
+            if (defined $vswifname && $vswifnames =~ m/$vswifname/i) {
+                print STDOUT "vswif $vswifname exists" if $debug;
+                print STDOUT "$res\n" if $debug;
+                return SUCCESS;
+            } else {
+                print STDERR "INVALID vswif name or $vswifname does".
+                             " not exists\n";
+                VDSetLastError("EINVALID");
+                return FAILURE;
+            }
+
+        }
+    } else {
+        print STDERR "This command can run only on ESX, not on WorkStation\n";
+        VDSetLastError("EINVALID");
+        return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: HostStress                                 #
+#                                                         #
+# Objective: To enable/disable stress option              #
+#                                                         #
+# Operation: Enables/Disable the stress on ESX guests     #
+#            using vsish commands.                        #
+#                                                         #
+# input arguments: Stress option - Enable/disable         #
+#                  Stress option Name                     #
+#                  Stress option Value                    #
+#                                                         #
+# Output: 0 On Success                                    #
+#         1 On Failure                                    #
+#                                                         #
+# Export Status: Exported                                 #
+#                                                         #
+# Example 1:                                              #
+#   HostStress("Enable", "IOForceCopy", 1)                #
+#                                                         #
+#   In the above example $opt will take the value "Enable"#
+#   $stressopt will take a value of IOForceCopy and $stre-#
+#   sval will have value of 1. The test sets the value of #
+#   Stress option IOForceCopy to 1 and will enable it.    #
+#                                                         #
+# Example 2:                                              #
+#   HostStress("Disable", "IOForceCopy", 0)               #
+#                                                         #
+#   In the above example $opt will take value of "Disable"#
+#   $stressopt will take a value of IOForceCopy and $stre-#
+#   sval will have value of 0. The test sets the value of #
+#   Stress option IOForceCopy to 1 and will disable it.   #
+#                                                         #
+# Note: If the $opt is set to Disable, the stress value   #
+#       passed will be overwritten with 0.                #
+###########################################################
+sub HostStress {
+    my $self      = shift;
+    my $opt       = shift;# $opt can be enable or disable
+    my $stressopt = shift;# name of the stress option
+    my $stressval = shift;# value to be assigned to the stress option
+    my $res;
+    my $command;
+
+    print "OPT = $opt, $stressopt, $stressval \n" if $debug;
+
+    # Get the hash of vsishstress to verify the parameters of a given
+    # stress option, by creating the object of vsishstress and get stress
+    # parameters
+    my $obj = VDNetLib::VsishStress->new();
+
+    print "OBJECT IS $obj and ", ref($obj), "**\n"if $debug;
+
+    # The $h will contain a reference to a hash of stress parameter
+    my $h = $obj->GetStressParams("$stressopt");
+
+    if (not defined $h || $h eq "") {
+        print STDERR "Invalid stress option\n";
+        VDSetLastError("EINVALID");
+	     return FAILURE;
+    }
+
+    # set stressval to 0 incase we have stress to be disabled.
+    if (lc($opt) eq "disable") {
+        $stressval = 0;
+    } elsif (lc($opt) eq "enable") {
+        if (not defined $stressval) {
+            $stressval = $h->{default};
+        }
+    } else {
+	     print STDERR "Invalid option for stress test.".
+                     " (should be enable or disable)\n";
+	     VDSetLastError("EINVALID");
+	     return FAILURE;
+    }
+
+    # run this command on ESX host
+  
+    if ($self->{Host} eq "ESX") {
+
+       # Check if vsish is installed on ESX
+       $command = "vsish -e ls";
+       $command = "start shell command $command wait returnstderr".
+                  " returnstdout";
+	    ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                        "Process",
+                                                        "$command");
+       if ($res eq "FAILURE" || $data =~ m/No such file or directory/i) {
+          print STDERR "vsish is not installed on install\n";
+          print STDERR "Please use debug-tools rpm to install vsish\n";
+          VDSetLastError("EFAIL");
+          return FAILURE;
+       }
+
+       # check for the range of stress options value by verifying the stress
+       # option hash
+	    if (($stressval > $h->{max}) || ($stressval < $h->{min})) {
+	        print STDERR "Invalid stress value (out of range)";
+	        VDSetLastError("EINVALID");
+	        return FAILURE;
+	    } else {
+            # Here the check for current value of vsish stress is not
+            # considered. User of this routine need to call
+            # GetCurrentStressOptVal to access the current value for
+            # the stress option.
+            # Here check for vsish support. Following command is not mandatory
+            # in KL.next builds.
+            $command = "vsish -e set /config/Misc/strOpts/ProcVerbose";
+            $command .=" employeesonly";
+            $command = "start shell command $command wait returnstderr";
+            $command .=" returnstdout";
+	         ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                             "Process",
+                                                             "$command");
+
+            # check for success or failure
+            if ($res eq "FAILURE" or $data =~ m/failed/i ||
+                $data =~ m/Extraneous/i) {
+	             print STDERR "Failed to execute vsish stress option\n";
+                print STDERR "Or not supported with this build\n";
+                VDSetLastError("EFAIL");
+		          return FAILURE;
+	         }
+
+            # verify if the given stress option is available  under vmkstress
+            $command = "start shell command vsish -e ls /reliability/vmkstress";
+            $command .=" wait returnstderr returnstdout";
+	         ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                             "Process",
+                                                             "$command");
+
+            # Check for success of failure of the above command
+            if ($res eq "FAILURE" or $data =~ m/error in command get/i or
+                $data =~ m/bad parameter/i) {
+	             print STDERR "The Stress option is not available for".
+                             " this build Or not supported with this".
+                             " build\n";
+	             VDSetLastError("EFAIL");
+	             return FAILURE;
+            }
+
+            # Check if the given stress option is available else throw an error
+            my @options = split(/\n/, $data);
+            if (not grep(/\b$stressopt\b/,@options)) {
+               print STDERR "The Stress Option $stressopt is not supported\n";
+              # VDSetLastError("EINVALID");
+              # return FAILURE;
+              # TODO:Returning success if some stress options are not supported.
+                return SUCCESS;
+            }
+
+            # Set the stress option with the stress value.
+            # Here the current value of the stress option is not verified
+            # before setting the stress option. It is assumed that the user of
+            # this method has already verified the stress options current value
+            # before calling this method. The method to get the stress options
+            # current value is defined in this module with the name
+            # GetCurrentStressOptVal.
+	         $command = "vsish -e set /reliability/vmkstress/$stressopt".
+                       " $stressval";
+            $command = "start shell command $command wait returnstderr".
+                       " returnstdout";
+	         ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                             "Process",
+                                                             "$command");
+
+            # check if setting the stress option with the value is successful.
+            if ($res eq "FAILURE" or $data =~ m/failed/i ||
+                $data =~ m/Extraneous/i) {
+	             print STDERR "Failed to execute vsish stress option\n";
+                print STDERR "Or not supported with this build\n";
+	             VDSetLastError("EFAIL");
+	             return FAILURE;
+	         } else {
+	             print "Enabled Stress option $stressopt\n" if $debug;
+                return SUCCESS;
+	         }
+	     }
+    } else {
+        print STDERR "This command can run only on ESX, not on WorkStation\n";
+        VDSetLastError("EINVALID");
+        return FAILURE;
+    }
+}
+
+###########################################################
+# Method Name: RebootVM                                   #
+#                                                         #
+# Objective: To reboot the host                           #
+#                                                         #
+# Operation: Reboot host using shutdown command for Linux #
+#            and windows.                                 #
+#                                                         #
+# input arguments: IP (optional)                          #
+#                                                         #
+# Output: 0 on Success                                    #
+#         1 on Failure                                    #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+# Note: Post VM Reboot, please ensure that the network set#
+#       ups and other pre-rebot setups are retrieved back #
+#       it the test demands so.                           #
+###########################################################
+sub RebootVM {
+    my $self = shift;
+    my $IP   = shift;
+    my $res;
+    my $OS;
+    my $data;
+    my $command;
+
+
+    # create a seperate instance of VDNetLib::STAFHelper module. The Stafhelper
+    # handle created at the time of objetc creation can not be used as that
+    # handle is for the host operations and the one created here is for
+    # VM operations.
+    # This method works using staf handle and ip address of the VM.
+    #
+    my $STAFHelper = VDNetLib::STAFHelper->new();
+    if (ref($STAFHelper) ne "VDNetLib::STAFHelper") {
+       print STDERR "Invalid STAF handle obtained in constructor\n" if $debug;
+       VDSetLastError("ESTAF");
+       return FAILURE;
+    }
+
+    # if IP is defined call SetHostParms method to get the architecture and OS
+    # of the IP given.
+    if ( defined $IP ) {
+        print "Object is $STAFHelper and IP is $IP\n" if $debug;
+        $res = $STAFHelper->SetHostParms("$IP");
+
+        if ($res eq "FAILURE") {
+            print STDERR "Failed to set parameter on $IP\n";
+            VDSetLastError(VDGetLastError());
+            return FAILURE;
+        }
+
+        $OS  = $STAFHelper->{_OS};
+    }
+
+
+    # Reboot the host/VM whose IP is given. If not reboot
+    # the host ip provided at the time of object creation
+    # Be Careful not to reboot the Host on which master
+    # controller is running
+    if (not defined $IP) {
+        $IP = $self->{_HOSTIP};
+        $OS = $self->{_OS};
+    }
+
+    if ($OS =~ m/linux/i || $OS =~ m/win/i) {
+        if ($OS =~ m/win/i) {
+            # -r option to shutdown command is to reboot
+            # -t option to shutdown command is to reboot after a time period
+            # -c option to shutdown command is to add a comment (optional)
+            #  In the following option the time is mentioned as 30 seconds and
+            #  can be changed to now to reboot immediately. However this was
+            #  given to cancel the reboot operation incase not needed.
+            $command = "shutdown -r -t 5 -c Rebooting";
+        } else {
+            # -r option to shutdown command is to reboot
+            # -t option to shutdown command is to reboot after a time period
+            $command = "shutdown -r -t 5 \\now \"Rebooting the System\"";
+        }
+        ###########################################
+        # ToDo: Check if the master controller    #
+        # executing this method lies on the ESX   #
+        # it is rebooting. The connection will be #
+        # lost and test can not proceed and a test#
+        # message needs to be flashed             #
+        ###########################################
+        $command = "start shell command $command wait returnstderr";
+        $command .=" returnstdout";
+        ($res, $data) = $self->{_STAFHelper}->runStafCmd($IP,
+                                                         "Process",
+                                                         "$command");
+        print "RESULT : result is $res and data is $data\n" if $debug;
+
+        # Check for the failure of reboot command
+        if ($res eq "FAILURE" and $data eq "") {
+            print STDERR "Failed to reboot the host\n";
+            VDSetLastError("EFAIL");
+            return FAILURE;
+        } elsif ($data eq "other side closed socket") {
+            print STDOUT "Rebooting\n" if $debug;
+            return SUCCESS;
+        } elsif ($res eq "SUCCESS") {
+            print STDOUT "Rebooting\n" if $debug;
+            return SUCCESS;
+        }
+    } else {
+        print STDERR "unknow OS, Failed to reboot the host\n";
+        VDSetLastError("EINVALID");
+        return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: ShutdownVM                                 #
+#                                                         #
+# Objective: To Shutdown the host                         #
+#                                                         #
+# Operation: halt host using shutdown command for Linux   #
+#            and windows.                                 #
+#                                                         #
+# input arguments: IP (optional)                          #
+#                                                         #
+# Output: 0 on Success                                    #
+#         1 on Failure                                    #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub ShutdownVM {
+
+    my $self = shift;
+    my $IP   = shift;
+    my $OS;
+    my $res;
+    my $data;
+    my $command;
+
+    # create a seperate instance of VDNetLib::STAFHelper module. The Stafhelper
+    # handle created at the time of objetc creation can not be used as that
+    # handle is for the host operations and the one created here is for
+    # VM operations.
+    # This method works using staf handle and ip address of the VM.
+    #
+    my $STAFHelper = VDNetLib::STAFHelper->new();
+    if (ref($STAFHelper) ne "VDNetLib::STAFHelper") {
+
+       print STDERR "Invalid STAF handle obtained in constructor\n" if $debug;
+       VDSetLastError("ESTAF");
+       return FAILURE;
+    }
+
+    # if IP is defined call SetHostParms method to get the architecture and OS
+    # of the IP given.
+    if ( defined $IP ) {
+        print "Object is $STAFHelper and IP is $IP\n" if $debug;
+        $res = $STAFHelper->SetHostParms("$IP");
+
+        if ($res eq "FAILURE") {
+            print STDERR "Failed to set parameter on $IP\n";
+            VDSetLastError(VDGetLastError());
+            return FAILURE;
+        }
+
+        $OS  = $STAFHelper->{_OS};
+    }
+
+
+    # Shutdown the given host/VM whose IP is given or shutdown
+    # the host ip provided at the time of object creation
+    if (not defined $IP) {
+        $IP = $self->{_HOSTIP};
+        $OS = $self->{_OS};
+    }
+
+    if ($OS =~ m/linux/i || $OS =~ m/win/i) {
+        if ($OS =~ m/linux/i) {
+            # -t option is for wait time to shutdown
+            # -h option is for halt after shutdown
+            # now makes the system shutdown immediately
+            $command = "shutdown -h -t 1 now";
+        } else {
+            # -s option is for shutdown of the system
+            $command = "shutdown /s /f";
+        }
+
+        ###############################################
+        # ToDo: Check if the master controller        #
+        # executing this method lies on the ESX       #
+        # it is shutting down. The connection will be #
+        # lost and test can not proceed and a test    #
+        # message needs to be flashed                 #
+        ###############################################
+        $command = "start shell command $command wait returnstderr".
+                   " returnstdout";
+        ($res, $data) = $self->{_STAFHelper}->runStafCmd($IP,
+                                                         "Process",
+                                                         "$command");
+
+        print "RES==> Result: $res and Data: $data\n" if $debug;
+
+        # Check for the success or failure of the shutdown command.
+        if ($res eq "FAILURE" or $data ne "") {
+            print STDERR "Failed to shutdown the host/VM\n";
+            VDSetLastError("EFAIL");
+            return FAILURE;
+        } else {
+            print STDOUT "Shutting down the host/VM\n" if $debug;
+            return SUCCESS;
+        }
+    } else {
+        print STDERR "unknow OS, Failed to shutdown the host\n";
+        VDSetLastError("EINVALID");
+        return FAILURE;
+    }
+}
+
+
+
+###########################################################
+# Method Name: StandbyVM                                  #
+#                                                         #
+# Objective: To StandBy the host                          #
+#                                                         #
+# Operation: Standby host using shutdown command for Linux#
+#            and windows.                                 #
+#                                                         #
+# input arguments: IP (optional)                          #
+#                                                         #
+# Output: 0 on Success                                    #
+#         1 on Failure                                    #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub StandbyVM {
+    my $self = shift;
+    my $IP   = shift;
+    my $time = 30;
+    my $OS;
+    my $res;
+    my $data;
+    my $Host;
+    my $command;
+
+    # create a seperate instance of STAFHelper module. The Stafhelper  handle
+    # created at the time of objetc creation can not be used as that handle is
+    # for the host operations and the one created here is for VM operations.
+    # This method works using staf handle and ip address of the VM.
+    my $STAFHelper = VDNetLib::STAFHelper->new();
+    if (ref($STAFHelper) ne "VDNetLib::STAFHelper") {
+       print STDERR "Invalid STAF handle obtained in constructor\n" if $debug;
+       VDSetLastError("ESTAF");
+       return FAILURE;
+    }
+
+    # if IP is defined call SetHostParms method to get the architecture and OS
+    # of the IP given.
+    if ( defined $IP ) {
+        print "Object is $STAFHelper and IP is $IP\n" if $debug;
+        $res = $STAFHelper->SetHostParms("$IP");
+
+        if ($res eq "FAILURE") {
+            print STDERR "Failed to set parameter on $IP\n";
+            VDSetLastError(VDGetLastError());
+            return FAILURE;
+        }
+
+        $OS  = $STAFHelper->{_OS};
+    }
+
+    # Standby the given host/VM whose IP is given or standby
+    # the host ip provided at the time of object creation.
+    if (not defined $IP) {
+        $IP = $self->{_HOSTIP};
+        $OS = $self->{_OS};
+    }
+
+    # build the command for Standby operation
+    if ($OS =~ m/linux/i || $OS =~ m/win/i) {
+        if ($OS =~ m/linux/i) {
+            if ($self->{Host} eq "ESX" and $IP eq $self->{_HOSTIP}) {
+                 $command = "vim-cmd /hostsvc/standby_mode_enter $time";
+            } else {
+                 $command = "apm -S";
+            }
+        } else {
+            # To put the VM in Standby mode hibernation must be off
+            # The next command will put off the hibernation on VM
+            $command = "powercfg /hibernate off";
+            $command = "start shell command $command returnstdout".
+                       " returnstderr";
+
+            ($res,$data) = $self->{_STAFHelper}->runStafCmd($IP,
+                                                            "Process",
+                                                            "$command");
+
+            print "Result = $res and data  = $data **\n" if $debug;
+            # Check for failure in turning off the hibernation
+            if ($res eq "FAILURE") {
+               print STDERR "Failed to turn the hibernation off\n";
+               VDSetLastError("EFAIL");
+               return FAILURE;
+            }
+
+            # Command to put the VM in Standby mode
+            $command = "\%windir\%\\System32\\rundll32.exe".
+                       " powrprof.dll,SetSuspendState";
+        }
+
+        # wrap the command to be used by runStafCmd method of STAFHelper module
+        $command = "start shell command $command wait returnstderr".
+                   " returnstdout";
+        ($res,$data) = $self->{_STAFHelper}->runStafCmd($IP,
+                                                        "Process",
+                                                        "$command");
+
+        print "Result: $res and Data: $data\n" if $debug;
+
+        # Check for success or failure of the standby operation
+        if ($res eq "FAILURE"  and $OS =~ m/win/i) {
+            print STDERR "Failed to standby the host/vm\n";
+        } elsif (($data =~ "No APM support in kernel" or
+                 $data =~ "apm: command not found") and $OS =~ m/lin/i) {
+            print STDERR "No APM support in kernel...trying acpi way\n";
+
+            # Following block is a redundant step which uses ACPI
+            $command = "echo standby > /sys/power/state";
+            $command = "start shell command $command returnstdout".
+                       " returnstderr";
+
+            ($res,$data) = $self->{_STAFHelper}->runStafCmd($IP,
+                                                            "Process",
+                                                            "$command");
+
+            if ($res eq "FAILURE") {
+                print STDERR "Failed to put VM in standby mode\n";
+            } else {
+                return SUCCESS;
+            }
+            VDSetLastError("EFAIL");
+            return FAILURE;
+        } else {
+            # here $res contains staf process id
+            print STDOUT "Putting the host onto Standby mode\n" if $debug;
+            return SUCCESS;
+        }
+    } else {
+        print STDERR "unknown OS, Cannot perform standby operation on".
+                     " the host\n";
+        VDSetLastError("EINVALID");
+        return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: HibernateVM                                #
+#                                                         #
+# Objective: To hibername the host                        #
+#                                                         #
+# Operation: hibername host.                              #
+#                                                         #
+# input arguments: IP (optional)                          #
+#                                                         #
+# Output: 0 on Success                                    #
+#         1 on Failure                                    #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub HibernateVM {
+    my $self = shift;
+    my $IP   = shift;
+    my $time = 30;
+    my $OS;
+    my $res;
+    my $data;
+    my $Host;
+    my $command;
+
+    # create a seperate instance of STAFHelper module. The Stafhelper  handle
+    # created at the time of objetc creation can not be used as that handle is
+    # for the host operations and the one created here is for VM operations.
+    # This method works using staf handle and ip address of the VM.
+    my $STAFHelper = VDNetLib::STAFHelper->new();
+    if (ref($STAFHelper) ne "VDNetLib::STAFHelper") {
+       print STDERR "Invalid STAF handle obtained in constructor\n" if $debug;
+       VDSetLastError("ESTAF");
+       return FAILURE;
+    }
+
+    # if IP is defined call SetHostParms method to get the architecture and OS
+    # of the IP given.
+    if ( defined $IP ) {
+        print "Object is $STAFHelper and IP is $IP\n" if $debug;
+        $res = $STAFHelper->SetHostParms("$IP");
+
+        if ($res eq "FAILURE") {
+            print STDERR "Failed to set parameter on $IP\n";
+            VDSetLastError(VDGetLastError());
+            return FAILURE;
+        }
+
+        $OS  = $STAFHelper->{_OS};
+    }
+
+    # Hibernate the given host/VM whose IP is given or standby
+    # the host/VM ip provided at the time of object creation
+    if (not defined $IP) {
+        $IP = $self->{_HOSTIP};
+        $OS = $self->{_OS};
+    }
+
+    if ($OS =~ m/linux/i || $OS =~ m/win/i) {
+        if ($OS =~ m/linux/i) {
+            if ($self->{Host} =~ m/ESX/i and $IP eq $self->{_HOSTIP}) {
+                # TODO: Dont know how to do this at this time. I have
+                # not come across any command that puts linux system
+                # onto hibernation. Just need to ignore the linux section
+                # for time being. Though i have found some commands, they
+                # are not universal and  some require installation.
+                $command = "vim-cmd /hostsvc/standby_mode_enter $time";
+            } else {
+                # TODO: Though this works fine, some times,
+                # turning on the system does not comeup. The
+                # system must be tried to turn on at least twice.
+                # In the later releases will use vm staf services
+                # to put the VM's into the required power state.
+                $command = "echo disk > /sys/power/state";
+            }
+        } else {
+            # To put the VM in Hibernate mode hibernation must be on
+            # The next command will put on the hibernation on VM
+            $command = "powercfg /hibernate on";
+            $command = "start shell command $command returnstdout returnstderr";
+
+            ($res,$data) = $self->{_STAFHelper}->runStafCmd($IP,
+                                                            "Process",
+                                                            "$command");
+
+            # Check for failure in turning on the hibernation
+            if ($res eq "FAILURE") {
+               print STDERR "Failed to turn on the hibernation\n";
+               VDSetLastError("EFAIL");
+               return FAILURE;
+            }
+
+            # Command to place VM in hibernation
+            $command = "\%windir\%\\System32\\rundll32.exe".
+                       " powrprof.dll,SetSuspendState";
+        }
+
+        # build the command to be able to run with runStafCmd method
+        $command = "start shell command $command returnstderr returnstdout";
+
+        ($res, $data) = $self->{_STAFHelper}->runStafCmd($IP,
+                                                         "Process",
+                                                         "$command");
+
+        print "Result: $res and Data: $data\n" if $debug;
+
+        # verify the status of the command for success or failure
+        if ($res eq "FAIULRE" or $data eq ""  ) {
+           print STDERR "Failed to hibernate the host/vm \n";
+           VDSetLastError("EFAIL");
+           return FAILURE;
+        } else {
+           print STDOUT "Putting the host/vm onto hibernation mode\n" if $debug;
+           return SUCCESS;
+        }
+     } else {
+        print STDERR "unknow OS, Cannot perform hibernate operation".
+                     " on the host/vm\n";
+        VDSetLastError("EINVALID");
+        return FAILURE;
+     }
+}
+
+###########################################################
+# Method Name: RunUW                                      #
+#                                                         #
+# Objective: To run user world scripts                    #
+#                                                         #
+# Operation: run userworld netperf and/or netserver script#
+#                                                         #
+# input arguments: Testname (netperf/netserver)           #
+#                  corresponding args                     #
+#                                                         #
+# TODO: This routine is now made to run only userworld    #
+#       netserver and user world netperf. Need to extend  #
+#       this method to run any user world script          #
+#                                                         #
+# Output: 0 on Success                                    #
+#         1 on Failure                                    #
+#                                                         #
+# EX: RunUW({                                             #
+#          OperationName => 'netserver',                  #
+#          portnum  => 12685,                             #
+#          ipv4     => 4,                                 #
+#          });                                            #
+# Export Status: Exported                                 #
+###########################################################
+sub RunUW {
+    my $self     = shift;
+    my ($args)   = @_;
+    my $res;
+    my $data;
+    my $command;
+    my $subcommand;
+
+    # Make sure the host is ESX
+    if ($self->{Host} eq "ESX") {
+        # make sure the vmknic exists on ESX.
+        $command = "esxcfg-vmknic -l";
+
+        # wrap the command for running with runStafCmd
+        $command = "start shell command $command wait returnstderr".
+                   " returnstdout";
+        ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                         "Process",
+                                                         "$command");
+
+        # Check for success or falire of availability of vmknic
+        if ($res eq "FAILURE" or $data !~ m/vmk[0-9]+/i) {
+            print STDERR "userworld test can not run, There is no vmknic".
+                         " available to run the test\n";
+            VDSetLastError("EFAIL");
+            return FAILURE;
+        }
+
+        # prepare the command to load vmktcp module for running the user
+        # world script. The path /usr/lib/vmware/bin is the path to
+        # user-world scripts/executables
+        $command = "/usr/lib/vmware/bin/vmkload_app -i vmktcp".
+                   " /usr/lib/vmware/bin/";
+
+        # Check if user world netserver is to be run or userworld netperf need
+        # to be run. build the command for the operation required.
+        if (defined $args->{OperationName} && $args->{OperationName}
+            eq "netserver") {
+
+            # Check if netserver-uw is installed on the host
+            $command = $command."netserver-uw -h";
+            $command = "start shell command $command wait returnstdout".
+                       " returnstderr";
+            ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                            "Process",
+                                                            "$command");
+
+            if ($res eq "FAILURE" or $data =~ m/vmkload_app: not found/) {
+               print STDERR "netserver-uw is not installed on Host\n";
+               VDSetLastError("EFAIL");
+               return FAILURE;
+            }
+
+            # Build the command for userworld netserver
+            if (defined $args->{portnum} && defined $args->{ipv4}) {
+                $command .= "netserver-uw -p $args->{portnum} -4";
+            } elsif (defined $args->{portnum} && defined $args->{ipv6}) {
+                $command .= "netserver-uw -p $args->{portnum} -6";
+            } elsif (defined $args->{portnum}) {
+                $command .= "netserver-uw -p $args->{portnum}";
+            } else {
+                $command .= "netserver-uw";
+            }
+        } elsif (defined $args->{OperationName} && $args->{OperationName}
+            eq "netperf") {
+
+            # TODO: Here it is assumed that netperf-uw is available in the
+            # root folder. Can be extended later. The following code checks
+            # if netperf-uw is installed on the host
+            $command = "/root/netperf-uw -h";
+            $command = "start shell command $command wait returnstdout".
+                       " returnstderr";
+            ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                            "Process",
+                                                            "$command");
+
+            if ($res eq "FAILURE" or $data =~ m/vmkload_app: not found/) {
+               print STDERR "netserver-uw is not installed on Host\n";
+               VDSetLastError("EFAIL");
+               return FAILURE;
+            }
+
+
+            # Build the command for user world netperf
+            if (defined $args->{target}) {
+                $command .= "netperf -H $args->{target}";
+            }
+            if (defined $args->{stream}) {
+                $command .= " -t $args->{stream}";
+            }
+            if (defined $args->{secs}) {
+                $command .= " -l $args->{secs}";
+            }
+            if (defined $args->{messagesize}) {
+                $command .= " -- -m $args->{messagesize}";
+            }
+            if (defined $args->{sendsocketsize} and $command =~ m/--/) {
+                $command .= " -s $args->{sendsocketsize}";
+            } else {
+                $command .= " -- -s $args->{sendsocketsize}";
+            }
+            if (defined $args->{receivesocketsize} and $command =~ m/--/) {
+                $command .= " -S $args->{receivesocketsize}";
+            } else {
+                $command .= " -- -S $args->{receivesocketsize}";
+            }
+        } else {
+            print STDERR "invalid userworld test\n";
+            VDSetLastError("EINVALID");
+            return FAILURE;
+        }
+
+        # wrap the command to be able to run  with runStafCmd method
+        $command = "start shell command $command async notify onend";
+        $command = "$command "."$self->{_STAFHelper} returnstderr returnstdout";
+        ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                        "Process",
+                                                        "$command");
+
+        print "Result: $res and Data: $data\n" if $debug;
+
+        # Check for success or failure of the userworld script
+        if ($res eq "FAILURE" or $data =~ m/connect failed/i or
+            $res =~ m/Could not resolve path/i) {
+            print STDERR "Failed to start userworld script\n";
+            print STDERR "$res\n";
+            VDSetLastError("EFAIL");
+            return FAILURE;
+        } elsif ($data =~ m/Address already in use/i) {
+            print STDOUT "The netserver is already running\n" if $debug;
+            return SUCCESS;
+        } else {
+            # Verify if the netserver/netperf is running
+            # using process filter command
+            $subcommand = "ps aux|grep -ic '$command'";
+            $subcommand = "start shell command $subcommand";
+            $subcommand .= " wait returnstderr returnstdout";
+            ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                            "Process",
+                                                            "$subcommand");
+            sleep(5);
+
+            # Check for Success or Failure of the command
+            if ($res ne "FAILURE" and $data >= 2) {
+                print STDOUT "Successfully running UserWorld Script\n" if $debug;
+                return SUCCESS;
+            } else {
+                print STDERR "Failed to start userworld script\n";
+                VDSetLastError("EFAIL");
+                return FAILURE;
+            }
+        }
+    } else {
+        print STDERR "This operation is supported only on ESX\n";
+        VDSetLastError("EINVALID");
+        return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: GetvSwitchNames                            #
+#                                                         #
+# Objective: To get all vSwitch Names                     #
+#                                                         #
+# Operation: Use esxcfg-vSwitch command to obtain vSwitch #
+#            names                                        #
+#                                                         #
+# input arguments: None                                   #
+#                                                         #
+# Output: vSwitchNames on Success                         #
+#         "Failure" on Failure                            #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetvSwitchNames {
+   my $self = shift;
+
+   # This operation is supported on ESX only (visor too)
+   if ($self->{Host} eq "ESX") {
+       $self->UpdateHash();
+
+       if (defined $self->{vSwitchNames} && $self->{vSwitchNames} ne "") {
+           # return value is a string of vswitch names
+           return $self->{vSwitchNames};
+       } else {
+           VDSetLastError("EFAIL");
+           print STDERR "Failed to get the vSwitch names\n";
+           return FAILURE;
+       }
+   } else {
+       print STDERR "The operation is not supported\n";
+       VDSetLastError("EPERM");
+       return FAILURE;
+    }
+}
+
+
+
+###########################################################
+# Method Name: GetPortGroupNames                          #
+#                                                         #
+# Objective: To get all PortGroup Names                   #
+#                                                         #
+# Operation: Use esxcfg-vSwitch command to obtain the     #
+#            PortGroup Names                              #
+#                                                         #
+# input arguments: None                                   #
+#                                                         #
+# Output: PortGroup Names on Success                      #
+#         "Failure" on Failure                            #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetPortGroupNames {
+   my $self = shift;
+
+   # This operation is supported on ESX only (visor too)
+   if ($self->{Host} eq "ESX") {
+       $self->UpdateHash();
+
+       if (defined $self->{PGNames} && $self->{PGNames} ne "") {
+           # returned value is a string of names
+           return $self->{PGNames};
+       } else {
+           VDSetLastError("EFAIL");
+           print STDERR "Failed to get the portgroup names\n";
+           return FAILURE;
+       }
+   } else {
+       print STDERR "The operation is not supported\n";
+       VDSetLastError("EPERM");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: GetVMNames                                 #
+#                                                         #
+# Objective: To obtain the VM names.                      #
+#                                                         #
+# Operation: Use vim-cmd to obtain vm names.              #
+#                                                         #
+# input arguments: None                                   #
+#                                                         #
+# Output: VM names                                        #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetVMNames {
+    my $self = shift;
+
+    # This operation is supported on ESX only (visor too)
+    if ($self->{Host} eq "ESX") {
+        $self->UpdateVMHash();
+
+        if (defined $self->{VMNames} && $self->{VMNames} ne "") {
+            # return value is a string of VM names
+            return $self->{VMNames};
+        } else {
+            VDSetLastError("EFAIL");
+            print STDERR "Failed to get the VM names\n";
+            return FAILURE;
+        }
+    } else {
+       print STDERR "The operation is not supported\n";
+       VDSetLastError("EPERM");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: GetVMID                                    #
+#                                                         #
+# Objective: To obtain the VM id.                         #
+#                                                         #
+# Operation: Use vim-cmd to obtain vm ids.                #
+#                                                         #
+# input arguments: VM name                                #
+#                                                         #
+# Output: VM Id for the given VM                          #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetVMID {
+    my $self = shift;
+    my $vmname = shift;
+
+    # This operation is supported on ESX only (visor too)
+    if ($self->{Host} eq "ESX") {
+         my $vmnames = $self->GetVMNames();
+
+         # The vmnames will have string of vm names
+	      if (not $vmnames =~ m/$vmname/i) {
+	          print STDERR "Invalid VM name passed $vmname\n";
+	          VDSetLastError("EINVALID");
+             return FAILURE;
+	      }
+
+         # UpdateHash will update the Host parameters
+         $self->UpdateVMHash();
+
+         # Return the VM ID for a given VM.
+	      if (defined $self->{$vmname}{vmid} && $self->{$vmname}{vmid} ne "") {
+	          return $self->{$vmname}{vmid};
+	      } else {
+	          VDSetLastError("EFAIL");
+             print STDERR "Failed to get the VM ID's\n";
+	          return FAILURE;
+	      }
+    } else {
+       print STDERR "The operation is not supported\n";
+       VDSetLastError("EPERM");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: GetVMXPath                                 #
+#                                                         #
+# Objective: To obtain the VMX file path.                 #
+#                                                         #
+# Operation: Use vim-cmd to obtain vmx path               #
+#                                                         #
+# input arguments: VM name                                #
+#                                                         #
+# Output: VMX file path for the given VM                  #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetVMXPath {
+    my $self = shift;
+    my $vmname = shift;
+
+
+    # This operation is supported on ESX only (visor too)
+    if ($self->{Host} eq "ESX") {
+	     my $vmnames = $self->GetVMNames();
+
+        # The vmnames will have string of vm names
+        if (not $vmnames =~ m/$vmname/i) {
+	         print STDERR "Invalid VM name passed $vmname\n";
+	         VDSetLastError("EINVALID");
+	         return FAILURE;
+	     }
+
+        # UpdateHash will update the hash or Host parameters
+	     $self->UpdateVMHash();
+
+        # return if the vmxpath for a given vm is available
+        # else return Failure.
+	     if (defined $self->{$vmname}{vmxfile} &&
+                    $self->{$vmname}{vmxfile} ne "") {
+	         return $self->{$vmname}{vmxfile};
+        } else {
+	         VDSetLastError("EFAIL");
+            print STDERR "Failed to get the VMXPATH for $vmname\n";
+	         return FAILURE;
+	     }
+    } else {
+       print STDERR "The operation is not supported\n";
+       VDSetLastError("EPERM");
+       return FAILURE;
+    }
+}
+
+###########################################################
+# Method Name: GetVMXVersion                              #
+#                                                         #
+# Objective: To obtain the VMX file version               #
+#                                                         #
+# Operation: Use vim-cmd to obtain vmx file version       #
+#                                                         #
+# input arguments: VM name                                #
+#                                                         #
+# Output: VMX file version for the given VM               #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetVMXVesrion {
+    my $self = shift;
+    my $vmname = shift;
+
+    # This operation is supported on ESX only (visor too)
+    if ($self->{Host} eq "ESX") {
+        my $vmnames = $self->GetVMNames();
+
+        # The vmnames will have string of vm names
+	     if (not $vmnames =~ m/$vmname/i) {
+	         print STDERR "Invalid VM name passed $vmname\n";
+	         VDSetLastError("EINVALID");
+	         return FAILURE;
+	     }
+
+        # UpdateHash will update the hash or Host parameters
+        $self->UpdateVMHash();
+
+	     if (defined $self->{$vmname}{version} &&
+                    $self->{$vmname}{version} ne "") {
+	         return $self->{$vmname}{version};
+	     } else {
+	         VDSetLastError("EFAIL");
+            print STDERR "Failed to get the VMX Version\n";
+	         return FAILURE;
+	     }
+    } else {
+       print STDERR "The operation is not supported\n";
+       VDSetLastError("EPERM");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: GetvSwitchFromPGroup                       #
+#                                                         #
+# Objective: To obtain the vSwitch name to which the given#
+#            port group belongs to.                       #
+#                                                         #
+# Operation: Use UpdateHash.                              #
+#                                                         #
+# input arguments: PortGroupName                          #
+#                                                         #
+# Output: VSwitch Name on Success                         #
+#         FAILURE on Failure                              #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetvSwitchFromPGroup {
+    my $self = shift;
+    my $pgname = shift;
+
+    # This operation is supported on ESX only (visor too)
+    if ($self->{Host} eq "ESX") {
+        $self->UpdateHash();
+
+        # The Output returned by GetPortGroupNames is a string
+        # Check if the portgroup is a valid portgroup name
+	     if ($self->GetPortGroupNames() !~ m/$pgname/) {
+	         print STDERR "Invalid Port group name $pgname supplied\n";
+	         VDSetLastError("EINVALID");
+	         return FAILURE;
+	     }
+
+	     if (defined $self->{$pgname}{vswitch} &&
+                    $self->{$pgname}{vswitch} ne "") {
+	         return $self->{$pgname}{vswitch};
+	     } else {
+	         print STDERR "UpdateHash failed to update the vSwitch to which".
+			                " portgroup belongs to\n";
+	         VDSetLastError("EFAIL");
+	         return FAILURE;
+	     }
+    } else {
+       print STDERR "The operation is not supported\n";
+       VDSetLastError("EPERM");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: GetPGroupFromVnicMac                       #
+#                                                         #
+# Objective: To obtain the Port group name to which the   #
+#            vNic is attached.                            #
+#                                                         #
+# Operation: Use vim-cmd/vmsvc/device.getdevice vmid      #
+#                                                         #
+# input arguments: Mac Address                            #
+#                                                         #
+# Output: PortGroup Name on Success                       #
+#         FAILURE on Failure                              #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetPGroupFromVnicMac {
+    my $self = shift;
+    my $mac  = lc(shift);
+    my ($command, $res, $data);
+
+    # This operation is supported on ESX only (visor too)
+    if ($self->{Host} eq "ESX") {
+
+        # Check if the MAC address format is correct.
+	     if (not defined $mac || not $mac =~ m/[0-9a-f:]+/i) {
+	         print STDERR "Invalid mac addres supplied $mac\n";
+	         VDSetLastError("EINVALID");
+	         return FAILURE;
+	     }
+
+        $self->UpdateVMHash();
+
+        # Get All VMID's using UpdateVMHash method
+        my @vmids = split(/ /,$self->{VMIDS});
+        @vmids = grep /\S/, @vmids;#remove empty elements
+
+        foreach my $vm (@vmids) {
+           $command = "vim-cmd vmsvc/device.getdevices $vm|grep ".
+                      "-e 'macAddress = ' -e 'deviceName ='";
+	        $command = "start shell command $command wait".
+                      " returnstderr returnstdout";
+	        ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+			                                                   "Process",
+                                                            "$command");
+
+           my @dataArray = split(/\n/, $data);
+           my $dataSize = @dataArray;
+           for (my $i = 0; $i < $dataSize; $i++) {
+              if (defined $dataArray[$i] and defined $dataArray[$i+1]) {
+                  $dataArray[$i] =~ m/deviceName = "(.*)"/;
+                  my $pgName = $1;
+                  if ($dataArray[$i+1] =~ m/$mac/) {
+                      return $pgName;
+                  }
+              }
+           }
+        }
+
+        print STDERR "Could not get portgroup corresponding to MAC $mac\n";
+        VDSetLastError("EFAIL");
+	     return FAILURE;
+    } else {
+       print STDERR "The operation is not supported\n";
+       VDSetLastError("EPERM");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: GetGuestInfo                               #
+#                                                         #
+# Objective: To obtain the information on Guset/VM        #
+#                                                         #
+# Operation: Use vim-cmd to obtain vmx file version       #
+#                                                         #
+# input arguments: VM name/vmid                           #
+#                : Parameter Name                         #
+# (Valid parameters are PGNames, IPV4S, MACS, IPV6S)      #
+#                                                         #
+# Output: VMX file version for the given VM               #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetGuestInfo {
+    my $self     = shift;
+    my $vmnameid = shift;# parameter can be valid VM name or ID
+    my $info = shift;
+    my $res;
+    my $data;
+    my $command;
+
+    # This operation is supported on ESX only (visor too)
+    if ($self->{Host} eq "ESX") {
+	     my $vmnames = $self->GetVMNames();
+
+        # the vmnames contains a string of vmnames
+	     if ($vmnames eq "FAILURE" ) {
+	         print STDERR "Failed to obtain vm names in GetGuestInfo\n";
+	         VDSetLastError("EFAIL");
+	         return FAILURE;
+	     }
+
+        # Build the commands based on VM name or VM ID passed
+	     if (defined $vmnameid && $vmnameid ne "") {
+	         if ($vmnames =~ m/$vmnameid/) {
+		          $vmnameid = $self->{$vmnameid}{vmid};
+		          $command = "vim-cmd /vmsvc/get.guest $vmnameid";
+	         } elsif ($vmnameid =~ m/\d+/) {
+		          $command = "vim-cmd /vmsvc/get.guest $vmnameid";
+	         } else {
+		          VDSetLastError("EFAIL");
+		          return FAILURE;
+	         }
+
+	         $command = "start shell command $command wait".
+                       " returnstderr returnstdout";
+	         ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+			                                                    "Process",
+                                                             "$command");
+
+            # Verify the result of the command to get guest information
+            if ($res ne "FAILURE" and $data ne "FAILURE") {
+		          $data =~ s/\[/{/g;
+		          $data =~ s/\]/}/g;
+
+                # Get IPv4 Addresses array if option is IPV4S in VM
+		          if ($info =~ m/IPV4S/i) {
+		              my @ipaddresses   = ($data =~ m/(\d+[.]\d+[.]\d+[.]\d+)/g);
+		              return @ipaddresses;
+		          } elsif ($info =~ m/MACS/i) {
+                    # Get Mac Addresses array if option is MACS in VM
+		              my @macaddresses  =
+	                 ($data =~ m/([0-9a-h]+[:][0-9a-h]+[:][0-9a-h]+
+                                    :[0-9a-h]+:[0-9a-h]+:[0-9a-h]+)/ig);
+		              return @macaddresses;
+		          } elsif ($info =~ m/PGNames/i) {
+                    # Get Porggroup names array if option is PGNames in VM
+		              my @portgroups    = ($data =~ m/network = ("[a-z- ]+")/ig);
+		              return @portgroups;
+		          } elsif ($info =~ m/IPV6S/i) {
+                    # Get IPV6 Addresses array if option is IPV6S in VM
+		              my @ipv6addresses =
+	                 ($data =~ m/([0-9a-h]*:[0-9a-h]*:[0-9a-h]*:
+                                 [0-9a-h]*:[0-9a-h]*:[0-9a-h]*)/ig);
+		              return @ipv6addresses;
+		          }
+	         } else {
+		          print STDERR "Failed to execute the guest-info vim command\n";
+		          VDSetLastError("EFAIL");
+		          return FAILURE;
+	         }
+	     } else {
+            print STDERR "Please supply vm id\n";
+	         VDSetLastError("EFAIL");
+            return FAILURE;
+	     }
+    } else {
+        print STDERR "Operation is not supported\n";
+        VDSetLastError("EPERM");
+        return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: UpdateHash                                 #
+#                                                         #
+# Objective: To update the port group names and vswitch   #
+#            names of the $self or object hash            #
+#                                                         #
+# Operation: Use esxcfg-vSwitch command to update the hash#
+#                                                         #
+# input arguments: None                                   #
+#                                                         #
+# Output: none                                            #
+#                                                         #
+# Export Status: Not Exported                             #
+###########################################################
+sub UpdateHash {
+   my $self  = shift;
+   my $debug = 0;
+   my $command;
+   my $res;
+   my $data;
+
+   # initialise the contents of hash elements
+   $self->{PGNames}      = "";
+   $self->{vSwitchNames} = "";
+
+
+   # Array declaration to store port group information
+   my @tempArray;
+   my @newArray; # holds the information without newlines and spaces
+   my $el;       # defined for for/foreach loop variable
+   my $tempdata;
+   my $iSize;
+   my $vswitch;
+   my $numports;
+   my $usedports;
+   my $confports;
+   my $mtu;
+   my $pgName;
+   my $vlanid;
+   my $usedport;
+   my $uplink;
+
+
+   if ($self->{Host} eq "ESX") {
+      # Fill up port group, vswitch info into hash
+      # Command esxcfg-vswitch -l will list all vswitch and associated
+      # information such as port group name/network/vlan used ports etc.
+      $command = "esxcfg-vswitch -l";
+      $command = "start shell command $command wait returnstderr returnstdout";
+      ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                       "Process",
+                                                       "$command");
+
+      if ($res eq "FAILURE") {
+          print STDERR "Failed to execute $command on $self->{_HOSTIP}\n";
+          VDSetLastError(VDGetLastError());
+          return FAILURE;
+      }
+
+      # Convert the output of esxcfg-vswitch -l into an array
+      @tempArray = split(/(\n+)/, $data);
+
+      # Filter out un-necessary spaces
+      foreach $el (@tempArray) {
+          if ($el =~ m/\S+/i) {
+             $el =~ s/^\s+//;
+             $el =~ s/\s+$//;
+             print "Element with spaces removed is $el **\n" if $debug;
+             push(@newArray, $el);
+          }
+      }
+
+
+      # Following lines will filterout the required contents
+      # from esxcfg-vswitch -l output
+      my $size = @newArray;
+
+      # for each line in the output of the esxcfg-vswitch -l command
+      # Collect the vswitch name, uplink adapter,number of ports to that
+      # vSwitch, use portd, configured ports etc.
+      for (my $i = 0; $i < $size; $i++) {
+          if (defined $newArray[$i+1]) {
+              if ($newArray[$i] =~ m/Switch Name/i) {
+
+                  # Check if vswitch has uplink attaced to it.
+                  # If no uplink is attached, then temporarily add
+                  # a string named nouplink0
+                  $newArray[$i+1] =~ m/(.*)([A-Za-z]+[0-9]+)$/;
+                  if (not defined $2 or $2 eq "") {
+                     $newArray[$i+1] = $newArray[$i+1]." nouplink0";
+                  }
+
+                  # Seperate the elements of vSwitch. Here the regular
+                  # expression is more than 80 chars length and curtailing its
+                  # length will fail the regular expression
+                  $newArray[$i+1] =~
+                  m/(.*)(32|64|128|256)\s+(\d+)\s+(\d+)\s+(\d+)\s+([A-Za-z]+[0-9](.*))$/;
+
+                  $vswitch   = $1;
+                  $numports  = $2;
+                  $usedports = $3;
+                  $confports = $4;
+                  $mtu       = $5;
+                  $uplink = $6;
+                  $uplink =~ s/,/ /g;
+                  $vswitch =~ s/^\s+//;#tws
+                  $vswitch =~ s/\s+$//;#tws
+                  $self->{$vswitch}{numports}       = $numports;
+                  $self->{$vswitch}{usedports}      = $usedports;
+                  $self->{$vswitch}{configuredport} = $confports;
+                  $self->{$vswitch}{mtu}            = $mtu;
+                  $self->{$vswitch}{name}           = $vswitch;
+                  $self->{$vswitch}{uplink}         = "$uplink";
+                  $self->{vSwitchNames}             .= "$vswitch ";
+                  $i++;
+              }
+          }
+
+          # Collect the information for the portgroups
+          if ($newArray[$i] =~ m/PortGroup Name/i) {
+              while ((defined $newArray[$i+1]) &&
+                     ($newArray[$i+1] !~ m/Switch Name/i)) {
+
+                  # Line containing the port group names
+                  $newArray[$i+1] =~ m/(.*)\s([A-Za-z]+[0-9]+)$/;
+
+                  # Check if uplink info is present, if not
+                  # add a dummy uplink to the line
+                  if (not defined $2 or $2 eq "") {
+                     $newArray[$i+1] = $newArray[$i+1]." nouplink0";
+                  }
+
+                  # the output snippet for portgroup looks like the following
+                  # data               3500     0           vmnic1
+                  # or as
+                  # data                0        1
+                  #
+                  # In the above line first parameter is a portgroup name
+                  # second parameter is vlanid, third parameter is used ports
+                  # and fourth parameter is uplinks. If uplink is not there, we
+                  # add a 0 to have the array of the size same as the lines
+                  # with uplink
+
+                  # build the regular expression to collect
+                  # portgroup parameters. The regexp length is
+                  # more than 80 chars and pushing the statement to next line
+                  #
+                  print "LINE: $newArray[$i+1] **\n" if $debug;
+                  $newArray[$i+1] =~ m/(.*)\s+(\d+)\s+(\d+)\s+([A-Za-z]+[0-9]+(.*))$/;
+                  $pgName = $1;
+                  print "$1 and $2 and $3 and $4 *\n" if $debug;
+                  $vlanid = $2;
+                  $usedport = $3;
+                  $uplink = $4;
+                  $uplink =~ s/,/ /g;
+                  $pgName =~ s/^\s+//;
+                  $pgName =~ s/\s+$//;
+                  if (not $self->{PGNames} =~ m/'$pgName'/) {
+                      $self->{PGNames} = "$self->{PGNames}"." '$pgName'";
+                  }
+
+                  $self->{$pgName}{name} = $pgName;
+                  $self->{$pgName}{vswitch} = $vswitch;
+                  print "VLAN ID IS $vlanid in host config for $pgName\n" if
+                  $debug;
+                  $self->{$pgName}{vlanid} = $vlanid;
+                  $self->{$pgName}{uplink} = "$uplink";
+                  $self->{$pgName}{usedport} = $usedport;
+
+                  $i++;
+              }
+
+              if (($newArray[$i] =~ m/PortGroup Name/ &&
+                 (defined $newArray[$i+1] && $newArray[$i+1]=~ m/Switch Name/))
+                 || ($newArray[$i] =~ m/PortGroup Name/ and
+                 not defined $newArray[$i+1])) {
+                  $i++;
+              }
+              $i--;
+          }
+          $self->{$vswitch}{pgnames} = $self->{PGNames};
+      }
+   } else {
+       print STDERR "This operation is available on ESX host only \n";
+       VDSetLastError("EINVALID");
+       return FAILURE;
+   }
+}
+
+
+###########################################################
+# Method Name: UpdateVMHash                               #
+#                                                         #
+# Objective: To update the VM details such as MAC address #
+#            IP addresses etc in a object hash            #
+#                                                         #
+# Operation: Use vim-cmd command to update the hash       #
+#                                                         #
+# input arguments: None                                   #
+#                                                         #
+# Output: none                                            #
+#                                                         #
+# Export Status: Not Exported                             #
+###########################################################
+# This method is useful when VM names, VM ids, vmx name & #
+# vmx versions are required. This method will be used     #
+# by methods named GetVMID,GetVMNames,GetVMXVersion and   #
+# UpdateMACIPHash                                         #
+###########################################################
+sub UpdateVMHash {
+   my $self  = shift;
+   my $debug = 0;
+   my $command;
+   my $res;
+   my $data;
+
+   # initialise the contents of hash elements
+   $self->{VMIDS}        = "";
+   $self->{VMNames}      = "";
+
+
+   # Array declaration to store port group information
+   my @tempArray;
+   my @newArray; # holds the information without newlines and spaces
+   my $el;       # defined for for/foreach loop variable
+   my $tempdata;
+   my $iSize;
+
+
+   if ($self->{Host} eq "ESX") {
+       # Collect VM names using the vim-command
+       $command = "vim-cmd /vmsvc/getallvms";
+       $command = "start shell command $command wait returnstderr returnstdout";
+       ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                        "Process",
+                                                        "$command");
+
+       # See if vim-command output is success or failure
+       if ($res eq "FAILURE") {
+           print STDERR "Failed to execute $command on $self->{_HOSTIP} \n";
+           VDSetLastError(VDGetLastError());
+           return FAILURE;
+       }
+
+       # output of the above command looks like this (newlines and spaces are
+       # not maintained as in actual input due to 80 char restriction per
+       # line)
+       # Vmid               Name
+       # File                                           Guest OS
+       # Version   Annotation
+       # 112    MasterController-RHEL-5.1-32   [Storage1]
+       # MasterController-RHEL-5.1-32/MasterController-RHEL-5.1-32.vmx
+       # rhel5Guest              vmx-07
+       # 16     CAT-RHEL-5.2-32                [Storage2]
+       # CAT-RHEL-5.2-32/CAT-RHEL-5.2-32.vmx
+       # rhel5Guest              vmx-07
+       # 176    MC-NEW-CONF                    [Storage1]
+       # MC-NEW-CONF/MC-NEW-CONF.vmx
+       # rhel5Guest              vmx-07
+       #
+       # Convert the data into an array for easy processing
+       @tempArray = split(/(\n+)/, $data);
+
+       # Filter out un-necessary spaces
+       @newArray = "";
+       foreach $el (@tempArray) {
+           if ($el =~ m/\S+/i) {
+               $el =~ s/^\s+//;
+               $el =~ s/\s+$//;
+               print "Element with spaces removed is $el **\n" if $debug;
+               push(@newArray, $el);
+           }
+       }
+
+       $size = @newArray;
+       my @linedata;
+       my $vmname;
+       my $temp;
+
+       # For each line of output collect the information such as
+       # vmids, vmnames, storage name , vmxfile, guestos, version
+       # etc
+       for ($i = 1; $i < $size; $i++) {
+          if (defined $newArray[$i+1] && $newArray[$i+1] =~ m/\S+/i) {
+             @linedata = split(/\s+/,$newArray[$i+1]);
+
+             $vmname = $linedata[1];
+
+             # Fill the hash content with the VM name if not
+             # already present
+             if (not $self->{VMNames} =~ m/$vmname/) {
+                 $self->{VMNames} = "$self->{VMNames}"." $vmname";
+             }
+
+             # Collect the Storage info and other parameters
+             $linedata[2] =~ s/\[//;
+             $linedata[2] =~ s/\]//;
+             $self->{$vmname}{name} = "$linedata[1]";
+
+             # Fill the hash with the VMID's if already
+             # not present in it.
+             $self->{$vmname}{vmid} = "$linedata[0]";
+             if (not $self->{VMIDS} =~ m/ $linedata[0]/) {
+                 $self->{VMIDS} = "$self->{VMIDS}"." $linedata[0]";
+             }
+
+             $self->{$vmname}{vmxfile} = "/vmfs/volumes/$linedata[3]";
+             $self->{$vmname}{gosname} = "$linedata[4]";
+             $self->{$vmname}{version} = "$linedata[5]";
+
+             # build the command to get the guest info to collect
+             # the IP addresses of each guest vm.
+             #$command = "vim-cmd /vmsvc/get.guest $linedata[0]";
+             #$command = "start shell command $command wait".
+             #           " returnstderr returnstdout";
+             #($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+             #                                                "Process",
+             #                                                "$command");
+
+             $command = "vim-cmd /vmsvc/get.guest $linedata[0]";
+             $command = "start shell command $command wait".
+                        " returnstderr returnstdout";
+             ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                             "Process",
+                                                             "$command");
+             if ($res ne "FAILURE") {
+                 my @ips = ($data =~ m/[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+/sg);
+                 my $ipaddress = "";
+
+                 foreach my $ipadd (@ips) {
+                    $ipaddress .= "$ipadd ";
+                 }
+
+                 $self->{$vmname}{ips} = $ipaddress;
+             } else {
+                 print STDERR "Failed to get guest info in Update hash\n";
+                 VDSetLastError("EFAIL");
+                 return FAILURE;
+             }
+          }
+       }
+       return SUCCESS;
+
+    } else {
+        print STDERR "This operation is available on ESX host only \n";
+        VDSetLastError("EINVALID");
+        return FAILURE;
+    }
+}
+
+###########################################################
+# Method Name: CreatevSwitch                              #
+#                                                         #
+# Objective: To Create an vSwitch with a given name       #
+#                                                         #
+# Operation: To create an vSwitch with the given name     #
+#            using the esxcfg-vswitch -a vswitch_name     #
+#            command.                                     #
+#            The created vSwitch will not have any uplink #
+#            by default.                                  #
+#                                                         #
+# input arguments: vSwitch Name                           #
+#                  Port Group Name (optional)             #
+#                  vmnic (optional list of vmnics)        #
+#                                                         #
+# Output: 0 for successful operation                      #
+#         1 for failure                                   #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub CreatevSwitch {
+    my $self          = shift;
+    my $vSwitch       = shift;#ex: vswitch1
+    my $portGroup     = shift;#ex: data_network
+    my @vmnic         = shift;#ex: vmnic1
+    my $res;
+    my $data;
+    my $command;
+
+    # This Operation is supported on ESX (and visor variants)
+    if ($self->{Host} eq "ESX") {
+
+        # get the existing vswitch names. The return value will be
+        # in String format
+	     my $vSwitches = $self->GetvSwitchNames();
+
+        # Check if vswitch name is provided as input to this method
+	     if (not defined $vSwitch) {
+	         print STDERR "Please provide vSwitch name\n";
+	         VDSetLastError("EINVALID");
+	         return FAILURE;
+	     }
+
+        # Throw error if there already exists a vSwitch with the given name
+	     if ($vSwitches =~ m/$vSwitch/) {
+	        print STDERR "vSwitch with this name already exists,".
+                        " please use other name\n";
+	        VDSetLastError("EINVALID");
+	        return FAILURE;
+	     }
+
+
+        # To create a vswitch portgroup and vnics are not mandatory.
+        # However this method is extended to take portgroup name as optional.
+        # This method also takes the array of vnics (pnics) as an input.
+        # When vswitch name alone is passed, it is created standalone.
+        # When vswitch name is passed with portygroup name , vswitch is
+        # created and then portgroup is attached to it.
+        # When all the three parameters are passed, the vswitch is creaetd
+        # first. Then port group is added to that. Then each of the vnic is
+        # added to that port group.
+
+        # build a command to create a vswitch and add a wrapper for
+        # being able to run with Stafhelper Module
+	     $command = "esxcfg-vswitch -a $vSwitch";
+	     $command = "start shell command $command wait".
+                   " returnstderr returnstdout";
+	     ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                         "Process",
+                                                         "$command");
+
+        # Check for error and failure messages
+	     if ($res ne "FAILURE" and $data =~
+                m/Error: A portset with this name already exists/i) {
+		     print STDERR "Failed to create virtual Switch".
+                        " with the name: $vSwitch\n";
+		     print STDERR "The portset (vSwitch) with this".
+                        " name already exists\n";
+		     VDSetLastError("EFAIL");
+           # Not Sure at this point of time. Either should return failure
+           # or continue with checking of portgroup/vmnic to vswitch
+		     return FAILURE;
+	     } elsif ($res eq "FAILURE") {
+		      print STDERR "Failed to execute vswitch create command\n";
+            VDSetLastError("EFAIL");
+            return FAILURE;
+        }
+
+        # Check if portgroup argument is passed
+	     if (defined $portGroup && $portGroup ne "") {
+            # The porthroup validity is not verified here as
+            # the portgroup can be a newer one to be added
+            # Following are the statements to build the command
+		      $command = "esxcfg-vswitch -A $portGroup $vSwitch";
+		      $command = "start shell command $command wait".
+                       " returnstderr returnstdout";
+		      ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTP},
+                                                            "Process",
+                                                            "$command");
+
+            # Check if result is a failure. If Success, continue checking
+            # for vmnics to be added
+            if ($result eq "FAILURE" or $data =~ m/error/i) {
+			       print STDERR "Failed add a portgroup to the vSwitch\n";
+			       VDSetLastError("EFAIL");
+			       return FAILURE;
+			   }
+        }
+
+        # check if any vmnics are supplied
+	     my $size = @vmnic;
+	     if ($size == 1) {
+
+            # build the command for adding vmnics to the vswitch
+			   $command = "esxcfg-vswitch -L $vmnic[0] $vSwitch";
+			   $command = "start shell command $command wait".
+                       " returnstderr returnstdout";
+
+			   ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                            "Process",
+                                                            "$command");
+
+            # Check if the result is Success of Failure
+            if ($res ne "FAILURE" and $data eq "") {
+			       print "Successfully created the virtual".
+                      " switch $vSwitch with portgroup and vNIC\n";
+			       return SUCCESS;
+			   } else {
+			       print STDERR "Failed add a vmnic to the vSwitch\n";
+			       VDSetLastError("EFAIL");
+			       return FAILURE;
+			   }
+	     } elsif ($size > 1) {
+            # This block is for adding multiple vmnics to the
+            # vswitch
+            for (my $i = 0; $i < $size; $i++) {
+                # build the command to add vmnic to the vswitch
+                $command = "esxcfg-vswitch -L $vmnic[$i] $vSwitch";
+                $command = "start shell command $command wait".
+                           " returnstderr returnstdout";
+                ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                                "Process",
+                                                                "$command");
+
+                # In case of success continue adding remaining vmnics
+                # else throw error
+                if ($res ne "FAILURE" and $data eq "") {
+                    print "Successfully created the virtual".
+                          " switch $vSwitch with portgroup and vNIC\n";
+	             } else {
+	                 print STDERR "Failed add a pNIC to the vSwitch\n";
+	                 VDSetLastError("EFAIL");
+	                 return FAILURE;
+	             }
+	         }
+        }
+
+        # Return Success if all the operations are completed
+        # Successfully
+        return SUCCESS;
+    } else {
+       print STDERR "This operation is not permitted\n";
+       VDSetLastError("EFAIL");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: DeletevSwitch                              #
+#                                                         #
+# Objective: To Delete an vSwitch with a given name       #
+#                                                         #
+# Operation: To delete an vSwitch with the given name     #
+#            using the esxcfg-vswitch -d vswitch_name     #
+#            command.                                     #
+#                                                         #
+# input arguments: vSwitch Name                           #
+#                                                         #
+# Output: 0 for successful operation                      #
+#         1 for failure                                   #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub DeletevSwitch {
+    my $self        = shift;
+    my $vSwitch     = shift;
+    my $command;
+    my $res;
+    my $data;
+
+    if ($self->{Host} eq "ESX") {
+
+        # obtain all the valid vswitch names to verify we are
+        # deleting the valid existing vswitch
+	     my $vSwitches = $self->GetvSwitchNames();
+
+        # check if parameter vswitch supplied is valid one
+        if (not defined $vSwitch || not $vSwitches =~ m/$vSwitch/) {
+	         print STDERR "Please provide valid vSwitch name\n";
+	         VDSetLastError("EINVALID");
+	         return FAILURE;
+	     }
+
+        # build a command to delete the vswitch and wrap it to be
+        # able to run with runStafCmd method of STAFHelper module
+	     $command = "esxcfg-vswitch -d $vSwitch";
+	     $command = "start shell command $command wait".
+                   " returnstderr returnstdout";
+	     ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+	                                                     "Process",
+                                                        "$command");
+
+
+        # Check for failure or success of the command
+        if ($res ne "FAILURE" and $data eq "") {
+	         print STDOUT "Successfully deleted the vSwitch\n";
+	         return SUCCESS;
+	     } elsif ($res ne "FAILURE" and $data =~
+                 m/Not a valid virtual switch or it is a DVSwitch/i) {
+	         print STDERR "Failed to delete vSwitch, $vSwitch is not a".
+			                " valid name for deletion\n";
+	         print STDERR "Thers exists no vSwitch with the name $vSwitch".
+			                " is not a valid name for deletion\n";
+	         VDSetLastError("EFAIL");
+	         return FAILURE;
+	     } elsif ($res eq "FAILURE") {
+	         print STDERR "Failed to run vSwitch delete command\n";
+	         VDSetLastError("EFAIL");
+	         return FAILURE;
+	     }
+    } else {
+       print STDERR "This operation is not permitted\n";
+       VDSetLastError("EFAIL");
+       return FAILURE;
+    }
+}
+
+
+
+###########################################################
+# Method Name: CreatePortGroup                            #
+#                                                         #
+# Objective: To create a port group on a given vSwitch    #
+#                                                         #
+# Operation: This method uses the esxcfg-vswitch command  #
+#            to do the task.                              #
+#                                                         #
+# input arguments: vswitch name                           #
+#                  port group                             #
+#                                                         #
+# Output: 0 on success                                    #
+#         1 on failure                                    #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub CreatePortGroup {
+    my $self          = shift;
+    my $vswitch       = shift;# mandatory
+    my $portGroup     = shift;# mandatory
+    my $res;
+    my $data;
+
+    # This operation is supported on ESX( and visor variants)
+    if ($self->{Host} eq "ESX") {
+
+       # Get all the vswitches in string format to verify the
+       # validity of the passed in argument
+	    my $vSwitches = $self->GetvSwitchNames();
+
+       # Verify the passed in vswitch argument is valid
+	    if (not defined $vSwitch || not $vSwitches =~ m/$vSwitch/) {
+	       print STDERR "Please provide valid vSwitch name\n";
+	       VDSetLastError("EINVALID");
+	       return FAILURE;
+	    }
+
+       # verify if passedin port group argument is a valid one
+       # by getting the list of existing portgroups. If the passed
+       # in portgroup argument already exists, return failure
+	    my $pgroups = $self->GetPortGroupNames();
+	    if (not defined $portGroup || $pgroups =~ m/$portGroup/) {
+	        print STDERR "Either portgroup with this name already".
+                        " exists or invalid port group name\n";
+	        VDSetLastError("EINVALID");
+	        return FAILURE;
+	    }
+
+       # build a command to add a portgroup to the vswitch
+	    my $command = "esxcfg-vswitch $vswitch -A $portGroup";
+	    $command = "start shell command $command wait".
+                  " returnstderr returnstdout";
+	    ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_ESXIP},
+                                                       "Process",
+                                                       "$command");
+
+       # Check for success/failure of the command
+	    if ($res eq "SUCCESS") {
+	        print STDOUT "Successfully created the $portGroup\n";
+	        return SUCCESS;
+	    } elsif ($res eq "SUCCESS"  and $data =~
+           m/Error: A portgroup with the name/i) {
+	        print STDERR "Failed to add portgroup:".
+                        " $portGroup to vswitch: $vswitch,\n";
+	        print STDERR "Error: A portgroup with the name".
+                        " $portGroup Already exists \n";
+	        VDSetLastError("EFAIL");
+	        return FAILURE;
+	    } elsif ($res eq "FAILURE") {
+	        print STDERR "Failed to add portgroup: $portGroup".
+                        " to vswitch: $vswitch,\n";
+	        print STDERR "Error: A portgroup with the name".
+                        " $portGroup Already exists \n";
+	        VDSetLastError("EFAIL");
+	        return FAILURE;
+	    }
+   } else {
+       print STDERR "This operation is not permitted\n";
+       VDSetLastError("EFAIL");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: DeletePortGroup                            #
+#                                                         #
+# Objective: To Delete a port group on a given vSwitch    #
+#                                                         #
+# Operation: This method uses the esxcfg-vswitch command  #
+#            to do the task.                              #
+#                                                         #
+# input arguments: vswitch name                           #
+#                  port group                             #
+#                                                         #
+# Output: 0 on success                                    #
+#         1 on failure                                    #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub DeletePortGroup {
+    my $self          = shift;
+    my $vswitch       = shift;
+    my $portGroup     = shift;
+    my ($res, $data);
+
+    # This operation is supported on ESX( and visor variants)
+    if ($self->{Host} eq "ESX") {
+
+       # get all the vswitch names to make sure that the passed in
+       # vswitch argument is valid
+	    my $vSwitches = $self->GetvSwitchNames();
+
+       # Check if vswitch is a valid one
+       if (not defined $vSwitch || not $vSwitches =~ m/$vSwitch/) {
+	        print STDERR "Please provide valid vSwitch name\n";
+	        VDSetLastError("EINVALID");
+	        return FAILURE;
+	    }
+
+       # get all the portgroup names to make sure that the passed
+       # in portgroup name to delete is a valid entry
+	    my $pgroups = $self->GetPortGroupNames();
+	    if (not defined $portGroup || $pgroups =~ m/$portGroup/) {
+	        print STDERR "Can not delete port group, either".
+                        " portgroup with this name already".
+                        " exists or invalid port group name\n";
+	        VDSetLastError("EINVALID");
+	        return FAILURE;
+       }
+
+       # build a command to delete a portgroup from vswitch
+	    my $command = "esxcfg-vswitch $vswitch -D $portGroup";
+	    $command = "start shell command $command wait returnstderr".
+                  " returnstdout";
+	    ($res, $data) = $self->{_STAFHelper}->runStafCmd($self->{_ESXIP},
+                                                        "Process",
+                                                        "$command");
+
+	    if ($res eq "SUCCESS" and $data =~ m/Failed to remove portgroup/i) {
+	        print STDERR "Failed to delete portgroup:".
+                        " $portGroup to vswitch: $vswitch,\n";
+	        VDSetLastError("EFAIL");
+           return FAILURE;
+	    } elsif ($res eq "SUCCESS" and $data =~ m/Error/i) {
+	        print STDERR "Failed to delete portgroup:".
+                        " $portGroup to vswitch: $vswitch,\n";
+	        VDSetLastError("EFAIL");
+	        return FAILURE;
+	    } elsif ($res eq "FAILURE") {
+	        print STDERR "Failed to delete port group\n";
+	        VDSetLastError(VDGetLastError());
+	        return FAILURE;
+	    } else {
+	        print STDOUT "Successfully deleted the $portGroup\n";
+	        return SUCCESS;
+       }
+    } else {
+       print STDERR "This operation is not permitted\n";
+       VDSetLastError("EFAIL");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: UpdateMACIPHash                            #
+#                                                         #
+# Objective: To update the MAC and IP hash to collect info#
+#            such as IP, IPV6, VM, PortGroup name etc.    #
+#                                                         #
+# Operation: Use vim-cmd /vmsvc/get.guest to update hash  #
+#                                                         #
+# input arguments: None                                   #
+#                                                         #
+# Output: none                                            #
+#                                                         #
+# Export Status: Not Exported                             #
+###########################################################
+# This method is used by following method:                #
+# GetPGroupFromVnicMac                                    #
+#                                                         #
+# This method will be used in future also for new methods #
+# Planned.                                                #
+###########################################################
+sub UpdateMACIPHash {
+    my $self  = shift;
+    my $debug = 0;
+    my $command;
+    my %macresult;
+    my $network;
+    my $mac;
+    my $connected;
+    my $ip;
+    my $res;
+    my $data;
+    my $ipv6;
+    my $flag = 0;
+
+    if ($self->{Host} eq "ESX") {
+       $self->UpdateVMHash();
+
+       # Get All VMID's using UpdateVMHash method
+       my @vmids = split(/ /,$self->{VMIDS});
+       @vmids = grep /\S/, @vmids;#remove empty elements
+
+
+       foreach my $el (@vmids) {
+           $command = "vim-cmd vmsvc/get.guest $el";
+           $command = "start shell command $command wait".
+                      " returnstderr returnstdout";
+           ($res,$data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                           "Process",
+                                                           "$command");
+
+           # if previous command is successful, the collect the
+           # guest information such as ip address and Mac address.
+           # Substitute for non required data and take only the
+           # Networking data and save it in $net variable
+           #
+           if ($res eq "SUCCESS") {
+              $data =~ s/\[/\{/g;
+              $data =~ s/\]/\}/g;
+              $data =~ s/\},/\}/g;
+              $data =~ s/\(//g;
+              $data =~ s/\)//g;
+              $data =~ m/net =(.*)disk =/s;
+              my $net = $1;
+
+              # Check if networking information is avainale
+              if (defined $net and $net ne "") {
+                  print "NET is $net *\n", if $debug;
+                  my @netarray = split(/\n/,$net);
+                  my $size = @netarray;
+                  my $val;
+
+                  # Foreach element in the networking data
+                  # of the host check for informations such as
+                  # portgroup name,ipaddress, mac address etc.
+                  for (my $i = 0; $i < $size;$i++) {
+                     $val = $netarray[$i];
+                     $val =~ s/^\s+//;
+                     $val =~ s/\s+$//;
+
+                     if (not $val =~ m/vim.vm.GuestInfo.NicInfo/) {
+
+                        # Get the portgroup attached with the vm's vnic
+                        if ($val =~ m/network = "(.*)",/) {
+                           $network = "$1";
+                           $network =~ s/^\s+//;
+                           $network =~ s/\s+$//;
+                           $flag = 1;
+                        }
+
+                        # Collect MAC address
+                        if ($val =~ m/macAddress = \"(.*)\"\,/) {
+                           $mac = "$1";
+                           $mac =~ s/^\s+//;
+                           $mac =~ s/\s+$//;
+                           $flag = 1;
+                        }
+
+                        # vnic status, connected/disconnected
+                        if ($val =~ m/connected = true,/) {
+                           $connected = "true";
+                           $flag = 1;
+                        } elsif ($val =~ m/connected = false,/) {
+                           $connected = "false";
+                           $flag = 1;
+                        }
+
+                        # Collect IP address info o vnic in VM
+                        if ($val =~ m/pAddress = string/) {
+                           $val = $netarray[$i+1];
+                           if (not $val =~ m/\}/) {
+                               # The val may have ipv6 address alone
+                               # or both ipv6 and ipv4 addresses for
+                               # vnic. $flag is being used to indicate
+                               # that the parameters are obtained
+                               if ($val =~
+                                   m/[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+/) {
+                                   $ip = $val;
+
+                                   # truncate white spaces
+                                   $ip =~ s/^\s+//;
+                                   $ip =~ s/\s+$//;
+                                   $flag = 1;
+                                   $i++;
+
+                                   $val = $netarray[$i+1];
+                                   $val =~ s/^\s+//;
+                                   $val =~ s/\s+$//;
+                                   $i++;
+
+                                   # Check for ipv6 addresses
+                                   if ($val =~ m/[a-z0-9:]+/i) {
+                                      $ipv6 = $val;
+                                      $ipv6 =~ s/^\s+//;
+                                      $ipv6 =~ s/\s+$//;
+                                   } else {
+                                      $ipv6 = "NULL";
+                                   }
+                               } elsif ($val =~ m/[a-z0-9:]+/i) {
+                                   # Check for ipv6 addresses
+                                   $ip = "NULL";
+                                   $ipv6 = $val;
+                                   $ipv6 =~ s/^\s+//;
+                                   $ipv6 =~ s/\s+$//;
+                                   $flag = 1;
+                                   $i++;
+                               } else {
+                                   $ip = "NULL";
+                                   $ipv6 = "NULL";
+                               }
+                           }
+                        }
+                     } elsif ($val =~ m/vim.vm.GuestInfo.NicInfo/ && $flag) {
+                         # Fill in the hash contents for a given MAC address
+                         #  with details such as ip, mac,ipv6,status.
+                         $macresult{$mac}{ip}        = $ip;
+                         $macresult{$mac}{mac}       = $mac;
+                         $macresult{$mac}{ipv6}      = $ipv6;
+                         $macresult{$mac}{pgroup}    = $network;
+                         $macresult{$mac}{connected} = $connected;
+                         $flag = 0;
+                         print "MAC = $mac, ip = $ip, ipv6 = $ipv6, connected".
+                               " = $connected\n" if $debug;
+                         $mac = $ip = $ipv6 = $connected = "";
+                     }
+                  }
+              }
+           }
+       }
+
+       %{$self->{mac}} = %macresult;
+    } else {
+       print STDERR "This operation is not permitted\n";
+       VDSetLastError("EFAIL");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: GetvSwitchPorts                            #
+#                                                         #
+# Objective: To obtain the vSwitch vsi nodes              #
+#                                                         #
+# Operation: Use vsish command                            #
+#                                                         #
+# input arguments: vSwitchName                            #
+#                                                         #
+# Output: List of vsi nodes Name on Success               #
+#         FAILURE on Failure                              #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetvSwitchPorts {
+    my $self   = shift;
+    my $vswitch = shift;
+    my $command;
+    my $result;
+    my $data;
+    my $ports = "";
+
+    # This method is supported on ESX and visor variants only
+    if ($self->{Host} eq "ESX") {
+
+       # Get all the vswitch names to verifyif the passed in
+       # vswitch arguments is a avalid one
+       my $vswitches = $self->GetvSwitchNames();
+       if ($vswitches !~ m/$vswitch/) {
+           print STDERR "Invalid vswitch name supplied\n";
+           VDSetLastError("EINVALID");
+           return FAILURE;
+       }
+
+       # build command to get all the ports
+       $command  = "vsish -e ls /net/portsets/$vswitch/ports";
+       $command  = "start shell command $command wait".
+                   " returnstdout returnstderr";
+       ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                           "Process",
+                                                           "$command");
+
+       if ($result eq "FAILURE" or $data eq "") {
+            print STDERR "Failed to obtain the vsi nodes for $vswitch\n";
+            VDSetLastError("EFAIL");
+            return FAILURE;
+       }
+
+       # get the list of ports and them collect them into a string
+       my @temp = split(/\n/, $data);
+       foreach my $el (@temp) {
+           $el =~ s/\///;
+           $ports = "$el "."$ports";
+       }
+
+       return $ports;
+    } else {
+       print STDERR "This operation is not permitted\n";
+       VDSetLastError("EFAIL");
+       return FAILURE;
+    }
+}
+
+
+###########################################################
+# Method Name: GetVSINodeStatFromMAC                      #
+#                                                         #
+# Objective: To obtain the VSI node and stats for a vnic  #
+#                                                         #
+# Operation: Use vsish command.                           #
+#                                                         #
+# input arguments: MAC address                            #
+#                                                         #
+# Output: hash of stats and node name                     #
+#         FAILURE on Failure                              #
+#                                                         #
+# Export Status: Exported                                 #
+###########################################################
+sub GetVSINodeStatFromMAC {
+    my $self = shift;
+    my $mac  = lc(shift);
+    my $data;
+    my $command;
+    my %resultHash;
+
+    # this method is supported on ESX and visor variants
+    if ($self->{Host} eq "ESX") {
+
+       # verify for validity of MAC though following is not a
+       # robust check. Need to add a method in VDNetLib::Utilities module
+       # for checking MAC address validity
+       if (not defined $mac || $mac !~ m/[0-9a-f:]+/i) {
+           print STDERR "Invalid mac addres supplied $mac\n";
+           VDSetLastError("EINVALID");
+           return FAILURE;
+       }
+
+       # Obtain the port group from MAC address
+       my $pgs = $self->GetPGroupFromVnicMac($mac);
+
+       if ($pgs eq "FAILURE") {
+           print STDERR "Failed to return Port group from MAC of vnic\n";
+           VDSetLastError("EINVALID");
+           return FAILURE;
+       }
+
+       # Obtain the vSwitch from port group
+       my $vswitch = $self->GetvSwitchFromPGroup($pgs);
+       if ($vswitch eq "FAILURE") {
+           print STDERR "Failed to return vSwitch from Port group $pgs\n";
+           VDSetLastError("EINVALID");
+           return FAILURE;
+       }
+
+       # Obtain the vsi nodes for the vSwitch
+       my $ports = $self->GetvSwitchPorts($vswitch);
+       if ($ports eq "" or $ports eq "FAILURE") {
+            print STDERR "Failed to obtain vsi nodes from $vswitch\n";
+            VDSetLastError(VDGetLastError());
+            return FAILURE;
+       }
+
+       my @temp = split(/ /,$ports);
+       foreach my $el (@temp) {
+           if ($el ne "") {
+              # Following commands will get the mac address for each port,
+              # compares with the MAC address supplied at the input of this
+              # method and if MAC addresses match, get the port statistics
+              $command = "vsish -e get /net/portsets/$vswitch/ports/$el/status";
+              $command = "start shell command $command".
+                         " wait returnstdout returnstderr";
+              ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                                  "Process",
+                                                                  "$command");
+
+              # check for success or failure of the command
+              if ($result eq "FAILURE" or $data eq "") {
+                  print STDERR "Failed to obtain the vsi node".
+                               " status for port $el\n";
+                  VDSetLastError("EFAIL");
+                  return FAILURE;
+              }
+
+              # check for a line that matches unicastAddr:MAC address of vnic
+              if ($data =~ m/unicastAddr:$mac:/) {
+
+                  # build a command to get the port stats on a given vnic port
+                  $command = "vsish -e get /net/portsets/$vswitch/ports/$el/stats";
+                  $command = "start shell command $command".
+                             " wait returnstdout returnstderr";
+                  ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                                      "Process",
+                                                                      "$command");
+
+                  # Check for success or failure of the command
+                  if ($result eq "FAILURE" or $data eq "") {
+                      print STDERR "failed to obtain stats on given port\n";
+                      VDSetLastError(VDGetLastError());
+                      return FAILURE;
+                  }
+
+                  # Obtain the result, split it and collect the same in
+                  # a result hash. The hash contains five parameters namely
+                  # 1. pktsTx       => Transmitted packets count
+                  # 2. pktsRx       => Received Packets count
+                  # 3. droppedTx    => Count of packets dropped in transmission
+                  # 4. droppedRx    => Count of packets dropped in reception
+                  # 5. portnum      => Port number
+                  my @res = split(/\n/,$data);
+                  foreach my $line (@res) {
+                      if ($line =~ m/:/) {
+                         my @linedata = split(/:/,$line);
+                         $linedata[0] =~ s/\s+//;
+                         $resultHash{$linedata[0]} = $linedata[1];
+                      }
+                  }
+                  $resultHash{portnum} = $el;
+                  last;
+              }
+           }
+       }
+       return \%resultHash;
+    } else {
+       print STDERR "This operation is not permitted\n";
+       VDSetLastError("EFAIL");
+       return FAILURE;
+    }
+}
+
+#-----------------------------------------------------------------------------
+# GetHostUPT --
+#     Routine to get the UPT status on the given host
+# Input:
+#     Valid HostOperations object
+# Output:
+#     0, if UPT is disabled on the host
+#     1, if UPT is enabled on the host
+#     "FAILURE", in case of any error
+# Side effects:
+#     None
+#-----------------------------------------------------------------------------
+
+sub GetHostUPT
+{
+   my $self = shift; # Required
+
+   # "vsish -e get /config/Net/intOpts/AllowPT" command is used to get the
+   # passthrough status on the host. The output of this command would be:
+   #    Vmkernel Config Option {
+   #       Default value:1
+   #       Min value:0
+   #       Max value:1
+   #       Current value:0
+   #       hidden config option:0
+   #       Description:Whether to enable UPT/CDPT
+   #    }
+   #
+   # The data across "Current value:" is parsed to get the UPT status
+   #
+   my $command = "vsish -e get /config/Net/intOpts/AllowPT";
+   $command = "start shell command $command".
+              " wait returnstdout returnstderr";
+   my ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                               "Process",
+                                                               $command);
+   if ($result eq "FAILURE" or $data eq "") {
+      print STDERR "failed to obtain UPT stats on given host\n";
+      VDSetLastError(VDGetLastError());
+      return FAILURE;
+   }
+
+   if ($data =~ /Current value:(\d)/i) {
+      return $1;
+   } else {
+      print STDERR "Unexpected value:$1 returned\n";
+      VDSetLastError("EOPFAILED");
+      return FAILURE;
+   }
+}
+
+#-----------------------------------------------------------------------------
+# SetHostUPT --
+#     Method to change the UPT status (Enable/Disable) on the given host
+# Input:
+#     A valid HostOperations object
+#     <operation> - "Enable" or "Disable"
+# Output:
+#     "SUCCESS" - if the UPT status is changed successfully
+#     "FAILURE" - in case of any error
+# Side effects:
+#     None
+#-----------------------------------------------------------------------------
+
+sub SetHostUPT
+{
+   my $self = shift;       # Required
+   my $operation = shift;  # Required
+
+   if ((not defined $operation) ||
+      ($operation !~ /Enable|Disable/i)) {
+      print STDERR "Operation not specified or invalid value given\n";
+      VDSetLastError("EINVALID");
+      return FAILURE;
+   }
+
+   my $value = ($operation =~ /Enable/i) ? "1" : "0";
+
+   # "vsish -e get /config/Net/intOpts/AllowPT (1|0)" command is used to
+   # set the passthrough status on the host. The output of this
+   # command would be 1 or 0 in case of successful operation
+   #
+   my $command = "vsish -e set /config/Net/intOpts/AllowPT $value";
+   $command = "start shell command $command".
+              " wait returnstdout returnstderr";
+   my ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                               "Process",
+                                                               $command);
+   if ($result eq "FAILURE" or $data !~ /1|0/) {
+      print STDERR "Failed to set UPT status on given host, error:$data\n";
+      VDSetLastError(VDGetLastError());
+      return FAILURE;
+   }
+
+   # Make sure that the UPT status is changed by verifying with GetHostUPT()
+   # method
+   $result = $self->GetHostUPT();
+   if ($result eq FAILURE) {
+      print STDERR "Failed to host UPT status\n";
+      VDSetLastError(VDGetLastError());
+      return FAILURE;
+   }
+
+   if ($result !~ $value) {
+      print STDERR "Mismatch between Host UPT set:$value ".
+                   "and get:$result\n";
+      VDSetLastError("EMISMATCH");
+      return FAILURE;
+   }
+   return SUCCESS;
+}
+
+#-----------------------------------------------------------------------------
+# GetvNicVSIPort --
+#     Method to get network adapter's VSI port number which would help get the
+#     adapter's statistics, UPT status etc.
+# Input:
+#     A valid HostOperations object
+#     <mac> - mac address of the virtual network adapter
+# Output:
+#     Entire path to the network adpater's port in vsi node, for example,
+#     "/net/portsets/vSwitch0/ports/16777218".
+#     "FAILURE" - in case of any error
+# Side effects:
+#     None
+#-----------------------------------------------------------------------------
+
+sub GetvNicVSIPort
+{
+   my $self = shift;    # Required
+   my $mac = shift;     # Required
+   my $command;
+   if (not defined $mac) {
+      print STDERR "MAC address not provided\n";
+      VDSetLastError("EINVALID");
+      return FAILURE;
+   }
+
+   my $result = $self->GetVSINodeStatFromMAC();
+
+   if ($result eq FAILURE) {
+      print STDERR "Failed to get vNic VSI stats\n";
+      VDSetLastError(VDGetLastError());
+      return FAILURE;
+   }
+
+
+   # First the list of switches (vSwitches or dvs) on the host are captured
+   # The command "vsish -e ls /net/portsets" will list all switches. For
+   # example, the output would look like:
+   # >vsish -e ls /net/portsets
+   # vSwitch0/
+   # vSwitch1/
+   # pts-ps/
+   #
+   $command = "vsish -e ls /net/portsets";
+   $command = "start shell command $command".
+              " wait returnstdout returnstderr";
+   ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                       "Process",
+                                                       "$command");
+
+   # check for success or failure of the command executed using staf
+   if ($result eq "FAILURE" or $data !~ /[A-Za-z0-9]+\/\n/) {
+      print STDERR "Failed to obtain the list of switches, error:$data\n";
+      VDSetLastError("EOPFAILED");
+      return FAILURE;
+   }
+
+   # Under each switch, there will be a list of ports. The mac address of each
+   # port under vsi node is checked against the given mac address at the input
+   # If there is match, the entire path to the port in vsi node is returned.
+   # Otherwise, "FAILURE" is returned.
+   #
+   my @tmp1 = split(/\n/, $data);
+   foreach my $switch (@tmp1) {
+      $switch =~ s/\///;
+      # Following command will get the list of port under each switch.
+      # Sample output:
+      # >vsish -e ls /net/portsets/vSwitch0/ports
+      #  16777217/
+      #  16777218/
+      #  16777219/
+      #
+      $command = "vsish -e ls /net/portsets/$switch/ports";
+      $command = "start shell command $command".
+                 " wait returnstdout returnstderr";
+      ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                          "Process",
+                                                          "$command");
+
+      # check for success or failure of the command executed using staf
+      if ($result eq "FAILURE" or $data !~ /\d+\/\n/) {
+         print STDERR "Failed to obtain the vnic pts ports Error:$data\n";
+         VDSetLastError("EFAIL");
+         return FAILURE;
+      }
+
+      # Get the list of ports from the string and store them in an array
+      my @tmp2 = split(/\n/, $data);
+
+      # For each port under a switch, read the status to get the mac address.
+      # The command "vsish -e get /net/portsets/<switch>/ports/<port>/status"
+      #
+      foreach my $port (@tmp2) {
+         $port =~ s/\///;  # The trailing "/" is removed
+         $command = "vsish -e get /net/portsets/$switch/ports/$port/status";
+         $command = "start shell command $command".
+                    " wait returnstdout returnstderr";
+         ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                             "Process",
+                                                             "$command");
+
+         # check for success or failure of the command
+         if ($result eq "FAILURE") {
+            print STDERR "Failed to obtain the vnic pts ports Error:$data\n";
+            VDSetLastError("EFAIL");
+            return FAILURE;
+         }
+         # check for a line that matches unicastAddr: to get MAC address of
+         # vnic
+         #
+         if ($data =~ m/unicastAddr:$mac:/i) {
+            # if the mac address matches with given mac address then return
+            # path to the adapter's port
+            return "/net/portsets/$switch/ports/$port";
+         }
+      }
+   }
+   print STDERR "Failed to find the VSIPort for the given adapter:$mac\n";
+   VDSetLastError("ENOTDEF");
+   return FAILURE;
+}
+
+#-----------------------------------------------------------------------------
+# GetvNicUPTStatus --
+#     Method to get virtual network adapter's UPT status.
+# Input:
+#     A valid HostOperations object
+#     <mac> - mac address of the network adapter
+#     <port> - vsi port (entire path) of the network adapter (optional)
+# Output:
+#     Any valid status (like OK, VNIC_FEATURES, DISABLED_BY_HOST,
+#     DISABLED_BY_PG etc )
+#     "FAILURE" in case of any error
+# Side effects:
+#     None
+#-----------------------------------------------------------------------------
+
+sub GetvNicUPTStatus
+{
+   my $self = shift;    # Required
+   my $mac = shift;     # Required
+   my $port = shift;    # Optional
+
+   if (not defined $mac) {
+      print STDERR "MAC address not provided\n";
+      VDSetLastError("EINVALID");
+      return FAILURE;
+   }
+   # If the entire path to adapter's port in vsi node is given, then the
+   # following block of code will be skipped. This saves time from parsing
+   # through all ports under all switches to match for the given mac address
+   #
+   if (not defined $port) {
+      $port = $self->GetvNicVSIPort($mac);
+
+      if ($port eq FAILURE) {
+         print STDERR "Error getting pts port for given adapter $mac\n";
+         VDSetLastError(VDGetLastError());
+         return FAILURE;
+      }
+   }
+
+   my $command;
+   # Making sure that the path does not contain double slashes "//"
+   $port =~ s/\/\//\//;
+   # Passthru status of the given adapter can be found by running the vsish
+   # command "vsish -e get /net/portsets/<switch>/ports/<port>/status"
+   # The output of this command has a field "Passthru status::" to indicate
+   # current status
+   #
+   $command = "vsish -e get $port/status";
+   $command = "start shell command $command".
+              " wait returnstdout returnstderr";
+   ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                       "Process",
+                                                       "$command");
+
+   # check for success or failure of the command
+   if ($result eq "FAILURE") {
+      print STDERR "Failed to obtain the vnic pts ports Error:$data\n";
+      VDSetLastError("EFAIL");
+      return FAILURE;
+   }
+
+   # Parse the vsish command output and pick the value after
+   # "Passthru status::"
+   #
+   if ($data =~ /Passthru status::\s(.+?)\n/i) {
+      return $1;
+   } else {
+      print STDERR "Unexpected output returned:$data\n";
+      VDSetLastError("EOPFAILED");
+      return FAILURE;
+   }
+}
+
+#-----------------------------------------------------------------------------
+# SetvNicUPTStatus --
+#     Method to change the UPT status (enable/disable) on the given
+#     network adapter on the given host.
+# Input:
+#     A valid HostOperations object
+#     <operation> - "Enable" or "Disable"
+#     <mac> - mac address of the network adapter
+#     <port> - vsi port (entire path) of the network adapter (optional)
+# Output:
+#     "SUCCESS", if the UPT status is changed successfully
+#     "FAILURE", in case of any error
+# Side effects:
+#     None
+#-----------------------------------------------------------------------------
+
+sub SetvNicUPTStatus
+{
+   my $self = shift;       # Required
+   my $operation = shift;  # Required
+   my $mac = shift;        # Required
+   my $port = shift;       # Optional
+
+   if ((not defined $mac) ||
+      (not defined $operation)) {
+      print STDERR "Insufficient arguments provided\n";
+      VDSetLastError("EINVALID");
+      return FAILURE;
+   }
+   # If the entire path to adapter's port in vsi node is given, then the
+   # following block of code will be skipped. This saves time from parsing
+   # through all ports under all switches to match for the given mac address
+   #
+   if (not defined $port) {
+      $port = $self->GetvNicVSIPort($mac);
+
+      if ($port eq FAILURE) {
+         print STDERR "Error getting pts port for given adapter $mac\n";
+         VDSetLastError(VDGetLastError());
+         return FAILURE;
+      }
+   }
+   my $command;
+   $port =~ s/\/\//\//; # remove any double slashes in the path
+   # The UPT status of a network adapter is done using the command
+   # "net-dvs -s com.vmware.common.port.ptAllowed=<value> -p <dvs.PortID>
+   # <dvs-name>", where <value> is 0 or 1.
+   # In order to execute this command, dvs port id and dvs-name corresponding
+   # to the given virtual network adapter is found using GetvNicDVSPortID() and
+   # GetvNicDVSName() methods respectively.
+   #
+
+   # Get the dvs port ID
+   my $portID = $self->GetvNicDVSPortID($mac, $port);
+
+   if ($portID eq FAILURE) {
+      print STDERR "Failed to get vNic port id\n";
+      VDSetLastError(VDGetLastError());
+      return FAILURE;
+   }
+
+   # Get the dvs name to which the vNic is connected to
+   my $dvsName = $self->GetvNicDVSName($mac, $port);
+   if ($dvsName eq FAILURE) {
+      print STDERR "Failed to get vNic dvsName id\n";
+      VDSetLastError(VDGetLastError());
+      return FAILURE;
+   }
+   # Compute the net-dvs command (string) to change UPT status
+   if ($operation =~ /Enable/i) {
+      $command = "$NETDVSPATH/net-dvs -s com.vmware.common.port.ptAllowed=1 -p $portID " .
+                 "$dvsName";
+   } elsif ($operation =~ /Disable/i) {
+      $command = "$NETDVSPATH/net-dvs -s com.vmware.common.port.ptAllowed=0 -p $portID " .
+                 "$dvsName";
+   } else {
+      print STDERR "Invalid operation specified for SetvNicUPTStatus\n";
+      VDSetLastError("EINVALID");
+      return FAILURE;
+   }
+
+   # Execute the net-dvs command on the given host
+   $command = "start shell command $command".
+              " wait returnstdout returnstderr";
+   ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                       "Process",
+                                                       "$command");
+
+   # check for success or failure of the command
+   if (($result eq "FAILURE") ||
+      ($data ne "")) {
+      print STDERR "Failed to change vNic UPT status:$data\n";
+      VDSetLastError("EOPFAILED");
+      return FAILURE;
+   }
+   # The change in UPT status of the given adapter is verified using
+   # GetvNicUPTStatus() method. It takes few seconds (15 secs max) to reflect
+   # the change on vsi node. So, sleep() is called to make the change is
+   # effective and reflected.
+   #
+   sleep(15);
+   $result = $self->GetvNicUPTStatus($mac,$port);
+
+   # If the operation is "Enable", then the UPT status should be "0 -> OK".
+   # Otherwise, return FAILURE.
+   #
+   if ((($operation =~ /Enable/i) &&
+        ($result !~ /0 -> OK/i)) ||
+       (($operation =~ /Disable/i) &&
+        ($result =~ /0 -> OK/i))) {
+      print "Mismatch in set:$operation and get:$result vNicUPT status\n";
+      VDSetLastError("EMISMATCH");
+      return FAILURE;
+   }
+   return SUCCESS;
+}
+
+#-----------------------------------------------------------------------------
+# GetvNicDVSPortID --
+#     Method to get DVS port ID for the given network adapter on the host.
+#
+# Input:
+#     A valid HostOperations object
+#     <mac> - mac address of the network adapter
+#     <port> - vsi port (entire path) of the network adapter (optional)
+# Output:
+#     A valid port (integer), if success.
+#     "FAILURE" in case of any error
+# Side effects:
+#     None
+#-----------------------------------------------------------------------------
+
+sub GetvNicDVSPortID
+{
+   my $self = shift;
+   my $mac = shift;
+   my $port = shift;
+   if (not defined $mac) {
+      print STDERR "MAC address not provided\n";
+      VDSetLastError("EINVALID");
+      return FAILURE;
+   }
+   # If the entire path to adapter's port in vsi node is given, then the
+   # following block of code will be skipped. This saves time from parsing
+   # through all ports under all switches to match for the given mac address
+   #
+   if (not defined $port) {
+      $port = $self->GetvNicVSIPort($mac);
+
+      if ($port eq FAILURE) {
+         print STDERR "Error getting pts port for given adapter $mac\n";
+         VDSetLastError(VDGetLastError());
+         return FAILURE;
+      }
+   }
+
+   # The dvs port ID can be found from the field "dvPortId:" after running
+   # the command "vsish -e get /net/portsets/<switch>/ports/<port>/status"
+   # on the esx host
+   #
+   my $command;
+   $command = "vsish -e get $port/status";
+   $command = "start shell command $command".
+              " wait returnstdout returnstderr";
+   ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                       "Process",
+                                                       "$command");
+
+   # check for success or failure of the command
+   if ($result eq "FAILURE") {
+      print STDERR "Failed to obtain the vnic pts ports Error:$data\n";
+      VDSetLastError("EFAIL");
+      return FAILURE;
+   }
+
+   if ($data !~ /dvPortId:(\d+)/i) {
+      print STDERR "Unexpected output returned:$data for command:$command\n";
+      VDSetLastError("EOPFAILED");
+      return FAILURE;
+   }
+      return $1; # $1 is the string captured at the above regex
+}
+
+#-----------------------------------------------------------------------------
+# GetvNicDVSName --
+#     Method to get the DVS name to which the given network adapter is
+#     associated.
+# Input:
+#     A valid HostOperations object
+#     <mac> - mac address of the network adapter
+#     <port> - vsi port (entire path) of the network adapter (optional)
+# Output:
+#     A valid dvs name (string), if success
+#     "FAILURE" in case of any error
+# Side effects:
+#     None
+#-----------------------------------------------------------------------------
+
+sub GetvNicDVSName
+{
+   my $self = shift;
+   my $mac = shift;
+   my $port = shift;
+   if (not defined $mac) {
+      print STDERR "MAC address not provided\n";
+      VDSetLastError("EINVALID");
+      return FAILURE;
+   }
+   # If the entire path to adapter's port in vsi node is given, then the
+   # following block of code will be skipped. This saves time from parsing
+   # through all ports under all switches to match for the given mac address
+   #
+   if (not defined $port) {
+      $port = $self->GetvNicVSIPort($mac);
+
+      if ($port eq FAILURE) {
+         print STDERR "Error getting pts port for given adapter $mac\n";
+         VDSetLastError(VDGetLastError());
+         return FAILURE;
+      }
+   }
+
+   my $command;
+   my $switch;
+   my $dvsName;
+   $port =~ s/\/\//\//; # remove all double slashes in the path
+   if ($port =~ /\/net\/portsets\/(.+?)\//i) {
+      $switch = $1;
+   }
+
+   if (not defined $switch) {
+      print STDERR "Failed to get Switch name of the given vNic $mac\n";
+      VDSetLastError("ENOTDEF");
+      return FAILURE;
+   }
+
+   # mac address of the dvs switch can be found from the field "dvsName:" after running
+   # the command "vsish -e get /net/portsets/<switch>/properties"
+   # on the esx host. The value across the field "dvsName:" is currently mac
+   # address of the dvs
+   #
+   $command = "vsish -e get /net/portsets/$switch/properties";
+   $command = "start shell command $command".
+              " wait returnstdout returnstderr";
+   ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                       "Process",
+                                                       "$command");
+
+   # check for success or failure of the command
+   if ($result eq "FAILURE") {
+      print STDERR "Failed to switch properties:$data\n";
+      VDSetLastError("EFAIL");
+      return FAILURE;
+   }
+
+   if ($data =~ /dvsName:([A-Za-z0-9-\s]+)/i) {
+      $dvsName = $1;
+   } else {
+      print STDERR "Unexpected output returned:$data\n";
+      VDSetLastError("EOPFAILED");
+      return FAILURE;
+   }
+   # From the mac address of the switch obtained above, parse through the list
+   # of dvs available and get the actual dvs name that corresponds to the
+   # switch<->host
+   #
+   $command = "$NETDVSPATH/net-dvs -l | grep -i -A 5 \'$dvsName\'";
+   $command = "start shell command $command".
+              " wait returnstdout returnstderr";
+   ($result, $data) = $self->{_STAFHelper}->runStafCmd($self->{_HOSTIP},
+                                                       "Process",
+                                                       "$command");
+
+   # check for success or failure of the command
+   if ($result eq "FAILURE") {
+      print STDERR "Failed to get dvs name:$data\n";
+      VDSetLastError("EFAIL");
+      return FAILURE;
+   }
+
+   # The output of "net-dvs -l | grep -i -A 5 <dvs mac address>" would look
+   # like:
+   # ~ # net-dvs -l | grep -i -A 5 "70 61 6c 6f 2d 64 76 73-00 00 00 00 00 00
+   # 00 00"
+   # switch 70 61 6c 6f 2d 64 76 73-00 00 00 00 00 00 00 00 (etherswitch)
+   #   global properties:
+   #               com.vmware.common.alias = palo-dvs
+   #               com.vmware.common.uplinkPorts:
+   #                       uplink0, uplink1
+   #   host properties:
+   #
+   # Capture the value of "com.vmware.common.alias" to get the dvs name
+   #
+   if ($data !~ /com.vmware.common.alias = (\S+)/i) {
+      print STDERR "Unexpected output returned:$data\n";
+      VDSetLastError("EOPFAILED");
+      return FAILURE;
+   }
+   return $1;
+}
+
+1;

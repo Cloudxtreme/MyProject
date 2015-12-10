@@ -1,0 +1,135 @@
+TORSetup:
+    Component: "TOR"
+    Category: "Sanity"
+    TestName: "TORSetup"
+    Version: "2"
+    Tags: "nsx,vsm,BAT,TOR"
+    Summary: "This test case create basic TOR object"
+    ExpectedResult: "PASS"
+    TestbedSpec: *TOR_TESTBEDSPEC
+    WORKLOADS:
+        Sequence:
+            # - ['InstallTORGatewayService4.2.3']
+            - ['InstallLatestTORGatewayServiceWithBFD']
+            - ['Create1TORSwitch']
+            - ['Add2PhysicalPortsToTORSwitch1']
+            - ['BindVtepWithTORSwitch']
+            - ['StartVtepSimulator']
+            - ['TORGatewaySetController']
+
+        ExitSequence:
+            - ['StopVtepSimulator']
+            - ['DeleteTORPortsOnEachSwitch']
+            - ['DeleteTORSwitches']
+            - ['UninstallTORGatewayService']
+
+        PowerOnTORGatewayVM:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           vmstate: poweron
+
+        InstallTORGatewayService4.2.3:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           configure_package: # this workload will move to user spec later
+              operation: install
+              resource:
+                - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-datapath-dkms_2.3.1.41279_all.deb
+                - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-common_2.3.1.41279_amd64.deb
+                - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-switch_2.3.1.41279_amd64.deb
+                - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/python-openvswitch_2.3.1.41279_all.deb
+                - http://apt.nicira.eng.vmware.com/builds/4.2.3-openvswitch/precise_amd64/openvswitch-vtep_2.3.1.41279_amd64.deb
+
+        InstallLatestTORGatewayServiceWithBFD:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           configure_package: # this workload will move to user spec later
+              operation: install
+              resource:
+                  - http://apt.nicira.eng.vmware.com/builds/openvswitch-vtep-2.3.90-build43393/precise_amd64/openvswitch-datapath-dkms_2.3.90.43393_all.deb
+                  - http://apt.nicira.eng.vmware.com/builds/openvswitch-vtep-2.3.90-build43393/precise_amd64/openvswitch-common_2.3.90.43393_amd64.deb
+                  - http://apt.nicira.eng.vmware.com/builds/openvswitch-vtep-2.3.90-build43393/precise_amd64/openvswitch-switch_2.3.90.43393_amd64.deb
+                  - http://apt.nicira.eng.vmware.com/builds/openvswitch-vtep-2.3.90-build43393/precise_amd64/python-openvswitch_2.3.90.43393_all.deb
+                  - http://apt.nicira.eng.vmware.com/builds/openvswitch-vtep-2.3.90-build43393/precise_amd64/openvswitch-vtep_2.3.90.43393_amd64.deb
+
+
+        UninstallTORGatewayService:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           configure_package:
+              operation: uninstall
+              resource:
+                - openvswitch-datapath-dkms
+                - openvswitch-vtep
+                - openvswitch-switch
+                - openvswitch-common
+                - python-openvswitch
+
+        Create1TORSwitch:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           torswitch:
+              '[1]':
+                  # you can specify specific switch name here here, like switch0,
+                  # or you can also specify 'autogenerate'
+                  name: 'autogenerate'
+
+        Add2PhysicalPortsToTORSwitch1:
+           Type: Switch
+           TestSwitch: torgateway.[1].torswitch.[1]
+           torport:
+              '[1]':
+                  # you can specify specific portid here here, like p0, or you
+                  # can also specify 'autogenerate'
+                  # phy_port_name: 'autogenerate'
+
+                  # or you can also specify an existing vnic, which will be used
+                  # to get the eth name of TOR gateway
+                  phy_port_name: 'torgateway.[1].pif.[3]->name'
+                  vlan: 10
+              '[2]':
+                  phy_port_name: 'torgateway.[1].pif.[4]->name'
+                  vlan: 20
+
+        BindVtepWithTORSwitch:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           bind_pnic:
+              name: "eth1"
+              switch_name: "torgateway.[1].torswitch.[1]"
+
+        StartVtepSimulator:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           start_service:
+               service_name: "ovs-vtep"
+               tor_entries:
+                   - node_id: "torgateway.[1].torswitch.[1]->name"
+
+        TORGatewaySetController:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           set_nsx_controller:
+               # right now use fixed ip address to do the test, later will use
+               # vxlan controller tuple as below:
+               # controller_ip: "vsm.[1].vxlancontroller.[-1]"
+               controller_ip: '1.1.1.1'
+               port: '6640'
+
+        StopVtepSimulator:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           stop_service:
+               service_name: "ovs-vtep"
+               tor_entries:
+                   - node_id: "torgateway.[1].torswitch.[1]->name"
+
+        DeleteTORPortsOnEachSwitch:
+           Type: Switch
+           TestSwitch: torgateway.[1].torswitch.[1]
+           deletetorport: torgateway.[1].torswitch.[1].torport.[1-2]
+
+        DeleteTORSwitches:
+           Type: Gateway
+           TestGateway: torgateway.[1]
+           deletetorswitch: torgateway.[1].torswitch.[-1]

@@ -1,0 +1,905 @@
+WORKLOADS:
+    ###########################################################################
+    # Replicator Role
+    ###########################################################################
+
+    SetMasterNSXReplicatorAsPrimary: &SET_MASTER_NSX_REPLICATOR_AS_PRIMARY
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_role: primary
+        metadata:
+            expectedresultcode: '200'
+
+    # WORKAROUND(gaggarwal): PR 1396374
+    ReadNSXReplicatorServiceStatusRunning: &READ_NSX_REPLICATOR_STATUS_MASTER_RUNNING
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_status:
+            status[?]equal_to: 'RUNNING'
+
+    # WORKAROUND(gaggarwal): PR 1396374
+    ReadNSXReplicatorServiceStatusStopped: &READ_NSX_REPLICATOR_STATUS_MASTER_STOPPED
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_status:
+            status[?]equal_to: 'STOPPED'
+
+    SetMasterNSXReplicatorAsStandalone: &SET_MASTER_NSX_REPLICATOR_AS_STANDALONE
+        Type: NSX
+        TestNSX: vsm.[1]
+        replicator_role: standalone
+        metadata:
+            expectedresultcode: '200'
+
+    SetSlaveNSXReplicatorAsStandalone: &SET_SLAVE_NSX_REPLICATOR_AS_STANDALONE
+        Type: NSX
+        TestNSX: vsm.[2]
+        replicator_role: standalone
+        metadata:
+            expectedresultcode: '200'
+
+    SetMasterNSXReplicatorAsPrimary_VSM2:
+        <<: *SET_MASTER_NSX_REPLICATOR_AS_PRIMARY
+        TestNSX: "vsm.[2]"
+
+    SetMasterNSXReplicatorAsPrimary_VSM3:
+        <<: *SET_MASTER_NSX_REPLICATOR_AS_PRIMARY
+        TestNSX: "vsm.[3]"
+
+    SetMasterNSXReplicatorAsStandalone_VSM2:
+        <<: *SET_MASTER_NSX_REPLICATOR_AS_STANDALONE
+        TestNSX: vsm.[2]
+
+    SetMasterNSXReplicatorAsStandalone_VSM3:
+        <<: *SET_MASTER_NSX_REPLICATOR_AS_STANDALONE
+        TestNSX: vsm.[3]
+
+    SetSlaveNSXReplicatorAsStandalone_VSM3:
+        <<: *SET_SLAVE_NSX_REPLICATOR_AS_STANDALONE
+        TestNSX: vsm.[3]
+
+
+    ###########################################################################
+    # Slave Registration
+    ###########################################################################
+
+    RegisterSlaveNSXWithMaster: &REGISTER_NSX_MANAGER_WITH_REPLICATOR
+        Type: NSX
+        TestNSX: vsm.[1]
+        ##################
+        # PR 1396374. Remove the hack when its fixed
+        sleepbetweenworkloads: 30
+        ##################
+        nsxslave:
+            '[1]':
+                ipaddress: 'vsm.[2]'
+                username: 'vsm.[2]'
+                password: 'vsm.[2]'
+                cert_thumbprint: 'vsm.[2]'
+        metadata:
+            expectedresultcode: '201'
+
+    RegisterSlaveNSX_VSM1_WithMaster_VSM2:
+        Type: NSX
+        TestNSX: vsm.[2]
+        ##################
+        # PR 1396374. Remove the hack when its fixed
+        sleepbetweenworkloads: 30
+        ##################
+        nsxslave:
+            '[1]':
+                ipaddress: 'vsm.[1]'
+                username: 'vsm.[1]'
+                password: 'vsm.[1]'
+                cert_thumbprint: 'vsm.[1]'
+        metadata:
+            expectedresultcode: '201'
+
+    RegisterSlaveNSX_VSM3_WithMaster_VSM1:
+        Type: NSX
+        TestNSX: vsm.[1]
+        ##################
+        # PR 1396374. Remove the hack when its fixed
+        sleepbetweenworkloads: 30
+        ##################
+        nsxslave:
+            '[2]':
+                ipaddress: 'vsm.[3]'
+                username: 'vsm.[3]'
+                password: 'vsm.[3]'
+                cert_thumbprint: 'vsm.[3]'
+        metadata:
+            expectedresultcode: '201'
+
+
+    RegisterSlaveNSX_VSM4_WithMaster_VSM3:
+        Type: NSX
+        TestNSX: vsm.[3]
+        ##################
+        # PR 1396374. Remove the hack when its fixed
+        sleepbetweenworkloads: 30
+        ##################
+        nsxslave:
+            '[1]':
+                ipaddress: 'vsm.[4]'
+                username: 'vsm.[4]'
+                password: 'vsm.[4]'
+                cert_thumbprint: 'vsm.[4]'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifySlaves: &READ_SLAVES
+        Type: Registration
+        Testregistration: "vsm.[1].nsxslave.[1]"
+        verifyendpointattributes:
+            "isPrimary[?]equal_to": 'false'
+            "certificateThumbprint[?]equal_to": 'vsm.[2]->cert_thumbprint'
+        metadata:
+            expectedresultcode: '200'
+
+    UnRegisterAllSlaves: &UNREGISTER_ALL_SLAVES
+        Type: NSX
+        TestNSX: vsm.[1]
+        deletensxslave: vsm.[1].nsxslave.[-1]
+        metadata:
+            expectedresultcode: '204'
+
+    UnRegisterSlavesOfVSM2:
+        Type: NSX
+        TestNSX: vsm.[2]
+        deletensxslave: vsm.[2].nsxslave.[-1]
+        metadata:
+            expectedresultcode: '204'
+
+    UnRegisterSlavesOfVSM3:
+        Type: NSX
+        TestNSX: vsm.[3]
+        deletensxslave: vsm.[3].nsxslave.[-1]
+        metadata:
+            expectedresultcode: '204'
+
+    ###########################################################################
+    # Universal VNI Pool
+    ###########################################################################
+
+    CreateVerifyGlobalVNIPool: &CREATE_GLOBAL_VNI_POOL
+        Type: NSX
+        TestNSX: vsm.[1]
+        globalvnipool:
+            '[1]':
+                name: AutoGenerate
+                begin: 10000
+                end: 19000
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalVNIPool: &READ_GLOBAL_VNI_POOL
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalvnipool.[1]"
+        verifyendpointattributes:
+            "begin[?]equal_to": '10000'
+            "end[?]equal_to": '19000'
+            "isUniversal[?]equal_to": 'true'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalVNIPool: &UPDATE_GLOBAL_VNI_POOL
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalvnipool.[1]"
+        reconfigure: "true"
+        name: my_global_vni_pool
+        begin: 20000
+        end: 29000
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteVerifyGlobalVNIPool: &DELETE_GLOBAL_VNI_POOL
+        Type: NSX
+        TestNSX: vsm.[1]
+        deleteglobalvnipool: vsm.[1].globalvnipool.[1]
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Universal Multicast Range
+    ###########################################################################
+
+    CreateVerifyGlobalMulticastRange: &CREATE_GLOBAL_MULTICAST_RANGE
+        Type: NSX
+        TestNSX: vsm.[1]
+        globalmulticastiprange:
+            '[1]':
+                name: AutoGenerate
+                begin: 239.0.0.101
+                end: 239.254.254.254
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalMulticastRange: &READ_GLOBAL_MULTICAST_RANGE
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalmulticastiprange.[1]"
+        verifyendpointattributes:
+            "begin[?]equal_to": '239.0.0.101'
+            "end[?]equal_to": '239.254.254.254'
+            "isUniversal[?]equal_to": 'true'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalMulticastRange: &UPDATE_GLOBAL_MULTICAST_RANGE
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalmulticastiprange.[1]"
+        reconfigure: "true"
+        name: my_global_multicast_range
+        begin: 238.0.0.101
+        end: 238.254.254.254
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteVerifyGlobalMulticastRange: &DELETE_GLOBAL_MULTICAST_RANGE
+        Type: NSX
+        TestNSX: vsm.[1]
+        deleteglobalmulticastiprange: vsm.[1].globalmulticastiprange.[1]
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Universal TransportZone
+    ###########################################################################
+
+    CreateVerifyGlobalTransportZone: &CREATE_GLOBAL_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: 'vsm.[1]'
+        globaltransportzone:
+            '[1]':
+                name: AutoGenerate
+                clusters: 'vc.[1].datacenter.[1].cluster.[1]'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalTransportZone: &READ_GLOBAL_TRANSPORT_ZONE
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        verifyendpointattributes:
+            "isUniversal[?]equal_to": 'true'
+            "id[?]equal_to": 'universalvdnscope'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadVerifyGlobalTransportZone_VSM2:
+        <<: *READ_GLOBAL_TRANSPORT_ZONE
+        TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+
+    UpdateVerifyGlobalTransportZone: &UPDATE_GLOBAL_TRANSPORT_ZONE
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        reconfigure: "true"
+        name: my_global_tz
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteVerifyGlobalTransportZone: &DELETE_GLOBAL_TRANSPORT_ZONE
+        Type: NSX
+        TestNSX: vsm.[1]
+        deleteglobaltransportzone: vsm.[1].globaltransportzone.[1]
+        metadata:
+            expectedresultcode: '200'
+
+    AddClustersToGTZSlaveSites: &ADD_CLUSTERS_GTZ_SLAVE_SITES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+        transportzoneaction: expand
+        clusters: 'vc.[x=vsm_index].datacenter.[1].cluster.[1-2]'
+        #clusters: 'vc.[x=vsm_index].datacenter.[1].cluster.[1]'
+        metadata:
+            expectedresultcode: '201'
+
+    CompareGlobalTransportZoneSlaveWithMaster: &COMPARE_GLOBAL_TRANSPORT_ZONE
+        Type: TransportZone
+        TestTransportZone: 'vsm.[2].globaltransportzone.[1]'
+        verifyendpointattributes:
+            "name[?]equal_to": 'vsm.[1].globaltransportzone.[1]->name'
+            "universalRevision[?]equal_to": 'vsm.[1].globaltransportzone.[1]->universalRevision'
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Universal Logical Switches
+    ###########################################################################
+
+    CreateVerify2GlobalLogicalSwitches: &CREATE_2_MULTICAST_GLOBAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        globallogicalswitch:
+            '[1-2]':
+                controlplanemode: MULTICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalLogicalSwitches: &READ_GLOBAL_LOGICAL_SWITCHES
+        Type: Switch
+        TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-2]'
+        verifyendpointattributes:
+            "isUniversal[?]equal_to": 'true'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadVerifyGlobalLogicalSwitches_VSM2:
+        <<: *READ_GLOBAL_LOGICAL_SWITCHES
+        TestSwitch: 'vsm.[2].globaltransportzone.[1].globallogicalswitch.[1-2]'
+
+    DeleteAllGlobalLogicalSwitches: &DELETE_ALL_GLOBAL_LOGICAL_SWITCH
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        deletegloballogicalswitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[-1]'
+        metadata:
+            expectedresultcode: '200'
+
+    CompareGlobalLogicalSwitchSlaveWithMaster: &COMPARE_GLOBAL_LOGICAL_SWITCH
+        Type: Switch
+        TestSwitch: 'vsm.[2].globaltransportzone.[1].globallogicalswitch.[1]'
+        verifyendpointattributes:
+            "name[?]equal_to": >
+              'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]->name'
+            "universalRevision[?]equal_to": >
+              'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]->universalRevision'
+        metadata:
+            expectedresultcode: '200'
+
+    CreateVerify100GlobalLogicalSwitches: &CREATE_100_MULTICAST_GLOBAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        globallogicalswitch:
+            '[1-100]':
+                controlplanemode: MULTICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerify100GlobalLogicalSwitches: &READ_100_GLOBAL_LOGICAL_SWITCHES
+        <<: *READ_GLOBAL_LOGICAL_SWITCHES
+        TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-100]'
+
+    ReadVerify100GlobalLogicalSwitches_VSM2: &READ_100_GLOBAL_LOGICAL_SWITCHES_VSM2
+        <<: *READ_GLOBAL_LOGICAL_SWITCHES
+        TestSwitch: 'vsm.[2].globaltransportzone.[1].globallogicalswitch.[1-100]'
+
+    Compare100GlobalLogicalSwitchSlaveWithMaster: &COMPARE_100_GLOBAL_LOGICAL_SWITCH
+        Type: Switch
+        TestSwitch: 'vsm.[2].globaltransportzone.[1].globallogicalswitch.[1-100]'
+        verifyendpointattributes:
+            "name[?]equal_to": >
+              'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-100]->name'
+            "universalRevision[?]equal_to": >
+              'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-100]->universalRevision'
+        metadata:
+            expectedresultcode: '200'
+
+    Delete100GlobalLogicalSwitches:
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        deletegloballogicalswitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-100]'
+        metadata:
+            expectedresultcode: '200'
+
+    CreateVerify10GlobalLogicalSwitches: &CREATE_10_MULTICAST_GLOBAL_LOGICAL_SWITCHES
+        Type: TransportZone
+        TestTransportZone: 'vsm.[1].globaltransportzone.[1]'
+        globallogicalswitch:
+            '[1-10]':
+                controlplanemode: MULTICAST_MODE
+                name: AutoGenerate
+                tenantid: AutoGenerate
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerify10GlobalLogicalSwitches: &READ_10_GLOBAL_LOGICAL_SWITCHES
+        <<: *READ_GLOBAL_LOGICAL_SWITCHES
+        TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-10]'
+
+    ReadVerify10GlobalLogicalSwitches_VSM2: &READ_10_GLOBAL_LOGICAL_SWITCHES_VSM2
+        <<: *READ_GLOBAL_LOGICAL_SWITCHES
+        TestSwitch: 'vsm.[2].globaltransportzone.[1].globallogicalswitch.[1-10]'
+
+    Compare10GlobalLogicalSwitchSlaveWithMaster: &COMPARE_10_GLOBAL_LOGICAL_SWITCH
+        Type: Switch
+        TestSwitch: 'vsm.[2].globaltransportzone.[1].globallogicalswitch.[1-10]'
+        verifyendpointattributes:
+            "name[?]equal_to": >
+              'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-10]->name'
+            "universalRevision[?]equal_to": >
+              'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1-10]->universalRevision'
+        metadata:
+            expectedresultcode: '200'
+
+    ###########################################################################
+    # Universal IPSet
+    ###########################################################################
+
+    CreateVerifyGlobalIPSet: &CREATE_UNIVERSAL_IPSET
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalipset:
+            '[1]':
+                name: 'UniversalIPSet-1'
+                value: '192.168.1.1'
+                description: 'IPs'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalIPSet: &READ_GLOBAL_IPSET
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalipset.[1]"
+        verifyendpointattributes:
+            "value[?]equal_to": '192.168.1.1'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalIPSet: &UPDATE_GLOBAL_IPSET
+        Type: GroupingObject
+        TestGroupingObject: 'vsm.[1].globalipset.[1]'
+        reconfigure: "true"
+        name: 'UniversalIPSet-11'
+        value: '192.168.1.2'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadVerifyUpdatedGlobalIPSet: &READ_UPDATED_GLOBAL_IPSET
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalipset.[1]"
+        verifyendpointattributes:
+            "value[?]equal_to": '192.168.1.2'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadVerifyUpdatedGlobalIPSet_VSM2:
+        <<: *READ_UPDATED_GLOBAL_IPSET
+        TestGroupingObject: "vsm.[2].globalipset.[1]"
+
+    DeleteGlobalIPSet: &DELETE_GLOBAL_IPSET
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        deleteglobalipset: "vsm.[1].globalipset.[-1]"
+
+    ReadVerifyGlobalIPSet_VSM2: &READ_GLOBAL_IPSET_VSM2
+        <<: *READ_GLOBAL_IPSET
+        TestGroupingObject: "vsm.[2].globalipset.[1]"
+
+    CreateVerify100GlobalIPSet: &CREATE_100_UNIVERSAL_IPSET
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalipset:
+            '[1-100]':
+                name: AutoGenerate
+                value: '192.168.1.1'
+                description: 'IPs'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerify100GlobalIPSet: &READ_100_GLOBAL_IPSET
+        <<: *READ_GLOBAL_IPSET
+        TestGroupingObject: "vsm.[1].globalipset.[1-100]"
+
+    ReadVerify100GlobalIPSet_VSM2: &READ_1000_GLOBAL_IPSET_VSM2
+        <<: *READ_GLOBAL_IPSET
+        TestGroupingObject: "vsm.[2].globalipset.[1-100]"
+
+    ###########################################################################
+    # Universal MACSet
+    ###########################################################################
+
+    CreateVerifyGlobalMACSet: &CREATE_UNIVERSAL_MACSET
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalmacset:
+            '[1]':
+                name: 'UniversalMACSet-1'
+                value: '00:01:02:03:04:05'
+                description: 'MACs'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalMacSet: &READ_GLOBAL_MACSET
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalmacset.[1]"
+        verifyendpointattributes:
+            "value[?]equal_to": '00:01:02:03:04:05'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalMacSet: &UPDATE_GLOBAL_MACSET
+        Type: GroupingObject
+        TestGroupingObject: 'vsm.[1].globalmacset.[1]'
+        reconfigure: "true"
+        name: 'UniversalMACSet-11'
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteGlobalMacSet: &DELETE_GLOBAL_MACSET
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        deleteglobalmacset: "vsm.[1].globalmacset.[-1]"
+
+    ReadVerifyGlobalMacSet_VSM2: &READ_GLOBAL_MACSET_VSM2
+        <<: *READ_GLOBAL_MACSET
+        TestGroupingObject: "vsm.[2].globalmacset.[1]"
+
+    ReadVerifyUpdatedGlobalMacSet: &READ_UPDATED_GLOBAL_MACSET
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalmacset.[1]"
+        verifyendpointattributes:
+            "name[?]equal_to": 'UniversalMACSet-11'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadVerifyUpdatedGlobalMacSet_VSM2:
+        <<: *READ_UPDATED_GLOBAL_MACSET
+        TestGroupingObject: "vsm.[2].globalmacset.[1]"
+
+    CreateVerify100GlobalMACSet: &CREATE_100_UNIVERSAL_MACSET
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalmacset:
+            '[1-100]':
+                name: AutoGenerate
+                value: '00:01:02:03:04:05'
+                description: 'MACs'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerify100GlobalMacSet: &READ_100_GLOBAL_MACSET
+        <<: *READ_GLOBAL_MACSET
+        TestGroupingObject: "vsm.[1].globalmacset.[1-100]"
+
+    ReadVerify100GlobalMacSet_VSM2: &READ_1000_GLOBAL_MACSET_VSM2
+        <<: *READ_GLOBAL_MACSET
+        TestGroupingObject: "vsm.[2].globalmacset.[1-100]"
+
+    ###########################################################################
+    # Universal SecurityGroup
+    ###########################################################################
+
+    CreateVerifyGlobalSecurityGroup: &CREATE_UNIVERSAL_SECURITY_GROUP
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalsecuritygroup: &GLOBAL_SECURITY_GROUP_1
+            '[1]':
+                name: 'UniversalSecurityGroup-1'
+                description: 'SecurityGroups'
+                type:
+                    typename: 'SecurityGroup'
+                scope:
+                    id: 'universalroot-0'
+                    objecttypename: 'UniversalRoot'
+                    name: 'Universal'
+                member:
+                    - grouping_object_id: 'vsm.[1].globalipset.[1]'
+                      isuniversal: 'true'
+                    - grouping_object_id: 'vsm.[1].globalmacset.[1]'
+                      isuniversal: 'true'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalSecurityGroup: &READ_GLOBAL_SECURITY_GROUP
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalsecuritygroup.[1]"
+        verifyendpointattributes:
+            "description[?]equal_to": 'SecurityGroups'
+        metadata:
+            expectedresultcode: '200'
+
+    UpdateVerifyGlobalSecurityGroup: &UPDATE_GLOBAL_SECURITY_GROUP
+        Type: GroupingObject
+        TestGroupingObject: 'vsm.[1].globalsecuritygroup.[1]'
+        reconfigure: "true"
+        name: 'UniversalSecurityGroup-11'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadVerifyUpdatedGlobalSecurityGroup: &READ_UPDATED_GLOBAL_SECURITY_GROUP
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalsecuritygroup.[1]"
+        verifyendpointattributes:
+            "name[?]equal_to": 'UniversalSecurityGroup-11'
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteGlobalSecurityGroup: &DELETE_GLOBAL_SECURITY_GROUP
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        deleteglobalsecuritygroup: "vsm.[1].globalsecuritygroup.[-1]"
+
+    ReadVerifyGlobalSecurityGroup_VSM2: &READ_GLOBAL_SECURITY_GROUP_VSM2
+        <<: *READ_GLOBAL_SECURITY_GROUP
+        TestGroupingObject: "vsm.[2].globalsecuritygroup.[1]"
+
+    ReadVerifyUpdatedGlobalSecurityGroup_VSM2:
+        <<: *READ_UPDATED_GLOBAL_SECURITY_GROUP
+        TestGroupingObject: "vsm.[2].globalsecuritygroup.[1]"
+
+    TranslateSecurityGroupForIPSet:
+        Type: "GroupingObject"
+        Testgroupingobject: "vsm.[1].globalsecuritygroup.[1]"
+        translation_entity: "ipaddress"
+        compare_translation_list:
+             "ipNode[?]super_set":
+                - ipAddresses: "vsm.[1].globalipset.[1]->value"
+                - ipAddresses: "vsm.[1].globalipset.[2]->value"
+
+    TranslateSecurityGroupForMACSet:
+        Type: "GroupingObject"
+        Testgroupingobject: "vsm.[1].globalsecuritygroup.[1]"
+        translation_entity: "macaddress"
+        compare_translation_list:
+             "macNode[?]super_set":
+                - macAddresses: "vsm.[1].globalmacset.[1]->value"
+
+    LookupSecurityGroupsForIPSet:
+        Type: "GroupingObject"
+        Testgroupingobject: "vsm.[1].globalsecuritygroup.[1]"
+        lookup_entity: "ipaddress"
+        lookup_value: "vsm.[1].globalipset.[2]->value"
+        compare_lookup_list:
+            "securityGroups[?]contain_once":
+                - objectId: "vsm.[1].globalsecuritygroup.[1]->id"
+
+    CreateVerify10GlobalSecurityGroup: &CREATE_10_UNIVERSAL_SECURITY_GROUP
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalsecuritygroup:
+            '[1-10]':
+                name: AutoGenerate
+                description: 'SecurityGroups'
+                type:
+                    typename: 'SecurityGroup'
+                scope:
+                    id: 'universalroot-0'
+                    objecttypename: 'UniversalRoot'
+                    name: 'Universal'
+                member:
+                    - grouping_object_id: 'vsm.[1].globalipset.[1-10]'
+                      isuniversal: 'true'
+                    - grouping_object_id: 'vsm.[1].globalmacset.[1-10]'
+                      isuniversal: 'true'
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerify10GlobalSecurityGroup: &READ_10_GLOBAL_SECURITY_GROUP
+        <<: *READ_GLOBAL_SECURITY_GROUP
+        TestGroupingObject: "vsm.[1].globalsecuritygroup.[1-10]"
+
+    ReadVerify10GlobalSecurityGroup_VSM2: &READ_10_GLOBAL_SECURITY_GROUP_VSM2
+        <<: *READ_GLOBAL_SECURITY_GROUP
+        TestGroupingObject: "vsm.[2].globalsecuritygroup.[1-10]"
+
+    ###########################################################################
+    # Universal Application Service object
+    ###########################################################################
+
+    CreateVerifyGlobalApplication: &CREATE_UNIVERSAL_APPLICATION_SERVICE
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalapplicationservice:
+            '[1]':
+                name: "Service-1"
+                element:
+                    value: "1234"
+                    sourceport: "5678"
+                    applicationprotocol: "TCP"
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalApplicationService: &READ_GLOBAL_APPLICATION_SERVICE
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalapplicationservice.[1]"
+        verifyendpointattributes:
+            "name[?]equal_to": 'Service-1'
+            element:
+                "value[?]equal_to": '1234'
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteGlobalApplicationService: &DELETE_GLOBAL_APPLICATION_SERCICE
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        deleteglobalsecuritygroup: "vsm.[1].globalapplicationservice.[-1]"
+
+    ###########################################################################
+    # Universal Application Group object
+    ###########################################################################
+
+    CreateVerifyGlobalApplicationGroup: &CREATE_UNIVERSAL_APPLICATION_SERVICE_GROUP
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        globalapplicationservicegroup:
+            '[1]':
+                name: "ServiceGroup-1"
+                description: "service group-1 creation"
+        metadata:
+            expectedresultcode: '201'
+
+    ReadVerifyGlobalApplicationServiceGroup: &READ_GLOBAL_APPLICATION_SERVICE_GROUP
+        Type: GroupingObject
+        TestGroupingObject: "vsm.[1].globalapplicationservicegroup.[1]"
+        verifyendpointattributes:
+            "name[?]equal_to": 'ServiceGroup-1'
+        metadata:
+            expectedresultcode: '200'
+
+    DeleteGlobalApplicationServiceGroup: &DELETE_GLOBAL_APPLICATION_SERCICE_GROUP
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        deleteglobalsecuritygroup: "vsm.[1].globalapplicationservicegroup.[-1]"
+
+    AddMemberToApplicationGroup: &ADD_MEMBER_TO_APPLICATION_GROUP
+        Type: GroupingObject
+        TestGroupingObject: vsm.[1].globalapplicationservicegroup.[1]
+        applicationservicegroupmember:
+            '[1]':
+                member: vsm.[1].globalapplicationservice.[1]
+
+    DeleteMemberFromApplicationGroup: &DELETE_MEMBER_FROM_APPLICATION_GROUP
+        Type: GroupingObject
+        TestGroupingObject: vsm.[1].globalapplicationservicegroup.[1]
+        deleteapplicationservicegroupmember: >
+          vsm.[1].globalapplicationservicegroup.[1].applicationservicegroupmember.[1]
+
+    ###########################################################################
+    # Replicator
+    ###########################################################################
+
+    ReplicationStatusOfVSM2: &REPLICATION_STATUS_VSM_2
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        read_replication_status:
+            'syncState[?]equal_to': 'IN_SYNC'
+            'nsxManagersStatusList[?]contain_once':
+              - vsmId: 'vsm.[2]->id'
+                syncState: 'IN_SYNC'
+
+    ReplicationStatusOfVSM2InProgress:
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        read_replication_status:
+            'syncState[?]equal_to': 'IN_PROGRESS'
+            'nsxManagersStatusList[?]contain_once':
+              - vsmId: 'vsm.[2]->id'
+                syncState: 'IN_PROGRESS'
+
+    ReplicationStatusOfVSM2Failed:
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        read_replication_status:
+            'syncState[?]equal_to': 'FAILED'
+            'nsxManagersStatusList[?]contain_once':
+              - vsmId: 'vsm.[2]->id'
+                syncState: 'FAILED'
+
+    ReadEntitySyncStatusForSG: &READ_ENTITY_SYNC_STATUS_SECURITY_GROUP
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        object_id: 'vsm.[1].globalsecuritygroup.[1]'
+        object_type: 'SecurityGroup'
+        read_entity_replication_status:
+            'objectId[?]equal_to': 'vsm.[1].globalsecuritygroup.[1]->id'
+            'isInSync': 'true'
+            'elements':
+                - vsmId: 'PRIMARY'
+                  objectExists: 'true'
+                - vsmId: 'vsm.[2]->id'
+                  objectExists: 'true'
+
+    ReadEntitySyncStatusForIPset: &READ_ENTITY_SYNC_STATUS_IPSET
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        object_id: 'vsm.[1].globalipset.[1]'
+        object_type: 'IPSet'
+        read_entity_replication_status:
+            'objectId[?]equal_to': 'vsm.[1].globalipset.[1]->id'
+            'isInSync': 'true'
+            'elements':
+                - vsmId: 'PRIMARY'
+                  objectExists: 'true'
+                - vsmId: 'vsm.[2]->id'
+                  objectExists: 'true'
+
+    ReadEntitySyncStatusForMacSet: &READ_ENTITY_SYNC_STATUS_MACSET
+        Type: 'NSX'
+        TestNSX: 'vsm.[1]'
+        object_id: 'vsm.[1].globalmacset.[1]'
+        object_type: 'MACSet'
+        read_entity_replication_status:
+            'objectId[?]equal_to': 'vsm.[1].globalmacset.[1]->id'
+            'isInSync': 'true'
+            'elements':
+                - vsmId: 'PRIMARY'
+                  objectExists: 'true'
+                - vsmId: 'vsm.[2]->id'
+                  objectExists: 'true'
+
+    ReadReplicatorRoleAsPrimary: &READ_REPLICATION_ROLE_AS_PRIMARY
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        read_replicator_role:
+            'role[?]equal_to': 'PRIMARY'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadReplicatorRoleAsPrimaryOnVSM2:
+        <<: *READ_REPLICATION_ROLE_AS_PRIMARY
+        TestNSX: "vsm.[2]"
+
+    ReadReplicatorRoleAsPrimaryOnVSM3:
+        <<: *READ_REPLICATION_ROLE_AS_PRIMARY
+        TestNSX: "vsm.[3]"
+
+    ReadReplicatorRoleAsStandaloneOnVSM1: &READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM1
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        read_replicator_role:
+            'role[?]equal_to': 'STANDALONE'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadReplicatorRoleAsStandaloneOnVSM2: &READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM2
+        <<: *READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM1
+        TestNSX: "vsm.[2]"
+
+    ReadReplicatorRoleAsStandaloneOnVSM3:
+        <<: *READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM1
+        TestNSX: "vsm.[3]"
+
+    ReadReplicatorRoleAsStandaloneOnVSM4:
+        <<: *READ_REPLICATION_ROLE_AS_STANDALONE_ON_VSM1
+        TestNSX: "vsm.[4]"
+
+    ReadReplicatorRoleAsSecondaryOnVSM2: &READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+        Type: NSX
+        TestNSX: "vsm.[2]"
+        read_replicator_role:
+            'role[?]equal_to': 'SECONDARY'
+        metadata:
+            expectedresultcode: '200'
+
+    ReadReplicatorRoleAsSecondaryOnVSM1:
+        <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+        TestNSX: "vsm.[1]"
+
+    ReadReplicatorRoleAsSecondaryOnVSM3:
+        <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+        TestNSX: "vsm.[3]"
+
+    ReadReplicatorRoleAsSecondaryOnVSM4:
+        <<: *READ_REPLICATION_ROLE_AS_SECONDARY_ON_VSM2
+        TestNSX: "vsm.[4]"
+
+    ForceSyncReplication: &FORCE_SYNC_REPLICATION
+        Type: NSX
+        TestNSX: "vsm.[1]"
+        force_sync_replication: 'true'
+
+    ###########################################################################
+    # NSX Manager Power Operations
+    ###########################################################################
+
+    PowerOnVSM1: &POWER_ON_VSM_1
+      Type: VM
+      TestVM: "vsm.[1]"
+      vmstate: poweron
+
+    PowerOnVSM2: &POWER_ON_VSM_2
+      Type: VM
+      TestVM: "vsm.[2]"
+      vmstate: poweron
+
+    PowerOffVSM1: &POWER_OFF_VSM_1
+      Type: VM
+      TestVM: "vsm.[1]"
+      vmstate: poweroff
+
+    PowerOffVSM2: &POWER_OFF_VSM_2
+      Type: VM
+      TestVM: "vsm.[2]"
+      vmstate: poweroff

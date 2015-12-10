@@ -1,0 +1,493 @@
+{% include 'TDS/NSXTransformers/L3/BasicRouting/TestbedSpec.yaml' %}
+{% include 'TDS/NSXTransformers/WORKAROUNDS.yaml' %}
+{% include 'TDS/NSXTransformers/L3/BasicRouting/TopoL3-2Hosts-1Edge.yaml' %}
+{% include 'TDS/NSXTransformers/L3/BasicRouting/TopoL3-2Hosts-NoEdge.yaml' %}
+{% include 'TDS/NSXTransformers/L3/BasicRouting/CommonWorkloads.yaml' %}
+{% include 'TDS/NSXTransformers/Common/Topo_Clusters.yaml' %}
+
+tds_template: &tds_template
+    AutomationLevel: Automated
+    Category: L3
+    Component: BasicRouting
+    Duration: 3600
+    ExpectedResult: PASS
+    FullyAutomatable: Y
+    PartnerFacing: N
+    PMT: ''
+    Procedure: ''
+    Product: NSXTransformers
+    QCPath: KVM
+    Status: Execution Ready
+    Tags: cat,nsxtransformers,l3,kvm,edge,failover
+    TCMSId: ''
+    TestcaseLevel: Product
+    TestcaseType: Failover
+    Version: 2
+
+p1_template: &p1_template
+    <<: *tds_template
+    Priority: P1
+
+PLRDownUpUplinkLIF:
+    <<: *p1_template
+    Developer: sqian
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Down/up LIFs on PLR
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: PLRDownUpUplinkLIF
+
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+             - - ClusterSetup
+             - - ClusterVerification
+             - - TopoSetup--KVM
+             - - DiscoverVnicsOnEdge-1_VNIC-1-3
+             - - L3Traffic--KVM
+
+             - - DisconnectEdgeUplinkLIF
+             - - EWTraffic--KVM
+             - - NSTrafficFail--KVM
+
+             - - ConnectEdgeUplinkLIF
+             - - L3Traffic--KVM
+
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+
+PLRRemoveAddLRPort:
+    <<: *p1_template
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    Developer: gangarm
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Remove/add LIF lrport on PLR
+        - Remove/add LIF uplink lrport on PLR
+    TestName: PLRRemoveAddLRPort
+
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+            - - L3Traffic--KVM
+
+            - - DeleteLRP-101
+            - - CreateLRP-101_LR-1_IP-192.168.1.1_LSP-101
+            - - L3Traffic--KVM
+
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+PLRRemoveAddLRPortAttachment:
+    <<: *p1_template
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    Developer: gangarm
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Remove/add PLR lrport attachment
+        - Remove/add PLR uplink lrport attachment
+    TestName: PLRRemoveAddLRPortAttachment
+
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+            - - L3Traffic--KVM
+
+            # (XXX) To detach the ULR/LR Port from current LSP, create a dummy
+            # LSwitch and attach the LRPort to a new LSP on that switch.
+            - - CreateLS-999
+            - - CreateLSP-999_LS-999
+
+            # Detach/Attach LRPort.
+            - - AttachLRP-101_LSP-999
+            - - VerifyAttachmentLRP-101_LSP-999
+            - - L3TrafficFail--KVM
+
+            - - AttachLRP-101_LSP-101
+            - - VerifyAttachmentLRP-101_LSP-101
+            - - L3Traffic--KVM
+
+            # Detach/Attach ULRPort.
+            - - AttachULRP-1_LSP-999
+            - - VerifyAttachmentULRP-1_LSP-999
+            - - NSTrafficFail--KVM
+            - - EWTraffic--KVM
+
+            - - AttachULRP-1_LSP-201
+            - - VerifyAttachmentULRP-1_LSP-201
+
+            # (XXX) LSP-999 still remains up and connected to ULRP (PR1391682). Hence delete explicitly.
+            - - DeleteLSP-999
+            - - DeleteLS-999
+            - - L3Traffic--KVM
+
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+#PLRDownUpAdminState:
+#    <<: *p1_template
+#    Developer: miriyalak
+#    Priority: P1
+#    Summary:
+#    - Verify that east-west & north-south traffic resume after following operations
+#    - Admin down/up on PLR
+#    TestbedSpec: *L3Topology_2KVM_No_Edge
+#    TestName: PLRDownUpAdminState
+#PLRDownUpLRPortAdminState:
+#    <<: *p1_template
+#    Developer: miriyalak
+#    Priority: P1
+#    Summary:
+#    - Verify that east-west & north-south traffic resume after following operations
+#    - Admin down/up PLR lrport state
+#    - Admin down/up PLR uplink lrport state
+#    TestbedSpec: *L3Topology_2KVM_No_Edge
+#    TestName: PLRDownUpLRPortAdminState
+#
+PLRDeleteAdd:
+    <<: *p1_template
+    Developer: sqian
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Delete/re-add PLR
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: PLRDeleteAdd
+
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+             - - ClusterSetup
+             - - ClusterVerification
+             - - TopoSetup--KVM
+             - - L3Traffic--KVM
+
+             # Steps to delete PLR
+             - - L3Cleanup
+             - - L3TrafficFail--KVM
+
+             # Steps to re-add PLR
+             - - L3Setup
+             - - L3Traffic--KVM
+
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+
+#TLRDeleteAdd:
+#    <<: *p1_template
+#    Developer: miriyalak
+#    Priority: P1
+#    Summary:
+#    - Verify that east-west & north-south traffic resume after following operations
+#    - Delete/re-add TLR
+#    TestbedSpec: *L3Topology_2KVM_No_Edge
+#    TestName: TLRDeleteAdd
+#
+PLRModifyLRPortIP:
+    <<: *p1_template
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Modify LIF IP and corresponding routes on VMs.
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: PLRModifyLRPortIP
+    Developer: gangarm
+
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+            - - L3Traffic--KVM
+
+            - - ReconfigureLRP-101_LR-1_IP-192.168.1.254_Prefix-24
+            - - AddRouteVif-1_LRP-101_IP-192.168.0.0_NETMASK-255.255.0.0
+            - - L3Traffic--KVM
+
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+#PLRModifyBacklpaneLS:
+#    <<: *p1_template
+#    Developer: miriyalak
+#    Priority: P1
+#    Summary:
+#    - Verify that east-west & north-south traffic resume after following operations
+#    - Backplane LIF of PLR (if exposed, do things to it. if not, make sure we cannot)
+#    TestbedSpec: *L3Topology_2KVM_No_Edge
+#    TestName: PLRModifyBacklpaneLS
+#
+PLRModifyLSIPs:
+    <<: *p1_template
+    TestName: PLRModifyLSIPs
+    Developer: swalls
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Modify one LS IPs to another subnet
+        - Modify one LS IPs to be overlapping with another LS like /24, /16
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+            - - L3Traffic--KVM
+
+            # Change the addresses of LS101, configure things accordingly
+            - - ReconfigureLRP-101_IP-192.168.70.1
+            - - ConfigureVM1Vif1IP-192.168.70.10
+            - - AddRouteVif-1_LRP-101_IP-192.168.0.0_NETMASK-255.255.0.0
+            - - L3Traffic--KVM
+
+        ExitSequence:
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+PLRPowerDownUpVMs:
+    <<: *p1_template
+    TestName: PLRPowerDownUpVMs
+    Developer: swalls
+    Priority: P1
+    Summary: |
+        - Transport Node operations,
+        - Verify that east-west & north-south traffic resume after following operations
+        - Power down/power up VMs
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+            - - L3Traffic--KVM
+
+            - - PowerOffVM-1
+            - - PowerOnVM-1
+            - - ConfigureVM1Vif1IP-192.168.1.10
+            - - AddVM1Route--KVM
+            - - L3Traffic--KVM
+
+        ExitSequence:
+            - - TopoCleanup--KVM
+            - - ClusterCleanup
+
+PLRRemoveAddHypervisors:
+    <<: *p1_template
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Remove/Add Hypervisors > 1 (spanning same LS)
+        - Remove/Add Hypervisors > 1 (spanning same LR)
+    Developer: sqian
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: PLRRemoveAddHypervisors
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+             - - ClusterSetup
+             - - ClusterVerification
+             - - TopoSetup--KVM
+             - - L3Traffic--KVM
+             # To remove and re-add transport node1
+             - - UplinkVMCleanup--EDGEESX
+             - - DeleteTN-1
+             - - CreateTN-1_HOSTNODE-1_TZ-1_VMNIC-1
+             - - UplinkVMSetup--EDGEESX
+             - - L3Traffic--KVM
+             - - VerifyHost1LRHas4ConnectedRoutes--KVM
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+
+PLRRebootHypervisor:
+    <<: *p1_template
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Reboot Hypervisor (spanning same LR)
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: PLRRebootHypervisor
+    Developer: gangarm
+
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+            - - ClusterSetup
+            - - ClusterVerification
+            - - TopoSetup--KVM
+            - - L3Traffic--KVM
+
+            # Reboot HV-2.
+            - - RebootKVM-2
+            - - PowerOnVM-1
+            - - ConfigureVM1Vif1IP-192.168.1.10
+            - - AddVM1Route--KVM
+            - - L3Traffic--KVM
+
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+PLRRebootController:
+    <<: *p1_template
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Reboot Master controller for PLR
+        - Reboot Backup controller for PLR
+        - Reboot some other controller for PLR
+    Developer: lding
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: PLRRebootController
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+             - - ClusterSetup
+             - - ClusterVerification
+             - - TopoSetup--KVM
+             - - L3Traffic--KVM
+             - - RebootNSXC-1
+             - - L3Traffic--KVM
+             - - RebootNSXC-2
+             - - L3Traffic--KVM
+             - - RebootAllCCPNodes
+             - - L3Traffic--KVM
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+
+PLRRebootManager:
+    <<: *p1_template
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Reboot Managers (MP reboot)
+    Developer: sqian
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: PLRRebootManager
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+             - - ClusterSetup
+             - - ClusterVerification
+             - - TopoSetup--KVM
+             - - L3Traffic--KVM
+             - - RebootNSXM-1
+             - - L3Traffic--KVM
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+
+PLRDownUpTEPInterface:
+    <<: *p1_template
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Down/up physical NIC for tunnel on Edge to other Edge
+        - Down/up physical NIC for tunnel on Edge to Hypervisor
+        - Down/up physical NIC for tunnel on Hypervisor to Edge
+        - Down/up physical NIC for tunnel on Hypervisor to Hypervisor
+    Developer: gangarm
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: PLRDownUpTEPInterface
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+             - - ClusterSetup
+             - - ClusterVerification
+             - - TopoSetup--KVM
+             - - L3Traffic--KVM
+
+             - - DownKVM-2_Vtep-1
+             - - UpKVM-2_Vtep-1  # XXX(Mihir): Will not work until PR 1406275 is resolved.
+             - - L3Traffic--KVM
+
+             - - DownESX-1_Vtep-1
+             - - EWTraffic--KVM
+             - - UpESX-1_Vtep-1
+             - - L3Traffic--KVM
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+        # TODO(miriyalak): Can autogenerate these.
+        DownKVM-2_Vtep-1:
+            Type: "NetAdapter"
+            TestAdapter: "kvm.[2].vtep.[1]"
+            devicestatus: "DOWN"
+
+        UpKVM-2_Vtep-1:
+            Type: "NetAdapter"
+            TestAdapter: "kvm.[2].vtep.[1]"
+            devicestatus: "UP"
+
+        DownESX-1_Vtep-1:
+            Type: "NetAdapter"
+            TestAdapter: "esx.[1].vtep.[1]"
+            devicestatus: "DOWN"
+
+        UpESX-1_Vtep-1:
+            Type: "NetAdapter"
+            TestAdapter: "esx.[1].vtep.[1]"
+            devicestatus: "UP"
+
+PLRDownUpVirtualNics:
+    <<: *p1_template
+    Summary: |
+        - Verify that east-west & north-south traffic resume after following operations
+        - Down/up virtual NICs
+    Developer: sqian
+    TestbedSpec: *L3_KVM_TOPOLOGY_3HOSTS_1EDGE
+    TestName: PLRDownUpVirtualNics
+    WORKLOADS:
+        <<: *Topo_1MP_3CCP
+        <<: *TopoL3_2Hosts_1Edge
+        Sequence:
+             - - ClusterSetup
+             - - ClusterVerification
+             - - TopoSetup--KVM
+             - - L3Traffic--KVM
+             - - DeleteLSP-1
+             - - DeleteLSP-2
+             - - DisconnectVM3Nic1FromLP3--ESX
+             - - CreateLP1OnLS101ForVM1Vif1
+             - - CreateLP2OnLS102ForVM2Vif1
+             - - ReconnectVM3Nic1ToLP3--ESX
+             - - L3Traffic--KVM
+        ExitSequence:
+             - - TopoCleanup--KVM
+             - - ClusterCleanup
+
+
+#BasicTransportNodeOperations:
+#    <<: *p1_template
+#    Summary: |
+#       - Verify that east-west & north-south traffic resume after following operations
+#       - Migrate VMs between Hypervisor spanning same LS
+#       - Migrate VMs between Hypervisor spanning same LR
+#    Developer: sqian
+#    TestbedSpec: *L3_VC_KVM_TOPOLOGY_EDGE1
+#    TestName: BasicTransportNodeOperations

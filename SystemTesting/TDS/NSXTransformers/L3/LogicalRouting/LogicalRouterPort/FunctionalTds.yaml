@@ -1,0 +1,82 @@
+CreateLogicalRouterPort:
+    Product: "NSXTransformers"
+    Category: "Edge"
+    Component: "Logical Routing"
+    TestName: "Create LR Port"
+    Version: "2"
+    Summary: "Verify LR Port gets created"
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    #QCPath: "IPAM"
+    Priority: "P0"
+    Developer: "agujar"
+    Procedure: '1. Create one LR Port
+                2. Verify LR Port gets created successfully'
+    ExpectedResult: 'LR Port should get created successfully'
+    Duration: '5'
+    #Tags: 'nsxmanager,management,idas'
+    Partnerfacing: "N"
+    TestbedSpec:
+        nsxmanager:
+            '[1]':
+               'ip': None
+    WORKLOADS:
+        Sequence:
+            - ["CreateLogicalRouter"]
+            - ["CreateLRPort"]
+            - ["ReadLR"]
+            - ["ReadLRPort"]
+            - ["DeleteLRPort"]
+        ExitSequence:
+            #- ["DeleteLogicalRouter"]
+
+        CreateLogicalRouter:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouter:
+                '[1]':
+                    name: 'lrouter-1'
+                    summary: "LRouter created through automation"
+
+
+        CreateLRPort:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            logicalrouterport:
+                '[1]':
+                    logical_router_id: "nsxmanager.[1].logicalrouter.[1]"
+                    name: 'lrouterport-1'
+                    summary: "LRPort created through automation"
+                    macaddress: '00:A0:C9:14:C8:29'
+
+        ReadLR:
+            Type: "Router"
+            TestRouter: "nsxmanager.[1].logicalrouter.[1]"
+            read:
+              'name[?]defined': 'lrouter-1'
+              'summary[?]equal_to': "LRouter created through automation"
+
+        ReadLRPort:
+            Type: "NetAdapter"
+            TestAdapter: "nsxmanager.[1].logicalrouterport.[1]"
+            read:
+              'name[?]defined': 'lrouterport-1'
+              'summary[?]equal_to': "LRPort created through automation"
+              'macaddress[?]equal_to': '00:A0:C9:14:C8:29'
+              'id_[?]equal_to': 'nsxmanager.[1].logicalrouterport.[1]'
+
+        DeleteLRPort:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deletelogicalrouterport: "nsxmanager.[1].logicalrouterport.[1]"
+
+        DeleteLogicalRouter:
+            Type: "NSX"
+            TestNSX: "nsxmanager.[1]"
+            deleteLogicalRouter: "nsxmanager.[1].logicalrouter.[1]"
+
+

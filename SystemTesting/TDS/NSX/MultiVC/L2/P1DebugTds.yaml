@@ -1,0 +1,932 @@
+!include CommonWorkloads.yaml
+!include TestbedSpec.yaml
+
+TDSCommonFieldsP1Case: &TDS_COMMON_FIELDS_P1_CASE
+    Product: "vshield"
+    Component: "L2"
+    Category: "MultiVC"
+    Version: "2"
+    Tags: "multivc"
+    #QCPath: *QCPATH--ESX
+    ExpectedResult: "PASS"
+    Status: "Execution Ready"
+    AutomationLevel: "Automated"
+    FullyAutomatable: "Y"
+    TestcaseLevel: "Functional"
+    TestcaseType: "Functional"
+    Priority: "P1"
+    Developer: "wxzhang"
+    Partnerfacing: "N"
+
+# ------------------------------------------------------------------------------
+# P1
+# ------------------------------------------------------------------------------
+
+
+VtepTrafficTcpUdpIpv4v6AndBUM:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "Include 2 test cases:
+        VtepTrafficTcpUdpIpv4v6: To verify whether
+        a VTEP converts the unicast TCP/UDP
+        traffics of IPv4 & IPv6  from VM  to
+        vxlan Unicast traffics
+        VtepTrafficBUM: To verify whether a VTEP
+        converts the BUM packets from VM to
+        multicast packets, without contacting
+        the controller"
+    TestName: VtepTrafficTcpUdpIpv4v6AndBUM
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['CheckLogicalSwitch1MTEPOnAllHost']
+            - ['NetperfTestAllVMs']
+            - ['BroadcastVerification']
+            - ['IPv4UnicastVerification']
+            - ['IPv6UnicastVerification']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+VerifyMTEPTable:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "To verify the MTEP list on all hosts"
+    TestName: VerifyMTEPTable
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['CheckLogicalSwitch1MTEPOnAllHost']
+            - ['NetperfTestAllVMs']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+MTEPUpDown:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        To verify whether MTEP still works
+    TestName: MTEPUpDown
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['CheckLogicalSwitch1MTEPOnAllHost']
+            - ['NetperfTestAllVMs']
+            - ['RebootHost2','Traffic1']
+            - ['PoweronVM2']
+            - ['CheckLogicalSwitch1MTEPOnAllHost']
+            - ['RebootHost3','Traffic2']
+            - ['PoweronVM3']
+            - ['CheckLogicalSwitch1MTEPOnAllHost']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+        RebootHost2:
+            <<: *REBOOT_COMPUTE_HOSTS
+            TestHost: 'host.[2]'
+
+        RebootHost3:
+            <<: *REBOOT_COMPUTE_HOSTS
+            TestHost: 'host.[3]'
+
+        PoweronVM2:
+            <<: *ALL_VMS_POWER_ON
+            TestVM: 'vm.[2]'
+
+        PoweronVM3:
+            <<: *ALL_VMS_POWER_ON
+            TestVM: 'vm.[3]'
+
+        Traffic1:
+            <<: *NETPERF_TEST_ALL_VMS
+            SupportAdapter: 'vm.[3].vnic.[1]'
+            TestAdapter: 'vm.[4-5].vnic.[1]'
+            iterations: 2
+
+        Traffic2:
+            <<: *NETPERF_TEST_ALL_VMS
+            TestAdapter: 'vm.[4-5].vnic.[1]'
+            iterations: 2
+
+MTEPFuncTraffic:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "To verify the MTEP function on host"
+    TestName: MTEPFuncTraffic
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['CheckLogicalSwitch1MTEPOnAllHost']
+            - ['NetperfTestAllVMs']
+            - ['BroadcastVerification']
+            - ['MulticastVerification']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+MACExpiryTimeoutWithVXLAN:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "1.Create 1 VXLAN networks with guest tagging enabled
+         2.Enable guest vlan tagging for the vxlan
+         3.Enable MAC Learning for the vwire created
+         4.Connect VM to the vxlan network and configured vlans
+         5.Make sure that filter is enabled for vm ports
+         6.Check the mac expiry timeout value for the vm ports"
+    TestName: MACExpiryTimeoutWithVXLAN
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['EnableMACLearning']
+            # Workaround for PR 1444368
+            - ['EnableMACLearningOnSlaveSites']
+            - ['AllVMsPingEachOther']
+            - ['VerifyNetworkMACLearningFeature']
+            - ['ExpiryTimeout']
+            - ['AllVMsMulticastTraffic']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+MACLearningFilterWithVXLAN:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "1.Create 1 VXLAN networks with guest tagging enabled
+         2.Enable guest vlan tagging for the vxlan
+         3.Enable MAC Learning for the vwire created
+         4.Connect VM to the vxlan network and configured vlans
+         5.Make sure that filter is enabled for vm ports
+         6.Migrate VM to the destination host
+         7.After migration traffic should work"
+    TestName: MACLearningFilterWithVXLAN
+    TestbedSpec: *L2_TOPOLOGY_02
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitchesWithGuestVlan']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['EnableMACLearning']
+            # Workaround for PR 1444368
+            - ['EnableMACLearningOnSlaveSites']
+            - ['AddVLANToVM23']
+            - ['VerifyNetworkMACLearningFeature']
+            - ['TrafficVM2to3',TrafficVM4to5]
+            - ['MulticastTrafficVM2To3','MulticastTrafficVM4To5']
+            - ['SetVLANOnDVPG1']
+            - ['AddvmknicHost4And5DVPG1']
+            - ['PingTwoVmotionVMKNic']
+            - ['vmotion1']
+            - ['TrafficVM2to3',TrafficVM4to5]
+            - ['MulticastTrafficVM2To3','MulticastTrafficVM4To5']
+            - ['vmotion2']
+            - ['TrafficVM2to3',TrafficVM4to5]
+            - ['MulticastTrafficVM2To3','MulticastTrafficVM4To5']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+        TrafficVM4to5:
+            <<: *NETPERF_TEST_ALL_VMS
+            TestAdapter: 'vm.[4].vnic.[1]'
+            SupportAdapter: 'vm.[5].vnic.[1]'
+
+
+        TrafficVM2to3:
+            <<: *NETPERF_TEST_ALL_VMS
+            SupportAdapter: 'vm.[2].vnic.[1].vlaninterface.[1]'
+            TestAdapter: 'vm.[3].vnic.[1].vlaninterface.[1]'
+
+        AllVMsTraffic:
+            <<: *NETPERF_TEST_ALL_VMS
+            SupportAdapter: 'vm.[4-5].vnic.[1]'
+            TestAdapter: 'vm.[2-3].vnic.[1].vlaninterface.[1]'
+
+        MulticastTrafficVM2To3:
+            <<: *ALL_VMS_MULTICAST_TRAFFIC
+            SupportAdapter: 'vm.[2].vnic.[1].vlaninterface.[1]'
+            TestAdapter: 'vm.[3].vnic.[1].vlaninterface.[1]'
+
+        MulticastTrafficVM4To5:
+            <<: *ALL_VMS_MULTICAST_TRAFFIC
+            SupportAdapter: 'vm.[4].vnic.[1]'
+            TestAdapter: 'vm.[5].vnic.[1]'
+
+        AddvmknicHost4And5DVPG1:
+            Type: Host
+            TestHost: esx.[2-3]
+            vmknic:
+                '[1]':
+                    portgroup: vc.[1].dvportgroup.[1]
+                    configurevmotion: enable
+
+        vmotion1:
+            Type: VM
+            TestVM: vm.[2]
+            vmotion: oneway
+            dsthost: esx.[3]
+
+        vmotion2:
+            Type: VM
+            TestVM: vm.[3]
+            vmotion: oneway
+            dsthost: esx.[2]
+
+        PingTwoVmotionVMKNic:
+            Type: Traffic
+            ToolName: Ping
+            TestAdapter: esx.[2].vmknic.[1]
+            SupportAdapter: esx.[3].vmknic.[1]
+            TestDuration: 10
+
+        SetVLANOnDVPG1:
+            Type: PortGroup
+            TestPortGroup: vc.[1].dvportgroup.[1]
+            vlantype: access
+            vlan: *TRANSPORT_VLAN_2
+
+
+EnableDisableIPDiscovery:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "1.Create 1 VXLAN networks
+         2.Enable ip discovery for the vwire created
+         3.Make sure that vm ports has ip discovery enabled
+         4.disabling ip discovery should show the status on host"
+    TestName: EnableDisableIPDiscovery
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['EnableIPLearning']
+            - ['AllVMsPingEachOther']
+            - ['VerifyNetworkIPLearningFeature']
+            - ['DisableIPLearning']
+            # Workaround for PR 1444368
+            - ['DisableIPLearningOnSlaveSites']
+            - ['AllVMsPingEachOther']
+            - ['VerifyNetworkIPLearningFeatureDisable']
+            - ['EnableMACIPLearning']
+             # Workaround for PR 1444368
+            - ['EnableMACIPLearningOnSlaveSites']
+            - ['VerifyNetworkMACIPLearningFeature']
+            - ['AllVMsMulticastTraffic']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+vMotion:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "To verify the vMotion in vxlan on hosts
+        Simulatneous vMotion of multiple VMs
+        Same site, different site"
+    TestName: vMotion
+    TestbedSpec: *L2_TOPOLOGY_02
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+            - ['AddvmknicHost2And3']
+            - ['PingTwoVmotionVMKNic']
+            - ['vmotion1']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+            - ['vmotion2']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+
+        ExitSequence:
+            - ['RemoveVmk1OnHost2','RemoveVmk1OnHost3']
+            - ['CleanSetupAndReconfigure']
+
+        AddvmknicHost2And3:
+            Type: Host
+            TestHost: esx.[2-3]
+            vmknic:
+                '[1]':
+                    portgroup: vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]
+                    configurevmotion: enable
+                    ipv4: auto
+
+        vmotion1:
+            Type: VM
+            TestVM: vm.[2]
+            vmotion: oneway
+            dsthost: esx.[3]
+
+        vmotion2:
+            Type: VM
+            TestVM: vm.[2]
+            vmotion: oneway
+            dsthost: esx.[2]
+
+        PingTwoVmotionVMKNic:
+            Type: Traffic
+            ToolName: Ping
+            TestAdapter: esx.[2].vmknic.[1]
+            SupportAdapter: esx.[3].vmknic.[1]
+            TestDuration: 10
+
+AddRemoveHostFromComputeCluster:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary: |
+        To verify gls behaviour when a host is add back again.
+    TestName: AddRemoveHostFromComputeCluster
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['VerifyIpLearningVMNotOnHost']
+            - ['AllVMsPingEachOther']
+            - ['DeleteVM5VnicOnGlobalLogicalSwitch']
+            - ['RemoveHost5FromVC2Cluster1']
+            - ['FailToAddVM5VnicOnGlobalLogicalSwitch']
+            - ['MoveHost5ToVC2Cluster1']
+            - ['AddVM5VnicOnGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+
+        ExitSequence:
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['DeleteVerifyGlobalVNIPool']
+            - ['UnRegisterAllSlaves']
+            - ['SetMasterNSXReplicatorAsStandalone']
+
+        DeleteVM5VnicOnGlobalLogicalSwitch:
+            <<: *ALL_VMS_DELETE_ALL_VNICS
+            TestVM: 'vm.[5]'
+            deletevnic: 'vm.[5].vnic[1]'
+
+        RemoveHost5FromVC2Cluster1:
+            <<: *REMOVE_HOST_FROM_CLUSTER
+
+        FailToAddVM5VnicOnGlobalLogicalSwitch:
+            <<: *ALL_VMS_ADD_VNIC_ON_SAME_GLS_1_BACKING
+            TestVM: 'vm.[5]'
+            ExpectedResult: 'Fail'
+
+        MoveHost5ToVC2Cluster1:
+            <<: *ADD_HOST_TO_CLUSTER
+
+        AddVM5VnicOnGlobalLogicalSwitch:
+            <<: *ALL_VMS_ADD_VNIC_ON_SAME_GLS_1_BACKING
+            TestVM: 'vm.[5]'
+
+NewControllerSyncToHost:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "To verify adding new controller info is sync to host"
+    TestName: NewControllerSyncToHost
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['CheckLogicalSwitch1MTEPOnAllHost']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+            - ['DeployController2MasterSite']
+            - ['CheckController12SyncAllHost']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+            - ['DeployController3MasterSite']
+            - ['CheckController123SyncAllHost']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+            - ['DeleteController3']
+            - ['CheckController12SyncAllHost']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+            - ['DeleteController2']
+            - ['CheckController1SyncAllHost']
+            - ['NetperfTestAllVMs']
+            - ['AllVMsMulticastTraffic']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+UpdateController:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "1.To verify that VTEP updates the controller with its local database
+         2.To verify whether controller stores information about all VTEPs
+         3.To verify whether a VTEP successfully gets information about other
+           relevant VTEPs from the controller one VNI info should not sync to
+           another VNI on controller
+         4.To verify whether a VTEP converts the  initial ARP request from a
+           VM into multicast packet if the controller  doesnt know how to
+           reach the destination ip"
+    TestName: UpdateController
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['DeployController2MasterSite','DeployController3MasterSite']
+            - ['CheckController123SyncAllHost']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['CheckLogicalSwitch1MTEPOnAllHost']
+            - ['EvenVMsOnEvenGlobalLogicalSwitch2']
+            - ['CheckLogicalSwitch1MTEPOnOddHost','CheckLogicalSwitch2MTEPOnEvenHost']
+            - ['EvenVMsMulticastEachOther','OddVMsMulticastEachOther']
+            - ['EvenVMsUnicastEachOther','OddVMsUnicastEachOther']
+            - ['BroadcastVerificationOnHost2','BroadcastVerificationOnHost3']
+            - ['ArpPingFromVM3ToVM5']
+            - ['VerifyLS1ArpEntryOnController','VerifyLS2ArpEntryNotOnLS1Controller']
+            - ['ArpPingFromVM2To4']
+            - ['VerifyLS2ArpEntryOnController','VerifyLS1ArpEntryNotOnLS2Controller']
+            - ['EvenVMsOnEvenGlobalLogicalSwitch1']
+            - ['ArpPingFromVM345To2','ArpPingFromVM2ToVM3']
+            - ['VerifyArpEntryOnController']
+
+        ExitSequence:
+            - ['DeleteController3']
+            - ['DeleteController2']
+            - ['CleanSetupAndReconfigure']
+
+        EvenVMsMulticastEachOther:
+            <<: *ALL_VMS_MULTICAST_TRAFFIC
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[4].vnic.[1]'
+
+        EvenVMsUnicastEachOther:
+            <<: *NETPERF_TEST_ALL_VMS
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[4].vnic.[1]'
+
+        OddVMsMulticastEachOther:
+            <<: *ALL_VMS_MULTICAST_TRAFFIC
+            TestAdapter: 'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[5].vnic.[1]'
+
+        OddVMsUnicastEachOther:
+            <<: *NETPERF_TEST_ALL_VMS
+            TestAdapter: 'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[5].vnic.[1]'
+
+        EvenVMsOnEvenGlobalLogicalSwitch1:
+            <<: *EVEN_VMS_EVEN_GLS_BACKING_2
+            portgroup: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+
+        Verification_1: &VERIFICATION_A
+            PktCapVerification:
+                target: 'esx.[2].vmnic.[1]'
+                pktcapfilter: 'count 30,vxlan vsm.[1].globaltransportzone.[1].globallogicalswitch.[2],flowdirection tx,capturestage post'
+                verificationtype: 'pktcapuserworld'
+                vxlanid: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+                pktcount: '10+'
+                pkttype: 'unicast'
+                tos: '0x0'
+                innerpkttype: 'broadcast'
+                innerl3protocol: 'arp'
+
+        BroadcastVerificationOnHost2:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[4].vnic.[1]'
+            TestDuration: '60'
+            connectivitytest: '0'
+            verification: *VERIFICATION_A
+            #There is a pktcap-uw issue
+            sleepbetweenworkloads: 30
+
+        Verification_2: &VERIFICATION_B
+            PktCapVerification:
+                target: 'esx.[3].vmnic.[1]'
+                pktcapfilter: 'count 30,vxlan vsm.[1].globaltransportzone.[1].globallogicalswitch.[1],flowdirection tx,capturestage post'
+                verificationtype: 'pktcapuserworld'
+                vxlanid: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+                pktcount: '10+'
+                pkttype: 'unicast'
+                tos: '0x0'
+                innerpkttype: 'broadcast'
+                innerl3protocol: 'arp'
+
+        BroadcastVerificationOnHost3:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter: 'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[5].vnic.[1]'
+            TestDuration: '60'
+            connectivitytest: '0'
+            verification: *VERIFICATION_B
+            #There is a pktcap-uw issue
+            sleepbetweenworkloads: 30
+
+        ArpPingFromVM2To4:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter: 'vm.[2].vnic.[1]'
+            SupportAdapter: 'vm.[4].vnic.[1]'
+            TestDuration: '3'
+            NoofInbound: 1
+            NoofOutbound: 1
+            ParallelSession: "yes"
+            connectivitytest: '0'
+
+        ArpPingFromVM3ToVM5:
+            Type: 'Traffic'
+            toolName: 'ArpPing'
+            TestAdapter: 'vm.[3].vnic.[1]'
+            SupportAdapter: 'vm.[5].vnic.[1]'
+            TestDuration: '3'
+            NoofInbound: 1
+            NoofOutbound: 1
+            ParallelSession: "yes"
+            connectivitytest: '0'
+
+        VerifyLS1ArpEntryOnController:
+            Type: Switch
+            controllers: 'vsm.[1].vxlancontroller.[-1]'
+            noofretries: 3
+            TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            'VerifyArpEntryOnController[?]contain_once':
+               - ip: 'vm.[3].vnic.[1]'
+                 mac: 'vm.[3].vnic.[1]'
+               - ip: 'vm.[5].vnic.[1]'
+                 mac: 'vm.[5].vnic.[1]'
+
+        VerifyLS2ArpEntryNotOnLS1Controller:
+            Type: Switch
+            controllers: 'vsm.[1].vxlancontroller.[-1]'
+            noofretries: 3
+            TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]'
+            'VerifyArpEntryOnController[?]not_contains':
+               - ip: 'vm.[2].vnic.[1]'
+                 mac: 'vm.[2].vnic.[1]'
+               - ip: 'vm.[4].vnic.[1]'
+                 mac: 'vm.[4].vnic.[1]'
+
+        VerifyLS2ArpEntryOnController:
+            Type: Switch
+            controllers: 'vsm.[1].vxlancontroller.[-1]'
+            noofretries: 3
+            TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+            'VerifyArpEntryOnController[?]contain_once':
+               - ip: 'vm.[2].vnic.[1]'
+                 mac: 'vm.[2].vnic.[1]'
+               - ip: 'vm.[4].vnic.[1]'
+                 mac: 'vm.[4].vnic.[1]'
+
+        VerifyLS1ArpEntryNotOnLS2Controller:
+            Type: Switch
+            controllers: 'vsm.[1].vxlancontroller.[-1]'
+            noofretries: 3
+            TestSwitch: 'vsm.[1].globaltransportzone.[1].globallogicalswitch.[2]'
+            'VerifyArpEntryOnController[?]not_contains':
+               - ip: 'vm.[3].vnic.[1]'
+                 mac: 'vm.[3].vnic.[1]'
+               - ip: 'vm.[5].vnic.[1]'
+                 mac: 'vm.[5].vnic.[1]'
+
+DuplicateVTEPIP:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "VTEPs across different sites have duplicate static IP Pool
+        This should not work
+        change the IP to unique and test again
+        This should work"
+    TestName: DuplicateVTEPIP
+    TestbedSpec: *L2_TOPOLOGY_03
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['NetperfTesVM2And3']
+            - ['NetperfTesVM4And5Fail']
+            - ['DeleteAllVnicsAllVMs']
+            - ['DeleteAllGlobalLogicalSwitches']
+            - ['DeleteVerifyGlobalTransportZone']
+            - ['UnconfigureVxlanConfigAllSite']
+            - ['VIBInstallVxlanConfigMasterSite']
+            - ['VIBInstallVxlanConfigAllSlavesSite']
+            - ['CreateVerifyGlobalTransportZone']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['CheckController1SyncAllHost']
+            - ['NetperfTestAllVMs']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+        NetperfTesVM2And3:
+            <<: *NETPERF_TEST_ALL_VMS
+            L4Protocol: 'tcp'
+            SupportAdapter: 'vm.[2].vnic.[1]'
+            TestAdapter: 'vm.[3].vnic.[1]'
+
+        NetperfTesVM4And5Fail:
+            <<: *NETPERF_TEST_ALL_VMS
+            L4Protocol: 'tcp'
+            SupportAdapter: 'vm.[4].vnic.[1]'
+            TestAdapter: 'vm.[5].vnic.[1]'
+            Expectedresult: Fail
+
+HostReboot:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "To verify the controller list info after host reboot,
+         refer PR 1447980"
+    TestName: HostReboot
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['AllVMsMulticastTraffic']
+            - ['CheckLogicalSwitch1MTEPOnAllHost']
+            - ['NetperfTestAllVMs']
+            - ['RebootComputeHost2','RebootComputeHost4']
+            - ['PowerOnVM2AndVM4']
+            - ['CheckController1SyncAllHost']
+            - ['CheckUnicastGlobalLogicalSwitche1ControllerInfoUP']
+            - ['NetperfTestAllVMs']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+        RebootComputeHost2:
+            <<: *REBOOT_COMPUTE_HOSTS
+            TestHost: 'esx.[2]'
+
+        RebootComputeHost4:
+            <<: *REBOOT_COMPUTE_HOSTS
+            TestHost: 'esx.[4]'
+
+        PowerOnVM2AndVM4:
+            <<: *ALL_VMS_POWER_ON
+            TestVM: 'vm.[2],vm.[4]'
+
+Teaming:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Summary:
+        "Test all 3 teaming policies: FAILOVER_ORDER
+        LOADBALANCE_SRCMAC,LOADBALANCE_SRCID
+        in unicast/multicast/hybrid replication mode"
+    TestName: Teaming
+    TestbedSpec: *L2_TOPOLOGY_05
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['NetperfTestAllVMs',DownUpHostsVmnic1]
+            - ['NetperfTestAllVMs',DownUpHostsVmnic2]
+            - ['UpdateVerifyGlobalLogicalSwitchesToMulticastMode']
+            - ['AllVMsPingEachOther']
+            - ['NetperfTestAllVMs',DownUpHostsVmnic1]
+            - ['NetperfTestAllVMs',DownUpHostsVmnic2]
+            - ['UpdateVerifyGlobalLogicalSwitchesToHybridMode']
+            - ['AllVMsPingEachOther']
+            - ['NetperfTestAllVMs',DownUpHostsVmnic1]
+            - ['NetperfTestAllVMs',DownUpHostsVmnic2]
+            - ['UpdateVerifyGlobalLogicalSwitchesToUnicastMode']
+            - ['AllVMsPingEachOther']
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+LACPPassiveAndActiveAndLACPV2:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Tags: "multivc,physical"
+    Summary:
+        "Test all 4 teaming policies: LACP_V2,ETHER_CHANNEL
+        LACP_ACTIVE,LACP_PASSIVE
+        in unicast/multicast/hybrid replication mode"
+    TestName: LACPPassiveAndActiveAndLACPV2
+    TestbedSpec: *L2_TOPOLOGY_06
+    WORKLOADS:
+        Sequence:
+            - ['EnableLACPv1Active','EnableLACPv1Passive']
+            - ['ConfigureChannelGroupConnectHost2']
+            - ['ConfigureChannelGroupConnectHost3']
+            - ['ConfigureChannelGroupConnectHost4']
+            - ['ConfigureChannelGroupConnectHost5']
+            - ['SetMasterNSXReplicatorAsPrimary']
+            - ['RegisterAllSlaveNSXManagerWithMasterNSXReplicator']
+            - ['CheckController1SyncAllHost']
+            - ['CreateVerifyGlobalVNIPool']
+            - ['CreateVerifyGlobalTransportZoneOnMaster']
+            - ['AddClustersToGTZSlaveSites']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerify2MulticastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['AllVMsPingEachOther']
+            - ['NetperfTestAllVMs',DownUpHostsVmnic1]
+            - ['NetperfTestAllVMs',DownUpHostsVmnic2]
+            - ['UpgradeVDSOnSlaveSite']
+            - ['UpdateVerifyGlobalLogicalSwitchesToUnicastMode']
+            - ['AllVMsPingEachOther']
+            - ['NetperfTestAllVMs',DownUpHostsVmnic1]
+            - ['NetperfTestAllVMs',DownUpHostsVmnic2]
+            - ['UpdateVerifyGlobalLogicalSwitchesToHybridMode']
+            - ['AllVMsPingEachOther']
+            - ['NetperfTestAllVMs',DownUpHostsVmnic1]
+            - ['NetperfTestAllVMs',DownUpHostsVmnic2]
+            - ['UpdateVerifyGlobalLogicalSwitchesToMulticastMode']
+            - ['AllVMsPingEachOther']
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+            - ['RemovePortsFromChannelGroup1']
+            - ['DeleteChannelGroup1']
+            - ['RemovePortsFromChannelGroup2']
+            - ['DeleteChannelGroup2']
+            - ['RemovePortsFromChannelGroup3']
+            - ['DeleteChannelGroup3']
+            - ['RemovePortsFromChannelGroup4']
+            - ['DeleteChannelGroup4']
+
+        CreateVerifyGlobalTransportZoneOnMaster:
+            Type: NSX
+            TestNSX: 'vsm.[1]'
+            globaltransportzone:
+                '[1]':
+                    name: AutoGenerate
+                    clusters: 'vc.[1].datacenter.[1].cluster.[2-3]'
+            metadata:
+                expectedresultcode: '201'
+
+        EnableLACPv1Active:
+            Type: PortGroup
+            TestPortgroup: vc.[2].vds.[1].uplinkportgroup.[1]
+            configurelag: enable
+            mode: active
+
+        EnableLACPv1Passive:
+            Type: PortGroup
+            TestPortgroup: vc.[2].vds.[2].uplinkportgroup.[1]
+            configurelag: enable
+            mode: passive
+
+        ConfigureChannelGroupConnectHost2:
+            Type: Port
+            TestPort: esx.[2].pswitchport.[-1]
+            configurechannelgroup: *CHANNEL_GROUP_1
+            Mode: Active
+
+        ConfigureChannelGroupConnectHost3:
+            Type: Port
+            TestPort: esx.[3].pswitchport.[-1]
+            configurechannelgroup: *CHANNEL_GROUP_2
+            Mode: 'On'
+
+        ConfigureChannelGroupConnectHost4:
+            Type: Port
+            TestPort: esx.[4].pswitchport.[-1]
+            configurechannelgroup: *CHANNEL_GROUP_3
+            Mode: Passive
+
+        ConfigureChannelGroupConnectHost5:
+            Type: Port
+            TestPort: esx.[5].pswitchport.[-1]
+            configurechannelgroup: *CHANNEL_GROUP_4
+            Mode: Active
+
+        RemovePortsFromChannelGroup1:
+            Type: Port
+            TestPort: esx.[2].pswitchport.[-1]
+            configurechannelgroup: no
+
+        DeleteChannelGroup1:
+            Type: Switch
+            TestSwitch: pswitch.[1]
+            removeportchannel: *CHANNEL_GROUP_1
+
+        RemovePortsFromChannelGroup2:
+            Type: Port
+            TestPort: esx.[3].pswitchport.[-1]
+            configurechannelgroup: no
+
+        DeleteChannelGroup2:
+            Type: Switch
+            TestSwitch: pswitch.[2]
+            removeportchannel: *CHANNEL_GROUP_2
+
+        RemovePortsFromChannelGroup3:
+            Type: Port
+            TestPort: esx.[4].pswitchport.[-1]
+            configurechannelgroup: no
+
+        DeleteChannelGroup3:
+            Type: Switch
+            TestSwitch: pswitch.[3]
+            removeportchannel: *CHANNEL_GROUP_3
+
+        RemovePortsFromChannelGroup4:
+            Type: Port
+            TestPort: esx.[5].pswitchport.[-1]
+            configurechannelgroup: no
+
+        DeleteChannelGroup4:
+            Type: Switch
+            TestSwitch: pswitch.[4]
+            removeportchannel: *CHANNEL_GROUP_4
+
+        UpgradeVDSOnSlaveSite:
+            Type: Switch
+            TestSwitch: vc.[2].vds.[-1]
+            upgradevds: 6.0.0
+
+TSOenabledCKOenabledTCPIPV4:
+    <<: *TDS_COMMON_FIELDS_P1_CASE
+    Tags: "multivc,physical"
+    Summary:
+        "Verify VXLAN_Offload is working
+        when both TSO and CKO are enabled
+        and IPV4 TCP traffic is sent"
+    TestName: TSOenabledCKOenabledTCPIPV4
+    TestbedSpec: *L2_TOPOLOGY_01
+    WORKLOADS:
+        Sequence:
+            - ['L2Setup']
+            - ['CreateVerifyGlobalMulticastRange']
+            - ['CreateVerify2UnicastGlobalLogicalSwitches']
+            - ['AllVMsAddvNICOnSameGlobalLogicalSwitch']
+            - ['VM1EnableTSOIPV4']
+            - ['VM1EnableIPCheckSum']
+            - ['AllVMsPingEachOther']
+            - ['NetperfTraffic','HasTSOCKOLogOnHost']
+
+        ExitSequence:
+            - ['CleanSetupAndReconfigure']
+
+        VM1EnableTSOIPV4:
+            Type: "NetAdapter"
+            TestAdapter: "vm.[1].vnic.[1]"
+            configure_offload :
+                offload_type : "tsoipv4"
+                enable : "true"
+
+        VM1EnableIPCheckSum:
+            Type: 'NetAdapter'
+            TestAdapter: 'vm.[1].vnic.[1]'
+            configure_offload :
+                offload_type : "tcptxchecksumipv4"
+                enable : "true"
+
+        HasTSOCKOLogOnHost:
+            Type        : "Host"
+            TestHost    : "esx.[2]"
+            switch      : "vsm.[1].globaltransportzone.[1].globallogicalswitch.[1]"
+            'verifytsockoonhost[?]contains':
+                     - 'tso[?]match': "TSO enabled"
+                       'length[?]>': "10000"
+            noofretries  :  "3"
+            sleepbetweenworkloads : "80"
+
+        NetperfTraffic:
+            <<: *NETPERF_TEST_ALL_VMS
+            L4Protocol: 'tcp'
+            L3Protocol: 'ipv4'
+            localsendsocketsize: 64512
+            sendmessagesize: 14000
+            bursttype: stream
+            testduration: 120

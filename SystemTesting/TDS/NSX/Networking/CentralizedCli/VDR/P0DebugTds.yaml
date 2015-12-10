@@ -1,0 +1,1541 @@
+TDSCommonFieldsP0Case: &TDS_COMMON_FIELDS_P0_CASE
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyAllClis"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   TestbedSpec: *CentralizedCli_VDR_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+
+VerifyAllClis:
+   Product: "CentralizedCli"
+   Component: "NSX"
+   Category: "Networking/CentralizedCli"
+   TestName: "VerifyAllClis"
+   Version: "2"
+   Tags: "NSXv-6.2"
+   QCPath: ""
+   Summary: "Run and verify all centralziedcli for VDR on vsm"
+   TestbedSpec: *CentralizedCli_VDR_Topology1
+   ExpectedResult: "PASS"
+   Status: "Execution Ready"
+   AutomationLevel: "Automated"
+   FullyAutomatable: "Y"
+   TestcaseLevel: "Functional"
+   TestcaseType: "Functional"
+   Priority: "P0"
+   Developer: "jiaxinchen"
+   Partnerfacing: "N"
+
+   WORKLOADS:
+      IgnoreFailure: 1
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyAllLogicalRouter']
+         - ['verifyLogicalRouterHosts']
+         - ['verifyHostLogicalRouters']
+         - ['verifyLogicalRouterOnHost_verbose']
+         - ['verifyLogicalRouterOnHost_brief']
+         - ['verifyLogicalRouterInterface_all']
+         - ['verifyLogicalRouterInterface_verbose']
+         - ['verifyLogicalRouterInterface_brief']
+         - ['verifyLogicalRouterInterface_stats']
+         - ['verifyLogicalrouterRoutes']
+         - ['verifyLogicalrouterARPs']
+         - ['verifyBridge']
+         - ['verifyBridge_all']
+         - ['verifyBridgeMACTable']
+         - ['verifyBridgeStats']
+         - ['verifyCPstats']
+         - ['verifyTunables']
+         - ['VerifyLogicalRouterController_1']
+         - ['VerifyLogicalRouterController_2']
+         - ['VerifyLogicalRouterInterfaceOnController_1']
+         - ['VerifyLogicalRouterInterfaceOnController_2']
+         - ['VerifyLogicalRouterInterfaceDetail_1']
+         - ['VerifyLogicalRouterInterfaceDetail_2']
+         - ['VerifyAllBridgeOnController_1']
+         - ['VerifyAllBridgeOnController_2']
+         - ['VerifyBridgeOnController_1']
+         - ['VerifyBridgeOnController_2']
+         - ['verifyAllMACTableForBridgeOnController_1']
+         - ['verifyAllMACTableForBridgeOnController_2']
+         - ['verifyMACTableForBridgeOnController_1']
+         - ['verifyMACTableForBridgeOnController_2']
+         - ['VerifyLogicalRouterVDRStats_1']
+         - ['VerifyLogicalRouterVDRStats_2']
+         - ['VerifyLogicalRouterStatsByController']
+         - ['verifyConnectionOnController']
+         - ['VerifyLogicalRouterRoutesOnController_1']
+         - ['VerifyLogicalRouterRoutesOnController_2']
+         - ['VerifyLogicalRouterRouteOnController_3']
+         - ['VerifyLogicalRouterRouteOnController_4']
+         - ['verifyConnection']
+      ExitSequence:
+         - ['VDRCleanup']
+
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyAllLogicalRouter:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router list all"
+         'verifyclicommand':
+            - "output[?]match": "edge-id Vdr Name Vdr Id #Lifs"
+
+      verifyLogicalRouterHosts:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router list dlr <ldr-id> host"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": "ID    HostName"
+
+      verifyHostLogicalRouters:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr all brief"
+         host            : "host.[2]"
+         'verifyclicommand':
+            - "output[?]match": "VDR Instance Information :"
+            - "output[?]match": "Vdr Name  Vdr Id #Lifs #Routes State  Controller Ip  CP Ip"
+
+      verifyLogicalRouterOnHost_verbose:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> verbose"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": "VDR Instance Information :"
+            - "output[?]match": "Vdr Name:"
+            - "output[?]match": "Vdr Id:"
+            - "output[?]match": "Number of Lifs"
+            - "output[?]match": "Number of Routes:"
+            - "output[?]match": "State:"
+            - "output[?]match": "Controller IP:"
+            - "output[?]match": "Control Plane IP:"
+            - "output[?]match": "Control Plane Active:"
+            - "output[?]match": "Num unique nexthops:"
+            - "output[?]match": "Generation Number:"
+            - "output[?]match": "Edge Active:"
+
+      verifyLogicalRouterOnHost_brief:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> brief"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": "VDR Instance Information :"
+            - "output[?]match": "Vdr Name Vdr Id #Lifs #Routes State  Controller Ip CP Ip"
+
+      verifyLogicalRouterInterface_all:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> interface all verbose"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": " LIF Information :"
+            - "output[?]match": "Name:"
+            - "output[?]match": "Mode:"
+            - "output[?]match": "Id:"
+            - "output[?]match": "Ip"
+            - "output[?]match": "Connected Dvs:"
+            - "output[?]match": "Designated Instance:"
+            - "output[?]match": "DI IP:"
+            - "output[?]match": "State:"
+            - "output[?]match": "DHCP Relay:"
+
+      verifyLogicalRouterInterface_verbose:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> interface <lif-name> verbose"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         adapter         : "vsm.[1].vse.[1].lif.[1]"
+         'verifyclicommand':
+            - "output[?]match": " LIF Information :"
+            - "output[?]match": "Name:"
+            - "output[?]match": "Mode:"
+            - "output[?]match": "Id:"
+            - "output[?]match": "Ip:"
+            - "output[?]match": "Connected Dvs:"
+            - "output[?]match": "VXLAN Control Plane:"
+            - "output[?]match": "VXLAN Multicast IP:"
+            - "output[?]match": "State:"
+            - "output[?]match": "Flags:"
+            - "output[?]match": "DHCP Relay:"
+
+      verifyLogicalRouterInterface_brief:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> interface <lif-name> brief"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         adapter         : "vsm.[1].vse.[1].lif.[1]"
+         'verifyclicommand':
+            - "output[?]match": " LIF Information :"
+            - "output[?]match": "Lif Name Id   Mode  State  Ip"
+
+      verifyLogicalRouterInterface_stats:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> interface <lif-name> statistics"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         adapter         : "vsm.[1].vse.[1].lif.[1]"
+         'verifyclicommand':
+            - "output[?]match": "RX Unicast Packets on the interface:"
+            - "output[?]match": "TX Unicast Packets on the interface:"
+            - "output[?]match": "Packets Deferred Free on the interface:"
+            - "output[?]match": "LIF Net Statistics"
+            - "output[?]match": "IP & ARP packets RX:"
+            - "output[?]match": "IP & ARP packets TX:"
+            - "output[?]match": "IP packets Forwarded to Lif:"
+            - "output[?]match": "ARP Request RX:"
+            - "output[?]match": "GARP RX:"
+            - "output[?]match": "GARP TX:"
+            - "output[?]match": "Neighbor not found:"
+
+      verifyLogicalrouterRoutes:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> route"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": " Route Table"
+            - "output[?]match": "Destination  GenMask Gateway Flags  Ref Origin UpTime  Interface"
+
+      verifyLogicalrouterARPs:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> arp"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": "ARP Information :"
+            - "output[?]match": "Network   Mac   Flags   Expiry  SrcPort  Refcnt  Interface"
+
+      verifyConnection:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> connection"
+         host            : "host.[2]"
+         'verifyclicommand':
+            - "output[?]match": "Connection Information:"
+            - "output[?]match": "DvsName VdrPort  NumLifs VdrVmac"
+            - "output[?]match": "Stats: Pkt Dropped Pkt Replaced Pkt Skipped"
+            - "output[?]match": "Input:"
+            - "output[?]match": "Output:"
+
+      verifyBridge:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> bridge <bridge-name> verbose"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         'verifyclicommand':
+            - "output[?]match": "Bridge config:"
+            - "output[?]match": "Number of networks:"
+            - "output[?]match": "Network type:"
+            - "output[?]match": "VXLAN ID:"
+            - "output[?]match": "Ageing time:"
+            - "output[?]match": "FRP filter enable:"
+            - "output[?]match": "Network port ID"
+            - "output[?]match": "Port ID:"
+            - "output[?]match": "IOChains installed:"
+
+      verifyBridge_all:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> bridge all verbose"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": "Bridge config:"
+            - "output[?]match": "Number of networks:"
+            - "output[?]match": "Network type:"
+            - "output[?]match": "VXLAN ID:"
+            - "output[?]match": "Ageing time:"
+            - "output[?]match": "FRP filter enable:"
+            - "output[?]match": "Network port ID"
+            - "output[?]match": "Port ID:"
+            - "output[?]match": "IOChains installed:"
+
+      verifyBridgeMACTable:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> bridge <bridge-name> mac-address-table"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         "verifyclicommand":
+            - "output[?]match"  : "total number of MAC addresses:"
+            - "output[?]match"  : "number of MAC addresses returned:"
+            - "output[?]match"  : "Destination Address Address Type  VLAN ID  VXLAN ID  Destination Port  Age"
+
+      verifyBridgeStats:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> bridge <bridge-name> statistics"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Bridge stats:"
+            - "output[?]match": "portNotExist:"
+            - "output[?]match": "fdbHit:"
+            - "output[?]match": "fdbLearn:"
+            - "output[?]match": "fdbMacMoved:"
+            - "output[?]match": "fdbUplinkFilter:"
+            - "output[?]match": "Network port ID"
+            - "output[?]match": "pktsTx:"
+            - "output[?]match": "droppedTxVxlanPktToVlan:"
+
+      verifyCPstats:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> control-plane-statistics"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Control Plane Message Statistics:"
+            - "output[?]match": "Num Link UP RX:"
+            - "output[?]match": "Num Link DOWN RX:"
+            - "output[?]match": "Num Edge Link UP RX:"
+            - "output[?]match": "Num Route ADD RX:"
+            - "output[?]match": "Num Lif ADD RX:"
+            - "output[?]match": "Num Route EOM RX:"
+            - "output[?]match": "DUP Lif RX:"
+            - "output[?]match": "Num Lif DI Update RX:"
+            - "output[?]match": "Num Flush LIF RX:"
+            - "output[?]match": "Num Flush Route RX:"
+
+      verifyTunables:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> tunable"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Tunable Parameters:"
+            - "output[?]match": "enableFLE:"
+            - "output[?]match": "enableIcmpPMTU:"
+            - "output[?]match": "enableIcmpRateLimit:"
+            - "output[?]match": "maxArpEntries:"
+            - "output[?]match": "maxFLEntries:"
+            - "output[?]match": "ecmpMethod:"
+
+      VerifyLogicalRouterController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> brief"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "LR-Id LR-Name Universal Service-Controller Egress-Locale"
+
+      VerifyLogicalRouterController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> brief"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "LR-Id LR-Name Universal Service-Controller Egress-Locale"
+
+      VerifyLogicalRouterInterfaceOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> interface"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "masterControllerIp"
+            - "output[?]match"  : "Interface  Type Id IP"
+
+      VerifyLogicalRouterInterfaceOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> interface"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "Interface  Type Id IP"
+
+      VerifyLogicalRouterInterfaceDetail_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> interface <lif-name>"
+         vm              : "vsm.[1].vse.[1]"
+         adapter         : "vsm.[1].vse.[1].lif.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "Interface-Name:"
+            - "output[?]match"  : "Logical-Router-Id:"
+            - "output[?]match"  : "IP:"
+            - "output[?]match"  : "DVS-UUID:"
+            - "output[?]match"  : "Mac:"
+            - "output[?]match"  : "Mtu:"
+            - "output[?]match"  : "Multicast-IP:"
+            - "output[?]match"  : "DHCP-relay-server:"
+
+      VerifyLogicalRouterInterfaceDetail_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> interface <lif-name>"
+         vm              : "vsm.[1].vse.[1]"
+         adapter         : "vsm.[1].vse.[1].lif.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "Interface-Name:"
+            - "output[?]match"  : "Logical-Router-Id:"
+            - "output[?]match"  : "IP:"
+            - "output[?]match"  : "DVS-UUID:"
+            - "output[?]match"  : "Mac:"
+            - "output[?]match"  : "Mtu:"
+            - "output[?]match"  : "Multicast-IP:"
+            - "output[?]match"  : "DHCP-relay-server:"
+
+      VerifyLogicalRouterRoutesOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> route"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Destination    Next-Hop[]  Preference Locale-Id   Source"
+
+      VerifyLogicalRouterRoutesOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> route"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Destination    Next-Hop[]  Preference Locale-Id   Source"
+
+      VerifyLogicalRouterRouteOnController_3:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> route <IP/prefix-length>"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Destination    Next-Hop[]  Preference Locale-Id   Source"
+
+      VerifyLogicalRouterRouteOnController_4:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> route <IP/prefix-length>"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Destination    Next-Hop[]  Preference Locale-Id   Source"
+
+      VerifyAllBridgeOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> bridge all"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id   	Bridge-Id   Host  Active"
+
+      VerifyAllBridgeOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> bridge all"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id   	Bridge-Id   Host  Active"
+
+      VerifyBridgeOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> bridge <bridge-id>"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id   	Bridge-Id   Host  Active"
+
+      VerifyBridgeOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> bridge <bridge-id>"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller      : "vsm.[1].vxlancontroller.[1]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id   	Bridge-Id   Host  Active"
+
+      verifyAllMACTableForBridgeOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> bridge all mac-address-table"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id Bridge-Id   Mac  Vlan-Id Vxlan-Id Port-Id   Source"
+
+      verifyAllMACTableForBridgeOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> bridge all mac-address-table"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id Bridge-Id   Mac  Vlan-Id Vxlan-Id Port-Id   Source"
+
+      verifyMACTableForBridgeOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> bridge <bridge-id> mac-address-table"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id Bridge-Id   Mac  Vlan-Id Vxlan-Id Port-Id   Source"
+
+      verifyMACTableForBridgeOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> bridge <bridge-id> mac-address-table"
+         vm              : "vsm.[1].vse.[1]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id Bridge-Id   Mac  Vlan-Id Vxlan-Id Port-Id   Source"
+
+      VerifyLogicalRouterVDRStats_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> statistics"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand":
+            - "output[?]match": "host.reports.received"
+            - "output[?]match": "bridge.reports.received"
+            - "output[?]match": "route.queries.received"
+            - "output[?]match": "interface.queries.received"
+            - "output[?]match": "mac.queries.received"
+            - "output[?]match": "clear.macs.received"
+            - "output[?]match": "errdecode.messages.dropped"
+            - "output[?]match": "notifications.error"
+
+      VerifyLogicalRouterVDRStats_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> statistics"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand":
+            - "output[?]match": "host.reports.received"
+            - "output[?]match": "bridge.reports.received"
+            - "output[?]match": "route.queries.received"
+            - "output[?]match": "interface.queries.received"
+            - "output[?]match": "mac.queries.received"
+            - "output[?]match": "clear.macs.received"
+            - "output[?]match": "errdecode.messages.dropped"
+            - "output[?]match": "notifications.error"
+
+      VerifyLogicalRouterStatsByController:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> statistics"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "messages.query"
+            - "output[?]match": "messages.update"
+            - "output[?]match": "messages.flush"
+            - "output[?]match": "messages.notification"
+
+      verifyConnectionOnController:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> host <host-ip> connection"
+         controller      : "vsm.[1].vxlancontroller.[1]"
+         host            : "host.[2]"
+         "verifyclicommand" :
+            - "output[?]match": "Connection IP:"
+            - "output[?]match": "Version:"
+
+verifyAllLogicalRouter:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyAllLogicalRouter"
+   Summary: "Run and verify the centralziedcli to show all VDR"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyAllLogicalRouter']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyAllLogicalRouter:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router list all"
+         'verifyclicommand':
+            - "output[?]match": "edge-id Vdr Name Vdr Id #Lifs"
+
+verifyLogicalRouterHosts:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyLogicalRouterHosts"
+   Summary: "Run and verify the centralziedcli to show all hosts for an VDR"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyLogicalRouterHosts']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyLogicalRouterHosts:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router list dlr <ldr-id> host"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": "ID    HostName"
+
+verifyHostLogicalRouters:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyHostLogicalRouters"
+   Summary: "Run and verify the centralziedcli to show routes for all VDR on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyHostLogicalRouters']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyHostLogicalRouters:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr all brief"
+         host            : "host.[2]"
+         'verifyclicommand':
+            - "output[?]match": "VDR Instance Information :"
+            - "output[?]match": "Vdr Name  Vdr Id #Lifs #Routes State  Controller Ip  CP Ip"
+
+verifyLogicalRouterOnHost_verbose:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyLogicalRouterOnHost_verbose"
+   Summary: "Run and verify the centralziedcli to show VDR info on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyLogicalRouterOnHost_verbose']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyLogicalRouterOnHost_verbose:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> verbose"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": "VDR Instance Information :"
+            - "output[?]match": "Vdr Name:"
+            - "output[?]match": "Vdr Id:"
+            - "output[?]match": "Number of Lifs"
+            - "output[?]match": "Number of Routes:"
+            - "output[?]match": "State:"
+            - "output[?]match": "Controller IP:"
+            - "output[?]match": "Control Plane IP:"
+            - "output[?]match": "Control Plane Active:"
+            - "output[?]match": "Num unique nexthops:"
+            - "output[?]match": "Generation Number:"
+            - "output[?]match": "Edge Active:"
+
+verifyLogicalRouterOnHost_brief:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyLogicalRouterOnHost_brief"
+   Summary: "Run and verify the centralziedcli to show VDR info on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyLogicalRouterOnHost_brief']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyLogicalRouterOnHost_brief:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> brief"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": "VDR Instance Information :"
+            - "output[?]match": "Vdr Name Vdr Id #Lifs #Routes State  Controller Ip CP Ip"
+
+verifyLogicalRouterInterface_all:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyLogicalRouterInterface_all"
+   Summary: "Run and verify the centralziedcli to show VDR interface info on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyLogicalRouterInterface_all']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyLogicalRouterInterface_all:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> interface all verbose"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": " LIF Information :"
+            - "output[?]match": "Name:"
+            - "output[?]match": "Mode:"
+            - "output[?]match": "Id:"
+            - "output[?]match": "Ip"
+            - "output[?]match": "Connected Dvs:"
+            - "output[?]match": "Designated Instance:"
+            - "output[?]match": "DI IP:"
+            - "output[?]match": "State:"
+            - "output[?]match": "DHCP Relay:"
+
+verifyLogicalRouterInterface_verbose:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyLogicalRouterInterface_verbose"
+   Summary: "Run and verify the centralziedcli to show VDR interface info on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyLogicalRouterInterface_verbose']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyLogicalRouterInterface_verbose:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> interface <lif-name> verbose"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         adapter         : "vsm.[1].vse.[1].lif.[1]"
+         'verifyclicommand':
+            - "output[?]match": " LIF Information :"
+            - "output[?]match": "Name:"
+            - "output[?]match": "Mode:"
+            - "output[?]match": "Id:"
+            - "output[?]match": "Ip:"
+            - "output[?]match": "Connected Dvs:"
+            - "output[?]match": "VXLAN Control Plane:"
+            - "output[?]match": "VXLAN Multicast IP:"
+            - "output[?]match": "State:"
+            - "output[?]match": "Flags:"
+            - "output[?]match": "DHCP Relay:"
+
+verifyLogicalRouterInterface_brief:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyLogicalRouterInterface_brief"
+   Summary: "Run and verify the centralziedcli to show VDR interface info on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyLogicalRouterInterface_brief']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyLogicalRouterInterface_brief:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> interface <lif-name> brief"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         adapter         : "vsm.[1].vse.[1].lif.[1]"
+         'verifyclicommand':
+            - "output[?]match": " LIF Information :"
+            - "output[?]match": "Lif Name Id   Mode  State  Ip"
+
+verifyLogicalRouterInterface_stats:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyLogicalRouterInterface_stats"
+   Summary: "Run and verify the centralziedcli to show VDR interface stats on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyLogicalRouterInterface_stats']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyLogicalRouterInterface_stats:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> interface <lif-name> statistics"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         adapter         : "vsm.[1].vse.[1].lif.[1]"
+         'verifyclicommand':
+            - "output[?]match": "RX Unicast Packets on the interface:"
+            - "output[?]match": "TX Unicast Packets on the interface:"
+            - "output[?]match": "Packets Deferred Free on the interface:"
+            - "output[?]match": "LIF Net Statistics"
+            - "output[?]match": "IP & ARP packets RX:"
+            - "output[?]match": "IP & ARP packets TX:"
+            - "output[?]match": "IP packets Forwarded to Lif:"
+            - "output[?]match": "ARP Request RX:"
+            - "output[?]match": "GARP RX:"
+            - "output[?]match": "GARP TX:"
+            - "output[?]match": "Neighbor not found:"
+
+verifyLogicalrouterRoutes:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyLogicalrouterRoutes"
+   Summary: "Run and verify the centralziedcli to show VDR route info on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyLogicalrouterRoutes']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyLogicalrouterRoutes:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> route"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": " Route Table"
+            - "output[?]match": "Destination  GenMask Gateway Flags  Ref Origin UpTime  Interface"
+
+verifyLogicalrouterARPs:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyLogicalrouterARPs"
+   Summary: "Run and verify the centralziedcli to show VDR arp info on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyLogicalrouterARPs']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyLogicalrouterARPs:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> arp"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": "ARP Information :"
+            - "output[?]match": "Network   Mac   Flags   Expiry  SrcPort  Refcnt  Interface"
+
+verifyBridge:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyBridge"
+   Summary: "Run and verify the centralziedcli to show bridge info for VDR on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyBridge']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyBridge:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> bridge <bridge-name> verbose"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         'verifyclicommand':
+            - "output[?]match": "Bridge config:"
+            - "output[?]match": "Number of networks:"
+            - "output[?]match": "Network type:"
+            - "output[?]match": "VXLAN ID:"
+            - "output[?]match": "Ageing time:"
+            - "output[?]match": "FRP filter enable:"
+            - "output[?]match": "Network port ID"
+            - "output[?]match": "Port ID:"
+            - "output[?]match": "IOChains installed:"
+
+verifyBridge_all:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyBridge_all"
+   Summary: "Run and verify the centralziedcli to show all bridge info for VDR on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyBridge_all']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyBridge_all:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> bridge all verbose"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         'verifyclicommand':
+            - "output[?]match": "Bridge config:"
+            - "output[?]match": "Number of networks:"
+            - "output[?]match": "Network type:"
+            - "output[?]match": "VXLAN ID:"
+            - "output[?]match": "Ageing time:"
+            - "output[?]match": "FRP filter enable:"
+            - "output[?]match": "Network port ID"
+            - "output[?]match": "Port ID:"
+            - "output[?]match": "IOChains installed:"
+
+verifyBridgeMACTable:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyBridgeMACTable"
+   Summary: "Run and verify the centralziedcli to show mac table of bridge for VDR on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyBridgeMACTable']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyBridgeMACTable:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> bridge <bridge-name> mac-address-table"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         "verifyclicommand":
+            - "output[?]match"  : "total number of MAC addresses:"
+            - "output[?]match"  : "number of MAC addresses returned:"
+            - "output[?]match"  : "Destination Address Address Type  VLAN ID  VXLAN ID  Destination Port  Age"
+
+verifyBridgeStats:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyBridgeStats"
+   Summary: "Run and verify the centralziedcli to show statistics of bridge for VDR on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyBridgeStats']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyBridgeStats:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> bridge <bridge-name> statistics"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Bridge stats:"
+            - "output[?]match": "portNotExist:"
+            - "output[?]match": "fdbHit:"
+            - "output[?]match": "fdbLearn:"
+            - "output[?]match": "fdbMacMoved:"
+            - "output[?]match": "fdbUplinkFilter:"
+            - "output[?]match": "Network port ID"
+            - "output[?]match": "pktsTx:"
+            - "output[?]match": "droppedTxVxlanPktToVlan:"
+
+verifyCPstats:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyCPstats"
+   Summary: "Run and verify the centralziedcli to show control-plane-statistics for VDR on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyCPstats']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyCPstats:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> control-plane-statistics"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Control Plane Message Statistics:"
+            - "output[?]match": "Num Link UP RX:"
+            - "output[?]match": "Num Link DOWN RX:"
+            - "output[?]match": "Num Edge Link UP RX:"
+            - "output[?]match": "Num Route ADD RX:"
+            - "output[?]match": "Num Lif ADD RX:"
+            - "output[?]match": "Num Route EOM RX:"
+            - "output[?]match": "DUP Lif RX:"
+            - "output[?]match": "Num Lif DI Update RX:"
+            - "output[?]match": "Num Flush LIF RX:"
+            - "output[?]match": "Num Flush Route RX:"
+
+verifyTunables:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyTunables"
+   Summary: "Run and verify the centralziedcli to show tunable for VDR on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyTunables']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyTunables:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> dlr <ldr-id> tunable"
+         host            : "host.[2]"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Tunable Parameters:"
+            - "output[?]match": "enableFLE:"
+            - "output[?]match": "enableIcmpPMTU:"
+            - "output[?]match": "enableIcmpRateLimit:"
+            - "output[?]match": "maxArpEntries:"
+            - "output[?]match": "maxFLEntries:"
+            - "output[?]match": "ecmpMethod:"
+
+VerifyLogicalRouterController_1:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterController_1"
+   Summary: "Run and verify the centralziedcli to show info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterController_1']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> brief"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "LR-Id LR-Name Universal Service-Controller Egress-Locale"
+
+VerifyLogicalRouterController_2:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterController_2"
+   Summary: "Run and verify the centralziedcli to show info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterController_2']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> brief"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "LR-Id LR-Name Universal Service-Controller Egress-Locale"
+
+VerifyLogicalRouterInterfaceOnController_1:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterInterfaceOnController_1"
+   Summary: "Run and verify the centralziedcli to show interface info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterInterfaceOnController_1']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterInterfaceOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> interface"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "masterControllerIp"
+            - "output[?]match"  : "Interface  Type Id IP"
+
+VerifyLogicalRouterInterfaceOnController_2:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterInterfaceOnController_2"
+   Summary: "Run and verify the centralziedcli to show interface info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterInterfaceOnController_2']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterInterfaceOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> interface"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "Interface  Type Id IP"
+
+VerifyLogicalRouterInterfaceDetail_1:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterInterfaceDetail_1"
+   Summary: "Run and verify the centralziedcli to show interface detail info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterInterfaceDetail_1']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterInterfaceDetail_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> interface <lif-name>"
+         vm              : "vsm.[1].vse.[1]"
+         adapter         : "vsm.[1].vse.[1].lif.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "Interface-Name:"
+            - "output[?]match"  : "Logical-Router-Id:"
+            - "output[?]match"  : "IP:"
+            - "output[?]match"  : "DVS-UUID:"
+            - "output[?]match"  : "Mac:"
+            - "output[?]match"  : "Mtu:"
+            - "output[?]match"  : "Multicast-IP:"
+            - "output[?]match"  : "DHCP-relay-server:"
+
+VerifyLogicalRouterInterfaceDetail_2:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterInterfaceDetail_2"
+   Summary: "Run and verify the centralziedcli to show interface detail info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterInterfaceDetail_2']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterInterfaceDetail_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> interface <lif-name>"
+         vm              : "vsm.[1].vse.[1]"
+         adapter         : "vsm.[1].vse.[1].lif.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match"  : "Interface-Name:"
+            - "output[?]match"  : "Logical-Router-Id:"
+            - "output[?]match"  : "IP:"
+            - "output[?]match"  : "DVS-UUID:"
+            - "output[?]match"  : "Mac:"
+            - "output[?]match"  : "Mtu:"
+            - "output[?]match"  : "Multicast-IP:"
+            - "output[?]match"  : "DHCP-relay-server:"
+
+VerifyAllBridgeOnController_1:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyAllBridgeOnController_1"
+   Summary: "Run and verify the centralziedcli to show bridge info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyAllBridgeOnController_1']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyAllBridgeOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> bridge all"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id   	Bridge-Id   Host  Active"
+
+VerifyAllBridgeOnController_2:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyAllBridgeOnController_2"
+   Summary: "Run and verify the centralziedcli to show bridge info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyAllBridgeOnController_2']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyAllBridgeOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> bridge all"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id   	Bridge-Id   Host  Active"
+
+VerifyBridgeOnController_1:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyBridgeOnController_1"
+   Summary: "Run and verify the centralziedcli to show bridge info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyBridgeOnController_1']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyBridgeOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> bridge <bridge-id>"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id   	Bridge-Id   Host  Active"
+
+VerifyBridgeOnController_2:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyBridgeOnController_2"
+   Summary: "Run and verify the centralziedcli to show bridge info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyBridgeOnController_2']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyBridgeOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> bridge <bridge-id>"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller      : "vsm.[1].vxlancontroller.[1]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id   	Bridge-Id   Host  Active"
+
+verifyAllMACTableForBridgeOnController_1:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyAllMACTableForBridgeOnController_1"
+   Summary: "Run and verify the centralziedcli to show mac table info of bridge for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyAllMACTableForBridgeOnController_1']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyAllMACTableForBridgeOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> bridge all mac-address-table"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id Bridge-Id   Mac  Vlan-Id Vxlan-Id Port-Id   Source"
+
+verifyAllMACTableForBridgeOnController_2:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyAllMACTableForBridgeOnController_2"
+   Summary: "Run and verify the centralziedcli to show mac table info of all bridge for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyAllMACTableForBridgeOnController_2']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyAllMACTableForBridgeOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> bridge all mac-address-table"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id Bridge-Id   Mac  Vlan-Id Vxlan-Id Port-Id   Source"
+
+verifyMACTableForBridgeOnController_1:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyMACTableForBridgeOnController_1"
+   Summary: "Run and verify the centralziedcli to show mac table info of bridge for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyMACTableForBridgeOnController_1']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyMACTableForBridgeOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> bridge <bridge-id> mac-address-table"
+         vm              : "vsm.[1].vse.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id Bridge-Id   Mac  Vlan-Id Vxlan-Id Port-Id   Source"
+
+verifyMACTableForBridgeOnController_2:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyMACTableForBridgeOnController_2"
+   Summary: "Run and verify the centralziedcli to show mac table info of bridge for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyMACTableForBridgeOnController_2']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyMACTableForBridgeOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> bridge <bridge-id> mac-address-table"
+         vm              : "vsm.[1].vse.[1]"
+         bridge          : "vsm.[1].vse.[1].bridge.[1]"
+         switch          : "vsm.[1].networkscope.[1].virtualwire.[2]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id Bridge-Id   Mac  Vlan-Id Vxlan-Id Port-Id   Source"
+
+VerifyLogicalRouterVDRStats_1:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterVDRStats_1"
+   Summary: "Run and verify the centralziedcli to show statistics for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterVDRStats_1']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterVDRStats_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> statistics"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand":
+            - "output[?]match": "host.reports.received"
+            - "output[?]match": "bridge.reports.received"
+            - "output[?]match": "route.queries.received"
+            - "output[?]match": "interface.queries.received"
+            - "output[?]match": "mac.queries.received"
+            - "output[?]match": "clear.macs.received"
+            - "output[?]match": "errdecode.messages.dropped"
+            - "output[?]match": "notifications.error"
+
+VerifyLogicalRouterVDRStats_2:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterVDRStats_2"
+   Summary: "Run and verify the centralziedcli to show statistics for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterVDRStats_2']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterVDRStats_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> statistics"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand":
+            - "output[?]match": "host.reports.received"
+            - "output[?]match": "bridge.reports.received"
+            - "output[?]match": "route.queries.received"
+            - "output[?]match": "interface.queries.received"
+            - "output[?]match": "mac.queries.received"
+            - "output[?]match": "clear.macs.received"
+            - "output[?]match": "errdecode.messages.dropped"
+            - "output[?]match": "notifications.error"
+
+VerifyLogicalRouterStatsByController:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterStatsByController"
+   Summary: "Run and verify the centralziedcli to show statistics for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterStatsByController']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterStatsByController:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> statistics"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "messages.query"
+            - "output[?]match": "messages.update"
+            - "output[?]match": "messages.flush"
+            - "output[?]match": "messages.notification"
+
+verifyConnectionOnController:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyConnectionOnController"
+   Summary: "Run and verify the centralziedcli to show connection info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyConnectionOnController']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyConnectionOnController:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> host <host-ip> connection"
+         controller      : "vsm.[1].vxlancontroller.[1]"
+         host            : "host.[2]"
+         "verifyclicommand" :
+            - "output[?]match": "Connection IP:"
+            - "output[?]match": "Version:"
+
+verifyConnection:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "verifyConnection"
+   Summary: "Run and verify the centralziedcli to show connection info for VDR on host"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['verifyConnection']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      verifyConnection:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router host <host-id> connection"
+         host            : "host.[2]"
+         'verifyclicommand':
+            - "output[?]match": "Connection Information:"
+            - "output[?]match": "DvsName VdrPort  NumLifs VdrVmac"
+            - "output[?]match": "Stats: Pkt Dropped Pkt Replaced Pkt Skipped"
+            - "output[?]match": "Input:"
+            - "output[?]match": "Output:"
+
+VerifyLogicalRouterRoutesOnController_1:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterRoutesOnController_1"
+   Summary: "Run and verify the centralziedcli to show route info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterRoutesOnController_1']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterRoutesOnController_1:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> route"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Destination    Next-Hop[]  Preference Locale-Id   Source"
+
+VerifyLogicalRouterRoutesOnController_2:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterRoutesOnController_2"
+   Summary: "Run and verify the centralziedcli to show route info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterRoutesOnController_2']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterRoutesOnController_2:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> route"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "Destination    Next-Hop[]  Preference Locale-Id   Source"
+
+VerifyLogicalRouterRouteOnController_3:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterRouteOnController_3"
+   Summary: "Run and verify the centralziedcli to show route info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterRouteOnController_3']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterRouteOnController_3:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller master dlr <ldr-id> route <IP/prefix-length>"
+         vm              : "vsm.[1].vse.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id Destination Next-Hop[] Preference"
+
+VerifyLogicalRouterRouteOnController_4:
+   <<: *TDS_COMMON_FIELDS_P0_CASE
+   TestName: "VerifyLogicalRouterRouteOnController_4"
+   Summary: "Run and verify the centralziedcli to show route info for VDR on controller"
+   WORKLOADS:
+      Sequence:
+         - ['VDRSetup']
+         - ['VerifyLogicalRouterRouteOnController_4']
+      ExitSequence:
+         - ['VDRCleanup']
+      VDRSetup: *VDR_SETUP
+      VDRCleanup: *VDR_CLEANUP
+      VerifyLogicalRouterRouteOnController_4:
+         Type            : 'NSX'
+         TestNSX         : "vsm.[1]"
+         clistring       : "show logical-router controller <controller-ip> dlr <ldr-id> route <IP/prefix-length>"
+         vm              : "vsm.[1].vse.[1]"
+         controller     : "vsm.[1].vxlancontroller.[1]"
+         "verifyclicommand" :
+            - "output[?]match": "LR-Id Destination Next-Hop[] Preference"

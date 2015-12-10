@@ -1,0 +1,1680 @@
+#------------------------------------------------------------------------------
+#                      PLR-TOPOLOGY
+#------------------------------------------------------------------------------
+#
+#                     192.168.70.10
+#                      +-------+
+#                      |  VM1  |
+#                      +---+---+
+#                          |
+#              +-----------+------------------+
+#              |       Vlan DVPG 100          |
+#              +------------------------------+
+#                          |
+#           192.168.70.11  |
+#                          |
+#                +---------------------+
+#                |         vEDGE1      |           {External Router}
+#                +--|------+--------|--+
+#     192.168.50.11 |               | 192.168.60.11
+#                   |               |
+#    +--------------++             ++--------------+
+#    | Vlan DVPG 1   |             | Vlan DVPG 2   |
+#    +---------------+             +---------------+
+#                   |               |                            [ESX.4]
+#                   |               |            _________________________
+#                   |               |
+#    +--------------++             ++--------------+
+#    | Uplink LS 1   |             | Uplink LS 2   |
+#    +---------------+             +---------------+
+#                  |                         |
+#                  |                         |
+#     192.168.50.1 |                         |192.168.60.1
+#         +--------|-------------------------|-----------+
+#         |    +---|---+                +----|----+      |
+#         |    | SR1   |   TIER-0       |   SR2   |      |
+#         |    +-------+                +---------+      |
+#         +--------------------+-------------------------+
+#   192.168.1.1 |                          |  192.168.2.1
+#               |                          |                      [ESX.1]
+#               |                          |    ___________________________
+#               |                          |
+#      +--------+---------+       +--------+---------+
+#      |Downlink LS 101   |       |Downlink LS 102   |
+#      +---------+--------+       +----+---+---------+
+#                |                     |
+#             +--+--+                +-+--+
+#192.168.1.10 | VM2 |                |VM3 | 192.168.2.10
+#             +-----+                +----+
+#
+#        [ESX.2]                       [ESX.3]
+#        _____________                ________________
+#
+#
+#------------------------------------------------------------------------------
+
+
+
+
+#------------------------------------------------------------------------------
+#                      PLR-TLR TOPOLOGY
+#------------------------------------------------------------------------------
+
+#
+#                     192.168.70.10
+#                      +-------+
+#                      |  VM1  |
+#                      +---+---+
+#                          |
+#              +-----------+------------------+
+#              |       Vlan DVPG 100          |
+#              +------------------------------+
+#                          |
+#           192.168.70.11  |
+#                          |
+#                +---------------------+
+#                |         vEDGE1      |           {External Router}
+#                +--|------+--------|--+
+#     192.168.50.11 |               | 192.168.60.11
+#                   |               |
+#    +--------------++             ++--------------+
+#    | Vlan DVPG 1   |             | Vlan DVPG 2   |
+#    +---------------+             +---------------+
+#                   |               |                            [ESX.4]
+#                   |               |            _________________________
+#                   |               |
+#    +--------------++             ++--------------+
+#    | Uplink LS 1   |             | Uplink LS 2   |
+#    +---------------+             +---------------+
+#                  |                         |
+#                  |                         |
+#     192.168.50.1 |                         |192.168.60.1
+#         +--------|-------------------------|-----------+
+#         |    +---|---+                +----|----+      |
+#         |    | SR1   |   TIER-0       |   SR2   |      |
+#         |    +-------+                +---------+      |
+#         +------------------+-+-------------------------+
+#   192.168.1.1 |            | |              |  192.168.2.1
+#               |            | |              |                      [ESX.1]
+#               |            | |              |    ___________________________
+#               |            | |              |
+#      +--------+---------+  | |   +----------+-------+
+#      |Downlink LS 101   |  | |   |Downlink LS 102   |
+#      +---------+--------+  | |   +----+---+---------+
+#                |           | |          |
+#             +--+--+        | |        +-+--+
+#192.168.1.10 | VM2 |        | |        |VM3 | 192.168.2.10
+#             +-----+        | |        +----+
+#                            | |
+#                ____________| |____________
+# 192.168.10.1   |                         |192.168.20.1
+#                |                         |
+#                |                         |
+#         +------+----+              +-----+----+
+#         |  TLR 11   |              |  TLR 12  |                   |
+#         +------+----+              +-----+----+
+#                |                         |
+#                |                         |
+#          +-----+----+              +-----+-----+
+#          | LS 11    |              | LS12      |
+#          +-----+----+              +-----------+
+#                   |                     |
+#                +--+---+                +--+---+
+#  192.168.10.10 | VM11 |                | VM12 | 192.168.20.10
+#                +------+                +------+
+#        [ESX.2]                       [ESX.3]
+#        _____________                ________________
+#
+#-------------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+#                      PLR-ECMP TOPOLOGY
+#------------------------------------------------------------------------------
+#
+#                     192.168.70.10
+#                      +-------+
+#                      |  VM1  |
+#                      +---+---+
+#                          |
+#              +-----------+------------------+
+#              |       Vlan DVPG 100          |
+#              +------------------------------+
+#                     |                |
+#      192.168.70.11  |                |192.168.70.12
+#                     |                |
+#       +-------------+            +---+---------+
+#       | vEDGE1      |            | vEDGE2      |       {External Routers}
+#       +------+------+            +----------+--+
+#              |       \          /           |
+#              |        \________/___         |
+#              |  50.12         /    | 60.12  |
+# 192.168.50.11|     __________/     |        | 192.168.60.11
+#              |     |               |        |
+#    +---------+----++             ++--------------+
+#    | Vlan DVPG 1   |             | Vlan DVPG 2   |
+#    +---------------+             +---------------+
+#                   |               |                            [ESX.4]
+#                   |               |            _________________________
+#                   |               |
+#    +--------------++             ++--------------+
+#    | Uplink LS 1   |             | Uplink LS 2   |
+#    +---------------+             +---------------+
+#                  |                         |
+#                  |                         |
+#     192.168.50.1 |                         |192.168.60.1
+#         +--------|-------------------------|-----------+
+#         |    +---|---+                +----|----+      |
+#         |    | SR1   |   TIER-0       |   SR2   |      |
+#         |    +-------+                +---------+      |
+#         +--------------------+-------------------------+
+#   192.168.1.1 |                          |  192.168.2.1
+#               |                          |                      [ESX.1]
+#               |                          |    ___________________________
+#               |                          |
+#      +--------+---------+       +--------+---------+
+#      |Downlink LS 101   |       |Downlink LS 102   |
+#      +---------+--------+       +----+---+---------+
+#                |                     |
+#             +--+--+                +-+--+
+#192.168.1.10 | VM2 |                |VM3 | 192.168.2.10
+#             +-----+                +----+
+#
+#        [ESX.2]                       [ESX.3]
+#        _____________                ________________
+#
+#
+#------------------------------------------------------------------------------
+
+L3ESXNSBasic:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+             # Host preparation steps
+            - - 'RegisterController'
+            - - 'SetManagerOnHost'
+            - - 'DiscoverHostnodes'
+            - - 'CreateUplinkProfile'
+            - - 'CreateOverlayTransportZone'
+            - - 'CreateVlanTransportZone'
+            - - 'CreateOverlayTransportNodes'
+            - - 'CreateVlanTransportNodes'
+            - - 'CreateUplinkLogicalSwitches'
+            - - 'CreateDownlinkLogicalSwitches'
+            - - 'CreateUplinkLogicalPorts'
+            - - 'CreateDownlinkLogicalPortsPLR'
+
+             # PLR Creation
+            - - 'RegisterAllEdgeNodes'
+            - - 'DiscoverEdgeNodeIds'
+            - - 'CreateFabricProfile'
+            - - 'CreateEdgeCluster'
+            - - 'CreateProviderLogicalRouter1'
+            - - 'CreateUplinksPLR1'
+            - - 'CreateDownlinksPLR1'
+
+             ### PLR VM setup
+
+            - - 'VifAttachmentAllVMsESX'
+            - - 'PowerOnAllVMs'
+            - - 'ConfigureIPAllVMVNics'
+            - - 'AddRouteAllVMs'
+
+            - - 'DeployGatewayServicesEDGE1'
+            - - 'DisableFirewall_EDGE1'
+            - - 'CreateGatewayInterface1vEDGE1'
+            - - 'CreateGatewayInterface2vEDGE1'
+            - - 'Enable_ECMP_vEDGE_GATEWAY1'
+            - - 'Configure_BGP_vEDGE1'
+
+            - - 'Enable_promiscuous_dvpg1'
+            - - 'Enable_promiscuous_dvpg2'
+            - - 'Enable_promiscuous_dvpg100'
+
+            - - 'AddRoutingGlobalConfig'
+            - - 'UpdateBGPwithoutListenerIP'
+            - - 'AddRouteRedistribution'
+
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+
+
+#####
+TestCase1:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Verify BGP config in PLR only topology
+              1) When Source/Listener is specified then BGP config is
+                 applied only on that SR
+              2) When Source/Listener is specified  but does not belongs
+                 to that LR then BGP config is not applied and returns error
+              3) When Source/Listener is not specified then BGP config
+                 is applied on all the SRs'
+    Summary: 'Deploy a base PLR TLR setup'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'UpdateBGPwithListenerIP'
+            - - 'AddRouteRedistribution'
+            - - 'PingVM1toVM2'
+            - - 'PingVM1toVM3'
+            - - 'VerifyShowBGPConfigonSR1withSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+
+            - - 'DeleteBGPConfigonTier0'
+            - - 'UpdateBGPwithincorrectListenerIP'
+
+            - - 'UpdateBGPwithoutListenerIP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+TestCase345:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Verify BGP config in PLR only topology
+              1) Verify eBGP connection is established
+              2) Verify routes are learnt on SRs
+              3) Verify routes are learnt on External router ( this is
+                 verified indirectly using end to end ping traffic.)'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+
+
+TestCase67:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Verify BGP config in PLR only topology
+              1) Verify eBGP connection is not established on AS mismatch
+              2) Verify eBGP connection is not established on password mismatch
+              3) Verify eBGP connection is not established on neighbor ip
+                 mismatch
+              4) Verify BGP Config is applied on SR nodes'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'DeleteBGPConfigonTier0'
+            - - 'AddRouteRedistribution'
+            - - 'UpdateBGPNbrwithIncorrectAS'
+            - - 'VerifyBGPneighboronSR1withIncorrectAS'
+            - - 'VerifyBGPneighboronSR2withIncorrectAS'
+            - - 'VerifyBGPConfigonSR1withIncorrectAS'
+            - - 'VerifyBGPConfigonSR2withIncorrectAS'
+
+            - - 'UpdateBGPwithoutListenerIP'
+            - - 'SleepWorkload_10'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+
+
+            - - 'UpdateBGPNbrwithNbrIPMismatch'
+            - - 'VerifyBGPconfigonSR1withNbrIPMismatch'
+            - - 'VerifyBGPconfigonSR2withNbrIPMismatch'
+            - - 'VerifyBGPneighboronSR1withNbrIPMismatch'
+            - - 'VerifyBGPneighboronSR2withNbrIPMismatch'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyNoBGProutesonSR2'
+
+            - - 'Configure_BGP_vEDGE1withPasswd'
+            - - 'UpdateBGPNbrwithPasswdMismatch'
+            - - 'VerifyBGPconfigonSR1withPasswdMismatch'
+            - - 'VerifyBGPconfigonSR2withPasswdMismatch'
+            - - 'VerifyBGPneighboronSR1withPasswdMismatch'
+            - - 'VerifyBGPneighboronSR2withPasswdMismatch'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyNoBGProutesonSR2'
+
+            - - 'Configure_BGP_vEDGE1withPasswd'
+            - - 'UpdateBGPNbrwithPasswdMatch'
+            - - 'VerifyBGPconfigonSR1withPasswdMatch'
+            - - 'VerifyBGPconfigonSR2withPasswdMatch'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+
+TestCase8a:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Verify BGP config in PLR only topology
+              Southbound Channel will be disconnected/connected ;
+              management interface is up. following will be verified (P0)
+              BGP neighborship should not break.
+              Routes learned and end to end data path should be intact,
+              Failover should not get triggered.
+              No Southbound IP migration on SR1'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+            - - 'DiscoverEdgeNodeIds'
+            - - 'DiscoverEdgeVnics'
+            - - 'DisconnectSR1_TLS'
+            - - 'SleepWorkload_100'
+            - - 'VerifySR1vNic2IP'
+            - - 'VerifySR2vNic2IP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1_noSBroutes'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1_noSBroutes'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'ReconnectSR1_TLS'
+            - - 'SleepWorkload_10'
+            - - 'VerifySR1vNic2IP'
+            - - 'VerifySR2vNic2IP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+
+TestCase8b:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+              southbound Channel should be connected ;
+              management interface is up and  BGP neighborship is down
+              due to uplink interface is disconnected
+              External Router 1 should remove the routes learned from SR1
+              BFD sets CPathDown flag hence Failover should get triggered
+              SR2 should take over SR1 and routes/data path reconvergence'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'DisconnectSR1_vEdge1'
+            - - 'SleepWorkload_100'
+            - - 'VerifySR1vNic2IPLost'
+            - - 'VerifySR2vNic2IPwithSR1IP'
+            - - 'VerifyBGPneighboronSR1_noBGP'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1_noBGP'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1_noBGP'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1_noBGP'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'ReconnectSR1_vEdge1'
+            - - 'SleepWorkload_100'
+            - - 'VerifySR1vNic2IP'
+            - - 'VerifySR2vNic2IP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+TestCase8c:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+              southbound Channel should be connected ;
+              management interface is down,  following will be verified:(P0)
+              BGP neighborship should not break.
+              Routes learned and end to end data path should be intact,
+              Failover should not get triggered.'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'DisconnectSR1_Mgmt'
+            - - 'SleepWorkload_100'
+            - - 'VerifySR2vNic2IP'
+            - - 'VerifySR2vNic2IPwithoutSR1IP'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'ReconnectSR1_Mgmt'
+            - - 'DiscoverEdgeNodeIds'
+            - - 'DiscoverEdgeVnics'
+            - - 'SleepWorkload_10'
+            - - 'VerifySR1vNic2IP'
+            - - 'VerifySR2vNic2IP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+TestCase8d:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+              southbound Channel should be connected ;
+              management interface is down,  BGP neighborship is down,
+              due to uplink interface is disconnected or down
+              External Router 1 should remove the routes learned from SR1
+              MSR sets CPathDown flag hence Failover should get triggered
+              SR2 should take over SR1 and routes/data path reconvergence'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'DisconnectSR1_Mgmt'
+            - - 'DisconnectSR1_TLS'
+            - - 'SleepWorkload_100'
+            - - 'VerifySR2vNic2IPwithSR1IP'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'ReconnectSR1_Mgmt'
+            - - 'ReconnectSR1_TLS'
+            - - 'DiscoverEdgeNodeIds'
+            - - 'DiscoverEdgeVnics'
+            - - 'SleepWorkload_100'
+            - - 'VerifySR1vNic2IP'
+            - - 'VerifySR2vNic2IP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+TestCase8e:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+              southbound and; management interface is down,
+              following will be verified:(P0)
+              Even if BGP neighborship is established on uplink,
+              SR1 should declared as dead.
+              SR1 should not advertise southbound routes to External Router1
+              Failover should get triggered , SR2 should source the
+              traffic successfully.'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'DisconnectSR1_Mgmt'
+            - - 'Configure_BGP_vEDGE1_removeSR1peer'
+            - - 'SleepWorkload_100'
+            - - 'VerifySR2vNic2IPwithSR1IP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'ReconnectSR1_Mgmt'
+            - - 'Configure_BGP_vEDGE1'
+            - - 'DiscoverEdgeNodeIds'
+            - - 'DiscoverEdgeVnics'
+            - - 'SleepWorkload_100'
+            - - 'VerifySR1vNic2IP'
+            - - 'VerifySR2vNic2IP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+TestCase11:  ##TLRTopology
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+              Verify that TLR routes are learnt by SR
+              TLR routes are advertised by SR to external router through BGP
+              Verify end to end traffic convergence
+              Verify that if a TLR withdraws an advertisment, the route should
+              not be advertised by SR'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+
+# TLRSETUP
+# TLRVMSETUP
+# EDGE2Deployment
+            - - 'PLR_SETUP'
+            - - 'TLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyShowRoutesonSR1_TLR'
+            - - 'VerifyShowRoutesonSR2_TLR'
+            - - 'VerifyBGProutesonSR1_TLR'
+            - - 'VerifyBGProutesonSR2_TLR'
+            - - 'VerifyShowIpForwardingonSR1_TLR'
+            - - 'VerifyShowIpForwardingonSR2_TLR'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+              - 'PingVM1toVM11'
+              - 'PingVM1toVM12'
+              - 'PingVM2toVM11'
+              - 'PingVM2toVM12'
+              - 'PingVM11toVM12'
+
+            - - 'DisableAdvertiseRouteonTLR11'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyShowRoutesonSR1_TLR12only_noTLR11'
+            - - 'VerifyShowRoutesonSR2_TLR12only_noTLR11'
+            - - 'VerifyBGProutesonSR1_TLR12only_noTLR11'
+            - - 'VerifyBGProutesonSR2_TLR12only_noTLR11'
+            - - 'VerifyShowIpForwardingonSR1_TLR12only_noTLR11'
+            - - 'VerifyShowIpForwardingonSR2_TLR12only_noTLR11'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+              - 'PingVM1toVM11'
+              - 'PingVM1toVM12'
+              - 'PingVM2toVM11_Fail'
+              - 'PingVM2toVM12'
+              - 'PingVM11toVM12_Fail'
+            - - 'AdvertiseRouteonTLR11'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'VerifyShowRoutesonSR1_TLR'
+            - - 'VerifyShowRoutesonSR2_TLR'
+            - - 'VerifyBGProutesonSR1_TLR'
+            - - 'VerifyBGProutesonSR2_TLR'
+            - - 'VerifyShowIpForwardingonSR1_TLR'
+            - - 'VerifyShowIpForwardingonSR2_TLR'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+              - 'PingVM1toVM11'
+              - 'PingVM1toVM12'
+              - 'PingVM2toVM11'
+              - 'PingVM2toVM12'
+              - 'PingVM11toVM12'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'TLR_CLEANUP'
+            - - 'PLR_CLEANUP'
+
+TestCase12:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup'
+            # Verify when SR’s southbound interface gets disconnected (or
+            #  southbound network is not reachable), then it should stop
+            #  advertising the southbound networks to the External Router.'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'DeletePLRdownlinklportVM2'
+            - - 'SleepWorkload_10'
+            - - 'VerifySR1vNic2IP'
+            - - 'VerifySR2vNic2IP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2_Fail'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1_noVM2route'
+            - - 'VerifyShowRoutesonSR2_noVM2route'
+            - - 'VerifyBGProutesonSR1_noVM2route'
+            - - 'VerifyBGProutesonSR2_noVM2route'
+            - - 'VerifyShowIpForwardingonSR1_noVM2route'
+            - - 'VerifyShowIpForwardingonSR2_noVM2route'
+
+            - - 'ReconnectPLRdownlinklportVM2'
+            - - 'SleepWorkload_10'
+            - - 'VerifySR1vNic2IP'
+            - - 'VerifySR2vNic2IP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+
+TestCase13:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+              To verify redistribution into eBGP
+              from connected ,Verify that it redistributes all connected network
+              from static, verify redistribution of all static routes , applies
+              on all static routes as well as plumbed routes.(P0)
+              To verify the modification of redistribution rules does not impact
+              BGP neighborship, routes learned and end to end data path'
+
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'ConfigureDummyStaticRoute'
+            - - 'RedistributeConnectedandStatic'
+            - - 'SleepWorkload_10'
+            - - 'VerifyonSR1_connected_static_routes'
+            - - 'VerifyonSR2_connected_static_routes'
+
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyBGPRedistributedRoutesonSR1'
+            - - 'VerifyBGPRedistributedRoutesonSR2'
+
+            - - 'RemoveStaticRouteRedistribution'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyBGPRedistributedRoutesonSR1_without_dummy_static_route'
+            - - 'VerifyBGPRedistributedRoutesonSR2_without_dummy_static_route'
+
+            - - 'DeleteDummyStaticRoute'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+TestCase17:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+              To verify  that reconfiguration of eBGP re-establishes
+             connection with the  neighbors and traffic re-converges.
+             Change AS
+                 Verify by changing local/remote-AS
+             Change IP address
+                 Verify by changing Self/Neighbor ip address'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'Change_BGP_vEDGE1_AS'
+            - - 'UpdateBGPwithoutListenerIP_ChangedRemoteAS'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP_ChangedRemoteAS'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP_ChangedRemoteAS'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+
+            - - 'Change_BGP_vEDGE1_RemoteAS'
+            - - 'UpdateBGPwithoutListenerIP_ChangedSelfAS'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP_ChangedSelfAS'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP_ChangedSelfAS'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+
+            - - 'Delete_BGP_vEDGE1'
+            - - 'CreateGatewayInterface2vEDGE1_diffIP'
+            - - 'Configure_BGP_vEDGE1_diffIP'
+            - - 'UpdateBGPwithoutListenerIP_diffRemoteIP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP_diffRemoteIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP_diffRemoteIP'
+            - - 'VerifyBGPneighboronSR1withoutSrcIP_diffRemoteIP'
+            - - 'VerifyBGPneighboronSR2withoutSrcIP_diffRemoteIP'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1_diffRemoteIP'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1_diffRemoteIP'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+            - - 'Delete_BGP_vEDGE1'
+            - - 'CreateGatewayInterface1vEDGE1'
+            - - 'Configure_BGP_vEDGE1'
+            - - 'UpdateBGPwithoutListenerIP'
+
+            - - 'Configure_BGP_vEDGE1'
+            - - 'UpdateBGPwithoutListenerIP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+TestCase21:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+              To verify the BGP hold/keep alive timer changes ,
+              lowest timer values should be selected between two eBGP peers'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'ChangeSR1BGPHello25'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIPHello25'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIPHello25'
+            - - 'VerifyBGPneighboronSR1withoutSrcIPHello25'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'UpdateBGPwithoutListenerIP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+
+TestCase22:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+             To verify that on killing MSR multiple times( multiple reboots
+             /edge reboot) BGP /datapath convergence should happen'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'PowerOffEdge1'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'PowerOffEdge2'
+            - - 'SleepWorkload_10'
+            - - 'PingVM1toVM2_Fail'
+              - 'PingVM1toVM3_Fail'
+
+            - - 'PowerOnEdge1'
+            - - 'PowerOnEdge2'
+            - - 'DiscoverEdgeNodeIds'
+            - - 'SleepWorkload_10'
+
+
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'RebootEdge1'
+            - - 'RebootEdge2'
+            - - 'SleepWorkload_10'
+            - - 'RebootEdge1'
+            - - 'RebootEdge2'
+            - - 'SleepWorkload_10'
+            - - 'RebootEdge1'
+            - - 'RebootEdge2'
+            - - 'SleepWorkload_10'
+
+            - - 'DiscoverEdgeNodeIds'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+
+TestCase23:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+              To verify that after clearing neighbor (clear ip bgp neighbor)
+              from SR  neighborship / routes and data path re-converges'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'ClearIpBGP_SR1'
+            - - 'ClearIpBGP_SR2'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+
+TestCase24:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR TLR setup
+              Verify BGP routes/datapath are not affected
+              by Controller and manager reboot'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'RebootController'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'RebootManager'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+TestCase26: #Cluster addition deletion
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR setup, remove one of the edge from cluster,
+             add another edge to the cluster, verify BGP config is in effect
+             on the new edge, verify route and data path convergence'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+            - - 'PLR_SETUP'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR1'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR1'
+            - - 'VerifyShowIpForwardingonSR2'
+
+            - - 'DeleteUplinksPLR1SR1'
+            - - 'RemoveSR1FromEdgeCluster'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR2'
+            - - 'VerifyBGProutesonSR1_Null'
+
+            - - 'CreateSR3'
+            - - 'RegisterEdgeNode03'
+            - - 'DiscoverEdgeNode3Ids'
+            - - 'UpdateEdgeClusterwithSR3'
+            - - 'DiscoverEdge3Vnics'
+            - - 'CreateUplinksPLR1SR3'
+            - - 'VerifyShowBGPConfigonSR3withoutSrcIP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP'
+            - - 'VerifyBGPneighboronSR3'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR3'
+            - - 'VerifyShowRoutesonSR2'
+            - - 'VerifyBGProutesonSR3'
+            - - 'VerifyBGProutesonSR2'
+            - - 'VerifyShowIpForwardingonSR3'
+            - - 'VerifyShowIpForwardingonSR2'
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'PLR_CLEANUP'
+
+TestCase27:
+    Product: 'NSXTransformers'
+    Category: 'L3'
+    Component: 'BasicRouting'
+    TestName: 'L3ESXNSBasic'
+    Version: 2
+    TCMSId: ''
+    Priority: 'P0'
+    PMT: ''
+    Testcaselevel: 'Functional'
+    Testcasetype: 'functional'
+    QCPath:  ''
+    TestbedSpec: *L3_ESX_TESTBEDSPEC_03
+    Summary: 'Deploy a base PLR setup , add another external router and
+              verify ecmp on SRs, route and traffic convergence, power off one
+              of the external router, verify that traffic converges over to
+              another router'
+    Procedure:
+    ExpectedResult: 'PASS'
+    Tags: ''
+    AutomationLevel: 'Automated'
+    Developer: 'shuklap'
+    FullyAutomatable: 'Y'
+    Status: 'Draft'
+    PartnerFacing: 'N'
+
+    WORKLOADS:
+        Sequence:
+# PLRSETUP
+# EDGE2Deployment
+            - - 'PLR_SETUP'
+            - - 'DeployGatewayServicesEDGE2'
+            - - 'DisableFirewall_EDGE2'
+            - - 'CreateGatewayInterface1vEDGE2'
+            - - 'CreateGatewayInterface2vEDGE2'
+            - - 'Enable_ECMP_vEDGE_GATEWAY2'
+            - - 'AddEdge2NHonVM1'
+
+            - - 'UpdateBGPwithoutListenerIP_ECMP'
+            - - 'Configure_BGP_vEDGE1'
+            - - 'Configure_BGP_vEDGE2'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP_ECMP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP_ECMP'
+
+            - - 'VerifyBGPneighboronSR1_E2'
+            - - 'VerifyBGPneighboronSR2_E2'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1_ECMP'
+            - - 'VerifyShowRoutesonSR2_ECMP'
+            - - 'VerifyShowIpForwardingonSR1_ECMP'
+            - - 'VerifyShowIpForwardingonSR2_ECMP'
+
+            - - 'DisconnectSR1_vEdge1'
+            - - 'DisconnectSR2_vEdge1'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP_ECMP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP_ECMP'
+            - - 'VerifyBGPneighboronSR1_NovEdge1'
+            - - 'VerifyBGPneighboronSR2_NovEdge1'
+            - - 'VerifyBGPneighboronSR1_E2'
+            - - 'VerifyBGPneighboronSR2_E2'
+
+            - - 'VerifyShowRoutesonSR1_ECMP_NovEdge1'
+            - - 'VerifyShowRoutesonSR2_ECMP_NovEdge1'
+            - - 'VerifyBGProutesonSR1_ECMP_NovEdge1'
+            - - 'VerifyBGProutesonSR2_ECMP_NovEdge1'
+
+            - - 'CreateGatewayInterface1vEDGE1'
+            - - 'CreateGatewayInterface2vEDGE1'
+            - - 'VerifyShowBGPConfigonSR1withoutSrcIP_ECMP'
+            - - 'VerifyShowBGPConfigonSR2withoutSrcIP_ECMP'
+            - - 'VerifyBGPneighboronSR1_E2'
+            - - 'VerifyBGPneighboronSR2_E2'
+            - - 'VerifyBGPneighboronSR1'
+            - - 'VerifyBGPneighboronSR2'
+            - - 'PingVM1toVM2'
+              - 'PingVM1toVM3'
+            - - 'VerifyShowRoutesonSR1_ECMP'
+            - - 'VerifyShowRoutesonSR2_ECMP'
+            - - 'VerifyShowIpForwardingonSR1_ECMP'
+            - - 'VerifyShowIpForwardingonSR2_ECMP'
+
+        ExitSequence:
+            - - 'DeleteBGPConfigonTier0'
+            - - 'DeleteGatewayServicesEDGE2'
+            - - 'PLR_CLEANUP'
+
+
+
+
+
+
